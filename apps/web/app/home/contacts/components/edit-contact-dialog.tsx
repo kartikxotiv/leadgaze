@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -39,6 +39,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@kit/ui/tabs';
 import { Textarea } from '@kit/ui/textarea';
 
 import { useRBAC } from '~/lib/rbac/rbac-provider';
+import { useFieldPermissions } from '~/lib/hooks/use-field-permissions';
+import { useDynamicColumns } from '~/lib/hooks/use-dynamic-columns';
+import { LeadCustomFieldInputs } from '~/components/leads/lead-custom-field-inputs';
 import { Contact, updateContactService } from '~/services/contacts.service';
 
 const formSchema = z.object({
@@ -69,6 +72,20 @@ interface EditContactDialogProps {
   contact: Contact;
 }
 
+/** Renders children (a form field) only when the user has edit permission for the given FLS field_key. */
+function FieldGuard({
+  fieldKey,
+  canEdit,
+  children,
+}: {
+  fieldKey: string;
+  canEdit: (key: string) => boolean;
+  children: React.ReactNode;
+}) {
+  if (!canEdit(fieldKey)) return null;
+  return <>{children}</>;
+}
+
 export function EditContactDialog({
   isOpen,
   onOpenChange,
@@ -77,6 +94,21 @@ export function EditContactDialog({
   const { currentWorkspace: workspace } = useRBAC();
   const { data: user } = useUser();
   const queryClient = useQueryClient();
+  const { canEdit, canView, isLoading: permissionsLoading } = useFieldPermissions({
+    entityType: 'contacts',
+    workspaceId: workspace?.id,
+    enabled: isOpen && !!workspace?.id,
+  });
+
+  const { fields = [] } = useDynamicColumns({
+    entityType: 'contacts',
+    workspaceId: workspace?.id,
+    userId: user?.id,
+    enabled: isOpen && !!workspace?.id,
+  });
+
+  const visibleCustomFields = fields.filter((f) => !f.is_system);
+  const [customFields, setCustomFields] = useState<Record<string, unknown>>({});
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -124,11 +156,12 @@ export function EditContactDialog({
         twitter_handle: contact.twitter_handle || '',
         notes: contact.notes || '',
       });
+      setCustomFields((contact.custom_fields as Record<string, unknown>) || {});
     }
   }, [contact, form, isOpen]);
 
   const updateMutation = useMutation({
-    mutationFn: (values: z.infer<typeof formSchema>) => {
+    mutationFn: (values: z.infer<typeof formSchema> & { custom_fields?: any }) => {
       const payload: any = { ...values };
       return updateContactService(contact.id, payload);
     },
@@ -141,8 +174,24 @@ export function EditContactDialog({
   });
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    updateMutation.mutate(values);
+    // Filter out fields user cannot edit
+    const payload: any = { ...values };
+    const filteredPayload: any = {};
+    for (const [key, val] of Object.entries(payload)) {
+      if (canEdit(key)) {
+        filteredPayload[key] = val;
+      }
+    }
+    filteredPayload.custom_fields = {};
+    for (const [key, val] of Object.entries(customFields)) {
+      if (canEdit(key)) {
+        filteredPayload.custom_fields[key] = val;
+      }
+    }
+    updateMutation.mutate(filteredPayload);
   }
+
+  if (permissionsLoading) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -155,287 +204,323 @@ export function EditContactDialog({
         </DialogHeader>
         <Form {...form}>
           <form id="dialog-form" onSubmit={form.handleSubmit(onSubmit)} className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
-            <Tabs defaultValue="general" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="general">Data</TabsTrigger>
-                <TabsTrigger value="details">Details</TabsTrigger>
-                <TabsTrigger value="preferences">Preferences</TabsTrigger>
+            <Tabs defaultValue="basic" className="w-full h-full flex flex-col">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="basic">Basic Info</TabsTrigger>
+                <TabsTrigger value="additional">Additional Details</TabsTrigger>
               </TabsList>
-
-              <TabsContent value="general" className="space-y-4 pt-4">
+              
+              <TabsContent value="basic" className="space-y-4 py-4 flex-1 overflow-y-auto pr-2">
                 <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="first_name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>First Name</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="last_name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Last Name</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <FieldGuard fieldKey="first_name" canEdit={canEdit}>
+                    <FormField
+                      control={form.control}
+                      name="first_name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>First Name *</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </FieldGuard>
+                  <FieldGuard fieldKey="last_name" canEdit={canEdit}>
+                    <FormField
+                      control={form.control}
+                      name="last_name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Last Name</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </FieldGuard>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Primary Email</FormLabel>
-                        <FormControl>
-                          <Input {...field} type="email" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="alt_email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Alt Email</FormLabel>
-                        <FormControl>
-                          <Input {...field} type="email" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <FieldGuard fieldKey="email" canEdit={canEdit}>
+                    <FormField
+                      control={form.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email</FormLabel>
+                          <FormControl>
+                            <Input type="email" {...field} />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </FieldGuard>
+                  <FieldGuard fieldKey="alt_email" canEdit={canEdit}>
+                    <FormField
+                      control={form.control}
+                      name="alt_email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Alternate Email</FormLabel>
+                          <FormControl>
+                            <Input type="email" {...field} />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </FieldGuard>
                 </div>
 
                 <div className="grid grid-cols-3 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="phone_number"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Phone</FormLabel>
-                        <FormControl>
-                          <Input {...field} type="tel" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="mobile_number"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Mobile</FormLabel>
-                        <FormControl>
-                          <Input {...field} type="tel" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="alt_phone"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Alt Phone</FormLabel>
-                        <FormControl>
-                          <Input {...field} type="tel" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <FieldGuard fieldKey="phone" canEdit={canEdit}>
+                    <FormField
+                      control={form.control}
+                      name="phone_number"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Phone</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </FieldGuard>
+                  <FieldGuard fieldKey="mobile" canEdit={canEdit}>
+                    <FormField
+                      control={form.control}
+                      name="mobile_number"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Mobile</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </FieldGuard>
+                  <FieldGuard fieldKey="alt_phone" canEdit={canEdit}>
+                    <FormField
+                      control={form.control}
+                      name="alt_phone"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Alt Phone</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </FieldGuard>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="job_title"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Job Title</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="department"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Department</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <FieldGuard fieldKey="job_title" canEdit={canEdit}>
+                    <FormField
+                      control={form.control}
+                      name="job_title"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Job Title</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </FieldGuard>
+                  <FieldGuard fieldKey="department" canEdit={canEdit}>
+                    <FormField
+                      control={form.control}
+                      name="department"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Department</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </FieldGuard>
                 </div>
+
+                <FieldGuard fieldKey="notes" canEdit={canEdit}>
+                  <FormField
+                    control={form.control}
+                    name="notes"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Notes</FormLabel>
+                        <FormControl>
+                          <Textarea className="h-24" {...field} />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                </FieldGuard>
               </TabsContent>
 
-              <TabsContent value="details" className="space-y-4 pt-4">
-                <div className="grid grid-cols-3 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="location"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Location</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder="Office or City" />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="timezone"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Timezone</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder="UTC" />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="language"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Language</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder="English" />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
+              <TabsContent value="additional" className="space-y-4 py-4 flex-1 overflow-y-auto pr-2">
+                <div className="grid grid-cols-2 gap-4">
+                  <FieldGuard fieldKey="location" canEdit={canEdit}>
+                    <FormField
+                      control={form.control}
+                      name="location"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Location</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </FieldGuard>
+                  <FieldGuard fieldKey="timezone" canEdit={canEdit}>
+                    <FormField
+                      control={form.control}
+                      name="timezone"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Timezone</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </FieldGuard>
                 </div>
-                <FormField
-                  control={form.control}
-                  name="notes"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Private Notes</FormLabel>
-                      <FormControl>
-                        <Textarea {...field} />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-              </TabsContent>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <FieldGuard fieldKey="language" canEdit={canEdit}>
+                    <FormField
+                      control={form.control}
+                      name="language"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Language</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </FieldGuard>
+                  <FieldGuard fieldKey="preferred_contact_method" canEdit={canEdit}>
+                    <FormField
+                      control={form.control}
+                      name="preferred_contact_method"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Pref. Method</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select method" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="email">Email</SelectItem>
+                              <SelectItem value="phone">Phone</SelectItem>
+                              <SelectItem value="mobile">Mobile</SelectItem>
+                              <SelectItem value="linkedin">LinkedIn</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </FormItem>
+                      )}
+                    />
+                  </FieldGuard>
+                </div>
 
-              <TabsContent value="preferences" className="space-y-4 pt-4">
-                <FormField
-                  control={form.control}
-                  name="preferred_contact_method"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Preferred Method</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select preference" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Email">Email</SelectItem>
-                          <SelectItem value="Phone">Phone</SelectItem>
-                          <SelectItem value="SMS">SMS</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </FormItem>
-                  )}
-                />
-
-                <div className="flex gap-4">
-                  <FormField
-                    control={form.control}
-                    name="do_not_call"
-                    render={({ field }) => (
-                      <FormItem className="flex items-center space-y-0 space-x-2">
-                        <FormControl>
-                          <Checkbox
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                        <FormLabel>Do not call</FormLabel>
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="do_not_email"
-                    render={({ field }) => (
-                      <FormItem className="flex items-center space-y-0 space-x-2">
-                        <FormControl>
-                          <Checkbox
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                        <FormLabel>Do not email</FormLabel>
-                      </FormItem>
-                    )}
-                  />
+                <div className="flex space-x-6 border-t pt-4">
+                  <FieldGuard fieldKey="do_not_call" canEdit={canEdit}>
+                    <FormField
+                      control={form.control}
+                      name="do_not_call"
+                      render={({ field }) => (
+                        <FormItem className="flex items-center space-y-0 space-x-2">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                          <FormLabel>Do not call</FormLabel>
+                        </FormItem>
+                      )}
+                    />
+                  </FieldGuard>
+                  <FieldGuard fieldKey="do_not_email" canEdit={canEdit}>
+                    <FormField
+                      control={form.control}
+                      name="do_not_email"
+                      render={({ field }) => (
+                        <FormItem className="flex items-center space-y-0 space-x-2">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                          <FormLabel>Do not email</FormLabel>
+                        </FormItem>
+                      )}
+                    />
+                  </FieldGuard>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 border-t pt-4">
-                  <FormField
-                    control={form.control}
-                    name="linkedin_url"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>LinkedIn</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="twitter_handle"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Twitter</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
+                  <FieldGuard fieldKey="linkedin" canEdit={canEdit}>
+                    <FormField
+                      control={form.control}
+                      name="linkedin_url"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>LinkedIn</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </FieldGuard>
+                  <FieldGuard fieldKey="twitter" canEdit={canEdit}>
+                    <FormField
+                      control={form.control}
+                      name="twitter_handle"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Twitter</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </FieldGuard>
                 </div>
 
               </TabsContent>
             </Tabs>
 
-            
+            <div className="border-t pt-4">
+              <LeadCustomFieldInputs
+                fields={visibleCustomFields}
+                values={customFields}
+                onChange={(key, val) =>
+                  setCustomFields((prev) => ({ ...prev, [key]: val }))
+                }
+                canEdit={canEdit}
+                canView={canView}
+              />
+            </div>
           </form>
         </Form>
         <DialogFooter className="border-t p-6 mt-auto">

@@ -888,22 +888,22 @@ export default function OpportunitiesPage() {
                           )
                         }
                       >
-                        {isVisible('sno') && (
+                        {showColumn('sno') && (
                           <TableCell className="text-muted-foreground w-12">
                             {(currentPage - 1) * itemsPerPage + index + 1}
                           </TableCell>
                         )}
-                        {isVisible('name') && (
+                        {showColumn('name') && (
                           <TableCell className="primary-text-medium text-leadgaze-primary dark:text-leadgaze-primary">
                             <span>{opportunity.opportunity_name}</span>
                           </TableCell>
                         )}
-                        {isVisible('account') && (
+                        {showColumn('account') && (
                           <TableCell className="text-muted-foreground">
                             {opportunity.account?.account_name || '-'}
                           </TableCell>
                         )}
-                        {isVisible('stage') && (
+                        {showColumn('stage') && (
                           <TableCell>
                             <Badge
                               variant="outline"
@@ -917,7 +917,7 @@ export default function OpportunitiesPage() {
                             </Badge>
                           </TableCell>
                         )}
-                        {isVisible('amount') && (
+                        {showColumn('amount') && (
                           <TableCell className="text-muted-foreground">
                             {formatCurrency(
                               opportunity.amount || 0,
@@ -925,76 +925,76 @@ export default function OpportunitiesPage() {
                             )}
                           </TableCell>
                         )}
-                        {isVisible('currency') && (
+                        {showColumn('currency') && (
                           <TableCell className="text-muted-foreground">
                             {opportunity.currency || '-'}
                           </TableCell>
                         )}
-                        {isVisible('probability') && (
+                        {showColumn('probability') && (
                           <TableCell className="text-muted-foreground">
                             {opportunity.probability
                               ? `${opportunity.probability}%`
                               : '-'}
                           </TableCell>
                         )}
-                        {isVisible('close_date') && (
+                        {showColumn('close_date') && (
                           <TableCell className="text-muted-foreground">
                             {opportunity.expected_close_date
                               ? formatDate(opportunity.expected_close_date)
                               : '-'}
                           </TableCell>
                         )}
-                        {isVisible('priority') && (
+                        {showColumn('priority') && (
                           <TableCell className="text-muted-foreground">
                             <PriorityBadge priority={opportunity.priority} />
                           </TableCell>
                         )}
-                        {isVisible('type') && (
+                        {showColumn('type') && (
                           <TableCell className="text-muted-foreground capitalize">
                             {opportunity.opportunity_type?.replace('_', ' ') ||
                               '-'}
                           </TableCell>
                         )}
-                        {isVisible('source') && (
+                        {showColumn('source') && (
                           <TableCell className="text-muted-foreground capitalize">
                             {opportunity.lead_source?.replace('_', ' ') || '-'}
                           </TableCell>
                         )}
-                        {isVisible('competitor') && (
+                        {showColumn('competitor') && (
                           <TableCell className="text-muted-foreground">
                             {opportunity.competitor || '-'}
                           </TableCell>
                         )}
-                        {isVisible('is_closed') && (
+                        {showColumn('is_closed') && (
                           <TableCell className="text-muted-foreground text-center">
                             {opportunity.is_closed ? 'Yes' : 'No'}
                           </TableCell>
                         )}
-                        {isVisible('is_won') && (
+                        {showColumn('is_won') && (
                           <TableCell className="text-muted-foreground text-center">
                             {opportunity.is_won ? 'Yes' : 'No'}
                           </TableCell>
                         )}
-                        {isVisible('owner') && (
+                        {showColumn('owner') && (
                           <TableCell className="text-muted-foreground">
                             {opportunity.owner?.name || '-'}
                           </TableCell>
                         )}
-                        {isVisible('created_by') && (
+                        {showColumn('created_by') && (
                           <TableCell className="text-muted-foreground">
                             {opportunity.created_by_account?.name ||
                               opportunity.created_by ||
                               '-'}
                           </TableCell>
                         )}
-                        {isVisible('created_at') && (
+                        {showColumn('created_at') && (
                           <TableCell className="text-muted-foreground">
                             {opportunity.created_at
                               ? formatDate(opportunity.created_at)
                               : '-'}
                           </TableCell>
                         )}
-                        {isVisible('updated_by') && (
+                        {showColumn('updated_by') && (
                           <TableCell className="text-muted-foreground">
                             {opportunity.updated_by_account?.name ||
                               opportunity.updated_by ||

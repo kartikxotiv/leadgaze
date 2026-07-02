@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
 import { Button } from '@kit/ui/button';
@@ -32,7 +32,6 @@ import { Lead } from '~/services/leads.service';
 import ApiClient from '~/utils/axios-client';
 
 import { LeadCustomFieldInputs } from '~/components/leads/lead-custom-field-inputs';
-import { LeadFormField } from '~/components/leads/lead-form-field';
 
 import { IndustrySelect } from '../../_components/industry-select';
 import { LeadSourceSelect } from '../../_components/lead-source-select';
@@ -77,6 +76,20 @@ const COMPANY_SIZES = [
   { value: 'enterprise', label: 'Enterprise (5000+)' },
 ];
 
+/** Renders children (a form field) only when the user has edit permission for the given FLS field_key. */
+function FieldGuard({
+  fieldKey,
+  canEdit,
+  children,
+}: {
+  fieldKey: string;
+  canEdit: (key: string) => boolean;
+  children: React.ReactNode;
+}) {
+  if (!canEdit(fieldKey)) return null;
+  return <>{children}</>;
+}
+
 export default function EditLeadDialog({
   open,
   onOpenChange,
@@ -84,7 +97,7 @@ export default function EditLeadDialog({
   lead,
 }: EditLeadDialogProps) {
   const { currentWorkspace: workspace } = useRBAC();
-  const { canEdit, editableCustomFields } = useFieldPermissions({
+  const { canEdit, canView, editableCustomFields, visibleCustomFields, isLoading: permissionsLoading } = useFieldPermissions({
     entityType: 'leads',
     workspaceId: workspace?.id,
     enabled: open && !!workspace?.id,
@@ -114,8 +127,6 @@ export default function EditLeadDialog({
     notes: '',
     lead_score: 0,
   });
-
-  // Lead statuses query removed; managed by ManageableStatusSelect
 
   // Initialize form with lead data
   useEffect(() => {
@@ -224,7 +235,6 @@ export default function EditLeadDialog({
 
     setIsLoading(true);
     try {
-      // Calculate lead score (removed selectedStatus lookup)
       const { totalScore } = calculateLeadScore({
         first_name: formData.first_name,
         last_name: formData.last_name,
@@ -239,30 +249,31 @@ export default function EditLeadDialog({
         custom_fields: lead.custom_fields || {},
       });
 
-      const payload: any = {
-        first_name: formData.first_name,
-        last_name: formData.last_name,
-        email: formData.email,
-        alt_email: formData.alt_email,
-        phone_number: formData.phone_number,
-        mobile_number: formData.mobile_number,
-        company_name: formData.company_name,
-        company_website: formData.company_website,
-        company_linkedin_url: formData.company_linkedin_url,
-        linkedin_url: formData.linkedin_url,
-        job_title: formData.job_title,
-        department: formData.department,
-        industry_id: formData.industry_id || null,
-        company_size: formData.company_size || null,
-        location: formData.location,
-        timezone: formData.timezone,
-        status_id: formData.status_id,
-        source_id: formData.source_id || null,
-        trigger: formData.trigger,
-        notes: formData.notes,
-        lead_score: totalScore,
-        custom_fields: customFields,
-      };
+      // Only include fields in the payload that the user has edit access to.
+      // The server also validates this, but we avoid sending garbage.
+      const payload: Record<string, unknown> = {};
+      if (canEdit('first_name')) payload.first_name = formData.first_name;
+      if (canEdit('last_name')) payload.last_name = formData.last_name;
+      if (canEdit('email')) payload.email = formData.email;
+      if (canEdit('alt_email')) payload.alt_email = formData.alt_email;
+      if (canEdit('phone')) payload.phone_number = formData.phone_number;
+      if (canEdit('mobile')) payload.mobile_number = formData.mobile_number;
+      if (canEdit('company')) payload.company_name = formData.company_name;
+      if (canEdit('company_website')) payload.company_website = formData.company_website;
+      if (canEdit('company_linkedin')) payload.company_linkedin_url = formData.company_linkedin_url;
+      if (canEdit('linkedin')) payload.linkedin_url = formData.linkedin_url;
+      if (canEdit('job_title')) payload.job_title = formData.job_title;
+      if (canEdit('department')) payload.department = formData.department;
+      if (canEdit('industry')) payload.industry_id = formData.industry_id || null;
+      if (canEdit('company_size')) payload.company_size = formData.company_size || null;
+      if (canEdit('location')) payload.location = formData.location;
+      if (canEdit('timezone')) payload.timezone = formData.timezone;
+      if (canEdit('status')) payload.status_id = formData.status_id;
+      if (canEdit('source')) payload.source_id = formData.source_id || null;
+      if (canEdit('trigger')) payload.trigger = formData.trigger;
+      if (canEdit('notes')) payload.notes = formData.notes;
+      if (canEdit('score')) payload.lead_score = totalScore;
+      payload.custom_fields = customFields;
 
       await mutation.mutateAsync(payload);
     } finally {
@@ -292,7 +303,7 @@ export default function EditLeadDialog({
             className="flex flex-1 flex-col overflow-hidden"
           >
             <div className="flex-1 space-y-8 overflow-y-auto p-6">
-              {/* Contact Information Section */}
+              {/* ── Contact Information ── */}
               <div className="space-y-4">
                 <h3 className="primary-heading text-leadgaze-dark dark:text-white">
                   Contact Information
@@ -300,115 +311,99 @@ export default function EditLeadDialog({
                 <Separator className="bg-gray-200 dark:bg-slate-800" />
 
                 <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label
-                      htmlFor="first_name">
-                      First Name <span className="text-red-500">*</span>
-                    </Label>
-                    <Input
-                      id="first_name"
-                      placeholder="John"
-                      value={formData.first_name}
-                      onChange={(e) =>
-                        handleInputChange('first_name', e.target.value)
-                      }
-                      disabled={isLoading}
-                      className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label
-                      htmlFor="last_name">
-                      Last Name (Optional)
-                    </Label>
-                    <Input
-                      id="last_name"
-                      placeholder="Doe"
-                      value={formData.last_name}
-                      onChange={(e) =>
-                        handleInputChange('last_name', e.target.value)
-                      }
-                      disabled={isLoading}
-                      className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
-                    />
-                  </div>
+                  <FieldGuard fieldKey="first_name" canEdit={canEdit}>
+                    <div>
+                      <Label htmlFor="first_name">
+                        First Name <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        id="first_name"
+                        placeholder="John"
+                        value={formData.first_name}
+                        onChange={(e) => handleInputChange('first_name', e.target.value)}
+                        disabled={isLoading}
+                        className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
+                        required
+                      />
+                    </div>
+                  </FieldGuard>
+                  <FieldGuard fieldKey="last_name" canEdit={canEdit}>
+                    <div>
+                      <Label htmlFor="last_name">Last Name (Optional)</Label>
+                      <Input
+                        id="last_name"
+                        placeholder="Doe"
+                        value={formData.last_name}
+                        onChange={(e) => handleInputChange('last_name', e.target.value)}
+                        disabled={isLoading}
+                        className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
+                      />
+                    </div>
+                  </FieldGuard>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label
-                      htmlFor="email">
-                      Email (Optional)
-                    </Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="john@example.com"
-                      value={formData.email}
-                      onChange={(e) =>
-                        handleInputChange('email', e.target.value)
-                      }
-                      disabled={isLoading}
-                      className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
-                    />
-                  </div>
-                  <div>
-                    <Label
-                      htmlFor="alt_email">
-                      Alternative Email (Optional)
-                    </Label>
-                    <Input
-                      id="alt_email"
-                      type="email"
-                      placeholder="john.doe@work.com"
-                      value={formData.alt_email}
-                      onChange={(e) =>
-                        handleInputChange('alt_email', e.target.value)
-                      }
-                      disabled={isLoading}
-                      className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
-                    />
-                  </div>
+                  <FieldGuard fieldKey="email" canEdit={canEdit}>
+                    <div>
+                      <Label htmlFor="email">Email (Optional)</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        placeholder="john@example.com"
+                        value={formData.email}
+                        onChange={(e) => handleInputChange('email', e.target.value)}
+                        disabled={isLoading}
+                        className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
+                      />
+                    </div>
+                  </FieldGuard>
+                  <FieldGuard fieldKey="alt_email" canEdit={canEdit}>
+                    <div>
+                      <Label htmlFor="alt_email">Alternative Email (Optional)</Label>
+                      <Input
+                        id="alt_email"
+                        type="email"
+                        placeholder="john.doe@work.com"
+                        value={formData.alt_email}
+                        onChange={(e) => handleInputChange('alt_email', e.target.value)}
+                        disabled={isLoading}
+                        className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
+                      />
+                    </div>
+                  </FieldGuard>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label
-                      htmlFor="phone_number">
-                      Phone (Optional)
-                    </Label>
-                    <Input
-                      id="phone_number"
-                      placeholder="+1 (555) 123-4567"
-                      value={formData.phone_number}
-                      onChange={(e) =>
-                        handleInputChange('phone_number', e.target.value)
-                      }
-                      disabled={isLoading}
-                      className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
-                    />
-                  </div>
-                  <div>
-                    <Label
-                      htmlFor="mobile_number">
-                      Mobile (Optional)
-                    </Label>
-                    <Input
-                      id="mobile_number"
-                      placeholder="+1 (555) 987-6543"
-                      value={formData.mobile_number}
-                      onChange={(e) =>
-                        handleInputChange('mobile_number', e.target.value)
-                      }
-                      disabled={isLoading}
-                      className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
-                    />
-                  </div>
+                  <FieldGuard fieldKey="phone" canEdit={canEdit}>
+                    <div>
+                      <Label htmlFor="phone_number">Phone (Optional)</Label>
+                      <Input
+                        id="phone_number"
+                        placeholder="+1 (555) 123-4567"
+                        value={formData.phone_number}
+                        onChange={(e) => handleInputChange('phone_number', e.target.value)}
+                        disabled={isLoading}
+                        className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
+                      />
+                    </div>
+                  </FieldGuard>
+                  <FieldGuard fieldKey="mobile" canEdit={canEdit}>
+                    <div>
+                      <Label htmlFor="mobile_number">Mobile (Optional)</Label>
+                      <Input
+                        id="mobile_number"
+                        placeholder="+1 (555) 987-6543"
+                        value={formData.mobile_number}
+                        onChange={(e) => handleInputChange('mobile_number', e.target.value)}
+                        disabled={isLoading}
+                        className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
+                      />
+                    </div>
+                  </FieldGuard>
                 </div>
               </div>
 
-              {/* Company Information Section */}
+              {/* ── Company Information ── */}
               <div className="space-y-4">
                 <h3 className="primary-heading text-leadgaze-dark dark:text-white">
                   Company Information
@@ -416,142 +411,160 @@ export default function EditLeadDialog({
                 <Separator className="bg-gray-200 dark:bg-slate-800" />
 
                 <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label
-                      htmlFor="company_name">
-                      Company Name (Optional)
-                    </Label>
-                    <Input
-                      id="company_name"
-                      placeholder="Acme Inc."
-                      value={formData.company_name}
-                      onChange={(e) =>
-                        handleInputChange('company_name', e.target.value)
-                      }
-                      disabled={isLoading}
-                      className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
-                    />
-                  </div>
-                  <div>
-                    <Label
-                      htmlFor="job_title">
-                      Job Title (Optional)
-                    </Label>
-                    <Input
-                      id="job_title"
-                      placeholder="Sales Manager"
-                      value={formData.job_title}
-                      onChange={(e) =>
-                        handleInputChange('job_title', e.target.value)
-                      }
-                      disabled={isLoading}
-                      className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label
-                      htmlFor="industry_id">
-                      Industry (Optional)
-                    </Label>
-                    <div className="mt-2">
-                      <IndustrySelect
-                        value={formData.industry_id}
-                        onValueChange={(value) =>
-                          handleInputChange('industry_id', value)
-                        }
+                  <FieldGuard fieldKey="company" canEdit={canEdit}>
+                    <div>
+                      <Label htmlFor="company_name">Company Name (Optional)</Label>
+                      <Input
+                        id="company_name"
+                        placeholder="Acme Inc."
+                        value={formData.company_name}
+                        onChange={(e) => handleInputChange('company_name', e.target.value)}
                         disabled={isLoading}
-                        className="border-gray-300 bg-white text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                        className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
                       />
                     </div>
-                  </div>
-                  <div>
-                    <Label
-                      htmlFor="company_size">
-                      Company Size (Optional)
-                    </Label>
-                    <Select
-                      value={formData.company_size}
-                      onValueChange={(value) =>
-                        handleInputChange('company_size', value)
-                      }
-                      disabled={isLoading}
-                    >
-                      <SelectTrigger className="mt-2 border-gray-300 bg-white text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white">
-                        <SelectValue placeholder="Select company size" />
-                      </SelectTrigger>
-                      <SelectContent className="z-50 border-gray-300 bg-white dark:border-slate-700 dark:bg-slate-900">
-                        {COMPANY_SIZES.map((size) => (
-                          <SelectItem key={size.value} value={size.value}>
-                            {size.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  </FieldGuard>
+                  <FieldGuard fieldKey="job_title" canEdit={canEdit}>
+                    <div>
+                      <Label htmlFor="job_title">Job Title (Optional)</Label>
+                      <Input
+                        id="job_title"
+                        placeholder="Sales Manager"
+                        value={formData.job_title}
+                        onChange={(e) => handleInputChange('job_title', e.target.value)}
+                        disabled={isLoading}
+                        className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
+                      />
+                    </div>
+                  </FieldGuard>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label
-                      htmlFor="company_website">
-                      Website (Optional)
-                    </Label>
-                    <Input
-                      id="company_website"
-                      placeholder="https://acme.com"
-                      value={formData.company_website}
-                      onChange={(e) =>
-                        handleInputChange('company_website', e.target.value)
-                      }
-                      disabled={isLoading}
-                      className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
-                    />
-                  </div>
-                  <div>
-                    <Label
-                      htmlFor="company_linkedin_url">
-                      Company LinkedIn (Optional)
-                    </Label>
-                    <Input
-                      id="company_linkedin_url"
-                      placeholder="https://linkedin.com/company/..."
-                      value={formData.company_linkedin_url}
-                      onChange={(e) =>
-                        handleInputChange(
-                          'company_linkedin_url',
-                          e.target.value,
-                        )
-                      }
-                      disabled={isLoading}
-                      className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
-                    />
-                  </div>
+                  <FieldGuard fieldKey="industry" canEdit={canEdit}>
+                    <div>
+                      <Label htmlFor="industry_id">Industry (Optional)</Label>
+                      <div className="mt-2">
+                        <IndustrySelect
+                          value={formData.industry_id}
+                          onValueChange={(value) => handleInputChange('industry_id', value)}
+                          disabled={isLoading}
+                          className="border-gray-300 bg-white text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                        />
+                      </div>
+                    </div>
+                  </FieldGuard>
+                  <FieldGuard fieldKey="company_size" canEdit={canEdit}>
+                    <div>
+                      <Label htmlFor="company_size">Company Size (Optional)</Label>
+                      <Select
+                        value={formData.company_size}
+                        onValueChange={(value) => handleInputChange('company_size', value)}
+                        disabled={isLoading}
+                      >
+                        <SelectTrigger className="mt-2 border-gray-300 bg-white text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+                          <SelectValue placeholder="Select company size" />
+                        </SelectTrigger>
+                        <SelectContent className="z-50 border-gray-300 bg-white dark:border-slate-700 dark:bg-slate-900">
+                          {COMPANY_SIZES.map((size) => (
+                            <SelectItem key={size.value} value={size.value}>
+                              {size.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </FieldGuard>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label
-                      htmlFor="linkedin_url">
-                      Personal LinkedIn (Optional)
-                    </Label>
-                    <Input
-                      id="linkedin_url"
-                      placeholder="https://linkedin.com/in/..."
-                      value={formData.linkedin_url}
-                      onChange={(e) =>
-                        handleInputChange('linkedin_url', e.target.value)
-                      }
-                      disabled={isLoading}
-                      className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
-                    />
-                  </div>
+                  <FieldGuard fieldKey="company_website" canEdit={canEdit}>
+                    <div>
+                      <Label htmlFor="company_website">Website (Optional)</Label>
+                      <Input
+                        id="company_website"
+                        placeholder="https://acme.com"
+                        value={formData.company_website}
+                        onChange={(e) => handleInputChange('company_website', e.target.value)}
+                        disabled={isLoading}
+                        className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
+                      />
+                    </div>
+                  </FieldGuard>
+                  <FieldGuard fieldKey="company_linkedin" canEdit={canEdit}>
+                    <div>
+                      <Label htmlFor="company_linkedin_url">Company LinkedIn (Optional)</Label>
+                      <Input
+                        id="company_linkedin_url"
+                        placeholder="https://linkedin.com/company/..."
+                        value={formData.company_linkedin_url}
+                        onChange={(e) => handleInputChange('company_linkedin_url', e.target.value)}
+                        disabled={isLoading}
+                        className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
+                      />
+                    </div>
+                  </FieldGuard>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <FieldGuard fieldKey="department" canEdit={canEdit}>
+                    <div>
+                      <Label htmlFor="department">Department (Optional)</Label>
+                      <Input
+                        id="department"
+                        placeholder="Engineering"
+                        value={formData.department}
+                        onChange={(e) => handleInputChange('department', e.target.value)}
+                        disabled={isLoading}
+                        className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
+                      />
+                    </div>
+                  </FieldGuard>
+                  <FieldGuard fieldKey="linkedin" canEdit={canEdit}>
+                    <div>
+                      <Label htmlFor="linkedin_url">Personal LinkedIn (Optional)</Label>
+                      <Input
+                        id="linkedin_url"
+                        placeholder="https://linkedin.com/in/..."
+                        value={formData.linkedin_url}
+                        onChange={(e) => handleInputChange('linkedin_url', e.target.value)}
+                        disabled={isLoading}
+                        className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
+                      />
+                    </div>
+                  </FieldGuard>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <FieldGuard fieldKey="location" canEdit={canEdit}>
+                    <div>
+                      <Label htmlFor="location">Location (Optional)</Label>
+                      <Input
+                        id="location"
+                        placeholder="New York, USA"
+                        value={formData.location}
+                        onChange={(e) => handleInputChange('location', e.target.value)}
+                        disabled={isLoading}
+                        className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
+                      />
+                    </div>
+                  </FieldGuard>
+                  <FieldGuard fieldKey="timezone" canEdit={canEdit}>
+                    <div>
+                      <Label htmlFor="timezone">Timezone (Optional)</Label>
+                      <Input
+                        id="timezone"
+                        placeholder="America/New_York"
+                        value={formData.timezone}
+                        onChange={(e) => handleInputChange('timezone', e.target.value)}
+                        disabled={isLoading}
+                        className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
+                      />
+                    </div>
+                  </FieldGuard>
                 </div>
               </div>
 
-              {/* Lead Information Section */}
+              {/* ── Lead Information ── */}
               <div className="space-y-4">
                 <h3 className="primary-heading text-leadgaze-dark dark:text-white">
                   Lead Information
@@ -559,9 +572,9 @@ export default function EditLeadDialog({
                 <Separator className="bg-gray-200 dark:bg-slate-800" />
 
                 <div className="grid grid-cols-2 gap-4">
+                  {/* Status is always shown — required field */}
                   <div>
-                    <Label
-                      htmlFor="status_id">
+                    <Label htmlFor="status_id">
                       Status <span className="text-red-500">*</span>
                     </Label>
                     <div className="mt-2">
@@ -569,110 +582,95 @@ export default function EditLeadDialog({
                         moduleKey="leads"
                         workspaceId={workspace?.id ?? ''}
                         value={formData.status_id}
-                        onValueChange={(value) =>
-                          handleInputChange('status_id', value)
-                        }
-                        disabled={isLoading}
+                        onValueChange={(value) => handleInputChange('status_id', value)}
+                        disabled={isLoading || !canEdit('status')}
                         triggerClassName="border-gray-300 bg-white text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
                       />
                     </div>
                   </div>
-                  <div>
-                    <Label
-                      htmlFor="source_id">
-                      Lead Source (Optional)
-                    </Label>
-                    <div className="mt-2">
-                      <LeadSourceSelect
-                        value={formData.source_id}
-                        onValueChange={(value) =>
-                          handleInputChange('source_id', value)
-                        }
-                        disabled={isLoading}
-                        placeholder="Select source"
-                        className="border-gray-300 bg-white text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
-                      />
+                  <FieldGuard fieldKey="source" canEdit={canEdit}>
+                    <div>
+                      <Label htmlFor="source_id">Lead Source (Optional)</Label>
+                      <div className="mt-2">
+                        <LeadSourceSelect
+                          value={formData.source_id}
+                          onValueChange={(value) => handleInputChange('source_id', value)}
+                          disabled={isLoading}
+                          placeholder="Select source"
+                          className="border-gray-300 bg-white text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                        />
+                      </div>
                     </div>
-                  </div>
+                  </FieldGuard>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label
-                      htmlFor="trigger">
-                      Trigger (Optional)
-                    </Label>
-                    <Input
-                      id="trigger"
-                      placeholder="e.g., Inbound inquiry"
-                      value={formData.trigger}
-                      onChange={(e) =>
-                        handleInputChange('trigger', e.target.value)
-                      }
-                      disabled={isLoading}
-                      className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
-                    />
-                  </div>
-                  <div>
-                    <Label
-                      htmlFor="lead_score">
-                      Lead Score (0-100)
-                    </Label>
-                    <Input
-                      id="lead_score"
-                      type="number"
-                      min="0"
-                      max="100"
-                      placeholder="75"
-                      value={formData.lead_score}
-                      onChange={(e) =>
-                        handleInputChange(
-                          'lead_score',
-                          parseInt(e.target.value) || 0,
-                        )
-                      }
-                      disabled={isLoading}
-                      className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
-                    />
-                  </div>
+                  <FieldGuard fieldKey="trigger" canEdit={canEdit}>
+                    <div>
+                      <Label htmlFor="trigger">Trigger (Optional)</Label>
+                      <Input
+                        id="trigger"
+                        placeholder="e.g., Inbound inquiry"
+                        value={formData.trigger}
+                        onChange={(e) => handleInputChange('trigger', e.target.value)}
+                        disabled={isLoading}
+                        className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
+                      />
+                    </div>
+                  </FieldGuard>
+                  <FieldGuard fieldKey="score" canEdit={canEdit}>
+                    <div>
+                      <Label htmlFor="lead_score">Lead Score (0-100)</Label>
+                      <Input
+                        id="lead_score"
+                        type="number"
+                        min="0"
+                        max="100"
+                        placeholder="75"
+                        value={formData.lead_score}
+                        onChange={(e) =>
+                          handleInputChange('lead_score', parseInt(e.target.value) || 0)
+                        }
+                        disabled={isLoading}
+                        className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
+                      />
+                    </div>
+                  </FieldGuard>
                 </div>
               </div>
 
-              {/* Additional Information Section */}
-              <LeadFormField formKey="notes" canEdit={canEdit}>
-              <div className="space-y-4">
-                <h3 className="primary-heading text-leadgaze-dark dark:text-white">
-                  Additional Information
-                </h3>
-                <Separator className="bg-gray-200 dark:bg-slate-800" />
+              {/* ── Additional Information ── */}
+              <FieldGuard fieldKey="notes" canEdit={canEdit}>
+                <div className="space-y-4">
+                  <h3 className="primary-heading text-leadgaze-dark dark:text-white">
+                    Additional Information
+                  </h3>
+                  <Separator className="bg-gray-200 dark:bg-slate-800" />
 
-                <div>
-                  <Label
-                    htmlFor="notes"
-                    
-                  >
-                    Notes (Optional)
-                  </Label>
-                  <Textarea
-                    id="notes"
-                    placeholder="Add any additional notes about this lead..."
-                    value={formData.notes}
-                    onChange={(e) => handleInputChange('notes', e.target.value)}
-                    disabled={isLoading}
-                    className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
-                    rows={4}
-                  />
+                  <div>
+                    <Label htmlFor="notes">Notes (Optional)</Label>
+                    <Textarea
+                      id="notes"
+                      placeholder="Add any additional notes about this lead..."
+                      value={formData.notes}
+                      onChange={(e) => handleInputChange('notes', e.target.value)}
+                      disabled={isLoading}
+                      className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
+                      rows={4}
+                    />
+                  </div>
                 </div>
-              </div>
-              </LeadFormField>
+              </FieldGuard>
 
+              {/* ── Custom Fields ── Only fields user can view/edit are shown */}
               <LeadCustomFieldInputs
-                fields={editableCustomFields}
+                fields={visibleCustomFields}
                 values={customFields}
                 onChange={(key, value) =>
                   setCustomFields((prev) => ({ ...prev, [key]: value }))
                 }
                 canEdit={canEdit}
+                canView={canView}
               />
             </div>
 
