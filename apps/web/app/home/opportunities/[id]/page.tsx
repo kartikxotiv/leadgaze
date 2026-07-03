@@ -34,7 +34,13 @@ import { toast } from 'sonner';
 
 import { CoreEmailComposeDialog } from '@kit/core/pages';
 import { getCoreEmailAccountsService } from '@kit/core/services';
-import { useLocalization } from '~/lib/localization/localization-provider';
+import {
+  convertFromUSD,
+  findLatestRateToUsd,
+  formatWorkspaceCurrency,
+} from '@kit/shared/currency';
+import type { ExchangeRateRecord } from '@kit/shared/currency';
+import { useSupabase } from '@kit/supabase/hooks/use-supabase';
 import { useUser } from '@kit/supabase/hooks/use-user';
 import {
   Accordion,
@@ -59,6 +65,9 @@ import {
 } from '@kit/ui/tooltip';
 import { cn } from '@kit/ui/utils';
 
+import { useDynamicColumns } from '~/lib/hooks/use-dynamic-columns';
+import { useFieldPermissions } from '~/lib/hooks/use-field-permissions';
+import { useLocalization } from '~/lib/localization/localization-provider';
 import {
   useCanAccessData,
   usePermissionDetail,
@@ -96,7 +105,7 @@ function OpportunityDetailsSkeleton() {
   return (
     <ModuleGuard module="opportunities">
       <div className="flex h-full flex-col">
-        <div className="px-6 pt-4 pb-2">
+        <div className="px-6 pb-2 pt-4">
           <Skeleton className="h-8 w-20 rounded-md" />
         </div>
         <PageBody>
@@ -166,6 +175,7 @@ export default function OpportunityDetailsPage() {
   const queryClient = useQueryClient();
   const id = params?.id as string;
   const { formatDate, formatCurrency } = useLocalization();
+  const supabase = useSupabase();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isLogCallDialogOpen, setIsLogCallDialogOpen] = useState(false);
@@ -192,6 +202,73 @@ export default function OpportunityDetailsPage() {
 
   const { currentWorkspace, canAccess: rbacCanAccess } = useRBAC();
   const canManageEmail = rbacCanAccess('emails', 'manage_email');
+  const { data: user } = useUser();
+  const { canView } = useFieldPermissions({
+    entityType: 'opportunities',
+    workspaceId: currentWorkspace?.id,
+    enabled: !!currentWorkspace?.id,
+  });
+
+  const { fields = [] } = useDynamicColumns({
+    entityType: 'opportunities',
+    workspaceId: currentWorkspace?.id,
+    userId: user?.id,
+    enabled: !!currentWorkspace?.id,
+  });
+
+  // Fetch workspace currencies for currency conversion
+  const { data: currenciesData } = useQuery({
+    queryKey: ['workspace-currencies', currentWorkspace?.id],
+    queryFn: async () => {
+      if (!currentWorkspace?.id) return [];
+      const { data, error } = await supabase
+        .schema('core')
+        .from('workspace_currencies')
+        .select('currency_code, is_default')
+        .eq('workspace_id', currentWorkspace.id)
+        .eq('is_active', true)
+        .order('is_default', { ascending: false })
+        .order('currency_code', { ascending: true });
+      if (error) {
+        console.error('Failed to fetch workspace currencies:', error);
+        return [];
+      }
+      return data;
+    },
+    enabled: !!currentWorkspace?.id,
+  });
+
+  // Fetch exchange rates for currency conversion
+  const { data: exchangeRates = [] } = useQuery({
+    queryKey: ['exchange-rates'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .schema('core')
+        .from('currency_exchange_rates')
+        .select('*')
+        .eq('base_currency', 'USD');
+      if (error) {
+        console.error('Failed to fetch exchange rates:', error);
+        return [];
+      }
+      return data;
+    },
+    staleTime: 24 * 60 * 60 * 1000,
+  });
+
+  const customFieldsToShow = useMemo(() => {
+    if (!opportunity) return [];
+    const oppCustom =
+      (opportunity.custom_fields as Record<string, unknown>) || {};
+    return fields.filter(
+      (f) =>
+        !f.is_system &&
+        canView(f.field_key) &&
+        oppCustom[f.field_key] !== undefined &&
+        oppCustom[f.field_key] !== null &&
+        oppCustom[f.field_key] !== '',
+    );
+  }, [fields, canView, opportunity]);
 
   // Page-level assign modal (works even when accordion is collapsed)
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
@@ -266,28 +343,27 @@ export default function OpportunityDetailsPage() {
         return [
           ...(contact.email
             ? [
-              {
-                email: contact.email,
-                name,
-                label: 'Primary Email',
-              },
-            ]
+                {
+                  email: contact.email,
+                  name,
+                  label: 'Primary Email',
+                },
+              ]
             : []),
           ...(contact.alt_email
             ? [
-              {
-                email: contact.alt_email,
-                name,
-                label: 'Alt Email',
-              },
-            ]
+                {
+                  email: contact.alt_email,
+                  name,
+                  label: 'Alt Email',
+                },
+              ]
             : []),
         ];
       }),
     [accountContacts],
   );
 
-  const { data: user } = useUser();
   const editPermission = usePermissionDetail('opportunities', 'edit');
   const canEdit = useCanAccessData(
     editPermission,
@@ -345,7 +421,7 @@ export default function OpportunityDetailsPage() {
 
   return (
     <ModuleGuard module="opportunities">
-      <div className="flex flex-wrap items-start gap-2 pt-4 pb-2 sm:flex-nowrap sm:items-center sm:justify-between">
+      <div className="flex flex-wrap items-start gap-2 pb-2 pt-4 sm:flex-nowrap sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
           <Button
             variant="ghost"
@@ -354,7 +430,7 @@ export default function OpportunityDetailsPage() {
             className="border-leadgaze-border border p-0"
           >
             <Link href="/home/sales/opportunities">
-              <ArrowLeft className="mr-2 ml-2 h-4 w-4" />
+              <ArrowLeft className="ml-2 mr-2 h-4 w-4" />
             </Link>
           </Button>
           <div className="flex flex-col">
@@ -456,7 +532,7 @@ export default function OpportunityDetailsPage() {
                             className={cn(
                               'hover:bg-accent flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors',
                               opportunity.stage_id === stage.id &&
-                              'bg-accent font-medium',
+                                'bg-accent font-medium',
                             )}
                             onClick={async () => {
                               try {
@@ -642,7 +718,9 @@ export default function OpportunityDetailsPage() {
                   <div className="flex items-center gap-1.5 text-xs text-gray-500">
                     <Clock className="h-3 w-3" />
                     <span>
-                      Created by {opportunity.created_by_account?.name || 'Unknown'} on {formatDate(opportunity.created_at)}
+                      Created by{' '}
+                      {opportunity.created_by_account?.name || 'Unknown'} on{' '}
+                      {formatDate(opportunity.created_at)}
                     </span>
                   </div>
                   {opportunity.updated_by && (
@@ -651,7 +729,9 @@ export default function OpportunityDetailsPage() {
                       <div className="flex items-center gap-1.5 text-xs text-gray-500">
                         <Clock className="h-3 w-3" />
                         <span>
-                          Updated by {opportunity.updated_by_account?.name || 'Unknown'} on {formatDate(opportunity.updated_at)}
+                          Updated by{' '}
+                          {opportunity.updated_by_account?.name || 'Unknown'} on{' '}
+                          {formatDate(opportunity.updated_at)}
                         </span>
                       </div>
                     </>
@@ -789,9 +869,12 @@ export default function OpportunityDetailsPage() {
 
               <TabsContent value="activity">
                 <CardWidgetContainer
-                    title="Activity"
-                    hideHeaderBorder={true}
-                    icon={<Clock className="text-leadgaze-dark h-5 w-5 dark:text-white" />}>
+                  title="Activity"
+                  hideHeaderBorder={true}
+                  icon={
+                    <Clock className="text-leadgaze-dark h-5 w-5 dark:text-white" />
+                  }
+                >
                   <CardContent className="px-6 py-3">
                     <div className="space-y-2">
                       <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3 dark:bg-slate-900">
@@ -891,63 +974,211 @@ export default function OpportunityDetailsPage() {
                 </AccordionTrigger>
                 <AccordionContent className="px-4 pb-4">
                   <DetailInfoList>
-                    <DetailInfoRow
-                      icon={<Wallet className="h-5 w-5" />}
-                      label="Amount"
-                      value={formatCurrency(opportunity.amount || 0, opportunity.currency || 'USD')}
-                    />
-                    <DetailInfoRow
-                      icon={<Target className="h-5 w-5" />}
-                      label="Revenue"
-                      value={formatCurrency(opportunity.expected_revenue || 0, opportunity.currency || 'USD')}
-                    />
-                    <DetailInfoRow
-                      icon={<Calendar className="h-5 w-5" />}
-                      label="Close Date"
-                      value={
-                        opportunity.expected_close_date
-                          ? formatDate(opportunity.expected_close_date)
-                          : '-'
-                      }
-                    />
-                    <DetailInfoRow
-                      icon={<CheckCircle className="h-5 w-5" />}
-                      label="Probability"
-                      value={`${opportunity.probability}%`}
-                    />
-                    <DetailInfoRow
-                      icon={<Flag className="h-5 w-5" />}
-                      label="Priority"
-                      value={
-                        opportunity.priority
-                          ? opportunity.priority.charAt(0).toUpperCase() +
-                          opportunity.priority.slice(1)
-                          : '-'
-                      }
-                    />
+                    {canView('amount') && (
+                      <DetailInfoRow
+                        icon={<Wallet className="h-5 w-5" />}
+                        label="Amount"
+                        value={(() => {
+                          // Get workspace default currency
+                          const workspaceCurrency =
+                            currenciesData?.find((c) => c.is_default)
+                              ?.currency_code || 'USD';
 
-                    <DetailInfoRow
-                      icon={<Tag className="h-5 w-5" />}
-                      label="Lead Source"
-                      value={opportunity.lead_source || '-'}
-                    />
+                          // If opportunity has base_amount_usd, use that with workspace currency
+                          if (
+                            opportunity.base_amount_usd !== null &&
+                            opportunity.base_amount_usd !== undefined
+                          ) {
+                            const rate =
+                              findLatestRateToUsd(
+                                exchangeRates as ExchangeRateRecord[],
+                                workspaceCurrency,
+                              )?.exchange_rate || 1;
+                            const convertedAmount = convertFromUSD(
+                              opportunity.base_amount_usd,
+                              rate,
+                            );
+                            return formatWorkspaceCurrency(
+                              convertedAmount,
+                              workspaceCurrency,
+                            );
+                          }
 
-                    <DetailInfoRow
-                      icon={<FileText className="h-5 w-5" />}
-                      label="Description"
-                      value={opportunity.description || '-'}
-                    />
+                          // Fallback: use original amount with original currency (for backwards compatibility)
+                          if (
+                            opportunity.amount_original !== null &&
+                            opportunity.amount_original !== undefined
+                          ) {
+                            const currency =
+                              opportunity.currency_original ||
+                              opportunity.currency ||
+                              'USD';
+                            return formatWorkspaceCurrency(
+                              opportunity.amount_original,
+                              currency,
+                            );
+                          }
 
+                          // Last resort: use stored amount
+                          return formatWorkspaceCurrency(
+                            opportunity.amount || 0,
+                            opportunity.currency || 'USD',
+                          );
+                        })()}
+                      />
+                    )}
+                    {canView('amount') &&
+                      opportunity.amount_original &&
+                      opportunity.amount_original !==
+                        (opportunity.base_amount_usd || 0) && (
+                        <DetailInfoRow
+                          icon={<Wallet className="h-5 w-5" />}
+                          label="Original Amount"
+                          value={formatWorkspaceCurrency(
+                            opportunity.amount_original,
+                            opportunity.currency_original || 'USD',
+                          )}
+                        />
+                      )}
+                    {canView('amount') && opportunity.exchange_rate_to_usd && (
+                      <>
+                        <DetailInfoRow
+                          icon={<Wallet className="h-5 w-5" />}
+                          label="Exchange Rate"
+                          value={`1 USD = ${opportunity.exchange_rate_to_usd} ${opportunity.currency_original || 'USD'}`}
+                        />
+                        <DetailInfoRow
+                          icon={<Calendar className="h-5 w-5" />}
+                          label="Rate Date"
+                          value={
+                            opportunity.exchange_rate_date
+                              ? formatDate(opportunity.exchange_rate_date)
+                              : '-'
+                          }
+                        />
+                        {opportunity.exchange_rate_source && (
+                          <DetailInfoRow
+                            icon={<Tag className="h-5 w-5" />}
+                            label="Rate Source"
+                            value={opportunity.exchange_rate_source}
+                          />
+                        )}
+                      </>
+                    )}
+                    {canView('amount') && (
+                      <DetailInfoRow
+                        icon={<Target className="h-5 w-5" />}
+                        label="Revenue"
+                        value={(() => {
+                          const workspaceCurrency =
+                            currenciesData?.find((c) => c.is_default)
+                              ?.currency_code || 'USD';
+                          const expectedRevenue =
+                            opportunity.expected_revenue || 0;
+                          const probability = opportunity.probability || 0;
+                          const calculatedRevenue =
+                            (expectedRevenue * probability) / 100;
+                          return formatWorkspaceCurrency(
+                            calculatedRevenue,
+                            workspaceCurrency,
+                          );
+                        })()}
+                      />
+                    )}
+                    {canView('expected_close_date') && (
+                      <DetailInfoRow
+                        icon={<Calendar className="h-5 w-5" />}
+                        label="Close Date"
+                        value={
+                          opportunity.expected_close_date
+                            ? formatDate(opportunity.expected_close_date)
+                            : '-'
+                        }
+                      />
+                    )}
+                    {canView('probability') && (
+                      <DetailInfoRow
+                        icon={<CheckCircle className="h-5 w-5" />}
+                        label="Probability"
+                        value={`${opportunity.probability}%`}
+                      />
+                    )}
+                    {canView('priority') && (
+                      <DetailInfoRow
+                        icon={<Flag className="h-5 w-5" />}
+                        label="Priority"
+                        value={
+                          opportunity.priority
+                            ? opportunity.priority.charAt(0).toUpperCase() +
+                              opportunity.priority.slice(1)
+                            : '-'
+                        }
+                      />
+                    )}
 
-                    <DetailInfoRow
-                      icon={<Target className="h-5 w-5" />}
-                      label="Competitor"
-                      value={opportunity.competitor || '-'}
-                    />
+                    {canView('lead_source') && (
+                      <DetailInfoRow
+                        icon={<Tag className="h-5 w-5" />}
+                        label="Lead Source"
+                        value={opportunity.lead_source || '-'}
+                      />
+                    )}
 
+                    {canView('description') && (
+                      <DetailInfoRow
+                        icon={<FileText className="h-5 w-5" />}
+                        label="Description"
+                        value={opportunity.description || '-'}
+                      />
+                    )}
+
+                    {canView('competitor') && (
+                      <DetailInfoRow
+                        icon={<Target className="h-5 w-5" />}
+                        label="Competitor"
+                        value={opportunity.competitor || '-'}
+                      />
+                    )}
                   </DetailInfoList>
                 </AccordionContent>
               </AccordionItem>
+
+              {/* Additional Data (Custom Fields) */}
+              {customFieldsToShow.length > 0 && (
+                <AccordionItem
+                  value="additional"
+                  className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
+                >
+                  <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                    <span className="primary-heading text-leadgaze-dark flex items-center gap-2">
+                      <FileText className="text-leadgaze-dark h-4 w-4 dark:text-white" />
+                      Additional Data
+                    </span>
+                  </AccordionTrigger>
+                  <AccordionContent className="px-4 pb-4">
+                    <DetailInfoList>
+                      {customFieldsToShow.map((field) => {
+                        const val = (
+                          opportunity.custom_fields as Record<string, unknown>
+                        )?.[field.field_key];
+                        return (
+                          <DetailInfoRow
+                            key={field.id}
+                            label={field.field_label}
+                            value={
+                              val === true
+                                ? 'Yes'
+                                : val === false
+                                  ? 'No'
+                                  : String(val ?? '-')
+                            }
+                          />
+                        );
+                      })}
+                    </DetailInfoList>
+                  </AccordionContent>
+                </AccordionItem>
+              )}
 
               {/* Assigned Team Members */}
               {currentWorkspace?.id && (
@@ -966,7 +1197,7 @@ export default function OpportunityDetailsPage() {
                       </span>
                       <Button
                         size="sm"
-                        className="mr-3 ml-2 shrink-0 gap-2"
+                        className="ml-2 mr-3 shrink-0 gap-2"
                         onPointerDown={(e) => e.stopPropagation()}
                         onClick={(e) => {
                           e.stopPropagation();
@@ -1015,7 +1246,11 @@ export default function OpportunityDetailsPage() {
                     <DetailInfoRow
                       icon={<Calendar className="h-5 w-5" />}
                       label="Created At"
-                      value={opportunity.created_at ? formatDate(opportunity.created_at) : '-'}
+                      value={
+                        opportunity.created_at
+                          ? formatDate(opportunity.created_at)
+                          : '-'
+                      }
                     />
                     <DetailInfoRow
                       icon={<User className="h-5 w-5" />}
@@ -1029,7 +1264,11 @@ export default function OpportunityDetailsPage() {
                     <DetailInfoRow
                       icon={<Calendar className="h-5 w-5" />}
                       label="Updated"
-                      value={opportunity.updated_at ? formatDate(opportunity.updated_at) : '-'}
+                      value={
+                        opportunity.updated_at
+                          ? formatDate(opportunity.updated_at)
+                          : '-'
+                      }
                     />
                   </DetailInfoList>
                 </AccordionContent>

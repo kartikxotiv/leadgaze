@@ -7,8 +7,8 @@ import Link from 'next/link';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  ArrowLeft,
   Activity,
+  ArrowLeft,
   Building2,
   CalendarDays,
   Clock,
@@ -165,9 +165,15 @@ function eventLabel(eventType?: string | null) {
 export function ServiceCloudTicketDetailPage({
   workspaceId,
   ticketId,
+  canViewField,
+  canEditField,
 }: {
   workspaceId: string;
   ticketId: string;
+  /** Optional FLS: fields returning false are hidden from the detail view. */
+  canViewField?: (fieldKey: string) => boolean;
+  /** Optional FLS: fields returning false are shown as read-only in the sidebar. */
+  canEditField?: (fieldKey: string) => boolean;
 }) {
   const { formatDate, formatDateOnly, formatDateTime } = useLocalization();
   const queryClient = useQueryClient();
@@ -200,7 +206,9 @@ export function ServiceCloudTicketDetailPage({
     'ticket-properties',
   );
 
-  const { getHeaderProps, getResizeHandleProps } = useColumnResize('sc-ticket-details-time-entries');
+  const { getHeaderProps, getResizeHandleProps } = useColumnResize(
+    'sc-ticket-details-time-entries',
+  );
 
   const { data, isLoading } = useQuery({
     queryKey,
@@ -353,8 +361,22 @@ export function ServiceCloudTicketDetailPage({
   const timeEntries = data.timeEntries ?? [];
   const assignees = data.assignees ?? [];
   const lookups = data.lookups ?? {};
-  const statuses = lookups.statuses ?? [];
-  const priorities = lookups.priorities ?? [];
+  const allStatuses = lookups.statuses ?? [];
+  const allPriorities = lookups.priorities ?? [];
+
+  // Filter out private statuses/priorities that the current user cannot access
+  const statuses = allStatuses.filter((s: any) => {
+    if (s.access_type === 'public') return true;
+    if (s.access_type === 'private') return false;
+    return true;
+  });
+
+  const priorities = allPriorities.filter((p: any) => {
+    if (p.access_type === 'public') return true;
+    if (p.access_type === 'private') return false;
+    return true;
+  });
+
   const categories = lookups.categories ?? [];
   const members = lookups.members ?? [];
   const assignedAgent = members.find(
@@ -476,11 +498,13 @@ export function ServiceCloudTicketDetailPage({
                   </Badge>
                 ) : null}
                 <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs text-white/75">
-                  Created by {ticket.created_by_account?.name || 'Unknown'} on {formatDate(ticket.created_at)}
+                  Created by {ticket.created_by_account?.name || 'Unknown'} on{' '}
+                  {formatDate(ticket.created_at)}
                 </span>
                 {ticket.updated_by && (
                   <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs text-white/75">
-                    Updated by {ticket.updated_by_account?.name || 'Unknown'} on {formatDate(ticket.updated_at)}
+                    Updated by {ticket.updated_by_account?.name || 'Unknown'} on{' '}
+                    {formatDate(ticket.updated_at)}
                   </span>
                 )}
                 {ticket.priority?.resolution_due_minutes ? (
@@ -809,25 +833,61 @@ export function ServiceCloudTicketDetailPage({
                                   <Table>
                                     <TableHeader>
                                       <TableRow>
-                                        <TableHead className="relative w-[80px]" {...getHeaderProps('s_no')}>
+                                        <TableHead
+                                          className="relative w-[80px]"
+                                          {...getHeaderProps('s_no')}
+                                        >
                                           S. No.
-                                          <span className="col-resize-handle" {...getResizeHandleProps('s_no')} />
+                                          <span
+                                            className="col-resize-handle"
+                                            {...getResizeHandleProps('s_no')}
+                                          />
                                         </TableHead>
-                                        <TableHead className="relative max-w-[150px]" {...getHeaderProps('activities')}>
+                                        <TableHead
+                                          className="relative max-w-[150px]"
+                                          {...getHeaderProps('activities')}
+                                        >
                                           Activities
-                                          <span className="col-resize-handle" {...getResizeHandleProps('activities')} />
+                                          <span
+                                            className="col-resize-handle"
+                                            {...getResizeHandleProps(
+                                              'activities',
+                                            )}
+                                          />
                                         </TableHead>
-                                        <TableHead className="relative max-w-[200px]" {...getHeaderProps('description')}>
+                                        <TableHead
+                                          className="relative max-w-[200px]"
+                                          {...getHeaderProps('description')}
+                                        >
                                           Description
-                                          <span className="col-resize-handle" {...getResizeHandleProps('description')} />
+                                          <span
+                                            className="col-resize-handle"
+                                            {...getResizeHandleProps(
+                                              'description',
+                                            )}
+                                          />
                                         </TableHead>
-                                        <TableHead className="relative w-[150px]" {...getHeaderProps('author')}>
+                                        <TableHead
+                                          className="relative w-[150px]"
+                                          {...getHeaderProps('author')}
+                                        >
                                           Author
-                                          <span className="col-resize-handle" {...getResizeHandleProps('author')} />
+                                          <span
+                                            className="col-resize-handle"
+                                            {...getResizeHandleProps('author')}
+                                          />
                                         </TableHead>
-                                        <TableHead className="relative w-[180px]" {...getHeaderProps('date_time')}>
+                                        <TableHead
+                                          className="relative w-[180px]"
+                                          {...getHeaderProps('date_time')}
+                                        >
                                           Date &amp; Time Log
-                                          <span className="col-resize-handle" {...getResizeHandleProps('date_time')} />
+                                          <span
+                                            className="col-resize-handle"
+                                            {...getResizeHandleProps(
+                                              'date_time',
+                                            )}
+                                          />
                                         </TableHead>
                                         <TableHead className="w-[100px] text-center"></TableHead>
                                       </TableRow>
@@ -1035,54 +1095,85 @@ export function ServiceCloudTicketDetailPage({
               </AccordionTrigger>
               <AccordionContent className="px-4 pb-4">
                 <div className="space-y-4 pt-2">
-                  <EditableSelect
-                    icon={<Flag className="h-4 w-4" />}
-                    label="Status"
-                    value={ticket.status_id}
-                    options={statuses}
-                    disabled={isUpdating}
-                    onChange={(value) => updateTicket({ status_id: value })}
-                  />
-                  <EditableSelect
-                    icon={<Flag className="h-4 w-4" />}
-                    label="Priority"
-                    value={ticket.priority_id}
-                    options={priorities}
-                    disabled={isUpdating}
-                    allowNone
-                    onChange={(value) => updateTicket({ priority_id: value })}
-                  />
-                  <EditableSelect
-                    icon={<Tag className="h-4 w-4" />}
-                    label="Category"
-                    value={ticket.category_id}
-                    options={categories}
-                    disabled={isUpdating}
-                    allowNone
-                    onChange={(value) => updateTicket({ category_id: value })}
-                  />
-                  <EditableSelect
-                    icon={<UserCheck className="h-4 w-4" />}
-                    label="Primary owner"
-                    value={ticket.assigned_agent_id}
-                    options={members}
-                    disabled={isUpdating}
-                    allowNone
-                    onChange={(value) => updateTicket({ assigned_agent_id: value })}
-                  />
-                  <Field label="Due date">
-                    <div className="flex items-center gap-2">
-                      <CalendarDays className="text-muted-foreground h-4 w-4" />
-                      <Input
-                        type="date"
-                        value={formatDateInput(dueValue)}
-                        disabled={isUpdating}
-                        onChange={(event) =>
-                          updateTicket({ due_date: event.target.value || null })
-                        }
-                      />
-                    </div>
-                  </Field>
+                  {(!canViewField || canViewField('status')) && (
+                    <EditableSelect
+                      icon={<Flag className="h-4 w-4" />}
+                      label="Status"
+                      value={ticket.status_id}
+                      options={statuses}
+                      allOptions={allStatuses}
+                      disabled={
+                        isUpdating ||
+                        (canEditField ? !canEditField('status') : false)
+                      }
+                      onChange={(value) => updateTicket({ status_id: value })}
+                    />
+                  )}
+                  {(!canViewField || canViewField('priority')) && (
+                    <EditableSelect
+                      icon={<Flag className="h-4 w-4" />}
+                      label="Priority"
+                      value={ticket.priority_id}
+                      options={priorities}
+                      allOptions={allPriorities}
+                      disabled={
+                        isUpdating ||
+                        (canEditField ? !canEditField('priority') : false)
+                      }
+                      allowNone
+                      onChange={(value) => updateTicket({ priority_id: value })}
+                    />
+                  )}
+                  {(!canViewField || canViewField('category')) && (
+                    <EditableSelect
+                      icon={<Tag className="h-4 w-4" />}
+                      label="Category"
+                      value={ticket.category_id}
+                      options={categories}
+                      disabled={
+                        isUpdating ||
+                        (canEditField ? !canEditField('category') : false)
+                      }
+                      allowNone
+                      onChange={(value) => updateTicket({ category_id: value })}
+                    />
+                  )}
+                  {(!canViewField || canViewField('assigned_agent')) && (
+                    <EditableSelect
+                      icon={<UserCheck className="h-4 w-4" />}
+                      label="Primary owner"
+                      value={ticket.assigned_agent_id}
+                      options={members}
+                      disabled={
+                        isUpdating ||
+                        (canEditField ? !canEditField('assigned_agent') : false)
+                      }
+                      allowNone
+                      onChange={(value) =>
+                        updateTicket({ assigned_agent_id: value })
+                      }
+                    />
+                  )}
+                  {(!canViewField || canViewField('due_at')) && (
+                    <Field label="Due date">
+                      <div className="flex items-center gap-2">
+                        <CalendarDays className="text-muted-foreground h-4 w-4" />
+                        <Input
+                          type="date"
+                          value={formatDateInput(dueValue)}
+                          disabled={
+                            isUpdating ||
+                            (canEditField ? !canEditField('due_at') : false)
+                          }
+                          onChange={(event) =>
+                            updateTicket({
+                              due_date: event.target.value || null,
+                            })
+                          }
+                        />
+                      </div>
+                    </Field>
+                  )}
                   <Separator />
                   <TicketAssignees
                     members={members}
@@ -1119,7 +1210,7 @@ export function ServiceCloudTicketDetailPage({
                     SLA Snapshot
                   </span>
                   {ticket.priority?.name ? (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <div className="text-muted-foreground flex items-center gap-2 text-sm">
                       <span>Priority:</span>
                       <Badge
                         className="flex items-center gap-1.5 font-medium"
@@ -1155,7 +1246,10 @@ export function ServiceCloudTicketDetailPage({
                     label="Response due"
                     value={formatDateTime(responseDueAt)}
                   />
-                  <Metric label="Resolution due" value={formatDateOnly(dueValue)} />
+                  <Metric
+                    label="Resolution due"
+                    value={formatDateOnly(dueValue)}
+                  />
                 </div>
               </AccordionContent>
             </AccordionItem>
@@ -1172,22 +1266,39 @@ export function ServiceCloudTicketDetailPage({
               </AccordionTrigger>
               <AccordionContent className="px-4 pb-4">
                 <div className="space-y-3 pt-2 text-sm">
-                  <Metric label="Name" value={ticket.customer?.name ?? '-'} />
-                  <Metric label="Email" value={ticket.customer?.email ?? '-'} />
-                  <Metric label="Phone" value={ticket.customer?.phone ?? '-'} />
-                  <Separator />
-                  <Metric
-                    label="Company"
-                    value={ticket.organization?.name ?? '-'}
-                  />
-                  <Metric
-                    label="Industry"
-                    value={ticket.organization?.industry ?? '-'}
-                  />
-                  <Metric
-                    label="Website"
-                    value={ticket.organization?.website ?? '-'}
-                  />
+                  {(!canViewField || canViewField('customer')) && (
+                    <>
+                      <Metric
+                        label="Name"
+                        value={ticket.customer?.name ?? '-'}
+                      />
+                      <Metric
+                        label="Email"
+                        value={ticket.customer?.email ?? '-'}
+                      />
+                      <Metric
+                        label="Phone"
+                        value={ticket.customer?.phone ?? '-'}
+                      />
+                    </>
+                  )}
+                  {(!canViewField || canViewField('organization')) && (
+                    <>
+                      <Separator />
+                      <Metric
+                        label="Company"
+                        value={ticket.organization?.name ?? '-'}
+                      />
+                      <Metric
+                        label="Industry"
+                        value={ticket.organization?.industry ?? '-'}
+                      />
+                      <Metric
+                        label="Website"
+                        value={ticket.organization?.website ?? '-'}
+                      />
+                    </>
+                  )}
                 </div>
               </AccordionContent>
             </AccordionItem>
@@ -1431,6 +1542,7 @@ function EditableSelect({
   disabled,
   allowNone = false,
   onChange,
+  allOptions,
 }: {
   icon: React.ReactNode;
   label: string;
@@ -1439,8 +1551,12 @@ function EditableSelect({
   disabled?: boolean;
   allowNone?: boolean;
   onChange: (value: string | null) => void;
+  /** All available options (including restricted ones) for looking up current value */
+  allOptions?: LookupOption[];
 }) {
-  const selectedOption = options.find((opt) => opt.id === value);
+  // Use allOptions for lookup if provided, otherwise use options
+  const allOptsForLookup = allOptions || options;
+  const selectedOption = allOptsForLookup.find((opt) => opt.id === value);
   const selectedColor = selectedOption?.color;
 
   return (

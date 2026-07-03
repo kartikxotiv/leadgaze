@@ -1,7 +1,9 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
+
 import Link from 'next/link';
+
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Briefcase,
@@ -11,17 +13,19 @@ import {
   FileText,
   FileType,
   FileUp,
-  File as LucideFile,
   Loader2,
+  File as LucideFile,
   MoreHorizontal,
+  MoreVertical,
   Trash2,
   User,
   Users,
-  MoreVertical,
 } from 'lucide-react';
 import { toast } from 'sonner';
+
 import { Button } from '@kit/ui/button';
 import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
+import CustomTableContainer from '@kit/ui/custom-table-container';
 import {
   Dialog,
   DialogContent,
@@ -36,8 +40,8 @@ import {
 } from '@kit/ui/dropdown-menu';
 import { Input } from '@kit/ui/input';
 import { Label } from '@kit/ui/label';
+import { ListToolBar } from '@kit/ui/list-toolbar';
 import { PageBody, PageHeader } from '@kit/ui/page';
-
 import { RadioGroup, RadioGroupItem } from '@kit/ui/radio-group';
 import {
   Select,
@@ -47,6 +51,7 @@ import {
   SelectValue,
 } from '@kit/ui/select';
 import { Skeleton } from '@kit/ui/skeleton';
+import { SortableTableHead } from '@kit/ui/sortable-table-head';
 import {
   Table,
   TableBody,
@@ -55,14 +60,13 @@ import {
   TableHeader,
   TableRow,
 } from '@kit/ui/table';
-import { useColumnVisibility } from '@kit/ui/use-column-visibility';
+import { TablePagination } from '@kit/ui/table-pagination';
 import { useColumnResize } from '@kit/ui/use-column-resize';
-import { useTableSort } from '@kit/ui/use-table-sort';
+import { useColumnVisibility } from '@kit/ui/use-column-visibility';
 import { useDateRangeFilter } from '@kit/ui/use-date-range-filter';
-import { SortableTableHead } from '@kit/ui/sortable-table-head';
-import { ListToolBar } from '@kit/ui/list-toolbar';
-import CustomTableContainer from '@kit/ui/custom-table-container';
+import { useTableSort } from '@kit/ui/use-table-sort';
 
+import { useLocalization } from '~/lib/localization/localization-provider';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { getAccountsService } from '~/services/accounts.service';
 import {
@@ -75,8 +79,6 @@ import {
 import { getContactsService } from '~/services/contacts.service';
 import { getLeadsService } from '~/services/leads.service';
 import { getOpportunitiesService } from '~/services/opportunities.service';
-import { useLocalization } from '~/lib/localization/localization-provider';
-import { TablePagination } from '@kit/ui/table-pagination';
 
 function DocumentPageSkeleton() {
   return (
@@ -100,13 +102,17 @@ function DocumentPageSkeleton() {
             <Table className="w-max min-w-full border-separate border-spacing-0 text-sm">
               <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
                 <TableRow>
-                  <TableHead className="w-12 whitespace-nowrap">S. No.</TableHead>
+                  <TableHead className="w-12 whitespace-nowrap">
+                    S. No.
+                  </TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead>Type</TableHead>
                   <TableHead>Size</TableHead>
                   <TableHead>Uploaded By</TableHead>
                   <TableHead>Entity</TableHead>
-                  <TableHead className="sticky right-0 text-right">Actions</TableHead>
+                  <TableHead className="sticky right-0 text-right">
+                    Actions
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -188,7 +194,6 @@ export default function DocumentPage() {
     });
 
   const { getHeaderProps, getResizeHandleProps } = useColumnResize('documents');
-
 
   const { data: documents = [], isLoading } = useQuery({
     queryKey: ['documents', workspace?.id],
@@ -285,7 +290,14 @@ export default function DocumentPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, typeFilter, entityTypeFilter, pageSize, createdOnRange, updatedOnRange]);
+  }, [
+    searchTerm,
+    typeFilter,
+    entityTypeFilter,
+    pageSize,
+    createdOnRange,
+    updatedOnRange,
+  ]);
 
   const getFileTypeCategory = (fileType: string): string => {
     const t = (fileType || '').toLowerCase();
@@ -325,27 +337,45 @@ export default function DocumentPage() {
       if (computedCreatedOnDates?.from) {
         const createdDate = new Date(doc.created_at).getTime();
         const from = new Date(computedCreatedOnDates.from).getTime();
-        const to = computedCreatedOnDates.to ? new Date(computedCreatedOnDates.to).getTime() : new Date().getTime();
+        const to = computedCreatedOnDates.to
+          ? new Date(computedCreatedOnDates.to).getTime()
+          : new Date().getTime();
         matchesCreated = createdDate >= from && createdDate <= to;
       }
-      
+
       let matchesUpdated = true;
       if (computedUpdatedOnDates?.from) {
-        const updatedDate = new Date(doc.updated_at || doc.created_at).getTime();
+        const updatedDate = new Date(
+          doc.updated_at || doc.created_at,
+        ).getTime();
         const from = new Date(computedUpdatedOnDates.from).getTime();
-        const to = computedUpdatedOnDates.to ? new Date(computedUpdatedOnDates.to).getTime() : new Date().getTime();
+        const to = computedUpdatedOnDates.to
+          ? new Date(computedUpdatedOnDates.to).getTime()
+          : new Date().getTime();
         matchesUpdated = updatedDate >= from && updatedDate <= to;
       }
 
-      return matchesSearch && matchesType && matchesEntityType && matchesCreated && matchesUpdated;
+      return (
+        matchesSearch &&
+        matchesType &&
+        matchesEntityType &&
+        matchesCreated &&
+        matchesUpdated
+      );
     });
-  }, [documents, searchTerm, typeFilter, entityTypeFilter, computedCreatedOnDates, computedUpdatedOnDates]);
+  }, [
+    documents,
+    searchTerm,
+    typeFilter,
+    entityTypeFilter,
+    computedCreatedOnDates,
+    computedUpdatedOnDates,
+  ]);
 
-  const { sortColumn, sortDirection, toggleSort, sortedData } = useTableSort<Document>(
-    'documents',
-    filteredDocuments,
-    { onSortChange: () => setCurrentPage(1) }
-  );
+  const { sortColumn, sortDirection, toggleSort, sortedData } =
+    useTableSort<Document>('documents', filteredDocuments, {
+      onSortChange: () => setCurrentPage(1),
+    });
 
   const paginatedDocs = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage;
@@ -422,9 +452,8 @@ export default function DocumentPage() {
         key: 'type',
         label: 'File Type',
         selectedValue: typeFilter === 'all' ? '' : typeFilter,
-        selectedLabel: typeFilter === 'all'
-          ? 'All types'
-          : typeFilter.toUpperCase(),
+        selectedLabel:
+          typeFilter === 'all' ? 'All types' : typeFilter.toUpperCase(),
         options: [
           { value: 'pdf', label: 'PDF' },
           { value: 'image', label: 'Images' },
@@ -437,9 +466,12 @@ export default function DocumentPage() {
         key: 'entity',
         label: 'Entity',
         selectedValue: entityTypeFilter === 'all' ? '' : entityTypeFilter,
-        selectedLabel: entityTypeFilter === 'all'
-          ? 'All entities'
-          : entityTypeFilter.charAt(0).toUpperCase() + entityTypeFilter.slice(1) + 's',
+        selectedLabel:
+          entityTypeFilter === 'all'
+            ? 'All entities'
+            : entityTypeFilter.charAt(0).toUpperCase() +
+              entityTypeFilter.slice(1) +
+              's',
         options: [
           { value: 'lead', label: 'Leads' },
           { value: 'contact', label: 'Contacts' },
@@ -501,7 +533,7 @@ export default function DocumentPage() {
       </div>
 
       {/* Full-width search / filter / actions toolbar */}
-      <div className="w-full max-w-full min-w-0 shrink-0 border-b pb-2 pt-2">
+      <div className="w-full max-w-full min-w-0 shrink-0 border-b pt-2 pb-2">
         <ListToolBar
           showSearch
           searchPlaceholder="Search documents..."
@@ -560,142 +592,173 @@ export default function DocumentPage() {
               <TableHeader>
                 <TableRow>
                   {isVisible('sno') && (
-  <SortableTableHead
-    label="S. No."
-    columnId="sno"
-    sortColumn={sortColumn}
-    sortDirection={sortDirection}
-    onSort={toggleSort}
-    sortable={false}
-    className="relative w-12 whitespace-nowrap"
-    {...getHeaderProps('sno')}
-  >
-    <span className="col-resize-handle" {...getResizeHandleProps('sno')} />
-  </SortableTableHead>
-)}
+                    <SortableTableHead
+                      label="S. No."
+                      columnId="sno"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={toggleSort}
+                      sortable={false}
+                      className="relative w-12 whitespace-nowrap"
+                      {...getHeaderProps('sno')}
+                    >
+                      <span
+                        className="col-resize-handle"
+                        {...getResizeHandleProps('sno')}
+                      />
+                    </SortableTableHead>
+                  )}
                   {isVisible('name') && (
-  <SortableTableHead
-    label="Name"
-    columnId="name"
-    sortColumn={sortColumn}
-    sortDirection={sortDirection}
-    onSort={toggleSort}
-    sortable={false}
-    className="relative"
-    {...getHeaderProps('name')}
-  >
-    <span className="col-resize-handle" {...getResizeHandleProps('name')} />
-  </SortableTableHead>
-)}
+                    <SortableTableHead
+                      label="Name"
+                      columnId="name"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={toggleSort}
+                      sortable={false}
+                      className="relative"
+                      {...getHeaderProps('name')}
+                    >
+                      <span
+                        className="col-resize-handle"
+                        {...getResizeHandleProps('name')}
+                      />
+                    </SortableTableHead>
+                  )}
                   {isVisible('type') && (
-  <SortableTableHead
-    label="Type"
-    columnId="type"
-    sortKey="file_type"
-    sortColumn={sortColumn}
-    sortDirection={sortDirection}
-    onSort={toggleSort}
-    className="relative"
-    {...getHeaderProps('type')}
-  >
-    <span className="col-resize-handle" {...getResizeHandleProps('type')} />
-  </SortableTableHead>
-)}
+                    <SortableTableHead
+                      label="Type"
+                      columnId="type"
+                      sortKey="file_type"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={toggleSort}
+                      className="relative"
+                      {...getHeaderProps('type')}
+                    >
+                      <span
+                        className="col-resize-handle"
+                        {...getResizeHandleProps('type')}
+                      />
+                    </SortableTableHead>
+                  )}
                   {isVisible('size') && (
-  <SortableTableHead
-    label="Size"
-    columnId="size"
-    sortKey="size_bytes"
-    sortColumn={sortColumn}
-    sortDirection={sortDirection}
-    onSort={toggleSort}
-    className="relative"
-    {...getHeaderProps('size')}
-  >
-    <span className="col-resize-handle" {...getResizeHandleProps('size')} />
-  </SortableTableHead>
-)}
+                    <SortableTableHead
+                      label="Size"
+                      columnId="size"
+                      sortKey="size_bytes"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={toggleSort}
+                      className="relative"
+                      {...getHeaderProps('size')}
+                    >
+                      <span
+                        className="col-resize-handle"
+                        {...getResizeHandleProps('size')}
+                      />
+                    </SortableTableHead>
+                  )}
                   {isVisible('uploader') && (
-  <SortableTableHead
-    label="Uploaded By"
-    columnId="uploader"
-    sortKey="created_by_user.name"
-    sortColumn={sortColumn}
-    sortDirection={sortDirection}
-    onSort={toggleSort}
-    className="relative"
-    {...getHeaderProps('uploader')}
-  >
-    <span className="col-resize-handle" {...getResizeHandleProps('uploader')} />
-  </SortableTableHead>
-)}
+                    <SortableTableHead
+                      label="Uploaded By"
+                      columnId="uploader"
+                      sortKey="created_by_user.name"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={toggleSort}
+                      className="relative"
+                      {...getHeaderProps('uploader')}
+                    >
+                      <span
+                        className="col-resize-handle"
+                        {...getResizeHandleProps('uploader')}
+                      />
+                    </SortableTableHead>
+                  )}
                   {isVisible('entity') && (
-  <SortableTableHead
-    label="Entity"
-    columnId="entity"
-    sortKey="entity_name"
-    sortColumn={sortColumn}
-    sortDirection={sortDirection}
-    onSort={toggleSort}
-    className="relative"
-    {...getHeaderProps('entity')}
-  >
-    <span className="col-resize-handle" {...getResizeHandleProps('entity')} />
-  </SortableTableHead>
-)}
+                    <SortableTableHead
+                      label="Entity"
+                      columnId="entity"
+                      sortKey="entity_name"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={toggleSort}
+                      className="relative"
+                      {...getHeaderProps('entity')}
+                    >
+                      <span
+                        className="col-resize-handle"
+                        {...getResizeHandleProps('entity')}
+                      />
+                    </SortableTableHead>
+                  )}
                   {isVisible('last_modified') && (
-  <SortableTableHead
-    label="Last Modified At"
-    columnId="last_modified"
-    sortKey="updated_at"
-    sortColumn={sortColumn}
-    sortDirection={sortDirection}
-    onSort={toggleSort}
-    className="relative"
-    {...getHeaderProps('last_modified')}
-  >
-    <span className="col-resize-handle" {...getResizeHandleProps('last_modified')} />
-  </SortableTableHead>
-)}
+                    <SortableTableHead
+                      label="Last Modified At"
+                      columnId="last_modified"
+                      sortKey="updated_at"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={toggleSort}
+                      className="relative"
+                      {...getHeaderProps('last_modified')}
+                    >
+                      <span
+                        className="col-resize-handle"
+                        {...getResizeHandleProps('last_modified')}
+                      />
+                    </SortableTableHead>
+                  )}
                   {isVisible('created_by') && (
-  <SortableTableHead
-    label="Created By"
-    columnId="created_by"
-    sortColumn={sortColumn}
-    sortDirection={sortDirection}
-    onSort={toggleSort}
-    className="relative"
-    {...getHeaderProps('created_by')}
-  >
-    <span className="col-resize-handle" {...getResizeHandleProps('created_by')} />
-  </SortableTableHead>
-)}
+                    <SortableTableHead
+                      label="Created By"
+                      columnId="created_by"
+                      sortKey="created_by_user.name"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={toggleSort}
+                      className="relative"
+                      {...getHeaderProps('created_by')}
+                    >
+                      <span
+                        className="col-resize-handle"
+                        {...getResizeHandleProps('created_by')}
+                      />
+                    </SortableTableHead>
+                  )}
                   {isVisible('created_at') && (
-  <SortableTableHead
-    label="Created On"
-    columnId="created_at"
-    sortColumn={sortColumn}
-    sortDirection={sortDirection}
-    onSort={toggleSort}
-    className="relative"
-    {...getHeaderProps('created_at')}
-  >
-    <span className="col-resize-handle" {...getResizeHandleProps('created_at')} />
-  </SortableTableHead>
-)}
+                    <SortableTableHead
+                      label="Created On"
+                      columnId="created_at"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={toggleSort}
+                      className="relative"
+                      {...getHeaderProps('created_at')}
+                    >
+                      <span
+                        className="col-resize-handle"
+                        {...getResizeHandleProps('created_at')}
+                      />
+                    </SortableTableHead>
+                  )}
                   {isVisible('updated_by') && (
-  <SortableTableHead
-    label="Last Updated By"
-    columnId="updated_by"
-    sortColumn={sortColumn}
-    sortDirection={sortDirection}
-    onSort={toggleSort}
-    className="relative"
-    {...getHeaderProps('updated_by')}
-  >
-    <span className="col-resize-handle" {...getResizeHandleProps('updated_by')} />
-  </SortableTableHead>
-)}
+                    <SortableTableHead
+                      label="Last Updated By"
+                      columnId="updated_by"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={toggleSort}
+                      className="relative"
+                      {...getHeaderProps('updated_by')}
+                    >
+                      <span
+                        className="col-resize-handle"
+                        {...getResizeHandleProps('updated_by')}
+                      />
+                    </SortableTableHead>
+                  )}
                   <TableHead className="sticky-right-header">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -708,7 +771,9 @@ export default function DocumentPage() {
                           className="h-[52px] px-4 py-2"
                           colSpan={
                             visibility
-                              ? Object.values(visibility).filter((v) => v !== false).length + 1
+                              ? Object.values(visibility).filter(
+                                  (v) => v !== false,
+                                ).length + 1
                               : 6
                           }
                         >
@@ -816,7 +881,8 @@ export default function DocumentPage() {
                     <TableCell
                       colSpan={
                         visibility
-                          ? Object.values(visibility).filter((v) => v !== false).length + 1
+                          ? Object.values(visibility).filter((v) => v !== false)
+                              .length + 1
                           : 10
                       }
                       className="text-muted-foreground h-24 text-center"
@@ -833,11 +899,11 @@ export default function DocumentPage() {
 
       {/* Upload Dialog */}
       <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
-        <DialogContent className="flex max-h-[90vh] flex-col p-0 max-w-[600px]">
+        <DialogContent className="flex max-h-[90vh] max-w-[600px] flex-col p-0">
           <DialogHeader className="border-b p-6 pb-4">
             <DialogTitle>Upload Document</DialogTitle>
           </DialogHeader>
-          <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+          <div className="flex-1 space-y-4 overflow-y-auto px-6 py-4">
             <div className="space-y-4">
               <Label>Associate with</Label>
               <RadioGroup
@@ -924,8 +990,9 @@ export default function DocumentPage() {
                 type="file"
                 onChange={(e) => setFile(e.target.files?.[0] || null)}
               />
-            </div></div>
-          <div className="border-t p-6 mt-auto">
+            </div>
+          </div>
+          <div className="mt-auto border-t p-6">
             <Button
               onClick={handleUpload}
               disabled={!file || !entityId || createMutation.isPending}

@@ -83,7 +83,7 @@ export default function CreateLeadDialog({
   onSuccess,
 }: CreateLeadDialogProps) {
   const { currentWorkspace: workspace } = useRBAC();
-  const { canEdit, editableCustomFields } = useFieldPermissions({
+  const { canEdit, canView, editableCustomFields } = useFieldPermissions({
     entityType: 'leads',
     workspaceId: workspace?.id,
     enabled: open && !!workspace?.id,
@@ -729,6 +729,7 @@ export default function CreateLeadDialog({
                 setCustomFields((prev) => ({ ...prev, [key]: value }))
               }
               canEdit={canEdit}
+              canView={canView}
             />
 
             {/* Form Actions (Hidden here, moved outside) */}

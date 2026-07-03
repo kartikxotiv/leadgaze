@@ -7,9 +7,16 @@ import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { Plus } from 'lucide-react';
 
+import { convertFromUSD, findLatestRateToUsd } from '@kit/shared/currency';
+import type { ExchangeRateRecord } from '@kit/shared/currency';
+import { useSupabase } from '@kit/supabase/hooks/use-supabase';
+import { AddColumnModal } from '@kit/ui/add-column-modal';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { Card, CardContent } from '@kit/ui/card';
+import { ColumnEditModal } from '@kit/ui/column-edit-modal';
+import type { ColumnEditFieldShape } from '@kit/ui/column-edit-modal';
+import { ColumnHeader } from '@kit/ui/column-header';
 import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
 import CustomTableContainer from '@kit/ui/custom-table-container';
 import { ListToolBar } from '@kit/ui/list-toolbar';
@@ -30,10 +37,6 @@ import { useDateRangeFilter } from '@kit/ui/use-date-range-filter';
 import { useTableSort } from '@kit/ui/use-table-sort';
 import { cn } from '@kit/ui/utils';
 
-import { AddColumnModal } from '@kit/ui/add-column-modal';
-import { ColumnEditModal } from '@kit/ui/column-edit-modal';
-import type { ColumnEditFieldShape } from '@kit/ui/column-edit-modal';
-import { ColumnHeader } from '@kit/ui/column-header';
 import { useDebounce } from '~/lib/hooks/use-debounce';
 import {
   useCreateField,
@@ -46,10 +49,10 @@ import {
   useLeadsColumnPreferences,
   useSyncColumnVisibilityToDb,
 } from '~/lib/hooks/use-leads-column-preferences';
+import { useTeamMembers } from '~/lib/hooks/use-team-members';
 import { useLocalization } from '~/lib/localization/localization-provider';
 import { ModuleGuard } from '~/lib/rbac/module-guard';
 import { useModuleRoles, useRBAC } from '~/lib/rbac/rbac-provider';
-import { useTeamMembers } from '~/lib/hooks/use-team-members';
 import {
   Opportunity,
   getOpportunitiesService,
@@ -112,7 +115,7 @@ function OpportunitiesPageSkeleton() {
             </div>
           </div>
         </div>
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-4 pt-6 pb-0">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-4 pb-0 pt-6">
           <Card className="flex min-h-0 flex-1 flex-col border-none shadow-none">
             <CardContent className="flex min-h-0 flex-1 flex-col p-0">
               <div className="listing-table-container min-w-0 flex-1 overflow-x-auto overflow-y-auto rounded-lg pb-6">
@@ -156,6 +159,7 @@ export default function OpportunitiesPage() {
   const router = useRouter();
   const { currentWorkspace: workspace, user, canAccess } = useRBAC();
   const { formatDate, formatCurrency } = useLocalization();
+  const supabase = useSupabase();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStage, setSelectedStage] = useState<string>('all');
   const [selectedCreatedId, setSelectedCreatedId] = useState<string>('all');
@@ -525,6 +529,46 @@ export default function OpportunitiesPage() {
     enabled: !!workspace?.id,
   });
 
+  // Fetch workspace currencies for currency conversion
+  const { data: currenciesData } = useQuery({
+    queryKey: ['workspace-currencies', workspace?.id],
+    queryFn: async () => {
+      if (!workspace?.id) return [];
+      const { data, error } = await supabase
+        .schema('core')
+        .from('workspace_currencies')
+        .select('currency_code, currency_symbol, is_default')
+        .eq('workspace_id', workspace.id)
+        .eq('is_active', true)
+        .order('is_default', { ascending: false })
+        .order('currency_code', { ascending: true });
+      if (error) {
+        console.error('Failed to fetch workspace currencies:', error);
+        return [];
+      }
+      return data;
+    },
+    enabled: !!workspace?.id,
+  });
+
+  // Fetch exchange rates for currency conversion
+  const { data: exchangeRates = [] } = useQuery({
+    queryKey: ['exchange-rates'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .schema('core')
+        .from('currency_exchange_rates')
+        .select('*')
+        .eq('base_currency', 'USD');
+      if (error) {
+        console.error('Failed to fetch exchange rates:', error);
+        return [];
+      }
+      return data;
+    },
+    staleTime: 24 * 60 * 60 * 1000, // 24 hours
+  });
+
   const { data: membersData } = useQuery({
     queryKey: ['team-members', workspace?.id],
     queryFn: () => getMembersService(workspace?.id || ''),
@@ -542,12 +586,51 @@ export default function OpportunitiesPage() {
     [membersData],
   );
 
+  // Get workspace default currency
+  const defaultCurrency =
+    currenciesData?.find((c) => c.is_default)?.currency_code || 'USD';
+
+  // Format opportunity amount using workspace currency
+  const formatOpportunityAmount = (opportunity: Opportunity): string => {
+    // Type cast to access currency fields that may not be in the type definition
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const opp = opportunity as any;
+
+    // If opportunity has base_amount_usd, use that with workspace currency
+    if (opp.base_amount_usd !== null && opp.base_amount_usd !== undefined) {
+      const rate =
+        findLatestRateToUsd(
+          exchangeRates as ExchangeRateRecord[],
+          defaultCurrency,
+        )?.exchange_rate || 1;
+      const convertedAmount = convertFromUSD(opp.base_amount_usd, rate || 1);
+      return formatCurrency(convertedAmount, defaultCurrency);
+    }
+
+    // Fallback: use original amount with original currency (for backwards compatibility)
+    if (opp.amount_original !== null && opp.amount_original !== undefined) {
+      const currency =
+        opp.currency_original || opportunity.currency || defaultCurrency;
+      return formatCurrency(opp.amount_original, currency);
+    }
+
+    // Last fallback: use amount with default currency
+    return formatCurrency(opportunity.amount || 0, defaultCurrency);
+  };
+
   const totalCount = opportunitiesData.count;
 
   // Reset to first page when search or filters change
   React.useEffect(() => {
     setCurrentPage(1);
-  }, [debouncedSearchTerm, selectedStage, selectedCreatedId, pageSize, createdOnRange, updatedOnRange]);
+  }, [
+    debouncedSearchTerm,
+    selectedStage,
+    selectedCreatedId,
+    pageSize,
+    createdOnRange,
+    updatedOnRange,
+  ]);
 
   // Client-side filtering for Created By if not supported by API
   const filteredOpportunities = useMemo(() => {
@@ -647,7 +730,14 @@ export default function OpportunitiesPage() {
         },
       },
     ];
-  }, [stages, selectedStage, members, selectedCreatedId, createdOnRange, updatedOnRange]);
+  }, [
+    stages,
+    selectedStage,
+    members,
+    selectedCreatedId,
+    createdOnRange,
+    updatedOnRange,
+  ]);
 
   const activeFilterCount = useMemo(() => {
     let count = 0;
@@ -695,7 +785,7 @@ export default function OpportunitiesPage() {
 
   return (
     <ModuleGuard module="opportunities">
-      <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden">
+      <div className="flex w-full min-w-0 max-w-full shrink-0 flex-col gap-2 overflow-hidden">
         <PageHeader
           title={`Opportunities (${totalCount})`}
           description="Manage your sales pipeline"
@@ -703,7 +793,7 @@ export default function OpportunitiesPage() {
       </div>
 
       {/* Full-width search / filter / actions toolbar */}
-      <div className="w-full max-w-full min-w-0 shrink-0 border-b pb-2">
+      <div className="w-full min-w-0 max-w-full shrink-0 border-b pb-2">
         <ListToolBar
           showSearch
           searchPlaceholder="Search by name or account..."
@@ -735,8 +825,8 @@ export default function OpportunitiesPage() {
         />
       </div>
 
-      <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden">
-        <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 gap-0">
+      <PageBody className="sticky flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col overflow-hidden">
+        <div className="flex min-h-0 w-full min-w-0 max-w-full flex-1 gap-0">
           <CustomTableContainer
             pagination={
               <TablePagination
@@ -881,29 +971,29 @@ export default function OpportunitiesPage() {
                     (opportunity: Opportunity, index: number) => (
                       <TableRow
                         key={opportunity.id}
-                        className="group hover:bg-muted/50 cursor-pointer"
+                        className="hover:bg-muted/50 group cursor-pointer"
                         onClick={() =>
                           router.push(
                             `/home/sales/opportunities/${opportunity.id}`,
                           )
                         }
                       >
-                        {isVisible('sno') && (
+                        {showColumn('sno') && (
                           <TableCell className="text-muted-foreground w-12">
                             {(currentPage - 1) * itemsPerPage + index + 1}
                           </TableCell>
                         )}
-                        {isVisible('name') && (
+                        {showColumn('name') && (
                           <TableCell className="primary-text-medium text-leadgaze-primary dark:text-leadgaze-primary">
                             <span>{opportunity.opportunity_name}</span>
                           </TableCell>
                         )}
-                        {isVisible('account') && (
+                        {showColumn('account') && (
                           <TableCell className="text-muted-foreground">
                             {opportunity.account?.account_name || '-'}
                           </TableCell>
                         )}
-                        {isVisible('stage') && (
+                        {showColumn('stage') && (
                           <TableCell>
                             <Badge
                               variant="outline"
@@ -917,84 +1007,81 @@ export default function OpportunitiesPage() {
                             </Badge>
                           </TableCell>
                         )}
-                        {isVisible('amount') && (
+                        {showColumn('amount') && (
                           <TableCell className="text-muted-foreground">
-                            {formatCurrency(
-                              opportunity.amount || 0,
-                              opportunity.currency || 'USD',
-                            )}
+                            {formatOpportunityAmount(opportunity)}
                           </TableCell>
                         )}
-                        {isVisible('currency') && (
+                        {showColumn('currency') && (
                           <TableCell className="text-muted-foreground">
                             {opportunity.currency || '-'}
                           </TableCell>
                         )}
-                        {isVisible('probability') && (
+                        {showColumn('probability') && (
                           <TableCell className="text-muted-foreground">
                             {opportunity.probability
                               ? `${opportunity.probability}%`
                               : '-'}
                           </TableCell>
                         )}
-                        {isVisible('close_date') && (
+                        {showColumn('close_date') && (
                           <TableCell className="text-muted-foreground">
                             {opportunity.expected_close_date
                               ? formatDate(opportunity.expected_close_date)
                               : '-'}
                           </TableCell>
                         )}
-                        {isVisible('priority') && (
+                        {showColumn('priority') && (
                           <TableCell className="text-muted-foreground">
                             <PriorityBadge priority={opportunity.priority} />
                           </TableCell>
                         )}
-                        {isVisible('type') && (
+                        {showColumn('type') && (
                           <TableCell className="text-muted-foreground capitalize">
                             {opportunity.opportunity_type?.replace('_', ' ') ||
                               '-'}
                           </TableCell>
                         )}
-                        {isVisible('source') && (
+                        {showColumn('source') && (
                           <TableCell className="text-muted-foreground capitalize">
                             {opportunity.lead_source?.replace('_', ' ') || '-'}
                           </TableCell>
                         )}
-                        {isVisible('competitor') && (
+                        {showColumn('competitor') && (
                           <TableCell className="text-muted-foreground">
                             {opportunity.competitor || '-'}
                           </TableCell>
                         )}
-                        {isVisible('is_closed') && (
+                        {showColumn('is_closed') && (
                           <TableCell className="text-muted-foreground text-center">
                             {opportunity.is_closed ? 'Yes' : 'No'}
                           </TableCell>
                         )}
-                        {isVisible('is_won') && (
+                        {showColumn('is_won') && (
                           <TableCell className="text-muted-foreground text-center">
                             {opportunity.is_won ? 'Yes' : 'No'}
                           </TableCell>
                         )}
-                        {isVisible('owner') && (
+                        {showColumn('owner') && (
                           <TableCell className="text-muted-foreground">
                             {opportunity.owner?.name || '-'}
                           </TableCell>
                         )}
-                        {isVisible('created_by') && (
+                        {showColumn('created_by') && (
                           <TableCell className="text-muted-foreground">
                             {opportunity.created_by_account?.name ||
                               opportunity.created_by ||
                               '-'}
                           </TableCell>
                         )}
-                        {isVisible('created_at') && (
+                        {showColumn('created_at') && (
                           <TableCell className="text-muted-foreground">
                             {opportunity.created_at
                               ? formatDate(opportunity.created_at)
                               : '-'}
                           </TableCell>
                         )}
-                        {isVisible('updated_by') && (
+                        {showColumn('updated_by') && (
                           <TableCell className="text-muted-foreground">
                             {opportunity.updated_by_account?.name ||
                               opportunity.updated_by ||
@@ -1070,13 +1157,13 @@ export default function OpportunitiesPage() {
           }}
           field={
             (editingField ??
-            ({
-              id: '',
-              field_key: '',
-              field_label: '',
-              is_system: false,
-              workspace_id: workspace?.id || '',
-            } as EntityField)) as ColumnEditFieldShape
+              ({
+                id: '',
+                field_key: '',
+                field_label: '',
+                is_system: false,
+                workspace_id: workspace?.id || '',
+              } as EntityField)) as ColumnEditFieldShape
           }
           roles={moduleRoles}
           teamMembers={teamMembersForModal}

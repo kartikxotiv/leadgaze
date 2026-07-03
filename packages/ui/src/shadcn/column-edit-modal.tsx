@@ -192,10 +192,15 @@ export function ColumnEditModal({
     setMembers(
       members.map((m) => {
         if (m.member_type === type && m.member_id === id) {
-          return { ...m, [permission]: !m[permission] };
+          const updated = { ...m, [permission]: !m[permission] };
+          // If both view and edit are disabled, remove the member entirely
+          if (!updated.can_view && !updated.can_edit) {
+            return null as unknown as ColumnEditAccessMember;
+          }
+          return updated;
         }
         return m;
-      }),
+      }).filter((m): m is ColumnEditAccessMember => m !== null),
     );
   };
 

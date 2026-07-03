@@ -21,18 +21,22 @@ interface UseFieldPermissionsOptions {
   entityType: string;
   workspaceId?: string;
   enabled?: boolean;
+  productKey?: string;
 }
 
 export function useFieldPermissions({
   entityType,
   workspaceId,
   enabled = true,
+  productKey: overrideProductKey,
 }: UseFieldPermissionsOptions) {
   const pathname = usePathname();
-  const productKey = useMemo(
+  const inferredProductKey = useMemo(
     () => getModuleKeyFromPath(pathname ?? '/home/sales'),
     [pathname],
   );
+  
+  const productKey = overrideProductKey ?? inferredProductKey;
   const { currentWorkspace: workspace, user, canAccess } = useRBAC();
 
   const effectiveWorkspaceId = workspaceId ?? workspace?.id;
@@ -51,8 +55,17 @@ export function useFieldPermissions({
     const isWorkspaceOwner = workspace?.owner_id === user.id;
     const roleId = workspace?.role?.id ?? null;
     const roleKey = workspace?.role?.role_key ?? null;
+    let moduleKey = entityType;
+    if (entityType === 'leads') {
+      moduleKey = 'leads';
+    } else if (entityType === 'tickets') {
+      moduleKey = 'service_cloud_tickets';
+    } else if (entityType === 'customers' || entityType === 'organizations') {
+      moduleKey = 'service_cloud_customers';
+    }
+
     const hasModuleAccess =
-      isWorkspaceOwner || canAccess(entityType === 'leads' ? 'leads' : entityType, 'view');
+      isWorkspaceOwner || canAccess(moduleKey, 'view');
 
     return buildFieldPermissionContext({
       workspaceId: effectiveWorkspaceId,

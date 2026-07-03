@@ -66,6 +66,8 @@ import {
 } from '~/lib/permissions/use-permissions';
 import { ModuleGuard } from '~/lib/rbac/module-guard';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
+import { useFieldPermissions } from '~/lib/hooks/use-field-permissions';
+import { useDynamicColumns } from '~/lib/hooks/use-dynamic-columns';
 import {
   assignLeadToUser,
   getLeadAssignees,
@@ -263,6 +265,32 @@ export default function LeadDetailsPage() {
       source_id: lead.source_id,
     });
   }, [lead]);
+
+  const { canView } = useFieldPermissions({
+    entityType: 'leads',
+    workspaceId: workspace?.id,
+    enabled: !!workspace?.id,
+  });
+
+  const { fields = [] } = useDynamicColumns({
+    entityType: 'leads',
+    workspaceId: workspace?.id,
+    userId: user?.id,
+    enabled: !!workspace?.id,
+  });
+
+  const customFieldsToShow = useMemo(() => {
+    if (!lead) return [];
+    const leadCustom = (lead.custom_fields as Record<string, unknown>) || {};
+    return fields.filter(
+      (f) =>
+        !f.is_system &&
+        canView(f.field_key) &&
+        leadCustom[f.field_key] !== undefined &&
+        leadCustom[f.field_key] !== null &&
+        leadCustom[f.field_key] !== '',
+    );
+  }, [fields, canView, lead]);
 
   if (!workspace) {
     // Workspace context still hydrating; show skeleton, same as isLoading.
@@ -1020,6 +1048,35 @@ export default function LeadDetailsPage() {
                         </p>
                       </div>
                     </div>
+                  </AccordionContent>
+                </AccordionItem>
+              )}
+
+              {/* Additional Data (Custom Fields) */}
+              {customFieldsToShow.length > 0 && (
+                <AccordionItem
+                  value="additional"
+                  className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
+                >
+                  <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                    <span className="primary-heading text-leadgaze-dark flex items-center gap-2">
+                      <FileText className="text-leadgaze-dark h-4 w-4 dark:text-white" />
+                      Additional Data
+                    </span>
+                  </AccordionTrigger>
+                  <AccordionContent className="px-4 pb-4">
+                    <DetailInfoList>
+                      {customFieldsToShow.map((field) => {
+                        const val = (lead.custom_fields as Record<string, unknown>)?.[field.field_key];
+                        return (
+                          <DetailInfoRow
+                            key={field.id}
+                            label={field.field_label}
+                            value={val === true ? 'Yes' : val === false ? 'No' : String(val ?? '-')}
+                          />
+                        );
+                      })}
+                    </DetailInfoList>
                   </AccordionContent>
                 </AccordionItem>
               )}

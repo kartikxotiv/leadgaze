@@ -21,6 +21,7 @@ interface LeadCustomFieldInputsProps {
   values: Record<string, unknown>;
   onChange: (fieldKey: string, value: unknown) => void;
   canEdit: (fieldKey: string) => boolean;
+  canView?: (fieldKey: string) => boolean;
 }
 
 export function LeadCustomFieldInputs({
@@ -28,24 +29,30 @@ export function LeadCustomFieldInputs({
   values,
   onChange,
   canEdit,
+  canView = () => true,
 }: LeadCustomFieldInputsProps) {
-  if (fields.length === 0) return null;
+  // Filter out fields that user doesn't have view permission for
+  const visibleFields = fields.filter((field) => canView(field.field_key));
+
+  if (visibleFields.length === 0) return null;
 
   return (
     <div className="space-y-4">
       <h4 className="text-sm font-medium text-muted-foreground">Custom Fields</h4>
-      {fields.map((field) => {
-        if (!canEdit(field.field_key)) return null;
-
+      {visibleFields.map((field) => {
+        const isEditable = canEdit(field.field_key);
         const value = values[field.field_key];
 
         return (
           <div key={field.id} className="space-y-2">
-            <Label htmlFor={`cf-${field.field_key}`}>
+            <Label htmlFor={`cf-${field.field_key}`} className={!isEditable ? 'opacity-60' : ''}>
               {field.field_label}
               {field.is_required && <span className="text-destructive ml-1">*</span>}
+              {!isEditable && (
+                <span className="ml-1.5 text-xs text-muted-foreground font-normal">(view only)</span>
+              )}
             </Label>
-            {renderInput(field, value, (v) => onChange(field.field_key, v))}
+            {renderInput(field, value, (v) => onChange(field.field_key, v), !isEditable)}
           </div>
         );
       })}
@@ -57,6 +64,7 @@ function renderInput(
   field: EntityField,
   value: unknown,
   onChange: (value: unknown) => void,
+  disabled = false,
 ) {
   const id = `cf-${field.field_key}`;
   const strValue = value == null ? '' : String(value);
@@ -69,6 +77,9 @@ function renderInput(
           value={strValue}
           onChange={(e) => onChange(e.target.value)}
           rows={3}
+          disabled={disabled}
+          readOnly={disabled}
+          className={disabled ? 'opacity-60 cursor-not-allowed' : ''}
         />
       );
     case 'boolean':
@@ -89,6 +100,9 @@ function renderInput(
           type="number"
           value={strValue}
           onChange={(e) => onChange(e.target.value ? Number(e.target.value) : null)}
+          disabled={disabled}
+          readOnly={disabled}
+          className={disabled ? 'opacity-60 cursor-not-allowed' : ''}
         />
       );
     case 'date':
@@ -98,6 +112,9 @@ function renderInput(
           type="date"
           value={strValue}
           onChange={(e) => onChange(e.target.value)}
+          disabled={disabled}
+          readOnly={disabled}
+          className={disabled ? 'opacity-60 cursor-not-allowed' : ''}
         />
       );
     case 'datetime':
@@ -107,13 +124,16 @@ function renderInput(
           type="datetime-local"
           value={strValue}
           onChange={(e) => onChange(e.target.value)}
+          disabled={disabled}
+          readOnly={disabled}
+          className={disabled ? 'opacity-60 cursor-not-allowed' : ''}
         />
       );
     case 'single_select': {
       const options = (field.settings?.options as string[]) ?? [];
       return (
-        <Select value={strValue} onValueChange={onChange}>
-          <SelectTrigger id={id}>
+        <Select value={strValue} onValueChange={onChange} disabled={disabled}>
+          <SelectTrigger id={id} className={disabled ? 'opacity-60 cursor-not-allowed' : ''}>
             <SelectValue placeholder={`Select ${field.field_label}`} />
           </SelectTrigger>
           <SelectContent>
@@ -133,6 +153,9 @@ function renderInput(
           type={field.field_type === 'email' ? 'email' : field.field_type === 'url' ? 'url' : 'text'}
           value={strValue}
           onChange={(e) => onChange(e.target.value)}
+          disabled={disabled}
+          readOnly={disabled}
+          className={disabled ? 'opacity-60 cursor-not-allowed' : ''}
         />
       );
   }
