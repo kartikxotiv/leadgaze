@@ -59,6 +59,9 @@ import {
 } from '@kit/ui/table';
 
 import { useLocalization } from '~/lib/localization/localization-provider';
+import { convertFromUSD, findLatestRateToUsd } from '@kit/shared/currency';
+import type { ExchangeRateRecord } from '@kit/shared/currency';
+import { useSupabase } from '@kit/supabase/hooks/use-supabase';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import {
   DashboardMetrics,
@@ -76,6 +79,7 @@ import { Skeleton } from '@kit/ui/skeleton';
 export default function DashboardDemo() {
   const { currentWorkspace } = useRBAC();
   const { formatCurrency } = useLocalization();
+  const supabase = useSupabase();
   const workspaceId = currentWorkspace?.id;
 
   const {
@@ -87,6 +91,45 @@ export default function DashboardDemo() {
     queryFn: () => getDashboardMetricsService(workspaceId!),
     enabled: !!workspaceId,
   });
+
+  // Fetch workspace currencies
+  const { data: currenciesData } = useQuery({
+    queryKey: ['workspace-currencies', workspaceId],
+    queryFn: async () => {
+      if (!workspaceId) return [];
+      const { data, error } = await supabase
+        .schema('core')
+        .from('workspace_currencies')
+        .select('currency_code, is_default')
+        .eq('workspace_id', workspaceId)
+        .eq('is_active', true)
+        .order('is_default', { ascending: false });
+      if (error) return [];
+      return data;
+    },
+    enabled: !!workspaceId,
+  });
+
+  // Fetch exchange rates
+  const { data: exchangeRates = [] } = useQuery({
+    queryKey: ['exchange-rates'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .schema('core')
+        .from('currency_exchange_rates')
+        .select('*')
+        .eq('base_currency', 'USD');
+      if (error) return [];
+      return data;
+    },
+    staleTime: 24 * 60 * 60 * 1000,
+  });
+
+  // Convert pipeline value from USD to workspace currency
+  const workspaceCurrency = currenciesData?.find((c) => c.is_default)?.currency_code || 'USD';
+  const pipelineValueUsd = metrics?.opportunities?.totalAmount ?? 0;
+  const rate = findLatestRateToUsd(exchangeRates as ExchangeRateRecord[], workspaceCurrency)?.exchange_rate || 1;
+  const pipelineValue = convertFromUSD(pipelineValueUsd, rate);
 
   const queryClient = useQueryClient();
   const [isCreateLeadOpen, setIsCreateLeadOpen] = useState(false);
@@ -201,7 +244,7 @@ export default function DashboardDemo() {
                 className="hover:underline"
               >
                 <Figure>
-                  {formatCurrency(metrics.opportunities.totalAmount)}
+                  {formatCurrency(pipelineValue, workspaceCurrency)}
                 </Figure>
               </Link>
             </div>
