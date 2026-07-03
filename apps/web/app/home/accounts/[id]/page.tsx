@@ -32,7 +32,13 @@ import { toast } from 'sonner';
 
 import { CoreEmailComposeDialog } from '@kit/core/pages';
 import { getCoreEmailAccountsService } from '@kit/core/services';
-import { useLocalization } from '~/lib/localization/localization-provider';
+import {
+  convertFromUSD,
+  findLatestRateToUsd,
+  formatWorkspaceCurrency,
+} from '@kit/shared/currency';
+import type { ExchangeRateRecord } from '@kit/shared/currency';
+import { useSupabase } from '@kit/supabase/hooks/use-supabase';
 import { useUser } from '@kit/supabase/hooks/use-user';
 import {
   Accordion,
@@ -43,6 +49,7 @@ import {
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { Card, CardContent, CardHeader } from '@kit/ui/card';
+import { CardWidgetContainer } from '@kit/ui/card-widget-container';
 import { CardWidgetList, CardWidgetListItem } from '@kit/ui/card-widget-list';
 import { DetailHeader } from '@kit/ui/detail-header';
 import { DetailInfoList, DetailInfoRow } from '@kit/ui/detail-info-row';
@@ -58,14 +65,15 @@ import {
 import { cn } from '@kit/ui/utils';
 
 import { CreateContactDialog } from '~/home/contacts/components/create-contact-dialog';
+import { useDynamicColumns } from '~/lib/hooks/use-dynamic-columns';
+import { useFieldPermissions } from '~/lib/hooks/use-field-permissions';
+import { useLocalization } from '~/lib/localization/localization-provider';
 import {
   useCanAccessData,
   usePermissionDetail,
 } from '~/lib/permissions/use-permissions';
 import { ModuleGuard } from '~/lib/rbac/module-guard';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
-import { useFieldPermissions } from '~/lib/hooks/use-field-permissions';
-import { useDynamicColumns } from '~/lib/hooks/use-dynamic-columns';
 import {
   assignAccountToUser,
   getAccountAssignees,
@@ -88,13 +96,12 @@ import { LogCallDialog } from '../../leads/components/log-call-dialog';
 import { OpportunityDialog } from '../../opportunities/components/opportunity-dialog';
 import { AccountAssignees } from '../components/account-assignees';
 import { EditAccountDialog } from '../components/edit-account-dialog';
-import { CardWidgetContainer } from '@kit/ui/card-widget-container';
 
 function AccountDetailsSkeleton() {
   return (
     <ModuleGuard module="accounts">
       <div className="flex h-full flex-col">
-        <div className="px-6 pt-4 pb-2">
+        <div className="px-6 pb-2 pt-4">
           <Skeleton className="h-8 w-20 rounded-md" />
         </div>
         <PageBody>
@@ -196,7 +203,8 @@ export default function AccountDetailsPage() {
 
   const customFieldsToShow = useMemo(() => {
     if (!account) return [];
-    const accountCustom = (account.custom_fields as Record<string, unknown>) || {};
+    const accountCustom =
+      (account.custom_fields as Record<string, unknown>) || {};
     return fields.filter(
       (f) =>
         !f.is_system &&
@@ -244,8 +252,6 @@ export default function AccountDetailsPage() {
     },
   });
 
-
-
   const workspaceId = account?.workspace_id;
 
   const { data: contactsData } = useQuery({
@@ -267,21 +273,21 @@ export default function AccountDetailsPage() {
         return [
           ...(contact.email
             ? [
-              {
-                email: contact.email,
-                name,
-                label: 'Primary Email',
-              },
-            ]
+                {
+                  email: contact.email,
+                  name,
+                  label: 'Primary Email',
+                },
+              ]
             : []),
           ...(contact.alt_email
             ? [
-              {
-                email: contact.alt_email,
-                name,
-                label: 'Alt Email',
-              },
-            ]
+                {
+                  email: contact.alt_email,
+                  name,
+                  label: 'Alt Email',
+                },
+              ]
             : []),
         ];
       }),
@@ -298,6 +304,47 @@ export default function AccountDetailsPage() {
   });
 
   const opportunities = opportunitiesData?.data || [];
+
+  const supabase = useSupabase();
+
+  // Fetch workspace currencies for currency conversion
+  const { data: currenciesData } = useQuery({
+    queryKey: ['workspace-currencies', workspace?.id],
+    queryFn: async () => {
+      if (!workspace?.id) return [];
+      const { data, error } = await supabase
+        .schema('core')
+        .from('workspace_currencies')
+        .select('currency_code, is_default')
+        .eq('workspace_id', workspace.id)
+        .eq('is_active', true)
+        .order('is_default', { ascending: false });
+      if (error) {
+        console.error('Failed to fetch workspace currencies:', error);
+        return [];
+      }
+      return data;
+    },
+    enabled: !!workspace?.id,
+  });
+
+  // Fetch exchange rates for currency conversion
+  const { data: exchangeRates = [] } = useQuery({
+    queryKey: ['exchange-rates'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .schema('core')
+        .from('currency_exchange_rates')
+        .select('*')
+        .eq('base_currency', 'USD');
+      if (error) {
+        console.error('Failed to fetch exchange rates:', error);
+        return [];
+      }
+      return data;
+    },
+    staleTime: 24 * 60 * 60 * 1000,
+  });
 
   const { data: coreEmailAccounts = [] } = useQuery({
     queryKey: ['core-email-accounts', workspace?.id],
@@ -348,7 +395,7 @@ export default function AccountDetailsPage() {
 
   return (
     <ModuleGuard module="accounts">
-      <div className="flex flex-wrap items-start gap-2 pt-4 pb-2 sm:flex-nowrap sm:items-center sm:justify-between">
+      <div className="flex flex-wrap items-start gap-2 pb-2 pt-4 sm:flex-nowrap sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
           <Button
             variant="ghost"
@@ -357,7 +404,7 @@ export default function AccountDetailsPage() {
             className="border-leadgaze-border border p-0"
           >
             <Link href="/home/sales/accounts">
-              <ArrowLeft className="mr-2 ml-2 h-4 w-4" />
+              <ArrowLeft className="ml-2 mr-2 h-4 w-4" />
             </Link>
           </Button>
           <div className="flex flex-col">
@@ -476,7 +523,8 @@ export default function AccountDetailsPage() {
                   <div className="flex items-center gap-1.5 text-xs text-gray-500">
                     <Clock className="h-3 w-3" />
                     <span>
-                      Created by {account.created_by_account?.name || 'Unknown'} on {formatDate(account.created_at)}
+                      Created by {account.created_by_account?.name || 'Unknown'}{' '}
+                      on {formatDate(account.created_at)}
                     </span>
                   </div>
                   {account.updated_by && (
@@ -485,7 +533,9 @@ export default function AccountDetailsPage() {
                       <div className="flex items-center gap-1.5 text-xs text-gray-500">
                         <Clock className="h-3 w-3" />
                         <span>
-                          Updated by {account.updated_by_account?.name || 'Unknown'} on {formatDate(account.updated_at)}
+                          Updated by{' '}
+                          {account.updated_by_account?.name || 'Unknown'} on{' '}
+                          {formatDate(account.updated_at)}
                         </span>
                       </div>
                     </>
@@ -604,9 +654,12 @@ export default function AccountDetailsPage() {
 
               <TabsContent value="activity">
                 <CardWidgetContainer
-                    title="Activity"
-                    hideHeaderBorder={true}
-                    icon={<Clock className="text-leadgaze-dark h-5 w-5 dark:text-white" />}>
+                  title="Activity"
+                  hideHeaderBorder={true}
+                  icon={
+                    <Clock className="text-leadgaze-dark h-5 w-5 dark:text-white" />
+                  }
+                >
                   <CardContent className="px-6 py-3">
                     <div className="space-y-2">
                       <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3 dark:bg-slate-900">
@@ -704,79 +757,113 @@ export default function AccountDetailsPage() {
                 </AccordionTrigger>
                 <AccordionContent className="px-4 pb-4">
                   <DetailInfoList>
+                    {canView('phone') && (
+                      <DetailInfoRow
+                        icon={<Phone className="h-5 w-5" />}
+                        label="Phone"
+                        value={
+                          account.phone_number ? (
+                            <a
+                              href={`tel:${account.phone_number}`}
+                              className="text-blue-600 hover:underline dark:text-blue-400"
+                            >
+                              {account.phone_number}
+                            </a>
+                          ) : (
+                            '-'
+                          )
+                        }
+                      />
+                    )}
 
-                    {canView('phone') && <DetailInfoRow
-                      icon={<Phone className="h-5 w-5" />}
-                      label="Phone"
-                      value={
-                        account.phone_number ? (<a
-                          href={`tel:${account.phone_number}`}
-                          className="text-blue-600 hover:underline dark:text-blue-400"
-                        >
-                          {account.phone_number}
-                        </a>) : '-'
-                      }
-                    />}
+                    {canView('employee_count') && (
+                      <DetailInfoRow
+                        icon={<Users className="h-5 w-5" />}
+                        label="Employees"
+                        value={
+                          account.company_size || account.employee_count
+                            ? account.company_size || account.employee_count
+                            : '-'
+                        }
+                      />
+                    )}
 
+                    {canView('annual_revenue') && (
+                      <DetailInfoRow
+                        icon={<DollarSign className="h-5 w-5" />}
+                        label="Revenue"
+                        value={(() => {
+                          const workspaceCurrency =
+                            currenciesData?.find((c) => c.is_default)
+                              ?.currency_code || 'USD';
+                          return formatWorkspaceCurrency(
+                            account.annual_revenue || 0,
+                            workspaceCurrency,
+                          );
+                        })()}
+                      />
+                    )}
 
-                    {canView('employee_count') && <DetailInfoRow
-                      icon={<Users className="h-5 w-5" />}
-                      label="Employees"
-                      value={(account.company_size || account.employee_count) ? (account.company_size || account.employee_count) : '-'}
-                    />}
+                    {canView('account_type') && (
+                      <DetailInfoRow
+                        icon={<Tag className="h-5 w-5" />}
+                        label="Type"
+                        value={
+                          account.account_type ? (
+                            <span className="capitalize">
+                              {account.account_type_relation.status_name}
+                            </span>
+                          ) : (
+                            '-'
+                          )
+                        }
+                      />
+                    )}
 
-                    {canView('annual_revenue') && <DetailInfoRow
-                      icon={<DollarSign className="h-5 w-5" />}
-                      label="Revenue"
-                      value={formatCurrency(account.annual_revenue, 'USD')}
-                    />}
+                    {canView('linkedin') && (
+                      <DetailInfoRow
+                        icon={<Linkedin className="h-5 w-5" />}
+                        label="LinkedIn"
+                        value={
+                          account.linkedin_url ? (
+                            <a
+                              href={account.linkedin_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:underline dark:text-blue-400"
+                            >
+                              {account.linkedin_url}
+                            </a>
+                          ) : (
+                            '-'
+                          )
+                        }
+                      />
+                    )}
 
-                    {canView('account_type') && <DetailInfoRow
-                      icon={<Tag className="h-5 w-5" />}
-                      label="Type"
-                      value={
-                        account.account_type ? (<span className="capitalize">
-                          {account.account_type_relation.status_name}
-                        </span>) : '-'
-                      }
-                    />}
+                    {canView('description') && (
+                      <DetailInfoRow
+                        icon={<FileText className="h-5 w-5" />}
+                        label="Description"
+                        value={account.description || '-'}
+                      />
+                    )}
 
+                    {canView('billing_street') && (
+                      <DetailInfoRow
+                        icon={<MapPin className="h-5 w-5" />}
+                        label="Billing"
+                        value={billingAddress || '-'}
+                      />
+                    )}
 
-                    {canView('linkedin') && <DetailInfoRow
-                      icon={<Linkedin className="h-5 w-5" />}
-                      label="LinkedIn"
-                      value={
-                        account.linkedin_url ? (<a
-                          href={account.linkedin_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:underline dark:text-blue-400"
-                        >
-                          {account.linkedin_url}
-                        </a>) : '-'
-                      }
-                    />}
-
-
-                    {canView('description') && <DetailInfoRow
-                      icon={<FileText className="h-5 w-5" />}
-                      label="Description"
-                      value={account.description || '-'}
-                    />}
-
-
-                    {canView('billing_street') && <DetailInfoRow
-                      icon={<MapPin className="h-5 w-5" />}
-                      label="Billing"
-                      value={billingAddress || '-'}
-                    />}
-
-                    {canView('shipping_street') && <DetailInfoRow
-                      icon={<MapPin className="h-5 w-5" />}
-                      label="Shipping"
-                      value={shippingAddress || '-'}
-                    />}
-
+                    {canView('shipping_street') && (
+                      <DetailInfoRow
+                        icon={<MapPin className="h-5 w-5" />}
+                        label="Shipping"
+                        value={shippingAddress || '-'}
+                      />
+                    )}
                   </DetailInfoList>
                 </AccordionContent>
               </AccordionItem>
@@ -796,12 +883,20 @@ export default function AccountDetailsPage() {
                   <AccordionContent className="px-4 pb-4">
                     <DetailInfoList>
                       {customFieldsToShow.map((field) => {
-                        const val = (account.custom_fields as Record<string, unknown>)?.[field.field_key];
+                        const val = (
+                          account.custom_fields as Record<string, unknown>
+                        )?.[field.field_key];
                         return (
                           <DetailInfoRow
                             key={field.id}
                             label={field.field_label}
-                            value={val === true ? 'Yes' : val === false ? 'No' : String(val ?? '-')}
+                            value={
+                              val === true
+                                ? 'Yes'
+                                : val === false
+                                  ? 'No'
+                                  : String(val ?? '-')
+                            }
                           />
                         );
                       })}
@@ -829,7 +924,7 @@ export default function AccountDetailsPage() {
                         e.stopPropagation();
                         setIsContactDialogOpen(true);
                       }}
-                      className="focus-visible:ring-ring inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ring-offset-background bg-primary text-primary-foreground hover:bg-primary/90 h-8 px-3 py-1 gap-2 shrink-0"
+                      className="focus-visible:ring-ring ring-offset-background bg-primary text-primary-foreground hover:bg-primary/90 inline-flex h-8 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
                     >
                       <Plus className="h-4 w-4" />
                       <span>Add Contact</span>
@@ -911,7 +1006,7 @@ export default function AccountDetailsPage() {
                       e.stopPropagation();
                       setIsOpportunityDialogOpen(true);
                     }}
-                    className="focus-visible:ring-ring inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ring-offset-background bg-primary text-primary-foreground hover:bg-primary/90 h-8 px-3 py-1 gap-2 shrink-0"
+                    className="focus-visible:ring-ring ring-offset-background bg-primary text-primary-foreground hover:bg-primary/90 inline-flex h-8 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
                   >
                     <Plus className="h-4 w-4" />
                     <span>New Opportunity</span>
@@ -937,7 +1032,52 @@ export default function AccountDetailsPage() {
                             }
                             subtitle={
                               <span>
-                                {formatCurrency(opp.amount, opp.currency || 'USD')}
+                                {(() => {
+                                  const workspaceCurrency =
+                                    currenciesData?.find((c) => c.is_default)
+                                      ?.currency_code || 'USD';
+
+                                  // If opportunity has base_amount_usd, use that with workspace currency
+                                  if (
+                                    opp.base_amount_usd !== null &&
+                                    opp.base_amount_usd !== undefined
+                                  ) {
+                                    const rate =
+                                      findLatestRateToUsd(
+                                        exchangeRates as ExchangeRateRecord[],
+                                        workspaceCurrency,
+                                      )?.exchange_rate || 1;
+                                    const convertedAmount = convertFromUSD(
+                                      opp.base_amount_usd,
+                                      rate,
+                                    );
+                                    return formatWorkspaceCurrency(
+                                      convertedAmount,
+                                      workspaceCurrency,
+                                    );
+                                  }
+
+                                  // Fallback: use original amount with original currency
+                                  if (
+                                    opp.amount_original !== null &&
+                                    opp.amount_original !== undefined
+                                  ) {
+                                    const currency =
+                                      opp.currency_original ||
+                                      opp.currency ||
+                                      'USD';
+                                    return formatWorkspaceCurrency(
+                                      opp.amount_original,
+                                      currency,
+                                    );
+                                  }
+
+                                  // Last resort: use stored amount
+                                  return formatWorkspaceCurrency(
+                                    opp.amount || 0,
+                                    opp.currency || 'USD',
+                                  );
+                                })()}
                               </span>
                             }
                             metadata={
@@ -997,7 +1137,7 @@ export default function AccountDetailsPage() {
                         e.stopPropagation();
                         setIsAssignModalOpen(true);
                       }}
-                      className="focus-visible:ring-ring inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ring-offset-background bg-primary text-primary-foreground hover:bg-primary/90 h-8 px-3 py-1 gap-2 shrink-0"
+                      className="focus-visible:ring-ring ring-offset-background bg-primary text-primary-foreground hover:bg-primary/90 inline-flex h-8 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
                     >
                       <Plus className="h-4 w-4" />
                       <span>Assign Member</span>
@@ -1034,33 +1174,45 @@ export default function AccountDetailsPage() {
                     <DetailInfoRow
                       icon={<Calendar className="h-5 w-5" />}
                       label="Created At"
-                      value={account.created_at ? formatDate(account.created_at) : '-'}
+                      value={
+                        account.created_at
+                          ? formatDate(account.created_at)
+                          : '-'
+                      }
                     />
                     <DetailInfoRow
                       icon={<Calendar className="h-5 w-5" />}
                       label="Updated"
-                      value={account.updated_at ? formatDate(account.updated_at) : '-'}
+                      value={
+                        account.updated_at
+                          ? formatDate(account.updated_at)
+                          : '-'
+                      }
                     />
 
                     <DetailInfoRow
                       icon={<Globe className="h-5 w-5" />}
                       label="Twitter"
                       value={
-                        account.twitter_handle ? (<a
-                          href={`https://twitter.com/${account.twitter_handle.replace('@', '')}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:underline dark:text-blue-400"
-                        >
-                          @{account.twitter_handle.replace('@', '')}
-                        </a>) : '-'
+                        account.twitter_handle ? (
+                          <a
+                            href={`https://twitter.com/${account.twitter_handle.replace('@', '')}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:underline dark:text-blue-400"
+                          >
+                            @{account.twitter_handle.replace('@', '')}
+                          </a>
+                        ) : (
+                          '-'
+                        )
                       }
                     />
                     <DetailInfoRow
                       icon={<FileText className="h-5 w-5" />}
                       label="Tags"
                       value={
-                        (account.tags && account.tags.length > 0) ? (
+                        account.tags && account.tags.length > 0 ? (
                           <div className="flex flex-wrap gap-1">
                             {account.tags.map((tag: string) => (
                               <Badge
@@ -1071,7 +1223,11 @@ export default function AccountDetailsPage() {
                                 {tag}
                               </Badge>
                             ))}
-                          </div>) : '-'}
+                          </div>
+                        ) : (
+                          '-'
+                        )
+                      }
                     />
                   </DetailInfoList>
                 </AccordionContent>
