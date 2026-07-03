@@ -148,6 +148,11 @@ type ResourcePageProps = {
   canViewColumn?: (columnKey: string) => boolean;
   /** Full entity field definitions for displaying column header lock icons and configuration */
   systemFields?: any[];
+  /**
+   * Optional FLS function for create/edit dialogs.
+   * When provided, form fields for which this returns false are hidden from the modal.
+   */
+  canEditField?: (fieldKey: string) => boolean;
 };
 
 function getInitialForm(
@@ -185,6 +190,7 @@ export function ServiceCloudResourcePage({
   onColumnAddClick,
   canViewColumn,
   systemFields = [],
+  canEditField,
 }: ResourcePageProps) {
   // Apply FLS: filter out columns the current user cannot view
   const visibleColumns = useMemo(
@@ -561,7 +567,7 @@ export function ServiceCloudResourcePage({
               </DialogHeader>
               <div className="flex-1 space-y-4 overflow-y-auto p-6 pb-8">
                 <div className="grid gap-4">
-                  {fields.map((field) => (
+                  {fields.filter((field) => !canEditField || canEditField(field.key)).map((field) => (
                     <div key={field.key} className="space-y-2">
                       <Label>{field.label}</Label>
                       {field.type === 'select' ? (

@@ -35,10 +35,10 @@ import {
   TableHeader,
   TableRow,
 } from '@kit/ui/table';
-import { useColumnResize } from '@kit/ui/use-column-resize';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@kit/ui/tabs';
 import { Textarea } from '@kit/ui/textarea';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@kit/ui/tooltip';
+import { useColumnResize } from '@kit/ui/use-column-resize';
 import { useDateRangeFilter } from '@kit/ui/use-date-range-filter';
 
 import {
@@ -69,11 +69,16 @@ export function ServiceCloudCustomersPage({
   systemOrganizationFields = [],
   canViewCustomerColumn,
   canViewOrganizationColumn,
+  canEditCustomerField,
+  canEditOrganizationField,
 }: {
   workspaceId: string;
   isAdmin?: boolean;
   onColumnAddClick?: (type: 'customers' | 'organizations') => void;
-  onColumnEditClick?: (columnKey: string, type: 'customers' | 'organizations') => void;
+  onColumnEditClick?: (
+    columnKey: string,
+    type: 'customers' | 'organizations',
+  ) => void;
   customCustomerColumns?: any[];
   customOrganizationColumns?: any[];
   systemCustomerFields?: any[];
@@ -82,6 +87,10 @@ export function ServiceCloudCustomersPage({
   canViewCustomerColumn?: (columnKey: string) => boolean;
   /** Optional FLS function for organization columns. Columns returning false are hidden. */
   canViewOrganizationColumn?: (columnKey: string) => boolean;
+  /** Optional FLS function for customer create/edit modal. Fields returning false are hidden. */
+  canEditCustomerField?: (fieldKey: string) => boolean;
+  /** Optional FLS function for organization create/edit modal. Fields returning false are hidden. */
+  canEditOrganizationField?: (fieldKey: string) => boolean;
 }) {
   const { formatDate } = useLocalization();
   const { canAccess, isLoading } = useServiceCloudPermissions(workspaceId);
@@ -119,9 +128,7 @@ export function ServiceCloudCustomersPage({
     clearDateRange: clearUpdatedOnRange,
   } = useDateRangeFilter();
 
-  const activeFilterCount =
-    (createdOnRange ? 1 : 0) +
-    (updatedOnRange ? 1 : 0);
+  const activeFilterCount = (createdOnRange ? 1 : 0) + (updatedOnRange ? 1 : 0);
 
   const filterGroups = [
     {
@@ -141,10 +148,18 @@ export function ServiceCloudCustomersPage({
   ];
 
   const queryParams = {
-    ...(computedCreatedOnDates?.from ? { createdAtFrom: computedCreatedOnDates.from } : {}),
-    ...(computedCreatedOnDates?.to ? { createdAtTo: computedCreatedOnDates.to } : {}),
-    ...(computedUpdatedOnDates?.from ? { updatedAtFrom: computedUpdatedOnDates.from } : {}),
-    ...(computedUpdatedOnDates?.to ? { updatedAtTo: computedUpdatedOnDates.to } : {}),
+    ...(computedCreatedOnDates?.from
+      ? { createdAtFrom: computedCreatedOnDates.from }
+      : {}),
+    ...(computedCreatedOnDates?.to
+      ? { createdAtTo: computedCreatedOnDates.to }
+      : {}),
+    ...(computedUpdatedOnDates?.from
+      ? { updatedAtFrom: computedUpdatedOnDates.from }
+      : {}),
+    ...(computedUpdatedOnDates?.to
+      ? { updatedAtTo: computedUpdatedOnDates.to }
+      : {}),
   };
 
   // --- Create Ticket from Customer state ---
@@ -160,7 +175,9 @@ export function ServiceCloudCustomersPage({
   const [ticketsModalCustomer, setTicketsModalCustomer] =
     useState<ServiceCloudRecord | null>(null);
 
-  const { getHeaderProps, getResizeHandleProps } = useColumnResize('sc-customer-tickets-modal');
+  const { getHeaderProps, getResizeHandleProps } = useColumnResize(
+    'sc-customer-tickets-modal',
+  );
 
   const { data: customerTickets = [], isLoading: isLoadingTickets } = useQuery<
     ServiceCloudRecord[]
@@ -191,15 +208,30 @@ export function ServiceCloudCustomersPage({
       (createOpen || Boolean(ticketsModalCustomer)) && Boolean(workspaceId),
   });
 
-  const statuses: any[] = lookups?.statuses ?? [];
-  const priorities: any[] = lookups?.priorities ?? [];
-  const categories: any[] = lookups?.categories ?? [];
+  const allStatuses: any[] = lookups?.statuses ?? [];
+  const allPriorities: any[] = lookups?.priorities ?? [];
+  const allCategories: any[] = lookups?.categories ?? [];
+
+  // Filter out private statuses/priorities that the current user cannot access
+  const statuses = allStatuses.filter((s: any) => {
+    if (s.access_type === 'public') return true;
+    if (s.access_type === 'private') return false;
+    return true;
+  });
+
+  const priorities = allPriorities.filter((p: any) => {
+    if (p.access_type === 'public') return true;
+    if (p.access_type === 'private') return false;
+    return true;
+  });
+
+  const categories = allCategories;
 
   const statusById = new Map<string, any>(
-    statuses.map((status: any) => [status.id, status]),
+    allStatuses.map((status: any) => [status.id, status]),
   );
   const priorityById = new Map<string, any>(
-    priorities.map((priority: any) => [priority.id, priority]),
+    allPriorities.map((priority: any) => [priority.id, priority]),
   );
 
   const statusOptions = statuses.map((s: any) => ({
@@ -308,10 +340,12 @@ export function ServiceCloudCustomersPage({
   ) : null;
 
   const getCustomerLabel = (key: string, fallback: string) =>
-    systemCustomerFields.find((f: any) => f.field_key === key)?.field_label ?? fallback;
+    systemCustomerFields.find((f: any) => f.field_key === key)?.field_label ??
+    fallback;
 
   const getOrganizationLabel = (key: string, fallback: string) =>
-    systemOrganizationFields.find((f: any) => f.field_key === key)?.field_label ?? fallback;
+    systemOrganizationFields.find((f: any) => f.field_key === key)
+      ?.field_label ?? fallback;
 
   return (
     <>
@@ -335,9 +369,16 @@ export function ServiceCloudCustomersPage({
             canEdit={canEdit}
             canDelete={canDelete}
             isAdmin={isAdmin}
-            onColumnAddClick={onColumnAddClick ? () => onColumnAddClick('customers') : undefined}
-            onColumnEditClick={onColumnEditClick ? (key) => onColumnEditClick(key, 'customers') : undefined}
+            onColumnAddClick={
+              onColumnAddClick ? () => onColumnAddClick('customers') : undefined
+            }
+            onColumnEditClick={
+              onColumnEditClick
+                ? (key) => onColumnEditClick(key, 'customers')
+                : undefined
+            }
             canViewColumn={canViewCustomerColumn}
+            canEditField={canEditCustomerField}
             systemFields={systemCustomerFields}
             queryParams={queryParams}
             filterGroups={filterGroups}
@@ -348,10 +389,21 @@ export function ServiceCloudCustomersPage({
             }}
             toolbar={newTicketToolbar}
             fields={[
-              { key: 'name', label: getCustomerLabel('name', 'Name'), required: true },
-              { key: 'email', label: getCustomerLabel('email', 'Email'), type: 'email' },
+              {
+                key: 'name',
+                label: getCustomerLabel('name', 'Name'),
+                required: true,
+              },
+              {
+                key: 'email',
+                label: getCustomerLabel('email', 'Email'),
+                type: 'email',
+              },
               { key: 'phone', label: getCustomerLabel('phone', 'Phone') },
-              { key: 'job_title', label: getCustomerLabel('job_title', 'Job Title') },
+              {
+                key: 'job_title',
+                label: getCustomerLabel('job_title', 'Job Title'),
+              },
             ]}
             columns={[
               {
@@ -369,7 +421,10 @@ export function ServiceCloudCustomersPage({
               },
               { key: 'email', label: getCustomerLabel('email', 'Email') },
               { key: 'phone', label: getCustomerLabel('phone', 'Phone') },
-              { key: 'job_title', label: getCustomerLabel('job_title', 'Job Title') },
+              {
+                key: 'job_title',
+                label: getCustomerLabel('job_title', 'Job Title'),
+              },
               ...customCustomerColumns,
             ]}
           />
@@ -385,9 +440,18 @@ export function ServiceCloudCustomersPage({
             canEdit={canEdit}
             canDelete={canDelete}
             isAdmin={isAdmin}
-            onColumnAddClick={onColumnAddClick ? () => onColumnAddClick('organizations') : undefined}
-            onColumnEditClick={onColumnEditClick ? (key) => onColumnEditClick(key, 'organizations') : undefined}
+            onColumnAddClick={
+              onColumnAddClick
+                ? () => onColumnAddClick('organizations')
+                : undefined
+            }
+            onColumnEditClick={
+              onColumnEditClick
+                ? (key) => onColumnEditClick(key, 'organizations')
+                : undefined
+            }
             canViewColumn={canViewOrganizationColumn}
+            canEditField={canEditOrganizationField}
             systemFields={systemOrganizationFields}
             queryParams={queryParams}
             filterGroups={filterGroups}
@@ -397,16 +461,36 @@ export function ServiceCloudCustomersPage({
               clearUpdatedOnRange();
             }}
             fields={[
-              { key: 'name', label: getOrganizationLabel('name', 'Name'), required: true },
-              { key: 'website', label: getOrganizationLabel('website', 'Website') },
-              { key: 'industry', label: getOrganizationLabel('industry', 'Industry') },
-              { key: 'email', label: getOrganizationLabel('email', 'Email'), type: 'email' },
+              {
+                key: 'name',
+                label: getOrganizationLabel('name', 'Name'),
+                required: true,
+              },
+              {
+                key: 'website',
+                label: getOrganizationLabel('website', 'Website'),
+              },
+              {
+                key: 'industry',
+                label: getOrganizationLabel('industry', 'Industry'),
+              },
+              {
+                key: 'email',
+                label: getOrganizationLabel('email', 'Email'),
+                type: 'email',
+              },
               { key: 'phone', label: getOrganizationLabel('phone', 'Phone') },
             ]}
             columns={[
               { key: 'name', label: getOrganizationLabel('name', 'Name') },
-              { key: 'website', label: getOrganizationLabel('website', 'Website') },
-              { key: 'industry', label: getOrganizationLabel('industry', 'Industry') },
+              {
+                key: 'website',
+                label: getOrganizationLabel('website', 'Website'),
+              },
+              {
+                key: 'industry',
+                label: getOrganizationLabel('industry', 'Industry'),
+              },
               { key: 'email', label: getOrganizationLabel('email', 'Email') },
               { key: 'phone', label: getOrganizationLabel('phone', 'Phone') },
               ...customOrganizationColumns,
@@ -616,25 +700,55 @@ export function ServiceCloudCustomersPage({
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="relative" {...getHeaderProps('ticket_number')}>
+                      <TableHead
+                        className="relative"
+                        {...getHeaderProps('ticket_number')}
+                      >
                         Ticket #
-                        <span className="col-resize-handle" {...getResizeHandleProps('ticket_number')} />
+                        <span
+                          className="col-resize-handle"
+                          {...getResizeHandleProps('ticket_number')}
+                        />
                       </TableHead>
-                      <TableHead className="relative" {...getHeaderProps('subject')}>
+                      <TableHead
+                        className="relative"
+                        {...getHeaderProps('subject')}
+                      >
                         Subject
-                        <span className="col-resize-handle" {...getResizeHandleProps('subject')} />
+                        <span
+                          className="col-resize-handle"
+                          {...getResizeHandleProps('subject')}
+                        />
                       </TableHead>
-                      <TableHead className="relative" {...getHeaderProps('status')}>
+                      <TableHead
+                        className="relative"
+                        {...getHeaderProps('status')}
+                      >
                         Status
-                        <span className="col-resize-handle" {...getResizeHandleProps('status')} />
+                        <span
+                          className="col-resize-handle"
+                          {...getResizeHandleProps('status')}
+                        />
                       </TableHead>
-                      <TableHead className="relative" {...getHeaderProps('priority')}>
+                      <TableHead
+                        className="relative"
+                        {...getHeaderProps('priority')}
+                      >
                         Priority
-                        <span className="col-resize-handle" {...getResizeHandleProps('priority')} />
+                        <span
+                          className="col-resize-handle"
+                          {...getResizeHandleProps('priority')}
+                        />
                       </TableHead>
-                      <TableHead className="relative" {...getHeaderProps('created')}>
+                      <TableHead
+                        className="relative"
+                        {...getHeaderProps('created')}
+                      >
                         Created
-                        <span className="col-resize-handle" {...getResizeHandleProps('created')} />
+                        <span
+                          className="col-resize-handle"
+                          {...getResizeHandleProps('created')}
+                        />
                       </TableHead>
                     </TableRow>
                   </TableHeader>

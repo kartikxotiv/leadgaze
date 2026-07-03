@@ -91,15 +91,15 @@ export default function ServiceCloudCustomersRoute() {
     enabled: !!workspaceId && !!user?.id,
   });
 
-  // 4. Field-Level Security (FLS): per-column view permissions for customers and organizations
-  const { canViewColumn: canViewCustomerColumn } = useFieldPermissions({
+  // 4. Field-Level Security (FLS): per-column view/edit permissions for customers and organizations
+  const { canViewColumn: canViewCustomerColumn, canEdit: canEditCustomerField } = useFieldPermissions({
     entityType: 'customers',
     workspaceId: workspaceId,
     enabled: !!workspaceId && !!user?.id,
     productKey,
   });
 
-  const { canViewColumn: canViewOrganizationColumn } = useFieldPermissions({
+  const { canViewColumn: canViewOrganizationColumn, canEdit: canEditOrganizationField } = useFieldPermissions({
     entityType: 'organizations',
     workspaceId: workspaceId,
     enabled: !!workspaceId && !!user?.id,
@@ -245,6 +245,8 @@ export default function ServiceCloudCustomersRoute() {
         systemOrganizationFields={organizationFields}
         canViewCustomerColumn={canViewCustomerColumn}
         canViewOrganizationColumn={canViewOrganizationColumn}
+        canEditCustomerField={canEditCustomerField}
+        canEditOrganizationField={canEditOrganizationField}
       />
 
       <AddColumnModal

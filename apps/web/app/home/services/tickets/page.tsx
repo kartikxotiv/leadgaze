@@ -76,8 +76,8 @@ export default function ServiceCloudTicketsRoute() {
     enabled: !!workspaceId && !!user?.id,
   });
 
-  // 4. Field-Level Security (FLS): which columns can the current user view?
-  const { canViewColumn } = useFieldPermissions({
+  // 4. Field-Level Security (FLS): which columns can the current user view/edit?
+  const { canViewColumn, canEdit: canEditTicketField } = useFieldPermissions({
     entityType,
     workspaceId: workspaceId,
     enabled: !!workspaceId && !!user?.id,
@@ -201,6 +201,7 @@ export default function ServiceCloudTicketsRoute() {
         customColumns={customColumns}
         systemFields={allEntityFields}
         canViewColumn={canViewColumn}
+        canEditField={canEditTicketField}
       />
 
       <AddColumnModal
