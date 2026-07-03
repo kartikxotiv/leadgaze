@@ -13,6 +13,7 @@ import {
   useDynamicColumns,
   useUpdateField,
 } from '~/lib/hooks/use-dynamic-columns';
+import { useFieldPermissions } from '~/lib/hooks/use-field-permissions';
 import { useTeamMembers } from '~/lib/hooks/use-team-members';
 import { useModuleRoles, useRBAC } from '~/lib/rbac/rbac-provider';
 
@@ -87,6 +88,19 @@ export default function ServiceCloudCustomersRoute() {
     workspaceId: workspaceId,
     userId: user?.id,
     productKey,
+    enabled: !!workspaceId && !!user?.id,
+  });
+
+  // 4. Field-Level Security (FLS): per-column view permissions for customers and organizations
+  const { canViewColumn: canViewCustomerColumn } = useFieldPermissions({
+    entityType: 'customers',
+    workspaceId: workspaceId,
+    enabled: !!workspaceId && !!user?.id,
+  });
+
+  const { canViewColumn: canViewOrganizationColumn } = useFieldPermissions({
+    entityType: 'organizations',
+    workspaceId: workspaceId,
     enabled: !!workspaceId && !!user?.id,
   });
 
@@ -227,6 +241,8 @@ export default function ServiceCloudCustomersRoute() {
         customOrganizationColumns={customOrganizationColumns}
         systemCustomerFields={customerFields}
         systemOrganizationFields={organizationFields}
+        canViewCustomerColumn={canViewCustomerColumn}
+        canViewOrganizationColumn={canViewOrganizationColumn}
       />
 
       <AddColumnModal

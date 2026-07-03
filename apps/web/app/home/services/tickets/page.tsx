@@ -13,6 +13,7 @@ import {
   useDynamicColumns,
   useUpdateField,
 } from '~/lib/hooks/use-dynamic-columns';
+import { useFieldPermissions } from '~/lib/hooks/use-field-permissions';
 import { useTeamMembers } from '~/lib/hooks/use-team-members';
 import { useModuleRoles, useRBAC } from '~/lib/rbac/rbac-provider';
 
@@ -72,6 +73,13 @@ export default function ServiceCloudTicketsRoute() {
     workspaceId: workspaceId,
     userId: user?.id,
     productKey,
+    enabled: !!workspaceId && !!user?.id,
+  });
+
+  // 4. Field-Level Security (FLS): which columns can the current user view?
+  const { canViewColumn } = useFieldPermissions({
+    entityType,
+    workspaceId: workspaceId,
     enabled: !!workspaceId && !!user?.id,
   });
 
@@ -191,6 +199,7 @@ export default function ServiceCloudTicketsRoute() {
         onColumnEditClick={handleEditColumn}
         customColumns={customColumns}
         systemFields={allEntityFields}
+        canViewColumn={canViewColumn}
       />
 
       <AddColumnModal

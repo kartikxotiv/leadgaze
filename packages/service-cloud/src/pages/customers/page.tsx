@@ -67,6 +67,8 @@ export function ServiceCloudCustomersPage({
   customOrganizationColumns = [],
   systemCustomerFields = [],
   systemOrganizationFields = [],
+  canViewCustomerColumn,
+  canViewOrganizationColumn,
 }: {
   workspaceId: string;
   isAdmin?: boolean;
@@ -76,6 +78,10 @@ export function ServiceCloudCustomersPage({
   customOrganizationColumns?: any[];
   systemCustomerFields?: any[];
   systemOrganizationFields?: any[];
+  /** Optional FLS function for customer columns. Columns returning false are hidden. */
+  canViewCustomerColumn?: (columnKey: string) => boolean;
+  /** Optional FLS function for organization columns. Columns returning false are hidden. */
+  canViewOrganizationColumn?: (columnKey: string) => boolean;
 }) {
   const { formatDate } = useLocalization();
   const { canAccess, isLoading } = useServiceCloudPermissions(workspaceId);
@@ -331,6 +337,7 @@ export function ServiceCloudCustomersPage({
             isAdmin={isAdmin}
             onColumnAddClick={onColumnAddClick ? () => onColumnAddClick('customers') : undefined}
             onColumnEditClick={onColumnEditClick ? (key) => onColumnEditClick(key, 'customers') : undefined}
+            canViewColumn={canViewCustomerColumn}
             queryParams={queryParams}
             filterGroups={filterGroups}
             activeFilterCount={activeFilterCount}
@@ -379,6 +386,7 @@ export function ServiceCloudCustomersPage({
             isAdmin={isAdmin}
             onColumnAddClick={onColumnAddClick ? () => onColumnAddClick('organizations') : undefined}
             onColumnEditClick={onColumnEditClick ? (key) => onColumnEditClick(key, 'organizations') : undefined}
+            canViewColumn={canViewOrganizationColumn}
             queryParams={queryParams}
             filterGroups={filterGroups}
             activeFilterCount={activeFilterCount}

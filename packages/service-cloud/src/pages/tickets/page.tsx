@@ -103,6 +103,7 @@ export function ServiceCloudTicketsPage({
   onColumnEditClick,
   customColumns = [],
   systemFields = [],
+  canViewColumn,
 }: {
   workspaceId: string;
   isAdmin?: boolean;
@@ -110,6 +111,8 @@ export function ServiceCloudTicketsPage({
   onColumnEditClick?: (columnKey: string) => void;
   customColumns?: any[];
   systemFields?: any[];
+  /** Optional FLS function: columns for which this returns false are hidden. */
+  canViewColumn?: (columnKey: string) => boolean;
 }) {
   const { formatDate } = useLocalization();
   const [createOpen, setCreateOpen] = useState(false);
@@ -354,6 +357,7 @@ export function ServiceCloudTicketsPage({
         isAdmin={isAdmin}
         onColumnAddClick={onColumnAddClick}
         onColumnEditClick={onColumnEditClick}
+        canViewColumn={canViewColumn}
         queryParams={queryParams}
         filterGroups={filterGroups}
         activeFilterCount={activeFilterCount}
