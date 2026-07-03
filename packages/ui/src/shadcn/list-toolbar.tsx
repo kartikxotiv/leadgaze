@@ -1,29 +1,36 @@
 'use client';
 
 import * as React from 'react';
+
 import * as ReactDOM from 'react-dom';
+
 import {
   Check,
   ChevronDown,
   Filter,
+  LucideIcon,
   Plus,
   Search,
   Trash2,
   X,
-  LucideIcon,
 } from 'lucide-react';
 
 import { cn } from '../lib/utils';
 import { Button } from './button';
+import { DateRangePickerPanel } from './date-range-picker-panel';
 import { Input } from './input';
-import { Popover, PopoverContent, PopoverTrigger, PopoverClose } from './popover';
+import {
+  Popover,
+  PopoverClose,
+  PopoverContent,
+  PopoverTrigger,
+} from './popover';
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from './tooltip';
-import { DateRangePickerPanel } from './date-range-picker-panel';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -37,7 +44,19 @@ export interface FilterOption {
 }
 
 export interface DateRangeValue {
-  preset: 'today' | 'yesterday' | 'last_7_days' | 'this_month' | 'this_year' | 'custom' | null;
+  preset:
+    | 'today'
+    | 'yesterday'
+    | 'last_7_days'
+    | 'this_week'
+    | 'this_month'
+    | 'this_quarter'
+    | 'last_quarter'
+    | 'last_month'
+    | 'this_year'
+    | 'last_year'
+    | 'custom'
+    | null;
   from: string | null;
   to: string | null;
 }
@@ -46,7 +65,7 @@ export interface FilterGroup {
   key: string;
   label: string;
   type?: 'options' | 'date';
-  
+
   // Options fields
   selectedValue?: string;
   options?: FilterOption[];
@@ -138,7 +157,7 @@ export const ListToolBar: React.FC<ListToolBarProps> = ({
   React.useEffect(() => {
     if (isFilterOpen && !initialisedRef.current && filterGroups.length > 0) {
       initialisedRef.current = true;
-      
+
       const activeGroups = filterGroups.filter((g) => {
         if (g.type === 'date') return !!g.dateValue;
         if (g.selectedValues) return g.selectedValues.length > 0;
@@ -151,7 +170,7 @@ export const ListToolBar: React.FC<ListToolBarProps> = ({
           activeGroups.map((g, index) => ({
             id: `row-${index}`,
             filterGroupKey: g.key,
-          }))
+          })),
         );
       } else {
         rowIdCounter.current = 1;
@@ -243,8 +262,12 @@ export const ListToolBar: React.FC<ListToolBarProps> = ({
     if (group.type === 'date') {
       if (!group.dateValue) return 'Select date';
       if (group.dateValue.preset === 'custom') {
-        const from = group.dateValue.from ? new Date(group.dateValue.from).toLocaleDateString() : '';
-        const to = group.dateValue.to ? new Date(group.dateValue.to).toLocaleDateString() : '';
+        const from = group.dateValue.from
+          ? new Date(group.dateValue.from).toLocaleDateString()
+          : '';
+        const to = group.dateValue.to
+          ? new Date(group.dateValue.to).toLocaleDateString()
+          : '';
         if (from && to && from !== to) return `${from} - ${to}`;
         return from || to || 'Select date';
       }
@@ -252,8 +275,13 @@ export const ListToolBar: React.FC<ListToolBarProps> = ({
         today: 'Today',
         yesterday: 'Yesterday',
         last_7_days: 'Last 7 Days',
+        this_week: 'This Week',
         this_month: 'This Month',
-        this_year: 'This Year'
+        this_quarter: 'This Quarter',
+        last_quarter: 'Last Quarter',
+        last_month: 'Last Month',
+        this_year: 'This Year',
+        last_year: 'Last Year',
       };
       return presets[group.dateValue.preset || ''] || 'Select date';
     }
@@ -305,7 +333,7 @@ export const ListToolBar: React.FC<ListToolBarProps> = ({
     <TooltipProvider>
       <div
         className={cn(
-          'flex items-center gap-2 bg-white p-2 border-light-gray border-1 dark:dark-theme-color',
+          'border-light-gray dark:dark-theme-color flex items-center gap-2 border-1 bg-white p-2',
           isFullWidth ? 'w-full' : 'w-auto',
           isRightAligned && 'ml-auto',
           className,
@@ -346,7 +374,7 @@ export const ListToolBar: React.FC<ListToolBarProps> = ({
             </PopoverTrigger>
 
             <PopoverContent
-              className="w-[460px] p-0 max-h-[420px] overflow-y-auto"
+              className="max-h-[420px] w-[460px] overflow-y-auto p-0"
               align="end"
               onOpenAutoFocus={(e) => e.preventDefault()}
               onPointerDownOutside={(e) => {
@@ -423,8 +451,9 @@ export const ListToolBar: React.FC<ListToolBarProps> = ({
                                   className="h-7 w-full text-xs"
                                   onChange={(e) => {
                                     const term = e.target.value.toLowerCase();
-                                    const container =
-                                      e.currentTarget.closest('[data-filter-portal]');
+                                    const container = e.currentTarget.closest(
+                                      '[data-filter-portal]',
+                                    );
                                     if (!container) return;
                                     container
                                       .querySelectorAll<HTMLButtonElement>(
@@ -606,125 +635,129 @@ export const ListToolBar: React.FC<ListToolBarProps> = ({
       {/* ── Portal-rendered value dropdown (escapes PopoverContent overflow) ── */}
       {openValueDropdown && dropdownPos
         ? (() => {
-          const activeRow = filterRows.find((r) => r.id === openValueDropdown);
-          if (!activeRow) return null;
-          const activeGroup = getGroupForRow(activeRow);
-          if (!activeGroup) return null;
-          const isMulti = !!activeGroup.selectedValues;
-          const filtered = (activeGroup.options || []).filter((opt) =>
-            opt.label.toLowerCase().includes(valueSearchTerm.toLowerCase()),
-          );
+            const activeRow = filterRows.find(
+              (r) => r.id === openValueDropdown,
+            );
+            if (!activeRow) return null;
+            const activeGroup = getGroupForRow(activeRow);
+            if (!activeGroup) return null;
+            const isMulti = !!activeGroup.selectedValues;
+            const filtered = (activeGroup.options || []).filter((opt) =>
+              opt.label.toLowerCase().includes(valueSearchTerm.toLowerCase()),
+            );
 
-          return ReactDOM.createPortal(
-            <>
-              {/* Transparent backdrop — catches outside clicks to close dropdown */}
-              <div
-                data-value-backdrop
-                style={{
-                  position: 'fixed',
-                  inset: 0,
-                  zIndex: 9998,
-                }}
-                onClick={() => {
-                  setOpenValueDropdown(null);
-                  setValueSearchTerm('');
-                  setDropdownPos(null);
-                }}
-              />
-              {/* Dropdown panel */}
-              <div
-                data-value-portal
-                style={{
-                  position: 'fixed',
-                  top: dropdownPos.top,
-                  left: dropdownPos.left,
-                  minWidth: dropdownPos.width,
-                  zIndex: 9999,
-                }}
-                className="rounded-md border bg-white shadow-lg dark:bg-gray-900"
-              >
-              {/* Search */}
-              {activeGroup.type === 'date' ? (
-                <DateRangePickerPanel
-                  value={activeGroup.dateValue || null}
-                  onChange={(val) => {
-                    activeGroup.onDateChange?.(val);
-                    setOpenValueDropdown(null);
-                    setDropdownPos(null);
+            return ReactDOM.createPortal(
+              <>
+                {/* Transparent backdrop — catches outside clicks to close dropdown */}
+                <div
+                  data-value-backdrop
+                  style={{
+                    position: 'fixed',
+                    inset: 0,
+                    zIndex: 9998,
                   }}
-                  onClose={() => {
+                  onClick={() => {
                     setOpenValueDropdown(null);
+                    setValueSearchTerm('');
                     setDropdownPos(null);
                   }}
                 />
-              ) : (
-                <>
-                  <div className="p-2">
-                    <input
-                      type="text"
-                      placeholder="Search…"
-                      value={valueSearchTerm}
-                      onChange={(e) => setValueSearchTerm(e.target.value)}
-                      className="h-7 w-full rounded border border-gray-200 px-2 text-xs outline-none focus:ring-1 focus:ring-gray-300"
-                      autoFocus
+                {/* Dropdown panel */}
+                <div
+                  data-value-portal
+                  style={{
+                    position: 'fixed',
+                    top: dropdownPos.top,
+                    left: dropdownPos.left,
+                    minWidth: dropdownPos.width,
+                    zIndex: 9999,
+                  }}
+                  className="rounded-md border bg-white shadow-lg dark:bg-gray-900"
+                >
+                  {/* Search */}
+                  {activeGroup.type === 'date' ? (
+                    <DateRangePickerPanel
+                      value={activeGroup.dateValue || null}
+                      onChange={(val) => {
+                        activeGroup.onDateChange?.(val);
+                        setOpenValueDropdown(null);
+                        setDropdownPos(null);
+                      }}
+                      onClose={() => {
+                        setOpenValueDropdown(null);
+                        setDropdownPos(null);
+                      }}
                     />
-                  </div>
+                  ) : (
+                    <>
+                      <div className="p-2">
+                        <input
+                          type="text"
+                          placeholder="Search…"
+                          value={valueSearchTerm}
+                          onChange={(e) => setValueSearchTerm(e.target.value)}
+                          className="h-7 w-full rounded border border-gray-200 px-2 text-xs outline-none focus:ring-1 focus:ring-gray-300"
+                          autoFocus
+                        />
+                      </div>
 
-                  {/* Select All (multi-select only) */}
-                  {isMulti && (
-                    <div className="px-2 pb-1">
-                      <button
-                        className="text-xs text-blue-600 hover:underline"
-                        onClick={() => selectAllValues(activeRow)}
-                      >
-                        Select All
-                      </button>
-                    </div>
+                      {/* Select All (multi-select only) */}
+                      {isMulti && (
+                        <div className="px-2 pb-1">
+                          <button
+                            className="text-xs text-blue-600 hover:underline"
+                            onClick={() => selectAllValues(activeRow)}
+                          >
+                            Select All
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Options list */}
+                      <div className="max-h-[200px] overflow-y-auto px-1 pb-1">
+                        {filtered.length === 0 && (
+                          <p className="px-2 py-3 text-center text-xs text-gray-400">
+                            No options
+                          </p>
+                        )}
+                        {filtered.map((opt) => {
+                          const isSelected = isMulti
+                            ? activeGroup.selectedValues!.includes(opt.value)
+                            : activeGroup.selectedValue === opt.value;
+
+                          return (
+                            <button
+                              key={opt.value}
+                              className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-xs hover:bg-gray-100 dark:hover:bg-gray-800"
+                              onClick={() => toggleValue(activeRow, opt.value)}
+                            >
+                              {/* Color dot */}
+                              {opt.color && (
+                                <span
+                                  className="h-2.5 w-2.5 shrink-0 rounded-full"
+                                  style={{ backgroundColor: opt.color }}
+                                />
+                              )}
+                              <span className="flex-1 truncate">
+                                {opt.label}
+                              </span>
+                              {opt.badge && (
+                                <span className="shrink-0">{opt.badge}</span>
+                              )}
+                              {isSelected && (
+                                <Check className="h-4 w-4 shrink-0 text-blue-600" />
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </>
                   )}
-
-                  {/* Options list */}
-                  <div className="max-h-[200px] overflow-y-auto px-1 pb-1">
-                    {filtered.length === 0 && (
-                      <p className="px-2 py-3 text-center text-xs text-gray-400">
-                        No options
-                      </p>
-                    )}
-                    {filtered.map((opt) => {
-                      const isSelected = isMulti
-                        ? activeGroup.selectedValues!.includes(opt.value)
-                        : activeGroup.selectedValue === opt.value;
-
-                      return (
-                        <button
-                          key={opt.value}
-                          className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-xs hover:bg-gray-100 dark:hover:bg-gray-800"
-                          onClick={() => toggleValue(activeRow, opt.value)}
-                        >
-                          {/* Color dot */}
-                          {opt.color && (
-                            <span
-                              className="h-2.5 w-2.5 shrink-0 rounded-full"
-                              style={{ backgroundColor: opt.color }}
-                            />
-                          )}
-                          <span className="truncate flex-1">{opt.label}</span>
-                          {opt.badge && (
-                            <span className="shrink-0">{opt.badge}</span>
-                          )}
-                          {isSelected && (
-                             <Check className="h-4 w-4 text-blue-600 shrink-0" />
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </>
-              )}
-            </div>
-            </>,
-            document.body,
-          );
-        })()
+                </div>
+              </>,
+              document.body,
+            );
+          })()
         : null}
     </TooltipProvider>
   );
