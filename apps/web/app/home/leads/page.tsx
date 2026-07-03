@@ -106,7 +106,7 @@ const SYSTEM_FIELDS: Array<{
     label: 'Industry',
     sortKey: 'industry.industry_name',
   },
-  { id: 'company_size', key: 'company_size', label: 'Company Size' },
+  { id: 'company_size', key: 'company_size', label: 'Company Size', sortable: false },
   { id: 'location', key: 'location', label: 'Location' },
   { id: 'timezone', key: 'timezone', label: 'Timezone', sortable: false },
   {
