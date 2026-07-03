@@ -13,6 +13,7 @@ import {
   useDynamicColumns,
   useUpdateField,
 } from '~/lib/hooks/use-dynamic-columns';
+import { useFieldPermissions } from '~/lib/hooks/use-field-permissions';
 import { useTeamMembers } from '~/lib/hooks/use-team-members';
 import { useModuleRoles, useRBAC } from '~/lib/rbac/rbac-provider';
 
@@ -56,8 +57,8 @@ export default function ServiceCloudTicketsRoute() {
     const isOwner = currentWorkspace?.owner_id === user.id;
     return (
       isOwner ||
-      canAccess('tickets', 'admin') ||
-      canAccess('tickets', 'update')
+      canAccess('service_cloud', 'admin') ||
+      canAccess('service_cloud', 'update')
     );
   }, [workspaceId, user?.id, canAccess, currentWorkspace?.owner_id]);
 
@@ -73,6 +74,14 @@ export default function ServiceCloudTicketsRoute() {
     userId: user?.id,
     productKey,
     enabled: !!workspaceId && !!user?.id,
+  });
+
+  // 4. Field-Level Security (FLS): which columns can the current user view/edit?
+  const { canViewColumn, canEdit: canEditTicketField } = useFieldPermissions({
+    entityType,
+    workspaceId: workspaceId,
+    enabled: !!workspaceId && !!user?.id,
+    productKey,
   });
 
   const createField = useCreateField();
@@ -191,6 +200,8 @@ export default function ServiceCloudTicketsRoute() {
         onColumnEditClick={handleEditColumn}
         customColumns={customColumns}
         systemFields={allEntityFields}
+        canViewColumn={canViewColumn}
+        canEditField={canEditTicketField}
       />
 
       <AddColumnModal

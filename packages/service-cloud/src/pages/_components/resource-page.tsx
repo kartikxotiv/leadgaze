@@ -140,6 +140,19 @@ type ResourcePageProps = {
    * Called when the admin '+' add column button is clicked.
    */
   onColumnAddClick?: () => void;
+  /**
+   * Optional field-level security (FLS) function.
+   * When provided, columns for which this returns false are hidden entirely
+   * in both the table header and all data rows.
+   */
+  canViewColumn?: (columnKey: string) => boolean;
+  /** Full entity field definitions for displaying column header lock icons and configuration */
+  systemFields?: any[];
+  /**
+   * Optional FLS function for create/edit dialogs.
+   * When provided, form fields for which this returns false are hidden from the modal.
+   */
+  canEditField?: (fieldKey: string) => boolean;
 };
 
 function getInitialForm(
@@ -175,7 +188,16 @@ export function ServiceCloudResourcePage({
   isAdmin = false,
   onColumnEditClick,
   onColumnAddClick,
+  canViewColumn,
+  systemFields = [],
+  canEditField,
 }: ResourcePageProps) {
+  // Apply FLS: filter out columns the current user cannot view
+  const visibleColumns = useMemo(
+    () =>
+      canViewColumn ? columns.filter((col) => canViewColumn(col.key)) : columns,
+    [columns, canViewColumn],
+  );
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -384,7 +406,7 @@ export function ServiceCloudResourcePage({
             <Table>
               <TableHeader>
                 <TableRow>
-                  {columns.map((column) => (
+                  {visibleColumns.map((column) => (
                     <ColumnHeader
                       key={column.key}
                       label={column.label}
@@ -401,16 +423,7 @@ export function ServiceCloudResourcePage({
                           ? () => onColumnEditClick(column.key)
                           : undefined
                       }
-                      field={
-                        column.accessRestricted
-                          ? {
-                              id: column.key,
-                              field_key: column.key,
-                              is_system: true,
-                              access_rule: { access_type: 'private' },
-                            }
-                          : null
-                      }
+                      field={systemFields.find((f) => f.field_key === column.key) || null}
                       {...getHeaderProps(column.key)}
                     >
                       <span className="col-resize-handle" {...getResizeHandleProps(column.key)} />
@@ -441,7 +454,7 @@ export function ServiceCloudResourcePage({
                   [...Array(5)].map((_, i) => (
                     <TableRow key={`skeleton-${i}`}>
                       <TableCell
-                        colSpan={columns.length}
+                        colSpan={visibleColumns.length}
                         className="h-[52px] px-4 py-2"
                       >
                         <Skeleton className="h-7 w-full" />
@@ -456,7 +469,7 @@ export function ServiceCloudResourcePage({
                 ) : filteredData.length === 0 ? (
                   <TableRow>
                     <TableCell
-                      colSpan={columns.length + 1}
+                      colSpan={visibleColumns.length + 1}
                       className="text-muted-foreground py-8 text-center"
                     >
                       {emptyLabel}
@@ -465,7 +478,7 @@ export function ServiceCloudResourcePage({
                 ) : (
                   paginatedData.map((record: ServiceCloudRecord) => (
                     <TableRow key={record.id}>
-                      {columns.map((column) => (
+                      {visibleColumns.map((column) => (
                         <TableCell
                           key={column.key}
                           className={cn(
@@ -554,7 +567,7 @@ export function ServiceCloudResourcePage({
               </DialogHeader>
               <div className="flex-1 space-y-4 overflow-y-auto p-6 pb-8">
                 <div className="grid gap-4">
-                  {fields.map((field) => (
+                  {fields.filter((field) => !canEditField || canEditField(field.key)).map((field) => (
                     <div key={field.key} className="space-y-2">
                       <Label>{field.label}</Label>
                       {field.type === 'select' ? (
