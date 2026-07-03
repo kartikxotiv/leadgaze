@@ -358,6 +358,7 @@ export function ServiceCloudTicketsPage({
         onColumnAddClick={onColumnAddClick}
         onColumnEditClick={onColumnEditClick}
         canViewColumn={canViewColumn}
+        systemFields={systemFields}
         queryParams={queryParams}
         filterGroups={filterGroups}
         activeFilterCount={activeFilterCount}

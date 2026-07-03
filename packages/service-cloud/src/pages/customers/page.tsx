@@ -338,6 +338,7 @@ export function ServiceCloudCustomersPage({
             onColumnAddClick={onColumnAddClick ? () => onColumnAddClick('customers') : undefined}
             onColumnEditClick={onColumnEditClick ? (key) => onColumnEditClick(key, 'customers') : undefined}
             canViewColumn={canViewCustomerColumn}
+            systemFields={systemCustomerFields}
             queryParams={queryParams}
             filterGroups={filterGroups}
             activeFilterCount={activeFilterCount}
@@ -387,6 +388,7 @@ export function ServiceCloudCustomersPage({
             onColumnAddClick={onColumnAddClick ? () => onColumnAddClick('organizations') : undefined}
             onColumnEditClick={onColumnEditClick ? (key) => onColumnEditClick(key, 'organizations') : undefined}
             canViewColumn={canViewOrganizationColumn}
+            systemFields={systemOrganizationFields}
             queryParams={queryParams}
             filterGroups={filterGroups}
             activeFilterCount={activeFilterCount}

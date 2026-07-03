@@ -146,6 +146,8 @@ type ResourcePageProps = {
    * in both the table header and all data rows.
    */
   canViewColumn?: (columnKey: string) => boolean;
+  /** Full entity field definitions for displaying column header lock icons and configuration */
+  systemFields?: any[];
 };
 
 function getInitialForm(
@@ -182,6 +184,7 @@ export function ServiceCloudResourcePage({
   onColumnEditClick,
   onColumnAddClick,
   canViewColumn,
+  systemFields = [],
 }: ResourcePageProps) {
   // Apply FLS: filter out columns the current user cannot view
   const visibleColumns = useMemo(
@@ -414,16 +417,7 @@ export function ServiceCloudResourcePage({
                           ? () => onColumnEditClick(column.key)
                           : undefined
                       }
-                      field={
-                        column.accessRestricted
-                          ? {
-                              id: column.key,
-                              field_key: column.key,
-                              is_system: true,
-                              access_rule: { access_type: 'private' },
-                            }
-                          : null
-                      }
+                      field={systemFields.find((f) => f.field_key === column.key) || null}
                       {...getHeaderProps(column.key)}
                     >
                       <span className="col-resize-handle" {...getResizeHandleProps(column.key)} />

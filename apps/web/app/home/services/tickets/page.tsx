@@ -57,8 +57,8 @@ export default function ServiceCloudTicketsRoute() {
     const isOwner = currentWorkspace?.owner_id === user.id;
     return (
       isOwner ||
-      canAccess('tickets', 'admin') ||
-      canAccess('tickets', 'update')
+      canAccess('service_cloud', 'admin') ||
+      canAccess('service_cloud', 'update')
     );
   }, [workspaceId, user?.id, canAccess, currentWorkspace?.owner_id]);
 
@@ -81,6 +81,7 @@ export default function ServiceCloudTicketsRoute() {
     entityType,
     workspaceId: workspaceId,
     enabled: !!workspaceId && !!user?.id,
+    productKey,
   });
 
   const createField = useCreateField();

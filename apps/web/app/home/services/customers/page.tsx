@@ -59,8 +59,8 @@ export default function ServiceCloudCustomersRoute() {
     const isOwner = currentWorkspace?.owner_id === user.id;
     return (
       isOwner ||
-      canAccess('customers', 'admin') ||
-      canAccess('customers', 'update')
+      canAccess('service_cloud', 'admin') ||
+      canAccess('service_cloud', 'update')
     );
   }, [workspaceId, user?.id, canAccess, currentWorkspace?.owner_id]);
 
@@ -96,12 +96,14 @@ export default function ServiceCloudCustomersRoute() {
     entityType: 'customers',
     workspaceId: workspaceId,
     enabled: !!workspaceId && !!user?.id,
+    productKey,
   });
 
   const { canViewColumn: canViewOrganizationColumn } = useFieldPermissions({
     entityType: 'organizations',
     workspaceId: workspaceId,
     enabled: !!workspaceId && !!user?.id,
+    productKey,
   });
 
   const createField = useCreateField();
