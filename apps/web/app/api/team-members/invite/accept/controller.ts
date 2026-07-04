@@ -70,18 +70,44 @@ const acceptInvite = catchAsync(
       throw updateInviteError;
     }
 
-    // Check if a member record already exists (e.g. previously removed user)
-    const { data: existingMember } = await supabase
+    const invitationProductKey = (invitation as any).product_key ?? null;
+    let invitationProductId: string | null = null;
+
+    if (invitationProductKey) {
+      const { data: productRow, error: productError } = await supabase
+        .from('subscription_products')
+        .select('id')
+        .eq('product_key', invitationProductKey)
+        .maybeSingle();
+
+      if (productError) {
+        console.error(
+          'Fetch invitation subscription product error:',
+          productError,
+        );
+      }
+
+      invitationProductId = productRow?.id ?? null;
+    }
+
+    // Check if a member record already exists for this specific module (workspace_id + user_id + product_key)
+    // If product_key is null, find by workspace_id + user_id (legacy)
+    let findQuery: any = supabase
       .from('workspace_members')
-      .select('id')
+      .select('id, product_key')
       .eq('workspace_id', invitation.workspace_id)
-      .eq('user_id', userId)
-      .maybeSingle();
+      .eq('user_id', userId);
+    
+    if (invitationProductKey) {
+      findQuery = findQuery.eq('product_key', invitationProductKey);
+    }
+    
+    const { data: existingMember } = await findQuery.maybeSingle();
 
     let member;
 
     if (existingMember) {
-      // Re-activate the existing member record instead of inserting a duplicate
+      // Re-activate or update the existing member record for this specific module
       const { data: updatedMember, error: updateMemberError } = await supabase
         .from('workspace_members')
         .update({
@@ -92,6 +118,12 @@ const acceptInvite = catchAsync(
           accepted_at: new Date().toISOString(),
           is_primary_contact: invitation.is_primary_contact,
           personal_settings: invitation.personal_settings,
+          ...(invitationProductKey
+            ? {
+                product_key: invitationProductKey,
+                product_id: invitationProductId,
+              }
+            : {}),
         })
         .eq('id', existingMember.id)
         .select()
@@ -104,7 +136,7 @@ const acceptInvite = catchAsync(
 
       member = updatedMember;
     } else {
-      // Create a new workspace member record
+      // Create a new workspace member record for this specific module
       const { data: newMember, error: memberError } = await supabase
         .from('workspace_members')
         .insert({
@@ -112,6 +144,12 @@ const acceptInvite = catchAsync(
           user_id: userId,
           role_id: invitation.role_id,
           status: 'accepted',
+          ...(invitationProductKey
+            ? {
+                product_key: invitationProductKey,
+                product_id: invitationProductId,
+              }
+            : {}),
           invited_by: invitation.invited_by,
           invited_at: invitation.invited_at,
           accepted_at: new Date().toISOString(),
@@ -139,8 +177,6 @@ const acceptInvite = catchAsync(
     // ── Auto-assign seat for the specific module the invitation was for ──────
     // If the invitation has a product_key, only assign a seat for that module.
     // If no product_key (legacy invites), assign seats for all active modules.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const invitationProductKey = (invitation as any).product_key ?? null;
     await autoAssignSeats(
       invitation.workspace_id,
       userId,

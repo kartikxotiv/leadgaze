@@ -102,18 +102,19 @@ const createNewWorkspace = catchAsync(
       )
       .select();
 
+    const salesAdminRole = rolesData?.find(
+      (role: any) => role.product_key === 'sales' && role.role_key === 'admin',
+    );
+
     if (rolesError) {
       console.error('Roles creation error:', rolesError);
     }
 
-    // Add owner as admin member.
-    // Explicitly use the 'sales' admin role as the primary membership role because
-    // workspace_members stores only ONE role_id, and both rbac-provider and
-    // product-specific hooks (useServiceCloudPermissions, etc.) resolve
-    // permissions by querying role_permissions WHERE role_id = member.role_id.
-    // The sales admin role will hold ALL cross-product permissions for the owner.
-    const salesAdminRole =
-      rolesData?.find((r: any) => r.product_key === 'sales') ?? rolesData?.[0];
+    if (!salesAdminRole) {
+      console.warn('Sales admin role was not created or found. Owner cross-product permissions may be incomplete.');
+    }
+
+    // Add owner as primary global member (product_key = null) to serve as a fallback.
     if (salesAdminRole) {
       const { error: memberError } = await supabase
         .from('workspace_members')
@@ -124,6 +125,8 @@ const createNewWorkspace = catchAsync(
           status: 'accepted',
           accepted_at: new Date().toISOString(),
           is_primary_contact: true,
+          product_key: null,
+          product_id: null,
         });
 
       if (memberError) {
@@ -312,6 +315,57 @@ async function createTrialSeats(workspaceId: string, ownerUserId: string) {
 
   if (assignError) {
     console.error('Failed to create trial seat assignments:', assignError);
+  }
+
+  // Also create workspace_members records with module-scoped admin roles for the owner
+  // This ensures RBAC can find the correct role for each module
+  for (const product of products) {
+    // Find the admin role for this product in this workspace
+    const { data: adminRole } = await adminClient
+      .from('workspace_roles')
+      .select('id')
+      .eq('workspace_id', workspaceId)
+      .eq('product_key', product.product_key)
+      .eq('role_key', 'admin')
+      .maybeSingle();
+
+    if (adminRole) {
+      if (!product.product_key) {
+        console.warn(
+          `Skipping workspace member creation for product ${product.id} because product_key is missing.`,
+        );
+      } else {
+        // Check if workspace_member already exists for this product
+        const { data: existingMember } = await adminClient
+          .from('workspace_members')
+          .select('id')
+          .eq('workspace_id', workspaceId)
+          .eq('user_id', ownerUserId)
+          .eq('product_key', product.product_key)
+          .maybeSingle();
+
+        if (!existingMember) {
+          // Create workspace_member record with module-scoped admin role
+          const { error: memberError } = await adminClient
+            .from('workspace_members')
+            .insert({
+              workspace_id: workspaceId,
+              user_id: ownerUserId,
+              role_id: adminRole.id,
+              product_key: product.product_key,
+              product_id: product.id,
+              status: 'accepted',
+            });
+
+          if (memberError) {
+            console.error(
+              `Failed to create workspace member for ${product.product_key}:`,
+              memberError,
+            );
+          }
+        }
+      }
+    }
   }
 }
 

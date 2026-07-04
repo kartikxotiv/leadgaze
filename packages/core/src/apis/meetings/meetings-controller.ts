@@ -57,9 +57,10 @@ export const getMeetingsController = catchAsync(async ({ request }) => {
     const isWorkspaceOwner = workspace?.owner_id === user.id;
 
     // Check if user is an admin
-    const { data: member } = await supabase
+    const { data: members } = await supabase
       .from('workspace_members')
       .select(`
+        product_key,
         role:workspace_roles!workspace_members_role_id_fkey(
           role_key,
           hierarchy_level
@@ -67,8 +68,11 @@ export const getMeetingsController = catchAsync(async ({ request }) => {
       `)
       .eq('workspace_id', workspaceId)
       .eq('user_id', user.id)
-      .eq('status', 'accepted')
-      .maybeSingle();
+      .eq('status', 'accepted');
+
+    const member = members?.find((m: any) => m.product_key === 'sales')
+      || members?.find((m: any) => m.product_key === null)
+      || members?.[0];
 
     const roleData = Array.isArray(member?.role) ? member.role[0] : member?.role;
     const userLevel = roleData?.hierarchy_level ?? 0;

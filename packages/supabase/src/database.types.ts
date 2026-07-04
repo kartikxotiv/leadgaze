@@ -764,6 +764,183 @@ export type Database = {
           },
         ]
       }
+      entity_field_values: {
+        Row: {
+          created_at: string
+          entity_id: string
+          entity_type: string
+          field_id: string
+          id: string
+          updated_at: string
+          value: Json | null
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          entity_id: string
+          entity_type: string
+          field_id: string
+          id?: string
+          updated_at?: string
+          value?: Json | null
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          entity_id?: string
+          entity_type?: string
+          field_id?: string
+          id?: string
+          updated_at?: string
+          value?: Json | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entity_field_values_field_id_fkey"
+            columns: ["field_id"]
+            isOneToOne: false
+            referencedRelation: "entity_fields"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      entity_fields: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          display_order: number
+          entity_type: string
+          field_key: string
+          field_label: string
+          field_type: string
+          id: string
+          is_active: boolean
+          is_required: boolean
+          is_system: boolean
+          product_key: string
+          settings: Json
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          display_order?: number
+          entity_type: string
+          field_key: string
+          field_label: string
+          field_type: string
+          id?: string
+          is_active?: boolean
+          is_required?: boolean
+          is_system?: boolean
+          product_key?: string
+          settings?: Json
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          display_order?: number
+          entity_type?: string
+          field_key?: string
+          field_label?: string
+          field_type?: string
+          id?: string
+          is_active?: boolean
+          is_required?: boolean
+          is_system?: boolean
+          product_key?: string
+          settings?: Json
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: []
+      }
+      field_access_members: {
+        Row: {
+          can_edit: boolean
+          can_view: boolean
+          created_at: string
+          field_access_rule_id: string
+          id: string
+          member_id: string
+          member_type: string
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          can_edit?: boolean
+          can_view?: boolean
+          created_at?: string
+          field_access_rule_id: string
+          id?: string
+          member_id: string
+          member_type: string
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          can_edit?: boolean
+          can_view?: boolean
+          created_at?: string
+          field_access_rule_id?: string
+          id?: string
+          member_id?: string
+          member_type?: string
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "field_access_members_field_access_rule_id_fkey"
+            columns: ["field_access_rule_id"]
+            isOneToOne: false
+            referencedRelation: "field_access_rules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      field_access_rules: {
+        Row: {
+          access_type: string
+          created_at: string
+          field_id: string
+          id: string
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          access_type?: string
+          created_at?: string
+          field_id: string
+          id?: string
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          access_type?: string
+          created_at?: string
+          field_id?: string
+          id?: string
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "field_access_rules_field_id_fkey"
+            columns: ["field_id"]
+            isOneToOne: true
+            referencedRelation: "entity_fields"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       integration_accounts: {
         Row: {
           access_scope: string
@@ -2053,6 +2230,33 @@ export type Database = {
           last_used_at?: string | null
           os?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      user_column_preferences: {
+        Row: {
+          entity_type: string
+          id: string
+          preferences: Json
+          updated_at: string
+          user_id: string
+          workspace_id: string
+        }
+        Insert: {
+          entity_type: string
+          id?: string
+          preferences?: Json
+          updated_at?: string
+          user_id: string
+          workspace_id: string
+        }
+        Update: {
+          entity_type?: string
+          id?: string
+          preferences?: Json
+          updated_at?: string
+          user_id?: string
+          workspace_id?: string
         }
         Relationships: []
       }
@@ -5350,6 +5554,47 @@ export type Database = {
           },
         ]
       }
+      companies: {
+        Row: {
+          billing_country: string
+          created_at: string
+          created_by: string | null
+          heard_about_us: string[] | null
+          id: string
+          logo_url: string | null
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          billing_country: string
+          created_at?: string
+          created_by?: string | null
+          heard_about_us?: string[] | null
+          id?: string
+          logo_url?: string | null
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          billing_country?: string
+          created_at?: string
+          created_by?: string | null
+          heard_about_us?: string[] | null
+          id?: string
+          logo_url?: string | null
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "companies_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contact_assignees: {
         Row: {
           assigned_at: string
@@ -6434,6 +6679,7 @@ export type Database = {
           deleted_by: string | null
           description: string | null
           exchange_rate_date: string | null
+          exchange_rate_source: string | null
           exchange_rate_to_usd: number | null
           expected_close_date: string | null
           expected_revenue: number | null
@@ -6474,6 +6720,7 @@ export type Database = {
           deleted_by?: string | null
           description?: string | null
           exchange_rate_date?: string | null
+          exchange_rate_source?: string | null
           exchange_rate_to_usd?: number | null
           expected_close_date?: string | null
           expected_revenue?: number | null
@@ -6514,6 +6761,7 @@ export type Database = {
           deleted_by?: string | null
           description?: string | null
           exchange_rate_date?: string | null
+          exchange_rate_source?: string | null
           exchange_rate_to_usd?: number | null
           expected_close_date?: string | null
           expected_revenue?: number | null
@@ -8006,6 +8254,8 @@ export type Database = {
           invited_by: string | null
           is_primary_contact: boolean
           personal_settings: Json | null
+          product_id: string | null
+          product_key: string | null
           role_id: string
           status: Database["public"]["Enums"]["workspace_member_status"]
           updated_at: string
@@ -8020,6 +8270,8 @@ export type Database = {
           invited_by?: string | null
           is_primary_contact?: boolean
           personal_settings?: Json | null
+          product_id?: string | null
+          product_key?: string | null
           role_id: string
           status?: Database["public"]["Enums"]["workspace_member_status"]
           updated_at?: string
@@ -8034,6 +8286,8 @@ export type Database = {
           invited_by?: string | null
           is_primary_contact?: boolean
           personal_settings?: Json | null
+          product_id?: string | null
+          product_key?: string | null
           role_id?: string
           status?: Database["public"]["Enums"]["workspace_member_status"]
           updated_at?: string
@@ -8041,6 +8295,13 @@ export type Database = {
           workspace_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "workspace_members_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_products"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "workspace_members_role_id_fkey"
             columns: ["role_id"]
@@ -8328,48 +8589,67 @@ export type Database = {
       }
       workspaces: {
         Row: {
+          company_id: string | null
           created_at: string
           created_by: string | null
           description: string | null
           icon_url: string | null
           id: string
           is_active: boolean
+          is_onboarding_finished: boolean
+          is_subscribed_for_updates: boolean
           logo_url: string | null
           name: string
           owner_id: string
+          product_preferences: Json
           settings: Json | null
           slug: string
           updated_at: string
         }
         Insert: {
+          company_id?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
           icon_url?: string | null
           id?: string
           is_active?: boolean
+          is_onboarding_finished?: boolean
+          is_subscribed_for_updates?: boolean
           logo_url?: string | null
           name: string
           owner_id: string
+          product_preferences?: Json
           settings?: Json | null
           slug: string
           updated_at?: string
         }
         Update: {
+          company_id?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
           icon_url?: string | null
           id?: string
           is_active?: boolean
+          is_onboarding_finished?: boolean
+          is_subscribed_for_updates?: boolean
           logo_url?: string | null
           name?: string
           owner_id?: string
+          product_preferences?: Json
           settings?: Json | null
           slug?: string
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "workspaces_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "workspaces_owner_id_fkey"
             columns: ["owner_id"]

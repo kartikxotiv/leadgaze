@@ -82,6 +82,7 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
   const { formatDate } = useLocalization();
   const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState(false);
+  const [reminderTab, setReminderTab] = useState<'active' | 'sent'>('active');
   const [formData, setFormData] = useState({
     title: '',
     due_date: '',
@@ -90,13 +91,26 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
   const [editingReminder, setEditingReminder] = useState<any>(null);
 
   const { data: reminders = [], isLoading } = useQuery({
-    queryKey: ['reminders', entityType, entityId, workspace?.id],
+    queryKey: ['reminders', entityType, entityId, workspace?.id, reminderTab],
     queryFn: () => {
       if (!workspace?.id) return [];
-      return getRemindersService(workspace.id, entityType, entityId);
+      // 'active' tab → fetch only non-completed; 'sent' tab → fetch only completed
+      const apiStatus = reminderTab === 'sent' ? 'completed' : 'active';
+      return getRemindersService(workspace.id, entityType, entityId, apiStatus);
     },
     enabled: !!workspace?.id,
   });
+
+  // Split into active / sent views; limit sent to last 5 sorted by completion date
+  const displayedReminders = reminderTab === 'sent'
+    ? reminders
+        .filter((r: any) => r.is_completed)
+        .sort((a: any, b: any) =>
+          new Date(b.completed_at || b.updated_at).getTime() -
+          new Date(a.completed_at || a.updated_at).getTime(),
+        )
+        .slice(0, 5)
+    : reminders.filter((r: any) => !r.is_completed);
 
   const createMutation = useMutation({
     mutationFn: () =>
@@ -247,7 +261,11 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
                   onChange={(e) =>
                     setFormData({ ...formData, due_date: e.target.value })
                   }
-                  onClick={(e) => e.currentTarget.showPicker()}
+                  onClick={(e) => {
+                    try {
+                      e.currentTarget.showPicker();
+                    } catch (err) {}
+                  }}
                 />
               </div>
             </div>
@@ -273,13 +291,37 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
       }
     >
       <div className="px-6 py-3">
+        {/* Active / Sent toggle (mirrors Notes pattern) */}
+        <div className="flex bg-gray-100/60 dark:bg-gray-800/60 p-0.5 rounded-lg mb-4 w-fit border border-gray-200/20">
+          <button
+            onClick={() => setReminderTab('active')}
+            className={`rounded px-2.5 py-1 text-[11px] font-medium transition-all ${
+              reminderTab === 'active'
+                ? 'bg-white dark:bg-gray-900 text-blue-600 dark:text-blue-400 shadow-sm'
+                : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+            }`}
+          >
+            Active
+          </button>
+          <button
+            onClick={() => setReminderTab('sent')}
+            className={`rounded px-2.5 py-1 text-[11px] font-medium transition-all ${
+              reminderTab === 'sent'
+                ? 'bg-white dark:bg-gray-900 text-blue-600 dark:text-blue-400 shadow-sm'
+                : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+            }`}
+          >
+            Sent
+          </button>
+        </div>
+
         {isLoading ? (
           <div className="flex justify-center py-4">
             <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
           </div>
-        ) : reminders.length > 0 ? (
+        ) : displayedReminders.length > 0 ? (
           <CardWidgetList>
-            {reminders.map((reminder: any) => (
+            {displayedReminders.map((reminder: any) => (
               <CardWidgetListItem
                 key={reminder.id}
                 icon={
@@ -305,7 +347,7 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
                     {reminder.due_date && (
                       <span className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
-                        Due: {formatDate(reminder.due_date)}
+                         Due: {formatDate(reminder.due_date)} {new Date(reminder.due_date).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}
                       </span>
                     )}
                     <span>
@@ -1216,11 +1258,27 @@ export function EntityDocuments({ entityType, entityId }: EntityActivityProps) {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-7 w-7 text-gray-400"
+                      className="h-7 w-7 text-gray-400 hover:text-blue-500"
+                      title="View"
                       asChild
                     >
                       <a
-                        href={`/api/documents/download/${doc.id}`}
+                        href={`/api/documents/${doc.id}/download?mode=view`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-gray-400 hover:text-green-500"
+                      title="Download"
+                      asChild
+                    >
+                      <a
+                        href={`/api/documents/${doc.id}/download?mode=download`}
                         target="_blank"
                         rel="noopener noreferrer"
                       >

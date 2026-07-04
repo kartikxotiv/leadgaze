@@ -202,6 +202,7 @@ export default function ServiceCloudTicketsRoute() {
         systemFields={allEntityFields}
         canViewColumn={canViewColumn}
         canEditField={canEditTicketField}
+        currentUserId={user?.id}
       />
 
       <AddColumnModal
@@ -240,6 +241,7 @@ export default function ServiceCloudTicketsRoute() {
         }
         roles={moduleRoles}
         teamMembers={teamMembersForModal}
+        isAdmin={isAdmin}
         onSave={(updates, accessType, members) => {
           handleUpdateField(editingField?.id || '', {
             ...updates,

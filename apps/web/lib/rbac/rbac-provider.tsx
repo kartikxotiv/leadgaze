@@ -9,6 +9,8 @@ import { useQuery } from '@tanstack/react-query';
 import { useSupabase } from '@kit/supabase/hooks/use-supabase';
 import { useUser } from '@kit/supabase/hooks/use-user';
 
+import { getModuleKeyFromPath } from './route-module-map';
+
 // Minimal shape from useUser() — JwtPayload augmented with id = sub
 interface AuthUser {
   id: string;
@@ -31,6 +33,7 @@ interface WorkspaceRole {
   role_key: string;
   role_name: string;
   hierarchy_level: number;
+  product_key?: string | null;
   permissions: Permission[];
 }
 
@@ -40,8 +43,12 @@ interface Workspace {
   name: string;
   slug: string;
   member_id: string;
-  role: WorkspaceRole;
   status: 'pending' | 'accepted' | 'inactive' | 'removed';
+  // roles: Map of product_key -> role
+  // For backwards compatibility, currentRole contains the role of the active module
+  roles: Record<string, WorkspaceRole>;
+  currentRole: WorkspaceRole;
+  currentProductKey?: string | null;
 }
 
 interface RBACContextType {
@@ -49,6 +56,7 @@ interface RBACContextType {
   currentWorkspace: Workspace | null;
   user: AuthUser | null | undefined;
   selectWorkspace: (workspaceId: string) => void;
+  selectModule: (productKey: string) => void;
   hasPermission: (
     module: string,
     feature: string,
@@ -69,6 +77,12 @@ export function RBACProvider({ children }: { children: ReactNode }) {
   const [currentWorkspaceId, setCurrentWorkspaceId] = React.useState<
     string | null
   >(null);
+  
+  // Initialize currentProductKey from pathname on mount
+  const pathProductKey = getModuleKeyFromPath(pathname);
+  const [currentProductKey, setCurrentProductKey] = React.useState<
+    string | null
+  >(pathProductKey);
 
   // Fetch user's workspaces and permissions
   const {
@@ -76,19 +90,25 @@ export function RBACProvider({ children }: { children: ReactNode }) {
     isLoading: isWorkspacesLoading,
     error,
   } = useQuery({
-    queryKey: ['userWorkspaces', user?.id],
+    queryKey: ['userWorkspaces', user?.id, currentProductKey],
     queryFn: async () => {
       if (!user?.id) return [];
 
-      // Get workspace memberships, roles, and all nested role permissions in a single call
+      // Get workspace memberships with product_key and role_id
       const { data: members, error: membersError } = await supabase
         .from('workspace_members')
         .select(
           `
           id,
-          workspace_id,
           status,
-          workspace_id(*),
+          product_key,
+          product_id,
+          workspace_id(
+            id,
+            name,
+            slug,
+            owner_id
+          ),
           role_id(
             id,
             role_key,
@@ -116,14 +136,20 @@ export function RBACProvider({ children }: { children: ReactNode }) {
       if (membersError) throw membersError;
       if (!members || members.length === 0) return [];
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const workspacesData: Workspace[] = members.map((member) => {
+      // Group members by workspace_id and build roles map
+      const workspacesMap = new Map<string, Workspace>();
+      for (const member of members) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const workspace = member.workspace_id as any;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const role = member.role_id as any;
-        const permissionsData = role?.role_permissions || [];
-
+        
+        if (!workspace || !role) continue;
+        
+        const productKey = member.product_key as string | null;
+        
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const permissionsData = role.role_permissions || [];
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const permissions: Permission[] = permissionsData.map((perm: any) => ({
           module: perm.crm_module_features?.crm_modules?.module_key || '',
@@ -134,25 +160,89 @@ export function RBACProvider({ children }: { children: ReactNode }) {
           can_override_owner: perm.can_override_owner,
         }));
 
-        return {
-          id: workspace.id,
-          owner_id: workspace.owner_id,
-          name: workspace.name,
-          slug: workspace.slug,
-          member_id: member.id,
-          status: member.status,
-          role: {
-            id: role.id,
-            workspace_id: role.workspace_id,
-            role_key: role.role_key,
-            role_name: role.role_name,
-            hierarchy_level: role.hierarchy_level,
-            permissions,
-          },
-        };
-      });
+        const workspaceId = workspace.id;
+        
+        // If productKey is null/blank, it applies globally to all known products.
+        const targetProductKeys = productKey 
+          ? [productKey] 
+          : ['sales', 'hrms', 'inventory', 'service_cloud', 'funds'];
 
-      return workspacesData;
+        for (const pKey of targetProductKeys) {
+          if (!workspacesMap.has(workspaceId)) {
+            // First role for this workspace - create the base workspace
+            const roles: Record<string, WorkspaceRole> = {};
+            roles[pKey] = {
+              id: role.id,
+              workspace_id: role.workspace_id,
+              role_key: role.role_key,
+              role_name: role.role_name,
+              hierarchy_level: role.hierarchy_level,
+              product_key: productKey,
+              permissions,
+            };
+            
+            // Initialize workspace. currentRole will be the first module we see,
+            // but will be updated as we process more roles or as the path changes
+            workspacesMap.set(workspaceId, {
+              id: workspace.id,
+              owner_id: workspace.owner_id,
+              name: workspace.name,
+              slug: workspace.slug,
+              member_id: member.id,
+              status: member.status,
+              roles,
+              currentRole: roles[pKey],
+              currentProductKey: currentProductKey || pKey,
+            });
+          } else {
+            // Add additional role for this workspace
+            const existingWorkspace = workspacesMap.get(workspaceId)!;
+            
+            // Only set if:
+            // 1. We are setting a specific role (productKey is not null)
+            // 2. OR the product role doesn't exist yet (setting a global fallback)
+            const isSpecific = !!productKey;
+            const alreadyHasRole = !!existingWorkspace.roles[pKey];
+            
+            if (isSpecific || !alreadyHasRole) {
+              existingWorkspace.roles[pKey] = {
+                id: role.id,
+                workspace_id: role.workspace_id,
+                role_key: role.role_key,
+                role_name: role.role_name,
+                hierarchy_level: role.hierarchy_level,
+                product_key: productKey,
+                permissions,
+              };
+
+              // If this productKey matches current selection, update currentRole
+              if (pKey === currentProductKey) {
+                existingWorkspace.currentRole = existingWorkspace.roles[pKey];
+                existingWorkspace.currentProductKey = pKey;
+              }
+            }
+          }
+        }
+      }
+
+      // Post-process: Ensure each workspace's currentRole is properly set based on currentProductKey
+      const workspacesArray = Array.from(workspacesMap.values());
+      for (const workspace of workspacesArray) {
+        // If we have a currentProductKey from the pathname and it exists in roles, use it
+        if (currentProductKey && workspace.roles[currentProductKey]) {
+          workspace.currentRole = workspace.roles[currentProductKey];
+          workspace.currentProductKey = currentProductKey;
+        } else if (!workspace.currentProductKey) {
+          // Otherwise, pick the first available product as default
+          const firstProductKey = Object.keys(workspace.roles)[0];
+          if (firstProductKey && workspace.roles[firstProductKey]) {
+            workspace.currentRole = workspace.roles[firstProductKey];
+            workspace.currentProductKey = firstProductKey;
+          }
+        }
+      }
+
+      return workspacesArray;
     },
     enabled: !!user?.id,
     staleTime: 30 * 1000, // 30 s — explicit invalidation happens on sign-out / workspace switch
@@ -180,6 +270,13 @@ export function RBACProvider({ children }: { children: ReactNode }) {
       }
     }
   }, [currentWorkspace, currentWorkspaceId]);
+
+  // Sync pathname-derived product key to state
+  React.useEffect(() => {
+    if (pathProductKey && pathProductKey !== currentProductKey) {
+      setCurrentProductKey(pathProductKey);
+    }
+  }, [pathProductKey, currentProductKey]);
 
   // Clear active workspace selection from localStorage on logout
   React.useEffect(() => {
@@ -213,6 +310,20 @@ export function RBACProvider({ children }: { children: ReactNode }) {
     }
   }, [currentWorkspace]);
 
+  // Module switching - updates currentRole to the selected module's role
+  const selectModule = (productKey: string) => {
+    if (!currentWorkspace) return;
+
+    const role = currentWorkspace.roles[productKey];
+    if (role) {
+      setCurrentProductKey(productKey);
+
+      // Also update the currentWorkspace in place for the provider
+      // This will be reflected in the context value
+      localStorage.setItem('currentProductKey', productKey);
+    }
+  };
+
   const hasPermission = (
     module: string,
     feature: string,
@@ -220,7 +331,7 @@ export function RBACProvider({ children }: { children: ReactNode }) {
   ): boolean => {
     if (!currentWorkspace) return false;
 
-    const permission = currentWorkspace.role.permissions.find(
+    const permission = currentWorkspace.currentRole.permissions.find(
       (p) => p.module === module && p.feature === feature,
     );
 
@@ -239,7 +350,17 @@ export function RBACProvider({ children }: { children: ReactNode }) {
       return false;
     }
 
-    const permission = currentWorkspace.role.permissions.find(
+    // Owner or Admin role bypass
+    const role = currentWorkspace.currentRole;
+    if (
+      currentWorkspace.owner_id === user?.id ||
+      role.role_key === 'admin' ||
+      (role.hierarchy_level ?? 0) >= 100
+    ) {
+      return true;
+    }
+
+    const permission = role.permissions.find(
       (p) => p.module === module && p.feature === feature,
     );
 
@@ -252,6 +373,10 @@ export function RBACProvider({ children }: { children: ReactNode }) {
     if (workspaces.find((w) => w.id === workspaceId)) {
       setCurrentWorkspaceId(workspaceId);
       localStorage.setItem('currentWorkspaceId', workspaceId);
+
+      // Reset to default module when switching workspace
+      setCurrentProductKey(null);
+      localStorage.removeItem('currentProductKey');
     }
   };
 
@@ -262,6 +387,7 @@ export function RBACProvider({ children }: { children: ReactNode }) {
         currentWorkspace,
         user: user ? { ...user, id: (user as { id?: string; sub?: string }).id ?? (user as { sub?: string }).sub ?? '' } : user,
         selectWorkspace,
+        selectModule,
         hasPermission,
         canAccess,
         isLoading,
@@ -313,7 +439,8 @@ export function useWorkspaceRoles() {
 // Fetch workspace roles scoped to a product (sales, service_cloud, hrms, etc.).
 // Used for field-level access control selectors so only roles from the current
 // product module are shown — not roles from other products in the workspace.
-export function useModuleRoles(productKey: string) {
+export function useModuleRoles(rawProductKey: string) {
+  const productKey = rawProductKey === 'service-cloud' ? 'service_cloud' : rawProductKey;
   const { currentWorkspace } = useRBAC();
   const supabase = useSupabase();
 

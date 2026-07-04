@@ -865,6 +865,24 @@ export default function DocumentPage() {
                             >
                               <Edit className="h-4 w-4" /> Rename
                             </DropdownMenuItem>
+                            <DropdownMenuItem className="gap-2" asChild>
+                              <a
+                                href={`/api/documents/${doc.id}/download?mode=view`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                <FileUp className="h-4 w-4" /> View
+                              </a>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="gap-2" asChild>
+                              <a
+                                href={`/api/documents/${doc.id}/download?mode=download`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                <FileUp className="h-4 w-4" /> Download
+                              </a>
+                            </DropdownMenuItem>
                             <DropdownMenuItem
                               className="gap-2 text-red-500"
                               onClick={() => handleDelete(doc.id)}

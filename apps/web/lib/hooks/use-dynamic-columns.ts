@@ -146,7 +146,7 @@ export function useDynamicColumns({
         .eq('workspace_id', workspaceId)
         .eq('user_id', userId)
         .eq('entity_type', entityType)
-        .single();
+        .maybeSingle();
 
       if (error && error.code !== 'PGRST116') {
         if (error.code === 'PGRST205' || error.code === '42P01') {
@@ -478,7 +478,6 @@ export function useUpdateFieldAccess() {
 
 export function useCreateField() {
   const queryClient = useQueryClient();
-  const supabase = getSupabaseBrowserClient<Database>();
 
   return useMutation({
     mutationFn: async (fieldData: {
@@ -495,69 +494,23 @@ export function useCreateField() {
       access_type?: AccessType;
       access_members?: FieldAccessMember[];
     }) => {
-      const { data: field, error } = await coreDb(supabase)
-        .from('entity_fields')
-        .insert({
-          workspace_id: fieldData.workspace_id,
-          entity_type: fieldData.entity_type,
-          product_key: fieldData.product_key ?? 'sales',
-          field_key: fieldData.field_key,
-          field_label: fieldData.field_label,
-          field_type: fieldData.field_type,
-          description: fieldData.description ?? null,
-          is_required: fieldData.is_required ?? false,
-          is_system: fieldData.is_system ?? false,
-          is_active: true,
-          display_order: 9999,
-          settings: fieldData.settings ?? {},
-        } as any)
-        .select()
-        .single();
+      const res = await fetch('/api/fields', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(fieldData),
+      });
 
-      if (error) throw error;
-      console.debug('useCreateField result', { field, error });
-
-      // Create access rule if specified
-      if (fieldData.access_type && fieldData.access_type !== 'public') {
-        const { data: rule, error: ruleError } = await coreDb(supabase)
-          .from('field_access_rules')
-          .insert({
-            workspace_id: fieldData.workspace_id,
-            field_id: field.id,
-            access_type: fieldData.access_type,
-          })
-          .select()
-          .single();
-
-        if (ruleError) throw ruleError;
-
-        if (fieldData.access_members && fieldData.access_members.length > 0) {
-          const memberInserts = fieldData.access_members.map((m) => ({
-            workspace_id: fieldData.workspace_id,
-            field_access_rule_id: rule.id,
-            member_type: m.member_type,
-            member_id: m.member_id,
-            can_view: m.can_view,
-            can_edit: m.can_edit,
-          }));
-
-          const { error: membersError } = await coreDb(supabase)
-            .from('field_access_members')
-            .insert(memberInserts);
-
-          if (membersError) throw membersError;
-        }
+      if (!res.ok) {
+        const errorJson = await res.json().catch(() => ({}));
+        throw new Error(errorJson.message || errorJson.error || 'Failed to create field');
       }
 
-      return field;
+      const responseJson = await res.json();
+      return responseJson.data;
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
-        queryKey: [
-          'entity-fields',
-          variables.workspace_id,
-          variables.entity_type,
-        ],
+        queryKey: ['entity-fields', variables.workspace_id, variables.entity_type],
       });
     },
   });

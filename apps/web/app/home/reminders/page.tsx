@@ -138,7 +138,7 @@ export default function RemindersPage() {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [priorityFilter, setPriorityFilter] = useState('all');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('pending');
   const [dateRange, setDateRange] = useState<{
     from: Date | undefined;
     to: Date | undefined;
@@ -208,10 +208,16 @@ export default function RemindersPage() {
   const { getHeaderProps, getResizeHandleProps } = useColumnResize('reminders');
 
   const { data: reminders = [], isLoading } = useQuery({
-    queryKey: ['reminders', workspace?.id],
+    queryKey: ['reminders', workspace?.id, statusFilter],
     queryFn: () => {
       if (!workspace?.id) return [];
-      return getRemindersService(workspace.id);
+      // Map filter value to API status param
+      // 'pending' → 'active' (not completed), 'completed' → 'completed', 'all' → both (no filter)
+      const apiStatus =
+        statusFilter === 'completed' ? 'completed' :
+        statusFilter === 'pending' ? 'active' :
+        undefined;
+      return getRemindersService(workspace.id, undefined, undefined, apiStatus);
     },
     enabled: !!workspace?.id,
   });
@@ -327,13 +333,8 @@ export default function RemindersPage() {
         priorityFilter === 'all' ||
         (reminder.priority || '').toLowerCase() === priorityFilter;
 
-      const STATUS_COMPLETED = 'completed';
-      const STATUS_PENDING = 'pending';
-
-      const matchesStatus =
-        statusFilter === 'all' ||
-        (statusFilter === STATUS_COMPLETED && reminder.is_completed) ||
-        (statusFilter === STATUS_PENDING && !reminder.is_completed);
+      // Status filtering is handled server-side via the API status param — no local re-filter needed
+      const matchesStatus = true;
 
       const reminderDate = reminder.due_date
         ? new Date(reminder.due_date)
@@ -539,12 +540,15 @@ export default function RemindersPage() {
         selectedLabel:
           statusFilter === 'all'
             ? 'All statuses'
-            : statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1),
+            : statusFilter === 'pending'
+              ? 'Pending'
+              : 'Completed',
         options: [
           { value: 'pending', label: 'Pending' },
           { value: 'completed', label: 'Completed' },
+          { value: 'all', label: 'All' },
         ],
-        onSelect: (val: string) => setStatusFilter(val || 'all'),
+        onSelect: (val: string) => setStatusFilter(val || 'pending'),
       },
       {
         key: 'priority',
@@ -969,7 +973,7 @@ export default function RemindersPage() {
                         {isVisible('due_date') && (
                           <TableCell className="text-muted-foreground">
                             {reminder.due_date
-                              ? formatDate(reminder.due_date)
+                              ? `${formatDate(reminder.due_date)} ${new Date(reminder.due_date).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}`
                               : '-'}
                           </TableCell>
                         )}
@@ -1201,7 +1205,11 @@ export default function RemindersPage() {
                 <CalendarIcon className="pointer-events-none absolute top-2.5 left-3 h-4 w-4 text-gray-400" />
                 <Input
                   type="datetime-local"
-                  onClick={(e) => e.currentTarget.showPicker()}
+                  onClick={(e) => {
+                    try {
+                      e.currentTarget.showPicker();
+                    } catch (err) {}
+                  }}
                   value={formData.due_date}
                   onChange={(e) =>
                     setFormData({ ...formData, due_date: e.target.value })
@@ -1283,7 +1291,11 @@ export default function RemindersPage() {
                 <CalendarIcon className="pointer-events-none absolute top-2.5 left-3 h-4 w-4 text-gray-400" />
                 <Input
                   type="datetime-local"
-                  onClick={(e) => e.currentTarget.showPicker()}
+                  onClick={(e) => {
+                    try {
+                      e.currentTarget.showPicker();
+                    } catch (err) {}
+                  }}
                   value={formData.due_date}
                   onChange={(e) =>
                     setFormData({ ...formData, due_date: e.target.value })

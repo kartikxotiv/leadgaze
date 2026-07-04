@@ -59,10 +59,11 @@ interface PendingInvitation {
   } | null;
 }
 
-const getMembersService = asyncHandlerClient(async (workspaceId: string) => {
-  const response = await ApiClient.get(
-    `/team-members?workspaceId=${workspaceId}`,
-  );
+const getMembersService = asyncHandlerClient(async (workspaceId: string, productKey?: string) => {
+  const url = productKey 
+    ? `/team-members?workspaceId=${workspaceId}&productKey=${productKey}`
+    : `/team-members?workspaceId=${workspaceId}`;
+  const response = await ApiClient.get(url);
   return response.data;
 });
 

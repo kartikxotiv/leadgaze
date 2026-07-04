@@ -16,6 +16,8 @@ import {
   Trash2,
   User,
   Users,
+  Check,
+  RotateCcw,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -133,6 +135,7 @@ export default function NotesPage() {
   const { currentWorkspace: workspace } = useRBAC();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'active' | 'closed'>('active');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(15);
@@ -191,10 +194,10 @@ export default function NotesPage() {
   const { getHeaderProps, getResizeHandleProps } = useColumnResize('notes');
 
   const { data: notes = [], isLoading } = useQuery({
-    queryKey: ['notes', workspace?.id],
+    queryKey: ['notes', workspace?.id, statusFilter],
     queryFn: async () => {
       if (!workspace?.id) return [];
-      const res = await getNotesService(workspace.id);
+      const res = await getNotesService(workspace.id, undefined, undefined, statusFilter);
       return res;
     },
     enabled: !!workspace?.id,
@@ -264,10 +267,14 @@ export default function NotesPage() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, content }: { id: string; content: string }) =>
-      updateNoteService(id, { content }),
-    onSuccess: () => {
-      toast.success('Note updated');
+    mutationFn: ({ id, content, is_closed }: { id: string; content?: string; is_closed?: boolean }) =>
+      updateNoteService(id, { content, is_closed }),
+    onSuccess: (data, variables) => {
+      if (variables.is_closed !== undefined) {
+        toast.success(variables.is_closed ? 'Note closed' : 'Note reopened');
+      } else {
+        toast.success('Note updated');
+      }
       setIsEditDialogOpen(false);
       setEditingNote(null);
       queryClient.invalidateQueries({ queryKey: ['notes', workspace?.id] });
@@ -454,8 +461,22 @@ export default function NotesPage() {
           setCurrentPage(1);
         },
       },
+      {
+        key: 'status',
+        label: 'Status',
+        selectedValue: statusFilter,
+        selectedLabel: statusFilter === 'active' ? 'Active' : 'Closed',
+        options: [
+          { value: 'active', label: 'Active' },
+          { value: 'closed', label: 'Closed' },
+        ],
+        onSelect: (val: string) => {
+          setStatusFilter((val as any) || 'active');
+          setCurrentPage(1);
+        },
+      },
     ];
-  }, [categoryFilter, createdOnRange, updatedOnRange]);
+  }, [categoryFilter, createdOnRange, updatedOnRange, statusFilter]);
 
   if (!workspace) {
     return <NotesPageSkeleton />;
@@ -483,10 +504,12 @@ export default function NotesPage() {
           activeFilterCount={
             (categoryFilter !== 'all' ? 1 : 0) +
             (createdOnRange ? 1 : 0) +
-            (updatedOnRange ? 1 : 0)
+            (updatedOnRange ? 1 : 0) +
+            (statusFilter !== 'active' ? 1 : 0)
           }
           onClearFilters={() => {
             setCategoryFilter('all');
+            setStatusFilter('active');
             clearCreatedOnRange();
             clearUpdatedOnRange();
           }}
@@ -746,7 +769,7 @@ export default function NotesPage() {
                       )}
                       {isVisible('content') && (
                         <TableCell className="primary-text-medium">
-                          <p className="line-clamp-2 max-w-[400px] text-sm whitespace-pre-wrap">
+                          <p className={`line-clamp-2 max-w-[400px] text-sm whitespace-pre-wrap ${note.is_closed ? 'text-muted-foreground line-through' : ''}`}>
                             {note.content}
                           </p>
                         </TableCell>
@@ -794,6 +817,21 @@ export default function NotesPage() {
                             >
                               <Edit className="h-4 w-4" /> Edit Note
                             </DropdownMenuItem>
+                            {note.is_closed ? (
+                              <DropdownMenuItem
+                                className="gap-2"
+                                onClick={() => updateMutation.mutate({ id: note.id, is_closed: false })}
+                              >
+                                <RotateCcw className="h-4 w-4" /> Reopen Note
+                              </DropdownMenuItem>
+                            ) : (
+                              <DropdownMenuItem
+                                className="gap-2"
+                                onClick={() => updateMutation.mutate({ id: note.id, is_closed: true })}
+                              >
+                                <Check className="h-4 w-4" /> Close Note
+                              </DropdownMenuItem>
+                            )}
                             <DropdownMenuItem
                               className="gap-2 text-red-500"
                               onClick={() => handleDelete(note.id)}

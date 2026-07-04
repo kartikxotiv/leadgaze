@@ -757,10 +757,10 @@ export default function LeadsPage() {
                         onSort={toggleSort}
                         sortable={config?.sortable !== false}
                         className={cn('relative', config?.width)}
-                        isAdmin={canAddColumn}
+                        isAdmin={isAdmin}
                         field={getEntityFieldByKey(field.key)}
                         onEditClick={
-                          canAddColumn
+                          isAdmin
                             ? () => openColumnEdit(field.key)
                             : undefined
                         }
@@ -787,14 +787,14 @@ export default function LeadsPage() {
                         sortDirection={sortDirection}
                         onSort={toggleSort}
                         sortable={true}
-                        isAdmin={canAddColumn}
+                        isAdmin={isAdmin}
                         onEditClick={
-                          canAddColumn
+                          isAdmin || (field as any).created_by === user?.id
                             ? () => openColumnEdit(field.field_key)
                             : undefined
                         }
                         onDeleteField={
-                          canAddColumn && !field.is_system
+                          (isAdmin || (field as any).created_by === user?.id) && !field.is_system
                             ? handleDeleteField
                             : undefined
                         }
@@ -809,7 +809,6 @@ export default function LeadsPage() {
                   })}
 
                   {/* Add Column — last header column (replaces Actions header) */}
-                  {canAddColumn ? (
                     <TableHead className="sticky-right-header bg-background z-10 w-12 px-1">
                       <Button
                         variant="outline"
@@ -822,9 +821,6 @@ export default function LeadsPage() {
                         <span className="hidden sm:inline">Add</span>
                       </Button>
                     </TableHead>
-                  ) : (
-                    <TableHead className="sticky-right-header bg-background z-10 w-12" />
-                  )}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -1141,6 +1137,7 @@ export default function LeadsPage() {
             field={editingField as ColumnEditFieldShape}
             roles={moduleRoles}
             teamMembers={teamMembersForModal}
+            isAdmin={canAddColumn} // passed to restrict non-admins
             onSave={(updates, accessType, members) => {
               handleUpdateField(editingField.id, {
                 ...updates,

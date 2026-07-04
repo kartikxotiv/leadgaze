@@ -21,12 +21,12 @@ export async function getHierarchyVisibleUserIds(
     return hierarchyLevel ?? 0;
   };
 
-  // 1. Get the current user's role and hierarchy level
-  const { data: member, error: memberError } = await supabase
+  const { data: members, error: memberError } = await supabase
     .from('workspace_members')
     .select(
       `
       role_id,
+      product_key,
       role:workspace_roles!workspace_members_role_id_fkey(
         id,
         role_key,
@@ -36,13 +36,16 @@ export async function getHierarchyVisibleUserIds(
     )
     .eq('workspace_id', workspaceId)
     .eq('user_id', userId)
-    .eq('status', 'accepted')
-    .single();
+    .eq('status', 'accepted');
 
-  if (memberError || !member || !member.role) {
+  if (memberError || !members || members.length === 0) {
     console.error('Failed to get user role:', memberError);
     return { type: 'restricted', userIds: [userId] };
   }
+
+  const member = members.find((m: any) => m.product_key === 'sales')
+    || members.find((m: any) => m.product_key === null)
+    || members[0];
 
   const roleData = Array.isArray(member.role) ? member.role[0] : member.role;
   const userLevel = resolveEffectiveLevel(roleData?.hierarchy_level);

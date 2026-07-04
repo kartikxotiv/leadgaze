@@ -105,6 +105,7 @@ export function ServiceCloudTicketsPage({
   systemFields = [],
   canViewColumn,
   canEditField,
+  currentUserId,
 }: {
   workspaceId: string;
   isAdmin?: boolean;
@@ -116,6 +117,7 @@ export function ServiceCloudTicketsPage({
   canViewColumn?: (columnKey: string) => boolean;
   /** Optional FLS function: form fields for which this returns false are hidden in create/edit modals. */
   canEditField?: (fieldKey: string) => boolean;
+  currentUserId?: string;
 }) {
   const { formatDate } = useLocalization();
   const [createOpen, setCreateOpen] = useState(false);
@@ -386,6 +388,7 @@ export function ServiceCloudTicketsPage({
         onColumnEditClick={onColumnEditClick}
         canViewColumn={canViewColumn}
         canEditField={canEditField}
+        currentUserId={currentUserId}
         systemFields={systemFields}
         queryParams={queryParams}
         filterGroups={filterGroups}
