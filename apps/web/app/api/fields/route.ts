@@ -106,6 +106,8 @@ const createField = catchAsync(async (request: NextRequest) => {
     settings,
     access_type,
     access_members,
+    created_by,
+    product_key,
   } = body;
 
   // Validate required fields
@@ -140,12 +142,20 @@ const createField = catchAsync(async (request: NextRequest) => {
   // Check if user has admin permissions using the service-role client so current
   // user auth is validated separately, while workspace membership lookups are
   // not blocked by RLS on public tables.
-  const { data: member, error: memberError } = await adminSupabase
+  const { data: members, error: memberError } = await adminSupabase
     .from('workspace_members')
-    .select('role_id')
+    .select('role_id, product_key')
     .eq('workspace_id', workspace_id)
-    .eq('user_id', user.id)
-    .single();
+    .eq('user_id', user.id);
+
+  if (memberError || !members || members.length === 0) {
+    return NextResponse.json(
+      { message: 'User is not a member of this workspace' },
+      { status: 403 },
+    );
+  }
+
+  const member = members.find((m: any) => m.product_key === null) || members[0];
 
   if (memberError || !member) {
     return NextResponse.json(
@@ -203,6 +213,8 @@ const createField = catchAsync(async (request: NextRequest) => {
       is_active: true,
       display_order: display_order ?? 0,
       settings: settings ?? {},
+      created_by: created_by ?? user.id,
+      product_key: product_key ?? 'sales',
     })
     .select()
     .single();
@@ -243,7 +255,7 @@ const createField = catchAsync(async (request: NextRequest) => {
               member_type: 'user' as const,
               member_id: user.id,
               can_view: true,
-              can_edit: false,
+              can_edit: true,
             },
           ]
         : [];
@@ -324,12 +336,20 @@ const updateField = catchAsync(async (request: NextRequest) => {
   }
 
   // Check if user has admin permissions
-  const { data: member, error: memberError } = await supabase
+  const { data: members, error: memberError } = await supabase
     .from('workspace_members')
-    .select('role_id')
+    .select('role_id, product_key')
     .eq('workspace_id', existingField.workspace_id)
-    .eq('user_id', user.id)
-    .single();
+    .eq('user_id', user.id);
+
+  if (memberError || !members || members.length === 0) {
+    return NextResponse.json(
+      { message: 'User is not a member of this workspace' },
+      { status: 403 },
+    );
+  }
+
+  const member = members.find((m: any) => m.product_key === null) || members[0];
 
   if (memberError || !member) {
     return NextResponse.json(
@@ -509,12 +529,20 @@ const deleteField = catchAsync(async (request: NextRequest) => {
     ...new Set(existingFields?.map((f) => f.workspace_id) || []),
   ];
   for (const workspaceId of workspaceIds) {
-    const { data: member, error: memberError } = await supabase
+    const { data: members, error: memberError } = await supabase
       .from('workspace_members')
-      .select('role_id')
+      .select('role_id, product_key')
       .eq('workspace_id', workspaceId)
-      .eq('user_id', user.id)
-      .single();
+      .eq('user_id', user.id);
+
+    if (memberError || !members || members.length === 0) {
+      return NextResponse.json(
+        { message: `User is not a member of workspace ${workspaceId}` },
+        { status: 403 },
+      );
+    }
+
+    const member = members.find((m: any) => m.product_key === null) || members[0];
 
     if (memberError || !member) {
       return NextResponse.json(

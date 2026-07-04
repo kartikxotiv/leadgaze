@@ -42,13 +42,14 @@ export async function assertWorkspaceAccess(workspaceId: string) {
   const isOwner = workspace.owner_id === user.id;
 
   if (!isOwner) {
-    const { data: membership } = await supabase
+    const { data: memberships } = await supabase
       .from('workspace_members')
       .select('id')
       .eq('workspace_id', workspaceId)
       .eq('user_id', user.id)
-      .eq('status', 'accepted')
-      .maybeSingle();
+      .eq('status', 'accepted');
+
+    const membership = memberships && memberships.length > 0 ? memberships[0] : null;
 
     if (!membership) {
       return {

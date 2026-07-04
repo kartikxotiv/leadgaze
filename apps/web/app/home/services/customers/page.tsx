@@ -92,15 +92,22 @@ export default function ServiceCloudCustomersRoute() {
   });
 
   // 4. Field-Level Security (FLS): per-column view/edit permissions for customers and organizations
-  const { canViewColumn: canViewCustomerColumn, canEdit: canEditCustomerField } = useFieldPermissions({
+  const { canViewColumn: canViewCustomerColumn, canView: canViewCustomerField, canEdit: canEditCustomerField } = useFieldPermissions({
     entityType: 'customers',
     workspaceId: workspaceId,
     enabled: !!workspaceId && !!user?.id,
     productKey,
   });
 
-  const { canViewColumn: canViewOrganizationColumn, canEdit: canEditOrganizationField } = useFieldPermissions({
+  const { canViewColumn: canViewOrganizationColumn, canView: canViewOrganizationField, canEdit: canEditOrganizationField } = useFieldPermissions({
     entityType: 'organizations',
+    workspaceId: workspaceId,
+    enabled: !!workspaceId && !!user?.id,
+    productKey,
+  });
+
+  const { canViewColumn: canViewTicketColumn } = useFieldPermissions({
+    entityType: 'tickets',
     workspaceId: workspaceId,
     enabled: !!workspaceId && !!user?.id,
     productKey,
@@ -245,8 +252,12 @@ export default function ServiceCloudCustomersRoute() {
         systemOrganizationFields={organizationFields}
         canViewCustomerColumn={canViewCustomerColumn}
         canViewOrganizationColumn={canViewOrganizationColumn}
+        canViewCustomerField={canViewCustomerField}
+        canViewOrganizationField={canViewOrganizationField}
         canEditCustomerField={canEditCustomerField}
         canEditOrganizationField={canEditOrganizationField}
+        canViewTicketColumn={canViewTicketColumn}
+        currentUserId={user?.id}
       />
 
       <AddColumnModal
@@ -285,6 +296,7 @@ export default function ServiceCloudCustomersRoute() {
         }
         roles={moduleRoles}
         teamMembers={teamMembersForModal}
+        isAdmin={isAdmin}
         onSave={(updates, accessType, members) => {
           handleUpdateField(editingField?.id || '', {
             ...updates,

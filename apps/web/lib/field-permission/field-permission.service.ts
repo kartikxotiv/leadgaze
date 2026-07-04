@@ -93,12 +93,13 @@ export function canViewField(
 
   const field = findFieldDefinition(ctx.fields, fieldKey);
   if (!field) {
-    // Unknown custom field — deny by default
-    return fieldKey in LEAD_DB_COLUMN_TO_FIELD_KEY ||
-      LEAD_SYSTEM_FIELD_DEFINITIONS.some((f) => f.field_key === fieldKey)
-      ? true
-      : false;
+    // Field has no access rule configured → treat as public (visible to all).
+    // This covers system fields from all modules (Service Cloud, HRMS, etc.)
+    // that are not individually stored in the entity_fields table.
+    return true;
   }
+
+  if (field.created_by === ctx.userId) return true;
 
   const accessType = field.access_rule?.access_type ?? 'public';
   return evaluateAccessType(
@@ -122,11 +123,11 @@ export function canEditField(
 
   const field = findFieldDefinition(ctx.fields, fieldKey);
   if (!field) {
-    return (
-      fieldKey in LEAD_DB_COLUMN_TO_FIELD_KEY ||
-      LEAD_SYSTEM_FIELD_DEFINITIONS.some((f) => f.field_key === fieldKey)
-    );
+    // Field has no access rule configured → treat as editable by default.
+    return true;
   }
+
+  if (field.created_by === ctx.userId) return true;
 
   const accessType = field.access_rule?.access_type ?? 'public';
   if (accessType === 'public') return true;

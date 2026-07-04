@@ -12,7 +12,7 @@ export default function ServiceCloudTicketDetailRoute() {
   const { currentWorkspace, user } = useRBAC();
   const workspaceId = currentWorkspace?.id;
 
-  const { canView, canEdit } = useFieldPermissions({
+  const { canView, canEdit, visibleCustomFields } = useFieldPermissions({
     entityType: 'tickets',
     workspaceId,
     enabled: !!workspaceId && !!user?.id,
@@ -27,6 +27,7 @@ export default function ServiceCloudTicketDetailRoute() {
       ticketId={params.ticketId}
       canViewField={canView}
       canEditField={canEdit}
+      customFieldsList={visibleCustomFields}
     />
   );
 }

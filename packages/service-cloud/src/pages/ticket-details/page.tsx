@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import type React from 'react';
+import React from 'react';
 
 import Link from 'next/link';
 
@@ -102,6 +102,7 @@ import {
   logServiceCloudTicketTimeService,
   updateServiceCloudResourceService,
 } from '../../services';
+import { LeadCustomFieldInputs } from '~/components/leads/lead-custom-field-inputs';
 import {
   SERVICE_CLOUD_FEATURE_KEYS,
   SERVICE_CLOUD_MODULE_KEYS,
@@ -155,6 +156,79 @@ function actorLabel(activity: any) {
   return activity?.actor?.name || activity?.actor?.email || 'System';
 }
 
+function TicketCustomFieldsSection({
+  fields,
+  ticket,
+  canEditField,
+  canViewField,
+  onSave,
+  isSaving,
+}: {
+  fields: any[];
+  ticket: any;
+  canEditField?: (fieldKey: string) => boolean;
+  canViewField?: (fieldKey: string) => boolean;
+  onSave: (val: Record<string, unknown>) => void;
+  isSaving?: boolean;
+}) {
+  const initialValues = React.useMemo(() => {
+    return (ticket.custom_fields as Record<string, unknown>) || {};
+  }, [ticket.custom_fields]);
+
+  const [values, setValues] = useState<Record<string, unknown>>(initialValues);
+
+  // Sync state if ticket custom_fields values changes externally
+  React.useEffect(() => {
+    setValues(initialValues);
+  }, [initialValues]);
+
+  const isChanged = React.useMemo(() => {
+    return JSON.stringify(values) !== JSON.stringify(initialValues);
+  }, [values, initialValues]);
+
+  return (
+    <AccordionItem
+      value="custom-fields"
+      className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
+    >
+      <AccordionTrigger className="px-4 py-3 hover:no-underline">
+        <span className="primary-heading text-leadgaze-dark flex items-center gap-2 dark:text-white">
+          <Settings className="text-leadgaze-dark h-5 w-5 dark:text-white" />
+          Additional Data
+        </span>
+      </AccordionTrigger>
+      <AccordionContent className="px-4 pb-4">
+        <div className="space-y-4 pt-2">
+          <LeadCustomFieldInputs
+            fields={fields}
+            values={values}
+            onChange={(key, value) => {
+              setValues((prev) => ({
+                ...prev,
+                [key]: value,
+              }));
+            }}
+            canEdit={canEditField || (() => true)}
+            canView={canViewField || (() => true)}
+          />
+
+          {isChanged && (
+            <div className="flex justify-end pt-2">
+              <Button
+                size="sm"
+                disabled={isSaving}
+                onClick={() => onSave(values)}
+              >
+                Save Changes
+              </Button>
+            </div>
+          )}
+        </div>
+      </AccordionContent>
+    </AccordionItem>
+  );
+}
+
 function eventLabel(eventType?: string | null) {
   return String(eventType || 'activity')
     .split('_')
@@ -167,6 +241,7 @@ export function ServiceCloudTicketDetailPage({
   ticketId,
   canViewField,
   canEditField,
+  customFieldsList,
 }: {
   workspaceId: string;
   ticketId: string;
@@ -174,6 +249,7 @@ export function ServiceCloudTicketDetailPage({
   canViewField?: (fieldKey: string) => boolean;
   /** Optional FLS: fields returning false are shown as read-only in the sidebar. */
   canEditField?: (fieldKey: string) => boolean;
+  customFieldsList?: any[];
 }) {
   const { formatDate, formatDateOnly, formatDateTime } = useLocalization();
   const queryClient = useQueryClient();
@@ -417,17 +493,17 @@ export function ServiceCloudTicketDetailPage({
     ticket.due_at ??
     (ticket.created_at && ticket.priority?.resolution_due_minutes
       ? new Date(
-          new Date(ticket.created_at).getTime() +
-            ticket.priority.resolution_due_minutes * 60 * 1000,
-        ).toISOString()
+        new Date(ticket.created_at).getTime() +
+        ticket.priority.resolution_due_minutes * 60 * 1000,
+      ).toISOString()
       : null);
   const responseDueAt =
     ticket.response_due_at ||
     (ticket.created_at && ticket.priority?.response_due_minutes
       ? new Date(
-          new Date(ticket.created_at).getTime() +
-            ticket.priority.response_due_minutes * 60 * 1000,
-        ).toISOString()
+        new Date(ticket.created_at).getTime() +
+        ticket.priority.response_due_minutes * 60 * 1000,
+      ).toISOString()
       : null);
 
   const updateTicket = (payload: Record<string, unknown>) =>
@@ -460,10 +536,10 @@ export function ServiceCloudTicketDetailPage({
                   style={
                     ticket.status?.color
                       ? {
-                          backgroundColor: `${ticket.status.color}20`,
-                          borderColor: `${ticket.status.color}40`,
-                          color: ticket.status.color,
-                        }
+                        backgroundColor: `${ticket.status.color}20`,
+                        borderColor: `${ticket.status.color}40`,
+                        color: ticket.status.color,
+                      }
                       : undefined
                   }
                 >
@@ -481,10 +557,10 @@ export function ServiceCloudTicketDetailPage({
                     style={
                       ticket.priority?.color
                         ? {
-                            backgroundColor: `${ticket.priority.color}20`,
-                            borderColor: `${ticket.priority.color}40`,
-                            color: ticket.priority.color,
-                          }
+                          backgroundColor: `${ticket.priority.color}20`,
+                          borderColor: `${ticket.priority.color}40`,
+                          color: ticket.priority.color,
+                        }
                         : undefined
                     }
                   >
@@ -522,17 +598,23 @@ export function ServiceCloudTicketDetailPage({
           </div>
 
           <div className="grid gap-3 rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur md:min-w-[360px]">
-            <Metric
-              label="Customer"
-              value={ticket.customer?.name ?? '-'}
-              muted
-            />
-            <Metric
-              label="Primary owner"
-              value={optionLabel(assignedAgent)}
-              muted
-            />
-            <Metric label="Due date" value={formatDate(dueValue)} muted />
+            {(!canViewField || canViewField('customer')) && (
+              <Metric
+                label="Customer"
+                value={ticket.customer?.name ?? '-'}
+                muted
+              />
+            )}
+            {(!canViewField || canViewField('assigned_agent_id')) && (
+              <Metric
+                label="Primary owner"
+                value={optionLabel(assignedAgent)}
+                muted
+              />
+            )}
+            {(!canViewField || canViewField('due_at')) && (
+              <Metric label="Due date" value={formatDate(dueValue)} muted />
+            )}
             <Metric
               label="Logged"
               value={formatDuration(totalLoggedSeconds)}
@@ -646,7 +728,7 @@ export function ServiceCloudTicketDetailPage({
                                         : `To ${emailRecipientText(email)}`}
                                     </div>
                                     {Array.isArray(email?.cc_emails) &&
-                                    email.cc_emails.length > 0 ? (
+                                      email.cc_emails.length > 0 ? (
                                       <div className="text-muted-foreground mt-1 text-xs">
                                         Cc {email.cc_emails.join(', ')}
                                       </div>
@@ -666,8 +748,8 @@ export function ServiceCloudTicketDetailPage({
                                     <span className="text-muted-foreground text-xs">
                                       {formatDateTime(
                                         email?.received_at ||
-                                          email?.sent_at ||
-                                          email?.created_at,
+                                        email?.sent_at ||
+                                        email?.created_at,
                                       )}
                                     </span>
                                   </div>
@@ -715,7 +797,7 @@ export function ServiceCloudTicketDetailPage({
                                 className={cn(
                                   'w-full justify-start text-left font-normal',
                                   !timeForm.logged_date &&
-                                    'text-muted-foreground',
+                                  'text-muted-foreground',
                                 )}
                               >
                                 <CalendarDays className="mr-2 h-4 w-4" />
@@ -733,8 +815,8 @@ export function ServiceCloudTicketDetailPage({
                                 selected={
                                   timeForm.logged_date
                                     ? new Date(
-                                        timeForm.logged_date + 'T00:00:00',
-                                      )
+                                      timeForm.logged_date + 'T00:00:00',
+                                    )
                                     : undefined
                                 }
                                 onSelect={(date) =>
@@ -1048,7 +1130,7 @@ export function ServiceCloudTicketDetailPage({
                                     eventLabel(activity.event_type)}
                                 </div>
                                 {activity.from_value?.label ||
-                                activity.to_value?.label ? (
+                                  activity.to_value?.label ? (
                                   <div className="text-muted-foreground text-xs">
                                     {activity.from_value?.label ?? 'None'} -&gt;{' '}
                                     {activity.to_value?.label ?? 'None'}
@@ -1095,7 +1177,7 @@ export function ServiceCloudTicketDetailPage({
               </AccordionTrigger>
               <AccordionContent className="px-4 pb-4">
                 <div className="space-y-4 pt-2">
-                  {(!canViewField || canViewField('status')) && (
+                  {(!canViewField || canViewField('status_id')) && (
                     <EditableSelect
                       icon={<Flag className="h-4 w-4" />}
                       label="Status"
@@ -1104,12 +1186,12 @@ export function ServiceCloudTicketDetailPage({
                       allOptions={allStatuses}
                       disabled={
                         isUpdating ||
-                        (canEditField ? !canEditField('status') : false)
+                        (canEditField ? !canEditField('status_id') : false)
                       }
                       onChange={(value) => updateTicket({ status_id: value })}
                     />
                   )}
-                  {(!canViewField || canViewField('priority')) && (
+                  {(!canViewField || canViewField('priority_id')) && (
                     <EditableSelect
                       icon={<Flag className="h-4 w-4" />}
                       label="Priority"
@@ -1118,13 +1200,13 @@ export function ServiceCloudTicketDetailPage({
                       allOptions={allPriorities}
                       disabled={
                         isUpdating ||
-                        (canEditField ? !canEditField('priority') : false)
+                        (canEditField ? !canEditField('priority_id') : false)
                       }
                       allowNone
                       onChange={(value) => updateTicket({ priority_id: value })}
                     />
                   )}
-                  {(!canViewField || canViewField('category')) && (
+                  {(!canViewField || canViewField('category_id')) && (
                     <EditableSelect
                       icon={<Tag className="h-4 w-4" />}
                       label="Category"
@@ -1132,13 +1214,13 @@ export function ServiceCloudTicketDetailPage({
                       options={categories}
                       disabled={
                         isUpdating ||
-                        (canEditField ? !canEditField('category') : false)
+                        (canEditField ? !canEditField('category_id') : false)
                       }
                       allowNone
                       onChange={(value) => updateTicket({ category_id: value })}
                     />
                   )}
-                  {(!canViewField || canViewField('assigned_agent')) && (
+                  {(!canViewField || canViewField('assigned_agent_id')) && (
                     <EditableSelect
                       icon={<UserCheck className="h-4 w-4" />}
                       label="Primary owner"
@@ -1146,7 +1228,7 @@ export function ServiceCloudTicketDetailPage({
                       options={members}
                       disabled={
                         isUpdating ||
-                        (canEditField ? !canEditField('assigned_agent') : false)
+                        (canEditField ? !canEditField('assigned_agent_id') : false)
                       }
                       allowNone
                       onChange={(value) =>
@@ -1174,19 +1256,26 @@ export function ServiceCloudTicketDetailPage({
                       </div>
                     </Field>
                   )}
-                  <Separator />
-                  <TicketAssignees
-                    members={members}
-                    assignees={assignees}
-                    disabled={assigneeMutation.isPending}
-                    onToggle={(member, assignee) =>
-                      assigneeMutation.mutate({
-                        accountId: member.id,
-                        assigneeId: assignee?.id,
-                        action: assignee ? 'remove' : 'add',
-                      })
-                    }
-                  />
+                  {(!canViewField || canViewField('assignees')) && (
+                    <>
+                      <Separator />
+                      <TicketAssignees
+                        members={members}
+                        assignees={assignees}
+                        disabled={
+                          assigneeMutation.isPending ||
+                          (canEditField ? !canEditField('assignees') : false)
+                        }
+                        onToggle={(member, assignee) =>
+                          assigneeMutation.mutate({
+                            accountId: member.id,
+                            assigneeId: assignee?.id,
+                            action: assignee ? 'remove' : 'add',
+                          })
+                        }
+                      />
+                    </>
+                  )}
                 </div>
               </AccordionContent>
             </AccordionItem>
@@ -1197,9 +1286,9 @@ export function ServiceCloudTicketDetailPage({
               style={
                 ticket.priority?.color
                   ? {
-                      backgroundColor: `${ticket.priority.color}15`,
-                      borderColor: `${ticket.priority.color}50`,
-                    }
+                    backgroundColor: `${ticket.priority.color}15`,
+                    borderColor: `${ticket.priority.color}50`,
+                  }
                   : undefined
               }
             >
@@ -1217,10 +1306,10 @@ export function ServiceCloudTicketDetailPage({
                         style={
                           ticket.priority?.color
                             ? {
-                                backgroundColor: `${ticket.priority.color}20`,
-                                borderColor: `${ticket.priority.color}40`,
-                                color: ticket.priority.color,
-                              }
+                              backgroundColor: `${ticket.priority.color}20`,
+                              borderColor: `${ticket.priority.color}40`,
+                              color: ticket.priority.color,
+                            }
                             : undefined
                         }
                       >
@@ -1238,18 +1327,24 @@ export function ServiceCloudTicketDetailPage({
               </AccordionTrigger>
               <AccordionContent className="px-4 pb-4">
                 <div className="space-y-3 pt-2 text-sm">
-                  <Metric
-                    label="Priority"
-                    value={ticket.priority?.name ?? 'Not set'}
-                  />
-                  <Metric
-                    label="Response due"
-                    value={formatDateTime(responseDueAt)}
-                  />
-                  <Metric
-                    label="Resolution due"
-                    value={formatDateOnly(dueValue)}
-                  />
+                  {(!canViewField || canViewField('priority_id')) && (
+                    <Metric
+                      label="Priority"
+                      value={ticket.priority?.name ?? 'Not set'}
+                    />
+                  )}
+                  {(!canViewField || canViewField('due_at')) && (
+                    <>
+                      <Metric
+                        label="Response due"
+                        value={formatDateTime(responseDueAt)}
+                      />
+                      <Metric
+                        label="Resolution due"
+                        value={formatDateOnly(dueValue)}
+                      />
+                    </>
+                  )}
                 </div>
               </AccordionContent>
             </AccordionItem>
@@ -1339,6 +1434,21 @@ export function ServiceCloudTicketDetailPage({
                 </div>
               </AccordionContent>
             </AccordionItem>
+
+            {customFieldsList && customFieldsList.length > 0 && (
+              <TicketCustomFieldsSection
+                fields={customFieldsList}
+                ticket={ticket}
+                canEditField={canEditField}
+                canViewField={canViewField}
+                onSave={(updatedFields) => {
+                  updateTicket({
+                    custom_fields: updatedFields,
+                  });
+                }}
+                isSaving={isUpdating}
+              />
+            )}
           </Accordion>
         </div>
       </div>

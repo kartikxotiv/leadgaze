@@ -55,19 +55,20 @@ const getAccessRules = catchAsync(
     }
 
     // Check if user has access to this workspace
-    const { data: member, error: memberError } = await supabase
+    const { data: members, error: memberError } = await supabase
       .from('workspace_members')
-      .select('role_id')
+      .select('role_id, product_key')
       .eq('workspace_id', field.workspace_id)
-      .eq('user_id', user.id)
-      .single();
+      .eq('user_id', user.id);
 
-    if (memberError || !member) {
+    if (memberError || !members || members.length === 0) {
       return NextResponse.json(
         { message: 'User is not a member of this workspace' },
         { status: 403 },
       );
     }
+
+    const member = members.find((m: any) => m.product_key === null) || members[0];
 
     // Get access rule and members
     const { data: accessRule, error: accessRuleError } = await coreDb(supabase)
@@ -145,19 +146,20 @@ const upsertAccessRules = catchAsync(
     }
 
     // Check if user has admin permissions
-    const { data: member, error: memberError } = await supabase
+    const { data: members, error: memberError } = await supabase
       .from('workspace_members')
-      .select('role_id')
+      .select('role_id, product_key')
       .eq('workspace_id', field.workspace_id)
-      .eq('user_id', user.id)
-      .single();
+      .eq('user_id', user.id);
 
-    if (memberError || !member) {
+    if (memberError || !members || members.length === 0) {
       return NextResponse.json(
         { message: 'User is not a member of this workspace' },
         { status: 403 },
       );
     }
+
+    const member = members.find((m: any) => m.product_key === null) || members[0];
 
     const { data: role, error: roleError } = await supabase
       .from('workspace_roles')

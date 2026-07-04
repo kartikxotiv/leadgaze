@@ -116,12 +116,15 @@ export const updateAccount = catchAsync(
     let hasEditPermission = isWorkspaceOwner || isOwner || isCreator;
 
     if (!hasEditPermission) {
-      const { data: member } = await supabase
+      const { data: members } = await supabase
         .from('workspace_members')
-        .select('role_id')
+        .select('role_id, product_key')
         .eq('user_id', user.id)
-        .eq('workspace_id', existingAccount.workspace_id)
-        .single();
+        .eq('workspace_id', existingAccount.workspace_id);
+
+      const member = members?.find((m: any) => m.product_key === 'sales')
+        || members?.find((m: any) => m.product_key === null)
+        || members?.[0];
 
       if (member?.role_id) {
         const { data: permission } = await supabase
@@ -255,12 +258,15 @@ export const deleteAccount = catchAsync(
 
     // If not owner, check RBAC permissions
     if (!hasPermission) {
-      const { data: member } = await supabase
+      const { data: members } = await supabase
         .from('workspace_members')
-        .select('role_id')
+        .select('role_id, product_key')
         .eq('user_id', user.id)
-        .eq('workspace_id', existingAccount.workspace_id)
-        .single();
+        .eq('workspace_id', existingAccount.workspace_id);
+
+      const member = members?.find((m: any) => m.product_key === 'sales')
+        || members?.find((m: any) => m.product_key === null)
+        || members?.[0];
 
       if (member?.role_id) {
         const { data: permission } = await supabase

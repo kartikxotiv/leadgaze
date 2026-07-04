@@ -17,14 +17,15 @@ interface UseTeamMembersOptions {
 
 export function useTeamMembers({
   workspaceId,
-  productKey,
+  productKey: rawProductKey,
   enabled = true,
 }: UseTeamMembersOptions) {
+  const productKey = rawProductKey === 'service-cloud' ? 'service_cloud' : rawProductKey;
   const membersQuery = useQuery({
-    queryKey: ['team-members', workspaceId],
+    queryKey: ['team-members', workspaceId, productKey],
     queryFn: async () => {
       if (!workspaceId) return { data: [] as WorkspaceMember[] };
-      const response = await getMembersService(workspaceId);
+      const response = await getMembersService(workspaceId, productKey);
       return response as { data: WorkspaceMember[] };
     },
     enabled: enabled && !!workspaceId,
@@ -38,9 +39,16 @@ export function useTeamMembers({
 
   const filteredData = useMemo(() => {
     const allMembers = membersQuery.data?.data ?? [];
+    const seen = new Set<string>();
+    const uniqueMembers = allMembers.filter((m) => {
+      if (!m.user_id) return true;
+      if (seen.has(m.user_id)) return false;
+      seen.add(m.user_id);
+      return true;
+    });
 
     if (!productKey) {
-      return allMembers.filter((m) => m.status !== 'removed');
+      return uniqueMembers.filter((m) => m.status !== 'removed');
     }
 
     const assignments = seatAssignmentsQuery.data?.data ?? [];
@@ -50,7 +58,7 @@ export function useTeamMembers({
         .map((a: { user_id: string }) => a.user_id),
     );
 
-    return allMembers.filter(
+    return uniqueMembers.filter(
       (m) =>
         m.status !== 'removed' &&
         (m.status === 'pending' || activeUserIds.has(m.user_id)),

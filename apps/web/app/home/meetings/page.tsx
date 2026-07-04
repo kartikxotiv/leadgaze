@@ -1733,8 +1733,8 @@ export default function MeetingsPage() {
     if (!workspace) return false;
     return (
       workspace.owner_id === user?.id ||
-      workspace.role?.role_key === 'admin' ||
-      (workspace.role?.hierarchy_level ?? 0) >= 100
+      workspace.currentRole?.role_key === 'admin' ||
+      (workspace.currentRole?.hierarchy_level ?? 0) >= 100
     );
   }, [workspace, user]);
 

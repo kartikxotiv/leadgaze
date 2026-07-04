@@ -140,13 +140,16 @@ export async function loadFieldPermissionContext(
 
   const isWorkspaceOwner = workspace?.owner_id === params.userId;
 
-  const { data: member } = await supabase
+  const { data: members } = await supabase
     .from('workspace_members')
-    .select('role_id, role:workspace_roles(id, role_key)')
+    .select('role_id, product_key, role:workspace_roles(id, role_key)')
     .eq('workspace_id', params.workspaceId)
     .eq('user_id', params.userId)
-    .eq('status', 'accepted')
-    .maybeSingle();
+    .eq('status', 'accepted');
+
+  const member = members?.find((m: any) => m.product_key === productKey)
+    || members?.find((m: any) => m.product_key === null)
+    || members?.[0];
 
   const roleId = member?.role_id ?? null;
   const roleKey = member?.role?.role_key ?? null;
