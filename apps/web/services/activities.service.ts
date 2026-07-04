@@ -106,10 +106,11 @@ export const deleteNoteService = asyncHandlerClient(async (id: string) => {
 
 // --- Reminders ---
 export const getRemindersService = asyncHandlerClient(
-  async (workspaceId: string, entityType?: string, entityId?: string) => {
+  async (workspaceId: string, entityType?: string, entityId?: string, status?: string) => {
     let url = `/reminders?workspaceId=${workspaceId}`;
     if (entityType) url += `&entityType=${entityType}`;
     if (entityId) url += `&entityId=${entityId}`;
+    if (status) url += `&status=${status}`;
     const response = await ApiClient.get(url);
     return response.data?.data || [];
   },
