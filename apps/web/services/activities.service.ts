@@ -67,6 +67,40 @@ export interface Document {
   created_by_user?: { name: string; email: string };
 }
 
+export interface Task {
+  id: string;
+  title: string;
+  description?: string;
+  due_date?: string;
+  priority: string;
+  is_completed: boolean;
+  completed_at?: string | null;
+  completed_by?: string | null;
+  entity_type: string;
+  entity_id: string;
+  entity_name?: string | null;
+  created_by_user?: { name: string; email: string };
+  completed_by_user?: { name: string; email: string };
+  total_logged_minutes?: number | null;
+  created_at: string;
+  updated_at?: string;
+  created_by?: string;
+  updated_by?: string;
+}
+
+export interface TaskTimeLog {
+  id: string;
+  workspace_id: string;
+  task_id: string;
+  user_id: string;
+  duration_minutes: number;
+  description?: string;
+  logged_at: string;
+  created_at: string;
+  updated_at?: string;
+  user?: { name: string; email: string };
+}
+
 // Service Functions
 
 // --- Notes ---
@@ -248,3 +282,74 @@ export const deleteDocumentService = asyncHandlerClient(async (id: string) => {
   const response = await ApiClient.delete(`/documents/${id}`);
   return response.data;
 });
+
+// --- Tasks ---
+export const getTasksService = asyncHandlerClient(
+  async (workspaceId: string, entityType?: string, entityId?: string, status: 'active' | 'completed' = 'active') => {
+    let url = `/tasks?workspaceId=${workspaceId}&status=${status}`;
+    if (entityType) url += `&entityType=${entityType}`;
+    if (entityId) url += `&entityId=${entityId}`;
+    const response = await ApiClient.get(url);
+    return response.data?.data || [];
+  },
+);
+
+export const createTaskService = asyncHandlerClient(
+  async (payload: {
+    workspace_id: string;
+    entity_type: string;
+    entity_id: string;
+    title: string;
+    description?: string;
+    due_date?: string;
+    priority?: string;
+  }) => {
+    const response = await ApiClient.post('/tasks', payload);
+    return response.data?.data;
+  },
+);
+
+export const updateTaskService = asyncHandlerClient(
+  async (
+    id: string,
+    payload: {
+      title?: string;
+      description?: string;
+      due_date?: string;
+      priority?: string;
+      is_completed?: boolean;
+    },
+  ) => {
+    const response = await ApiClient.patch(`/tasks/${id}`, payload);
+    return response.data?.data;
+  },
+);
+
+export const deleteTaskService = asyncHandlerClient(async (id: string) => {
+  const response = await ApiClient.delete(`/tasks/${id}`);
+  return response.data;
+});
+
+// --- Task Time Logs ---
+export const getTaskTimeLogsService = asyncHandlerClient(
+  async (workspaceId: string, taskId: string) => {
+    const response = await ApiClient.get(`/tasks/${taskId}/time-logs?workspaceId=${workspaceId}`);
+    return response.data?.data || [];
+  },
+);
+
+export const createTaskTimeLogService = asyncHandlerClient(
+  async (
+    taskId: string,
+    payload: {
+      workspace_id: string;
+      duration_minutes: number;
+      description?: string;
+      logged_at?: string;
+    },
+  ) => {
+    const response = await ApiClient.post(`/tasks/${taskId}/time-logs`, payload);
+    return response.data?.data;
+  },
+);
+
