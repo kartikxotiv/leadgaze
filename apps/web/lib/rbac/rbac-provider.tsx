@@ -49,6 +49,7 @@ interface Workspace {
   roles: Record<string, WorkspaceRole>;
   currentRole: WorkspaceRole;
   currentProductKey?: string | null;
+  company_logo_url?: string | null;
 }
 
 interface RBACContextType {
@@ -107,7 +108,11 @@ export function RBACProvider({ children }: { children: ReactNode }) {
             id,
             name,
             slug,
-            owner_id
+            owner_id,
+            company_id,
+            companies (
+              logo_url
+            )
           ),
           role_id(
             id,
@@ -193,6 +198,7 @@ export function RBACProvider({ children }: { children: ReactNode }) {
               roles,
               currentRole: roles[pKey],
               currentProductKey: currentProductKey || pKey,
+              company_logo_url: workspace.companies?.logo_url || null,
             });
           } else {
             // Add additional role for this workspace

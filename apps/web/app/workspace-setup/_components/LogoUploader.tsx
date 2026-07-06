@@ -8,12 +8,19 @@ interface LogoUploaderProps {
   companyName: string;
   onFileSelect: (file: File | null) => void;
   disabled?: boolean;
+  initialLogoUrl?: string | null;
 }
 
-export function LogoUploader({ companyName, onFileSelect, disabled }: LogoUploaderProps) {
-  const [previewUrl, setPreviewUrl] = React.useState<string | null>(null);
+export function LogoUploader({ companyName, onFileSelect, disabled, initialLogoUrl }: LogoUploaderProps) {
+  const [previewUrl, setPreviewUrl] = React.useState<string | null>(initialLogoUrl || null);
   const [error, setError] = React.useState<string | null>(null);
   const inputRef = React.useRef<HTMLInputElement>(null);
+
+  React.useEffect(() => {
+    if (initialLogoUrl) {
+      setPreviewUrl(initialLogoUrl);
+    }
+  }, [initialLogoUrl]);
 
   const initial = companyName ? companyName.charAt(0).toUpperCase() : 'W';
 
@@ -48,18 +55,18 @@ export function LogoUploader({ companyName, onFileSelect, disabled }: LogoUpload
 
   return (
     <div className="flex items-center gap-6 mb-6">
-      <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-2xl bg-[linear-gradient(135deg,var(--color-leadgaze-primary)_0%,#283BA4_100%)] shadow-[var(--color-leadgaze-primary)]/20 shadow-lg flex items-center justify-center text-white text-3xl font-semibold">
+      <div className={`relative h-20 w-20 shrink-0 overflow-hidden rounded-2xl ${previewUrl ? '' : 'bg-[linear-gradient(135deg,var(--color-leadgaze-primary)_0%,#283BA4_100%)]'} shadow-[var(--color-leadgaze-primary)]/20 shadow-lg flex items-center justify-center text-white text-3xl font-semibold`}>
         {previewUrl ? (
           <Image src={previewUrl} alt="Logo preview" fill className="object-cover" />
         ) : (
           <span>{initial}</span>
         )}
       </div>
-      
+
       <div className="flex flex-col gap-2">
         <p className="text-sm font-medium text-slate-700">Company logo</p>
         <p className="text-xs text-slate-500">We support PNGs, JPEGs and GIFs under 2MB. Recommended size is 400x400px.</p>
-        
+
         <div className="flex gap-2 items-center mt-1">
           <input
             type="file"

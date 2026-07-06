@@ -25,6 +25,7 @@ import OrgSubscriptionPage from '~/org/subscription/page';
 
 import { WorkspaceLocalizationSettings } from './_components/localization-settings';
 import { MeetingAccountsSettings } from './_components/meeting-accounts-settings';
+import { WorkspaceGeneralSettings } from './_components/general-settings';
 
 type WorkspaceSummary = {
   id: string;
@@ -155,19 +156,26 @@ export default function WorkspaceSettingsPage() {
     isLoading: isRbacLoading,
   } = useRBAC();
   const canViewSettings = canAccess('settings', 'view');
+  const isAdmin =
+    workspace?.currentRole?.role_key === 'admin' ||
+    (workspace?.currentRole?.hierarchy_level ?? 0) >= 100;
+  const canViewGeneralSettings = canViewSettings && isAdmin;
+
   const canViewSubscription = canAccess('subscription', 'view');
   const canManageSubscription = canAccess('subscription', 'manage');
   const canManageEmail = canAccess('emails', 'manage_email');
   const canManageMeetings = 1 == 1 || canAccess('meetings', 'manage');
 
   const pathname = usePathname();
-  const defaultTab = canViewSettings
+  const defaultTab = canViewGeneralSettings
     ? 'general'
-    : canViewSubscription
-      ? 'billing'
-      : canManageMeetings
-        ? 'meetings'
-        : 'emails';
+    : canViewSettings
+      ? 'localization'
+      : canViewSubscription
+        ? 'billing'
+        : canManageMeetings
+          ? 'meetings'
+          : 'emails';
 
   if (isRbacLoading) {
     return null;
@@ -205,7 +213,7 @@ export default function WorkspaceSettingsPage() {
       <PageBody className="sticky flex min-w-0 flex-1 shrink-0 flex-col overflow-hidden">
         <Tabs defaultValue={defaultTab} className="space-y-6 overflow-auto">
           <TabsList className="mb-1 h-auto w-full justify-start gap-8 rounded-none border-b bg-transparent p-0">
-            {canViewSettings && (
+            {canViewGeneralSettings && (
               <TabsTrigger
                 value="general"
                 className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
@@ -252,9 +260,10 @@ export default function WorkspaceSettingsPage() {
             )}
           </TabsList>
 
-          {canViewSettings && (
+          {canViewGeneralSettings && workspace?.id && (
             <TabsContent value="general">
-              <WorkspaceManagement currentWorkspace={workspace} />
+              {/* <WorkspaceManagement currentWorkspace={workspace} /> */}
+              <WorkspaceGeneralSettings workspaceId={workspace.id} />
             </TabsContent>
           )}
 

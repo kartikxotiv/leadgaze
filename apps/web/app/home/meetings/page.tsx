@@ -1710,6 +1710,7 @@ export default function MeetingsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
+  const [selectedTimeframe, setSelectedTimeframe] = useState<string[]>(['upcoming']);
   const [selectedCreatedByIds, setSelectedCreatedByIds] = useState<string[]>(
     [],
   );
@@ -1893,6 +1894,7 @@ export default function MeetingsPage() {
     searchTerm,
     selectedTypes,
     selectedStatuses,
+    selectedTimeframe,
     selectedCreatedByIds,
     pageSize,
     createdOnRange,
@@ -1924,6 +1926,28 @@ export default function MeetingsPage() {
       result = result.filter((meeting: CoreMeeting) =>
         selectedStatuses.includes(meeting.status),
       );
+    }
+
+    // Timeframe filter
+    if (selectedTimeframe.length > 0) {
+      const now = new Date();
+      result = result.filter((meeting: CoreMeeting) => {
+        const start = meeting.scheduled_start || meeting.start_time || meeting.actual_start;
+        if (!start) return selectedTimeframe.includes('upcoming');
+        const meetingDate = new Date(start);
+        const isUpcoming = meetingDate >= now && meeting.status !== 'completed' && meeting.status !== 'cancelled';
+        
+        if (selectedTimeframe.includes('upcoming') && selectedTimeframe.includes('past')) {
+          return true;
+        }
+        if (selectedTimeframe.includes('upcoming')) {
+          return isUpcoming;
+        }
+        if (selectedTimeframe.includes('past')) {
+          return !isUpcoming;
+        }
+        return true;
+      });
     }
 
     // Created By filter (client-side since API doesn't support this directly)
@@ -1965,6 +1989,7 @@ export default function MeetingsPage() {
     searchTerm,
     selectedTypes,
     selectedStatuses,
+    selectedTimeframe,
     selectedCreatedByIds,
     computedCreatedOnDates,
     computedUpdatedOnDates,
@@ -2063,6 +2088,22 @@ export default function MeetingsPage() {
               onSelectValues: setSelectedCreatedByIds,
             },
             {
+              key: 'timeframe',
+              label: 'Timeframe',
+              selectedValues: selectedTimeframe,
+              selectedLabel:
+                selectedTimeframe.length === 0
+                  ? 'All meetings'
+                  : selectedTimeframe.length === 1
+                    ? (selectedTimeframe[0] === 'upcoming' ? 'Upcoming' : 'Past')
+                    : `${selectedTimeframe.length} selected`,
+              options: [
+                { value: 'upcoming', label: 'Upcoming' },
+                { value: 'past', label: 'Past' },
+              ],
+              onSelectValues: setSelectedTimeframe,
+            },
+            {
               key: 'created_on',
               label: 'Created On',
               type: 'date',
@@ -2087,6 +2128,7 @@ export default function MeetingsPage() {
             selectedTypes.length +
             selectedStatuses.length +
             (selectedCreatedByIds.length > 0 ? 1 : 0) +
+            (selectedTimeframe.includes('upcoming') && selectedTimeframe.length === 1 ? 0 : selectedTimeframe.length) +
             (createdOnRange ? 1 : 0) +
             (updatedOnRange ? 1 : 0)
           }
@@ -2094,6 +2136,7 @@ export default function MeetingsPage() {
             setSelectedTypes([]);
             setSelectedStatuses([]);
             setSelectedCreatedByIds([]);
+            setSelectedTimeframe(['upcoming']);
             clearCreatedOnRange();
             clearUpdatedOnRange();
           }}
@@ -2299,16 +2342,16 @@ export default function MeetingsPage() {
                           }}
                         >
                           {isVisible('sno') && (
-                            <TableCell className="text-muted-foreground px-4 py-3">
+                            <TableCell className="text-muted-foreground px-4 py-2">
                               {sno}
                             </TableCell>
                           )}
                           {isVisible('title') && (
-                            <TableCell className="px-4 py-3">
+                            <TableCell className="px-4 py-2">
                               <div>
-                                <p className="font-medium">{meeting.title}</p>
+                                <p className="font-medium text-sm">{meeting.title}</p>
                                 {meeting.location && (
-                                  <p className="text-muted-foreground text-xs">
+                                  <p className="text-muted-foreground text-xs mt-0.5">
                                     {meeting.location}
                                   </p>
                                 )}
@@ -2316,8 +2359,8 @@ export default function MeetingsPage() {
                             </TableCell>
                           )}
                           {isVisible('type') && (
-                            <TableCell className="px-4 py-3">
-                              <Badge variant="outline" className="text-xs">
+                            <TableCell className="px-4 py-2">
+                              <Badge variant="outline" className="text-xs py-0 h-5">
                                 {meeting.meeting_type === 'logged'
                                   ? 'Logged'
                                   : 'Scheduled'}
@@ -2325,10 +2368,10 @@ export default function MeetingsPage() {
                             </TableCell>
                           )}
                           {isVisible('provider') && (
-                            <TableCell className="px-4 py-3">
+                            <TableCell className="px-4 py-2">
                               <Badge
                                 variant="outline"
-                                className={`gap-1.5 text-xs ${providerInfo.cls}`}
+                                className={`gap-1.5 text-xs py-0 h-5 ${providerInfo.cls}`}
                               >
                                 {providerInfo.icon}
                                 {providerInfo.label}
@@ -2336,9 +2379,9 @@ export default function MeetingsPage() {
                             </TableCell>
                           )}
                           {isVisible('date_time') && (
-                            <TableCell className="px-4 py-3">
-                              <div className="flex items-center gap-2 text-sm">
-                                <Clock className="text-muted-foreground h-4 w-4" />
+                            <TableCell className="px-4 py-2">
+                              <div className="flex items-center gap-2 text-xs">
+                                <Clock className="text-muted-foreground h-3.5 w-3.5" />
                                 {formatMeetingTime(
                                   meeting.meeting_type === 'logged'
                                     ? meeting.actual_start
@@ -2351,10 +2394,10 @@ export default function MeetingsPage() {
                             </TableCell>
                           )}
                           {isVisible('status') && (
-                            <TableCell className="px-4 py-3">
+                            <TableCell className="px-4 py-2">
                               <Badge
                                 variant="outline"
-                                className="gap-1.5 text-xs"
+                                className="gap-1.5 text-xs py-0 h-5"
                                 style={{
                                   color: statusCfg.color,
                                   borderColor: `${statusCfg.color}40`,
@@ -2366,13 +2409,13 @@ export default function MeetingsPage() {
                               </Badge>
                             </TableCell>
                           )}
-                          <TableCell className="bg-card sticky right-0 px-4 py-3 text-right">
+                          <TableCell className="bg-card sticky right-0 px-4 py-2 text-right">
                             <DropdownMenu>
                               <DropdownMenuTrigger
                                 asChild
                                 onClick={(e) => e.stopPropagation()}
                               >
-                                <Button variant="ghost" size="icon">
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
                                   <MoreVertical className="h-4 w-4" />
                                 </Button>
                               </DropdownMenuTrigger>

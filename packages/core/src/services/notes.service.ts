@@ -2,8 +2,12 @@ import { CoreApiClient } from '../utils';
 import { asyncHandlerClient } from '../utils/async-handler';
 import { entityQuery } from './_entity-query';
 
-export const getNotesService = asyncHandlerClient(async (workspaceId: string, entityType?: string, entityId?: string) => {
-  const res = await CoreApiClient.get(`/notes?${entityQuery(workspaceId, entityType, entityId)}`);
+export const getNotesService = asyncHandlerClient(async (workspaceId: string, entityType?: string, entityId?: string, status?: string) => {
+  let url = `/notes?${entityQuery(workspaceId, entityType, entityId)}`;
+  if (status) {
+    url += `&status=${status}`;
+  }
+  const res = await CoreApiClient.get(url);
   return res?.data?.data ?? [];
 });
 

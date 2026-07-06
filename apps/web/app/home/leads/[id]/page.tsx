@@ -519,7 +519,7 @@ export default function LeadDetailsPage() {
             <DetailHeader
               avatar={
                 <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-blue-400 to-blue-600 text-lg font-semibold text-white">
-                  {lead.first_name.charAt(0)}
+                  {lead.first_name?.charAt(0)}
                   {lead.last_name?.charAt(0)}
                 </div>
               }
@@ -711,9 +711,9 @@ export default function LeadDetailsPage() {
 
               <TabsContent value="activity">
                 <CardWidgetContainer
-                      title="Activity"
-                      hideHeaderBorder={true}
-                      icon={<Clock className="text-leadgaze-dark h-5 w-5 dark:text-white" />}>
+                  title="Activity"
+                  hideHeaderBorder={true}
+                  icon={<Clock className="text-leadgaze-dark h-5 w-5 dark:text-white" />}>
                   <CardContent className="px-6 py-3">
                     <div className="space-y-2">
                       <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3 dark:bg-slate-900">

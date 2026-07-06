@@ -11,10 +11,24 @@ const notes = createCoreControllers({
     created_by: userId,
     updated_by: userId,
   }),
-  updatePayload: (body, userId) => ({
-    note: body.note,
-    updated_by: userId,
-  }),
+  updatePayload: (body, userId) => {
+    const payload: any = {};
+    if (body.note !== undefined) {
+      payload.note = body.note;
+    }
+    if (body.is_closed !== undefined) {
+      payload.is_closed = body.is_closed;
+      if (body.is_closed) {
+        payload.closed_at = new Date().toISOString();
+        payload.closed_by = userId;
+      } else {
+        payload.closed_at = null;
+        payload.closed_by = null;
+      }
+    }
+    payload.updated_by = userId;
+    return payload;
+  },
 });
 
 export const getNotesController = notes.get;
