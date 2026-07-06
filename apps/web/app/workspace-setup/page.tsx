@@ -39,14 +39,15 @@ export default function WorkspaceSetupPage() {
 
   const [workspaceName, setWorkspaceName] = useState('');
   const [billingCountry, setBillingCountry] = useState('');
+  const [taxId, setTaxId] = useState('');
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreviewUrl, setLogoPreviewUrl] = useState<string | null>(null);
   const [isSubscribed, setIsSubscribed] = useState(true);
-  
+
   // "Heard about us" state
   const [heardAbout, setHeardAbout] = useState<string[]>([]);
   const [otherText, setOtherText] = useState('');
-  
+
   // "Customize" state
   interface Product {
     id: string;
@@ -55,7 +56,7 @@ export default function WorkspaceSetupPage() {
   }
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
-  
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [step, setStep] = useState<'info' | 'create' | 'heard' | 'customize' | 'final_placeholder'>('info');
@@ -135,18 +136,18 @@ export default function WorkspaceSetupPage() {
     };
 
     init();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleCreateCompany = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    
+
     if (!workspaceName.trim()) {
       setError('Company name is required');
       return;
     }
-    
+
     if (!billingCountry) {
       setError('Billing country is required');
       return;
@@ -156,6 +157,34 @@ export default function WorkspaceSetupPage() {
 
     try {
       const supabase = getSupabaseBrowserClient();
+
+      // Validate Tax ID if provided
+      if (taxId.trim()) {
+        const valResponse = await fetch('/api/companies/validate-tax', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            country_iso: billingCountry,
+            tin: taxId.trim(),
+          }),
+        });
+
+        if (!valResponse.ok) {
+          const errData = await valResponse.json();
+          setError(errData.message || 'Tax ID validation failed.');
+          setLoading(false);
+          return;
+        }
+
+        const { data: valResult } = await valResponse.json();
+        if (!valResult.isValid) {
+          setError(`Tax ID is invalid: ${valResult.message}`);
+          setLoading(false);
+          return;
+        }
+      }
 
       let logo_url = null;
 
@@ -171,11 +200,11 @@ export default function WorkspaceSetupPage() {
         if (uploadError) {
           throw new Error(`Failed to upload logo: ${uploadError.message}`);
         }
-        
+
         const { data: publicUrlData } = supabase.storage
           .from('companies-logo')
           .getPublicUrl(uploadData.path);
-          
+
         logo_url = publicUrlData.publicUrl;
       }
 
@@ -190,6 +219,7 @@ export default function WorkspaceSetupPage() {
           billing_country: billingCountry,
           logo_url,
           created_by: user?.id,
+          tax_id: taxId.trim() || null,
         }),
       });
 
@@ -235,7 +265,7 @@ export default function WorkspaceSetupPage() {
     }
   };
 
-    const handleHeardSubmit = async (e?: React.FormEvent, skip: boolean = false) => {
+  const handleHeardSubmit = async (e?: React.FormEvent, skip: boolean = false) => {
     if (e) e.preventDefault();
     setLoading(true);
 
@@ -268,7 +298,7 @@ export default function WorkspaceSetupPage() {
     if (e) e.preventDefault();
     setLoading(true);
     setError('');
-    
+
     try {
       const workspaceId = onboardingWorkspaceId;
 
@@ -284,7 +314,7 @@ export default function WorkspaceSetupPage() {
           is_onboarding_finished: true
         })
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to update workspace');
       }
@@ -351,267 +381,281 @@ export default function WorkspaceSetupPage() {
     return (
       <>
         <div className="flex min-h-screen bg-white dark:bg-[#111317]">
-        {/* Left Preview Side */}
-        <div className="hidden lg:block lg:w-1/2 relative bg-[var(--color-leadgaze-primary)] overflow-hidden">
-           <DashboardPreview companyName={workspaceName} slug={slug} logoUrl={logoPreviewUrl} />
-        </div>
+          {/* Left Preview Side */}
+          <div className="hidden lg:block lg:w-1/2 relative bg-[var(--color-leadgaze-primary)] overflow-hidden">
+            <DashboardPreview companyName={workspaceName} slug={slug} logoUrl={logoPreviewUrl} />
+          </div>
 
-        {/* Right Form Side */}
-        <div className="flex-1 flex flex-col justify-center px-8 lg:px-16 xl:px-24 bg-white dark:bg-[#111317]">
-          <div className="w-full max-w-md mx-auto">
-            {step === 'create' && (
-              <div className="animate-in fade-in slide-in-from-right-4 duration-500">
-                <div className="mb-10">
-                  <button onClick={() => setStep('info')} className="text-sm font-medium text-slate-500 hover:text-leadgaze-dark flex items-center gap-1.5 mb-8 dark:text-white">
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
-                    Back
-                  </button>
-                  <h1 className="text-[1.75rem] font-bold tracking-tight text-slate-800 mb-2">Create your workspace</h1>
-                </div>
+          {/* Right Form Side */}
+          <div className="flex-1 flex flex-col justify-center px-8 lg:px-16 xl:px-24 bg-white dark:bg-[#111317]">
+            <div className="w-full max-w-md mx-auto">
+              {step === 'create' && (
+                <div className="animate-in fade-in slide-in-from-right-4 duration-500">
+                  <div className="mb-10">
+                    <button onClick={() => setStep('info')} className="text-sm font-medium text-slate-500 hover:text-leadgaze-dark flex items-center gap-1.5 mb-8 dark:text-white">
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                      Back
+                    </button>
+                    <h1 className="text-[1.75rem] font-bold tracking-tight text-slate-800 mb-2">Create your workspace</h1>
+                  </div>
 
-                <form onSubmit={handleCreateCompany} className="space-y-6">
-                  <LogoUploader companyName={workspaceName} onFileSelect={setLogoFile} disabled={loading} />
+                  <form onSubmit={handleCreateCompany} className="space-y-6">
+                    <LogoUploader companyName={workspaceName} onFileSelect={setLogoFile} disabled={loading} />
 
-                  <div className="space-y-4">
-                    <div>
-                      <label className="mb-1.5 block text-sm font-medium text-leadgaze-dark dark:text-white">Company name</label>
-                      <Input
-                        type="text"
-                        placeholder="e.g. Acme Corp"
-                        value={workspaceName}
-                        onChange={(e) => setWorkspaceName(e.target.value)}
-                        disabled={loading}
-                        required
-                        minLength={2}
-                        maxLength={100}                      
-                      />
-                    </div>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="mb-1.5 block text-sm font-medium text-leadgaze-dark dark:text-white">Company name</label>
+                        <Input
+                          type="text"
+                          placeholder="e.g. Acme Corp"
+                          value={workspaceName}
+                          onChange={(e) => setWorkspaceName(e.target.value)}
+                          disabled={loading}
+                          required
+                          minLength={2}
+                          maxLength={100}
+                        />
+                      </div>
 
-                    <div>
-                      <label className="mb-1.5 block text-sm font-medium text-leadgaze-dark dark:text-white">Workspace handle</label>
-                      
+                      <div>
+                        <label className="mb-1.5 block text-sm font-medium text-leadgaze-dark dark:text-white">Workspace handle</label>
+
                         <Input
                           type="text"
                           value={slug}
-                          readOnly                        
+                          readOnly
                           placeholder="workspace-slug"
                         />
-                      
-                    </div>
 
-                    <div>
-                      <label className="mb-1.5 block text-sm font-medium text-leadgaze-dark dark:text-white">Billing country</label>
-                      <CountrySelect
-                        value={billingCountry}
-                        onValueChange={setBillingCountry}
-                        disabled={loading}
-                      />
-                    </div>
-                  </div>
+                      </div>
 
-                  <div className="pt-2">
-                    <div className="flex items-start gap-4 p-4 border border-slate-200 rounded-lg bg-white dark:bg-slate-900 dark:border-slate-800">
-                      <Switch 
-                        id="subscribe" 
-                        checked={isSubscribed}
-                        onCheckedChange={(checked) => setIsSubscribed(checked as boolean)}
-                        disabled={loading}
-                        className="mt-0.5 data-[state=checked]:bg-[var(--color-leadgaze-primary)]"
-                      />
-                      <div className="flex-1">
-                        <label htmlFor="subscribe" className="text-sm font-medium text-leadgaze-dark dark:text-white cursor-pointer block">
-                          Subscribe to product update emails
-                        </label>
-                        <p className="text-xs text-slate-500 mt-1">
-                          Get the latest updates about features and product updates.
-                        </p>
+                      <div>
+                        <label className="mb-1.5 block text-sm font-medium text-leadgaze-dark dark:text-white">Billing country</label>
+                        <CountrySelect
+                          value={billingCountry}
+                          onValueChange={setBillingCountry}
+                          disabled={loading}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="mb-1.5 block text-sm font-medium text-leadgaze-dark dark:text-white">Tax ID / TIN (Optional)</label>
+                        <Input
+                          type="text"
+                          placeholder="e.g. 196700197W"
+                          value={taxId}
+                          onChange={(e) => setTaxId(e.target.value)}
+                          disabled={loading}
+                        />
+                        {/* <p className="text-xs text-slate-500 mt-1">
+                        This Tax ID will be used for your payments to Leadgaze.
+                      </p> */}
                       </div>
                     </div>
-                  </div>
 
-                  {error && (
-                    <div className="rounded-lg border border-red-200 bg-red-50 p-3">
-                      <p className="text-sm text-red-600">{error}</p>
+                    <div className="pt-2">
+                      <div className="flex items-start gap-4 p-4 border border-slate-200 rounded-lg bg-white dark:bg-slate-900 dark:border-slate-800">
+                        <Switch
+                          id="subscribe"
+                          checked={isSubscribed}
+                          onCheckedChange={(checked) => setIsSubscribed(checked as boolean)}
+                          disabled={loading}
+                          className="mt-0.5 data-[state=checked]:bg-[var(--color-leadgaze-primary)]"
+                        />
+                        <div className="flex-1">
+                          <label htmlFor="subscribe" className="text-sm font-medium text-leadgaze-dark dark:text-white cursor-pointer block">
+                            Subscribe to product update emails
+                          </label>
+                          <p className="text-xs text-slate-500 mt-1">
+                            Get the latest updates about features and product updates.
+                          </p>
+                        </div>
+                      </div>
                     </div>
-                  )}
 
-                  <Button
-                    type="submit"
-                    disabled={loading || !workspaceName.trim() || !billingCountry}
-                    size="lg"
-                    className="w-full gap-2 bg-[linear-gradient(135deg,var(--color-leadgaze-primary)_0%,#283BA4_100%)] text-sm font-semibold text-white shadow-[var(--color-leadgaze-primary)]/25 shadow-lg hover:shadow-[var(--color-leadgaze-primary)]/30 hover:shadow-xl disabled:opacity-50 disabled:shadow-none rounded-lg"
-                  >
-                    {loading ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Saving...
-                      </>
-                    ) : (
-                      'Continue'
+                    {error && (
+                      <div className="rounded-lg border border-red-200 bg-red-50 p-3">
+                        <p className="text-sm text-red-600">{error}</p>
+                      </div>
                     )}
-                  </Button>
-                </form>
-              </div>
-            )}
 
-            {step === 'heard' && (
-              <div className="animate-in fade-in slide-in-from-right-4 duration-500">
-                <div className="mb-8">
-                  <h1 className="text-[1.75rem] font-bold tracking-tight text-slate-800 mb-2 dark:text-white">How did you hear about us?</h1>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">
-                    Please select below where you found out about {workspaceName || 'Leadgaze'}. This step is optional.
-                  </p>
-                </div>
-
-                <form onSubmit={handleHeardSubmit} className="space-y-6">
-                  <div className="flex flex-wrap gap-2.5">
-                    {heardOptions.map((option) => {
-                      const isSelected = heardAbout.includes(option.label);
-                      return (
-                        <Button
-                          type="button"
-                          key={option.label}
-                          onClick={() => {
-                            if (isSelected) {
-                              setHeardAbout(prev => prev.filter(item => item !== option.label));
-                            } else {
-                              setHeardAbout(prev => [...prev, option.label]);
-                            }
-                          }}
-                          className={`
-                            flex items-center gap-2 px-3 py-2 rounded-lg border transition-all duration-200 text-sm font-medium
-                            ${isSelected 
-                              ? 'bg-[var(--color-leadgaze-primary)] border-[var(--color-leadgaze-primary)] text-white shadow-md' 
-                              : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'
-                            }
-                          `}
-                        >
-                          <svg className={`w-4 h-4 ${isSelected ? 'text-white' : 'text-slate-500 dark:text-slate-400'}`} fill="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={isSelected ? 1 : 2} d={option.icon} stroke={option.label === 'Podcast' || option.label === 'Other' || option.label === 'Friends / Coworker' || option.label === 'Newsletter' ? 'currentColor' : 'none'} />
-                          </svg>
-                          {option.label}
-                        </Button>
-                      );
-                    })}
-                  </div>
-
-                  {heardAbout.includes('Other') && (
-                    <div className="animate-in fade-in slide-in-from-top-2 duration-300">
-                      <Input
-                        type="text"
-                        placeholder="Please specify..."
-                        value={otherText}
-                        onChange={(e) => setOtherText(e.target.value)}
-                        disabled={loading}
-                        required
-                        className="border-slate-200 bg-white text-sm text-slate-800 focus-visible:border-[var(--color-leadgaze-primary)] focus-visible:ring-[var(--color-leadgaze-primary)]/20"
-                      />
-                    </div>
-                  )}
-
-                  <div className="pt-6 flex flex-col gap-3">
                     <Button
                       type="submit"
-                      disabled={loading}
-                      size="lg"
-                      className="w-full bg-[linear-gradient(135deg,var(--color-leadgaze-primary)_0%,#283BA4_100%)] text-sm font-semibold text-white shadow-[var(--color-leadgaze-primary)]/25 shadow-lg hover:shadow-[var(--color-leadgaze-primary)]/30 hover:shadow-xl disabled:opacity-50 disabled:shadow-none rounded-lg"
-                    >
-                      {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Continue'}
-                    </Button>
-                    
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="lg"
-                      onClick={() => handleHeardSubmit(undefined, true)}
-                      disabled={loading}
-                      className="w-full text-sm font-medium rounded-lg"
-                    >
-                      Skip
-                    </Button>
-                  </div>
-                </form>
-              </div>
-            )}
-            
-            {step === 'customize' && (
-              <div className="animate-in fade-in slide-in-from-right-4 duration-500">
-                <div className="mb-10">
-                  <button onClick={() => setStep('heard')} className="text-sm font-medium text-slate-500 hover:text-leadgaze-dark flex items-center gap-1.5 mb-8 dark:text-white">
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
-                    Back
-                  </button>
-                  <h1 className="text-[1.75rem] font-bold tracking-tight text-slate-800 mb-3 dark:text-white">Help us customize your workspace</h1>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
-                    Leadgaze is all about empowering you to build the exact CRM you need, no matter how complex.
-                  </p>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-4 leading-relaxed">
-                    You can easily create workflows for virtually any use case. Tell us about your use case to get started with some templates, or you can start with a blank canvas.
-                  </p>
-                </div>
-
-                <form onSubmit={handleCustomizeSubmit} className="space-y-8">
-                  <div>
-                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-4 block">What will you be using Leadgaze for?</label>
-                    <div className="flex flex-wrap gap-2.5">
-                      {products.map((product) => {
-                        const isSelected = selectedProducts.includes(product.id);
-                        return (
-                          <Button
-                            type="button"
-                            key={product.id}
-                            onClick={() => {
-                              if (isSelected) {
-                                setSelectedProducts(prev => prev.filter(id => id !== product.id));
-                              } else {
-                                setSelectedProducts(prev => [...prev, product.id]);
-                              }
-                            }}
-                            className={`
-                              px-4 py-2 rounded-full border transition-all duration-200 text-sm font-medium hover:bg-transparent
-                              ${isSelected 
-                                ? 'bg-white text-slate-800 border-leadgaze-primary shadow-sm dark:bg-slate-800 dark:text-white dark:border-white'
-                                : 'bg-transparent text-slate-600 border-slate-200 dark:text-slate-400 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
-                              }
-                            `}
-                          >
-                            {product.display_name}
-                          </Button>
-                        );
-                      })}
-                      
-                    </div>
-                  </div>
-
-                  {error && (
-                    <div className="rounded-lg border border-red-200 bg-red-50 p-3 mt-4">
-                      <p className="text-sm text-red-600">{error}</p>
-                    </div>
-                  )}
-
-                  <div className="pt-2">
-                    <Button
-                      type="submit"
-                      disabled={loading || selectedProducts.length === 0}
+                      disabled={loading || !workspaceName.trim() || !billingCountry}
                       size="lg"
                       className="w-full gap-2 bg-[linear-gradient(135deg,var(--color-leadgaze-primary)_0%,#283BA4_100%)] text-sm font-semibold text-white shadow-[var(--color-leadgaze-primary)]/25 shadow-lg hover:shadow-[var(--color-leadgaze-primary)]/30 hover:shadow-xl disabled:opacity-50 disabled:shadow-none rounded-lg"
                     >
-                      {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Continue'}
+                      {loading ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        'Continue'
+                      )}
                     </Button>
+                  </form>
+                </div>
+              )}
+
+              {step === 'heard' && (
+                <div className="animate-in fade-in slide-in-from-right-4 duration-500">
+                  <div className="mb-8">
+                    <h1 className="text-[1.75rem] font-bold tracking-tight text-slate-800 mb-2 dark:text-white">How did you hear about us?</h1>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                      Please select below where you found out about {workspaceName || 'Leadgaze'}. This step is optional.
+                    </p>
                   </div>
-                </form>
-              </div>
-            )}
-            
-            {step === 'final_placeholder' && (
-              <div className="space-y-6">
-                <p className="text-slate-600 dark:text-slate-300">All set! Ready for the next form step...</p>
-              </div>
-            )}
+
+                  <form onSubmit={handleHeardSubmit} className="space-y-6">
+                    <div className="flex flex-wrap gap-2.5">
+                      {heardOptions.map((option) => {
+                        const isSelected = heardAbout.includes(option.label);
+                        return (
+                          <Button
+                            type="button"
+                            key={option.label}
+                            onClick={() => {
+                              if (isSelected) {
+                                setHeardAbout(prev => prev.filter(item => item !== option.label));
+                              } else {
+                                setHeardAbout(prev => [...prev, option.label]);
+                              }
+                            }}
+                            className={`
+                            flex items-center gap-2 px-3 py-2 rounded-lg border transition-all duration-200 text-sm font-medium
+                            ${isSelected
+                                ? 'bg-[var(--color-leadgaze-primary)] border-[var(--color-leadgaze-primary)] text-white shadow-md'
+                                : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'
+                              }
+                          `}
+                          >
+                            <svg className={`w-4 h-4 ${isSelected ? 'text-white' : 'text-slate-500 dark:text-slate-400'}`} fill="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={isSelected ? 1 : 2} d={option.icon} stroke={option.label === 'Podcast' || option.label === 'Other' || option.label === 'Friends / Coworker' || option.label === 'Newsletter' ? 'currentColor' : 'none'} />
+                            </svg>
+                            {option.label}
+                          </Button>
+                        );
+                      })}
+                    </div>
+
+                    {heardAbout.includes('Other') && (
+                      <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                        <Input
+                          type="text"
+                          placeholder="Please specify..."
+                          value={otherText}
+                          onChange={(e) => setOtherText(e.target.value)}
+                          disabled={loading}
+                          required
+                          className="border-slate-200 bg-white text-sm text-slate-800 focus-visible:border-[var(--color-leadgaze-primary)] focus-visible:ring-[var(--color-leadgaze-primary)]/20"
+                        />
+                      </div>
+                    )}
+
+                    <div className="pt-6 flex flex-col gap-3">
+                      <Button
+                        type="submit"
+                        disabled={loading}
+                        size="lg"
+                        className="w-full bg-[linear-gradient(135deg,var(--color-leadgaze-primary)_0%,#283BA4_100%)] text-sm font-semibold text-white shadow-[var(--color-leadgaze-primary)]/25 shadow-lg hover:shadow-[var(--color-leadgaze-primary)]/30 hover:shadow-xl disabled:opacity-50 disabled:shadow-none rounded-lg"
+                      >
+                        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Continue'}
+                      </Button>
+
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="lg"
+                        onClick={() => handleHeardSubmit(undefined, true)}
+                        disabled={loading}
+                        className="w-full text-sm font-medium rounded-lg"
+                      >
+                        Skip
+                      </Button>
+                    </div>
+                  </form>
+                </div>
+              )}
+
+              {step === 'customize' && (
+                <div className="animate-in fade-in slide-in-from-right-4 duration-500">
+                  <div className="mb-10">
+                    <button onClick={() => setStep('heard')} className="text-sm font-medium text-slate-500 hover:text-leadgaze-dark flex items-center gap-1.5 mb-8 dark:text-white">
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                      Back
+                    </button>
+                    <h1 className="text-[1.75rem] font-bold tracking-tight text-slate-800 mb-3 dark:text-white">Help us customize your workspace</h1>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+                      Leadgaze is all about empowering you to build the exact CRM you need, no matter how complex.
+                    </p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-4 leading-relaxed">
+                      You can easily create workflows for virtually any use case. Tell us about your use case to get started with some templates, or you can start with a blank canvas.
+                    </p>
+                  </div>
+
+                  <form onSubmit={handleCustomizeSubmit} className="space-y-8">
+                    <div>
+                      <label className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-4 block">What will you be using Leadgaze for?</label>
+                      <div className="flex flex-wrap gap-2.5">
+                        {products.map((product) => {
+                          const isSelected = selectedProducts.includes(product.id);
+                          return (
+                            <Button
+                              type="button"
+                              key={product.id}
+                              onClick={() => {
+                                if (isSelected) {
+                                  setSelectedProducts(prev => prev.filter(id => id !== product.id));
+                                } else {
+                                  setSelectedProducts(prev => [...prev, product.id]);
+                                }
+                              }}
+                              className={`
+                              px-4 py-2 rounded-full border transition-all duration-200 text-sm font-medium hover:bg-transparent
+                              ${isSelected
+                                  ? 'bg-white text-slate-800 border-leadgaze-primary shadow-sm dark:bg-slate-800 dark:text-white dark:border-white'
+                                  : 'bg-transparent text-slate-600 border-slate-200 dark:text-slate-400 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
+                                }
+                            `}
+                            >
+                              {product.display_name}
+                            </Button>
+                          );
+                        })}
+
+                      </div>
+                    </div>
+
+                    {error && (
+                      <div className="rounded-lg border border-red-200 bg-red-50 p-3 mt-4">
+                        <p className="text-sm text-red-600">{error}</p>
+                      </div>
+                    )}
+
+                    <div className="pt-2">
+                      <Button
+                        type="submit"
+                        disabled={loading || selectedProducts.length === 0}
+                        size="lg"
+                        className="w-full gap-2 bg-[linear-gradient(135deg,var(--color-leadgaze-primary)_0%,#283BA4_100%)] text-sm font-semibold text-white shadow-[var(--color-leadgaze-primary)]/25 shadow-lg hover:shadow-[var(--color-leadgaze-primary)]/30 hover:shadow-xl disabled:opacity-50 disabled:shadow-none rounded-lg"
+                      >
+                        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Continue'}
+                      </Button>
+                    </div>
+                  </form>
+                </div>
+              )}
+
+              {step === 'final_placeholder' && (
+                <div className="space-y-6">
+                  <p className="text-slate-600 dark:text-slate-300">All set! Ready for the next form step...</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      </div>
-      <Footer />
+        <Footer />
       </>
     );
   }

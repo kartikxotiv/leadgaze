@@ -35,6 +35,7 @@ export function WorkspaceGeneralSettings({ workspaceId }: WorkspaceGeneralSettin
   const [companyName, setCompanyName] = useState('');
   const [billingCountry, setBillingCountry] = useState('');
   const [companyLogoUrl, setCompanyLogoUrl] = useState<string | null>(null);
+  const [taxId, setTaxId] = useState('');
 
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoFileCleared, setLogoFileCleared] = useState(false);
@@ -55,7 +56,8 @@ export function WorkspaceGeneralSettings({ workspaceId }: WorkspaceGeneralSettin
             id,
             name,
             billing_country,
-            logo_url
+            logo_url,
+            tax_id
           )
         `)
         .eq('id', workspaceId)
@@ -72,13 +74,14 @@ export function WorkspaceGeneralSettings({ workspaceId }: WorkspaceGeneralSettin
     if (workspaceData) {
       setWorkspaceName(workspaceData.name || '');
       setSlug(workspaceData.slug || '');
-      
+
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const company = (workspaceData as any).companies;
       if (company) {
         setCompanyName(company.name || '');
         setBillingCountry(company.billing_country || '');
         setCompanyLogoUrl(company.logo_url || null);
+        setTaxId(company.tax_id || '');
       }
     }
   }, [workspaceData]);
@@ -130,9 +133,36 @@ export function WorkspaceGeneralSettings({ workspaceId }: WorkspaceGeneralSettin
         logoUrl = null;
       }
 
-      // 2. Update company details if company_id is available
-      if (workspaceData?.company_id) {
-        const companyResponse = await fetch(`/api/companies/${workspaceData.company_id}`, {
+      // Validate Tax ID if changed and provided
+      const originalTaxId = (workspaceData as any)?.companies?.tax_id || '';
+      if (taxId.trim() && taxId.trim() !== originalTaxId) {
+        const valResponse = await fetch('/api/companies/validate-tax', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            country_iso: billingCountry,
+            tin: taxId.trim(),
+          }),
+        });
+
+        if (!valResponse.ok) {
+          const errData = await valResponse.json();
+          throw new Error(errData.message || 'Tax ID validation failed.');
+        }
+
+        const { data: valResult } = await valResponse.json();
+        if (!valResult.isValid) {
+          throw new Error(`Tax ID is invalid: ${valResult.message}`);
+        }
+      }
+
+      let currentCompanyId = workspaceData?.company_id;
+
+      // 2. Create or Update company details
+      if (currentCompanyId) {
+        const companyResponse = await fetch(`/api/companies/${currentCompanyId}`, {
           method: 'PATCH',
           headers: {
             'Content-Type': 'application/json',
@@ -141,6 +171,7 @@ export function WorkspaceGeneralSettings({ workspaceId }: WorkspaceGeneralSettin
             name: companyName,
             billing_country: billingCountry,
             logo_url: logoUrl,
+            tax_id: taxId.trim() || null,
           }),
         });
 
@@ -148,6 +179,29 @@ export function WorkspaceGeneralSettings({ workspaceId }: WorkspaceGeneralSettin
           const errorData = await companyResponse.json();
           throw new Error(errorData.message || 'Failed to update company details');
         }
+      } else {
+        // Create company on-the-fly
+        const companyResponse = await fetch('/api/companies', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            name: companyName,
+            billing_country: billingCountry,
+            logo_url: logoUrl,
+            tax_id: taxId.trim() || null,
+            created_by: user?.id,
+          }),
+        });
+
+        if (!companyResponse.ok) {
+          const errorData = await companyResponse.json();
+          throw new Error(errorData.message || 'Failed to create company details');
+        }
+
+        const { data: companyData } = await companyResponse.json();
+        currentCompanyId = companyData.id;
       }
 
       // 3. Update workspace details
@@ -158,6 +212,7 @@ export function WorkspaceGeneralSettings({ workspaceId }: WorkspaceGeneralSettin
         },
         body: JSON.stringify({
           name: workspaceName,
+          company_id: currentCompanyId,
         }),
       });
 
@@ -173,7 +228,7 @@ export function WorkspaceGeneralSettings({ workspaceId }: WorkspaceGeneralSettin
       // Reset file states
       setLogoFile(null);
       setLogoFileCleared(false);
-      
+
       // Refresh queries
       refetch();
       queryClient.invalidateQueries({ queryKey: ['workspace-general-settings', workspaceId] });
@@ -244,6 +299,22 @@ export function WorkspaceGeneralSettings({ workspaceId }: WorkspaceGeneralSettin
                   onValueChange={setBillingCountry}
                   disabled={isSaving}
                 />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-leadgaze-dark dark:text-white">
+                  Tax ID / TIN (Optional)
+                </label>
+                <Input
+                  type="text"
+                  placeholder="e.g. 196700197W"
+                  value={taxId}
+                  onChange={(e) => setTaxId(e.target.value)}
+                  disabled={isSaving}
+                />
+                {/* <p className="text-xs text-slate-500 mt-1">
+                  This Tax ID will be used for your payments to Leadgaze.
+                </p> */}
               </div>
 
               <div className="border-t pt-4 mt-4 space-y-4">
