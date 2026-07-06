@@ -205,7 +205,7 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
     setFormData({
       title: task.title,
       description: task.description || '',
-      due_date: task.due_date ? new Date(task.due_date).toISOString().slice(0, 16) : '',
+      due_date: task.due_date ? new Date(task.due_date).toISOString().split('T')[0] : '',
       priority: task.priority || 'medium',
     });
     setIsOpen(true);
@@ -279,7 +279,7 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
                 <div className="space-y-2">
                   <Label>Due Date</Label>
                   <Input
-                    type="datetime-local"
+                    type="date"
                     value={formData.due_date}
                     onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
                   />
