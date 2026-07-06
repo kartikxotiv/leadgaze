@@ -29,6 +29,7 @@ import {
   Users,
   Wallet,
   Workflow,
+  CheckSquare,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -95,6 +96,7 @@ import {
 import { EntityCalls } from '../../_components/entity-calls';
 import { EntityEmails } from '../../_components/entity-emails';
 import { EntityNotes } from '../../_components/entity-notes';
+import { EntityTasks } from '../../_components/entity-tasks';
 import { ManageableStatusSelect } from '../../_components/manageable-status-select';
 import { AssignUserModal } from '../../leads/components/assign-user-modal';
 import { LogCallDialog } from '../../leads/components/log-call-dialog';
@@ -803,6 +805,13 @@ export default function OpportunityDetailsPage() {
                   Reminders
                 </TabsTrigger>
                 <TabsTrigger
+                  value="tasks"
+                  className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
+                >
+                  <CheckSquare className="mr-2 h-4 w-4" />
+                  Tasks
+                </TabsTrigger>
+                <TabsTrigger
                   value="documents"
                   className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
                 >
@@ -865,6 +874,13 @@ export default function OpportunityDetailsPage() {
                 className="max-h-[500px] overflow-y-auto"
               >
                 <EntityDocuments entityType="opportunity" entityId={id} />
+              </TabsContent>
+
+              <TabsContent
+                value="tasks"
+                className="max-h-[500px] overflow-y-auto"
+              >
+                <EntityTasks entityType="opportunity" entityId={id} />
               </TabsContent>
 
               <TabsContent value="activity">
