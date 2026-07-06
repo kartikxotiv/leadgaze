@@ -172,8 +172,8 @@ export default function TeamMembersPage() {
 
   // Fetch members
   const { data: membersData = [], isLoading } = useQuery({
-    queryKey: ['workspaceMembers', currentWorkspace?.id],
-    queryFn: () => getMembersService(currentWorkspace?.id || ''),
+    queryKey: ['workspaceMembers', currentWorkspace?.id, productKey],
+    queryFn: () => getMembersService(currentWorkspace?.id || '', productKey),
     enabled: !!currentWorkspace?.id,
   });
 

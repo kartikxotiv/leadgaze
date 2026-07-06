@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Check, Plus, Trash2 } from 'lucide-react';
+import { Check, Plus, Trash2, Pencil, RotateCcw } from 'lucide-react';
 
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
@@ -12,6 +12,8 @@ import { Label } from '@kit/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@kit/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@kit/ui/tabs';
 import { Textarea } from '@kit/ui/textarea';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@kit/ui/dialog';
+import { toast } from 'sonner';
 
 import {
   completeReminderService,
@@ -29,6 +31,7 @@ import {
   getNotesService,
   getRemindersService,
   sendEmailService,
+  updateNoteService,
   uploadDocumentService,
 } from '../services';
 import { useLocalization } from '@kit/shared/localization';
@@ -93,19 +96,186 @@ function NotesPanel(props: CoreEntityPanelProps) {
   const queryClient = useQueryClient();
   const { formatDateTime } = useLocalization();
   const [note, setNote] = useState('');
-  const queryKey = ['core', 'notes', props.workspaceId, props.entityType, props.entityId];
-  const { data: notes = [] } = useQuery<any[]>({ queryKey, queryFn: () => getNotesService(props.workspaceId, props.entityType, props.entityId), enabled: !!props.workspaceId && !!props.entityId });
-  const createMutation = useMutation({ mutationFn: createNoteService, onSuccess: () => { setNote(''); queryClient.invalidateQueries({ queryKey }); } });
-  const deleteMutation = useMutation({ mutationFn: (id: string) => deleteNoteService(props.workspaceId, id), onSuccess: () => queryClient.invalidateQueries({ queryKey }) });
+  const [statusFilter, setStatusFilter] = useState<'active' | 'closed'>('active');
+  const [editingNote, setEditingNote] = useState<any>(null);
+  const [editText, setEditText] = useState('');
+  const [isEditOpen, setIsEditOpen] = useState(false);
+
+  const queryKey = ['core', 'notes', props.workspaceId, props.entityType, props.entityId, statusFilter];
+
+  const { data: notes = [] } = useQuery<any[]>({
+    queryKey,
+    queryFn: () => getNotesService(props.workspaceId, props.entityType, props.entityId, statusFilter),
+    enabled: !!props.workspaceId && !!props.entityId,
+  });
+
+  const createMutation = useMutation({
+    mutationFn: createNoteService,
+    onSuccess: () => {
+      setNote('');
+      toast.success('Note added');
+      queryClient.invalidateQueries({ queryKey });
+    },
+    onError: () => {
+      toast.error('Failed to add note');
+    }
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: updateNoteService,
+    onSuccess: (data, variables) => {
+      if (variables.is_closed !== undefined) {
+        toast.success(variables.is_closed ? 'Note closed' : 'Note reopened');
+      } else {
+        toast.success('Note updated');
+      }
+      setIsEditOpen(false);
+      setEditingNote(null);
+      queryClient.invalidateQueries({ queryKey });
+    },
+    onError: () => {
+      toast.error('Failed to update note');
+    }
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => deleteNoteService(props.workspaceId, id),
+    onSuccess: () => {
+      toast.success('Note deleted');
+      queryClient.invalidateQueries({ queryKey });
+    },
+    onError: () => {
+      toast.error('Failed to delete note');
+    }
+  });
+
+  const handleEditSave = () => {
+    if (!editText.trim() || !editingNote) return;
+    updateMutation.mutate({
+      id: editingNote.id,
+      workspace_id: props.workspaceId,
+      note: editText.trim(),
+    });
+  };
 
   return (
     <section className="grid gap-4">
       <div className="grid gap-2">
         <Label>New Note</Label>
         <Textarea placeholder="Add context, decisions, or next steps" value={note} onChange={(event) => setNote(event.target.value)} />
-        <div className="flex justify-end"><Button disabled={!note.trim() || createMutation.isPending} onClick={() => createMutation.mutate({ ...entityPayload(props), note })}><Plus className="mr-2 h-4 w-4" /> Add Note</Button></div>
+        <div className="flex justify-end">
+          <Button disabled={!note.trim() || createMutation.isPending} onClick={() => createMutation.mutate({ ...entityPayload(props), note })}>
+            <Plus className="mr-2 h-4 w-4" /> Add Note
+          </Button>
+        </div>
       </div>
-      <List empty="No notes yet.">{notes.map((item) => <Row key={item.id} title={item.note} meta={formatDateTime(item.created_at)} onDelete={() => deleteMutation.mutate(item.id)} />)}</List>
+
+      <div className="flex bg-muted/60 p-0.5 rounded-lg w-fit border border-border">
+        <button
+          onClick={() => setStatusFilter('active')}
+          className={`rounded px-2.5 py-1 text-[11px] font-medium transition-all ${
+            statusFilter === 'active'
+              ? 'bg-background text-foreground shadow-sm'
+              : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          Active
+        </button>
+        <button
+          onClick={() => setStatusFilter('closed')}
+          className={`rounded px-2.5 py-1 text-[11px] font-medium transition-all ${
+            statusFilter === 'closed'
+              ? 'bg-background text-foreground shadow-sm'
+              : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          Closed
+        </button>
+      </div>
+
+      <List empty="No notes yet.">
+        {notes.map((item) => (
+          <Row
+            key={item.id}
+            title={item.note || item.content}
+            meta={formatDateTime(item.created_at)}
+            onDelete={() => {
+              if (confirm('Are you sure you want to delete this note?')) {
+                deleteMutation.mutate(item.id);
+              }
+            }}
+            action={
+              <div className="flex items-center gap-0.5">
+                {statusFilter === 'active' ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0 hover:text-green-600"
+                    onClick={() => updateMutation.mutate({ id: item.id, workspace_id: props.workspaceId, is_closed: true })}
+                    title="Close Note"
+                  >
+                    <Check className="h-4 w-4" />
+                  </Button>
+                ) : (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0 hover:text-blue-600"
+                    onClick={() => updateMutation.mutate({ id: item.id, workspace_id: props.workspaceId, is_closed: false })}
+                    title="Reopen Note"
+                  >
+                    <RotateCcw className="h-4 w-4" />
+                  </Button>
+                )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0 hover:text-blue-600"
+                  onClick={() => {
+                    setEditingNote(item);
+                    setEditText(item.note || item.content || '');
+                    setIsEditOpen(true);
+                  }}
+                  title="Edit Note"
+                >
+                  <Pencil className="h-4 w-4" />
+                </Button>
+              </div>
+            }
+          />
+        ))}
+      </List>
+
+      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+        <DialogContent className="flex max-h-[90vh] flex-col p-0">
+          <DialogHeader className="border-b p-6 pb-4">
+            <DialogTitle>Edit Note</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 px-6 pb-4">
+            <Textarea
+              placeholder="Enter note content..."
+              value={editText}
+              onChange={(e) => setEditText(e.target.value)}
+              rows={4}
+            />
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setIsEditOpen(false)}
+                disabled={updateMutation.isPending}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleEditSave}
+                disabled={updateMutation.isPending || !editText.trim()}
+              >
+                Save
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </section>
   );
 }
@@ -114,10 +284,21 @@ function MeetingsPanel(props: CoreEntityPanelProps) {
   const queryClient = useQueryClient();
   const { formatDateTime } = useLocalization();
   const [form, setForm] = useState({ title: '', description: '', start_time: '', end_time: '', location: '' });
+  const [activeTab, setActiveTab] = useState<'upcoming' | 'past'>('upcoming');
   const queryKey = ['core', 'meetings', props.workspaceId, props.entityType, props.entityId];
   const { data: meetings = [] } = useQuery<any[]>({ queryKey, queryFn: () => getMeetingsService(props.workspaceId, props.entityType, props.entityId), enabled: !!props.workspaceId && !!props.entityId });
   const createMutation = useMutation({ mutationFn: createMeetingService, onSuccess: () => { setForm({ title: '', description: '', start_time: '', end_time: '', location: '' }); queryClient.invalidateQueries({ queryKey }); } });
   const deleteMutation = useMutation({ mutationFn: (id: string) => deleteMeetingService(props.workspaceId, id), onSuccess: () => queryClient.invalidateQueries({ queryKey }) });
+
+  const filteredMeetings = React.useMemo(() => {
+    const now = new Date();
+    return meetings.filter((meeting) => {
+      const start = meeting.scheduled_start || meeting.start_time || meeting.actual_start;
+      if (!start) return activeTab === 'upcoming';
+      const isUpcoming = new Date(start) >= now && meeting.status !== 'completed' && meeting.status !== 'cancelled';
+      return activeTab === 'upcoming' ? isUpcoming : !isUpcoming;
+    });
+  }, [meetings, activeTab]);
 
   return (
     <section className="grid gap-4">
@@ -129,7 +310,26 @@ function MeetingsPanel(props: CoreEntityPanelProps) {
         <div className="sm:col-span-2"><Field label="Description"><Textarea value={form.description} onChange={(event) => setForm((prev) => ({ ...prev, description: event.target.value }))} /></Field></div>
         <div className="flex justify-end sm:col-span-2"><Button disabled={!form.title || createMutation.isPending} onClick={() => createMutation.mutate({ ...entityPayload(props), ...form, start_time: form.start_time || null, end_time: form.end_time || null, location: form.location || null, description: form.description || null })}><Plus className="mr-2 h-4 w-4" /> Add Meeting</Button></div>
       </div>
-      <List empty="No meetings scheduled.">{meetings.map((item) => <Row key={item.id} title={item.title} meta={`${item.status} · ${formatDateTime(item.start_time)}`} description={item.description} onDelete={() => deleteMutation.mutate(item.id)} />)}</List>
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
+        <TabsList className="grid w-full grid-cols-2 mb-2">
+          <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
+          <TabsTrigger value="past">Previous</TabsTrigger>
+        </TabsList>
+        <TabsContent value="upcoming">
+          <List empty="No upcoming meetings scheduled.">
+            {filteredMeetings.map((item) => (
+              <Row key={item.id} title={item.title} meta={`${item.status} · ${formatDateTime(item.scheduled_start || item.start_time)}`} description={item.description} onDelete={() => deleteMutation.mutate(item.id)} />
+            ))}
+          </List>
+        </TabsContent>
+        <TabsContent value="past">
+          <List empty="No previous meetings.">
+            {filteredMeetings.map((item) => (
+              <Row key={item.id} title={item.title} meta={`${item.status} · ${formatDateTime(item.scheduled_start || item.start_time)}`} description={item.description} onDelete={() => deleteMutation.mutate(item.id)} />
+            ))}
+          </List>
+        </TabsContent>
+      </Tabs>
     </section>
   );
 }

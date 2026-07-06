@@ -29,13 +29,14 @@ export class ReminderChecker {
 
       // Find reminders that are overdue and not completed
       const { data: reminders, error } = await supabase
-        .from('crm_reminders')
+        .schema('core')
+        .from('reminders')
         .select('*')
         .eq('is_deleted', false)
-        .eq('is_completed', false)
-        .lte('due_date', new Date().toISOString())
-        .gte('due_date', lookbackDate.toISOString())
-        .order('due_date', { ascending: true });
+        .eq('status', 'open')
+        .lte('due_at', new Date().toISOString())
+        .gte('due_at', lookbackDate.toISOString())
+        .order('due_at', { ascending: true });
 
       if (error) {
         console.error('[ReminderChecker] Error fetching reminders:', error);
@@ -47,10 +48,38 @@ export class ReminderChecker {
         return 0;
       }
 
-      console.log(`[ReminderChecker] Found ${reminders.length} due reminders`);
+      // Fetch relations to attach entity information to each reminder
+      const reminderIds = reminders.map((r) => r.id);
+      const { data: relations } = await supabase
+        .schema('core')
+        .from('reminder_relations')
+        .select('reminder_id, entity_type, entity_id')
+        .in('reminder_id', reminderIds);
+
+      const relationsMap = new Map();
+      if (relations) {
+        relations.forEach((rel) => {
+          relationsMap.set(rel.reminder_id, {
+            entity_type: rel.entity_type.startsWith('sales_') ? rel.entity_type.substring(6) : rel.entity_type,
+            entity_id: rel.entity_id,
+          });
+        });
+      }
+
+      const remindersWithRelations = reminders.map((r) => {
+        const rel = relationsMap.get(r.id);
+        return {
+          ...r,
+          due_date: r.due_at,
+          entity_type: rel?.entity_type || 'lead',
+          entity_id: rel?.entity_id || '',
+        };
+      });
+
+      console.log(`[ReminderChecker] Found ${remindersWithRelations.length} due reminders`);
 
       // Process reminders in batches
-      const batches = this.createBatches(reminders, this.BATCH_SIZE);
+      const batches = this.createBatches(remindersWithRelations, this.BATCH_SIZE);
 
       for (const batch of batches) {
         const results = await Promise.allSettled(
@@ -129,10 +158,12 @@ export class ReminderChecker {
       if (sent) {
         // Mark the reminder as completed
         await supabase
-          .from('crm_reminders')
+          .schema('core')
+          .from('reminders')
           .update({
-            is_completed: true,
+            status: 'completed',
             completed_at: new Date().toISOString(),
+            completed_by: recipientUserId,
           })
           .eq('id', reminder.id);
 

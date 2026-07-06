@@ -90,13 +90,13 @@ const upsertColumnPreferences = catchAsync(
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
-    // Check if user is a member of this workspace
-    const { data: member, error: memberError } = await supabase
+    const { data: members, error: memberError } = await supabase
       .from('workspace_members')
       .select('role_id')
       .eq('workspace_id', workspace_id)
-      .eq('user_id', user.id)
-      .single();
+      .eq('user_id', user.id);
+
+    const member = members && members.length > 0 ? members[0] : null;
 
     if (memberError || !member) {
       return NextResponse.json(

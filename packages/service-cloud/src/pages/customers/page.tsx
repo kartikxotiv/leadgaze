@@ -69,8 +69,12 @@ export function ServiceCloudCustomersPage({
   systemOrganizationFields = [],
   canViewCustomerColumn,
   canViewOrganizationColumn,
+  canViewCustomerField,
+  canViewOrganizationField,
   canEditCustomerField,
   canEditOrganizationField,
+  canViewTicketColumn,
+  currentUserId,
 }: {
   workspaceId: string;
   isAdmin?: boolean;
@@ -87,10 +91,17 @@ export function ServiceCloudCustomersPage({
   canViewCustomerColumn?: (columnKey: string) => boolean;
   /** Optional FLS function for organization columns. Columns returning false are hidden. */
   canViewOrganizationColumn?: (columnKey: string) => boolean;
+  /** Optional FLS function for customer details dialog. Fields returning false are hidden. */
+  canViewCustomerField?: (fieldKey: string) => boolean;
+  /** Optional FLS function for organization details dialog. Fields returning false are hidden. */
+  canViewOrganizationField?: (fieldKey: string) => boolean;
   /** Optional FLS function for customer create/edit modal. Fields returning false are hidden. */
   canEditCustomerField?: (fieldKey: string) => boolean;
   /** Optional FLS function for organization create/edit modal. Fields returning false are hidden. */
   canEditOrganizationField?: (fieldKey: string) => boolean;
+  /** Optional FLS function to hide columns in the customer tickets modal */
+  canViewTicketColumn?: (columnKey: string) => boolean;
+  currentUserId?: string;
 }) {
   const { formatDate } = useLocalization();
   const { canAccess, isLoading } = useServiceCloudPermissions(workspaceId);
@@ -378,7 +389,9 @@ export function ServiceCloudCustomersPage({
                 : undefined
             }
             canViewColumn={canViewCustomerColumn}
+            canViewField={canViewCustomerField}
             canEditField={canEditCustomerField}
+            currentUserId={currentUserId}
             systemFields={systemCustomerFields}
             queryParams={queryParams}
             filterGroups={filterGroups}
@@ -451,7 +464,9 @@ export function ServiceCloudCustomersPage({
                 : undefined
             }
             canViewColumn={canViewOrganizationColumn}
+            canViewField={canViewOrganizationField}
             canEditField={canEditOrganizationField}
+            currentUserId={currentUserId}
             systemFields={systemOrganizationFields}
             queryParams={queryParams}
             filterGroups={filterGroups}
@@ -700,100 +715,120 @@ export function ServiceCloudCustomersPage({
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead
-                        className="relative"
-                        {...getHeaderProps('ticket_number')}
-                      >
-                        Ticket #
-                        <span
-                          className="col-resize-handle"
-                          {...getResizeHandleProps('ticket_number')}
-                        />
-                      </TableHead>
-                      <TableHead
-                        className="relative"
-                        {...getHeaderProps('subject')}
-                      >
-                        Subject
-                        <span
-                          className="col-resize-handle"
-                          {...getResizeHandleProps('subject')}
-                        />
-                      </TableHead>
-                      <TableHead
-                        className="relative"
-                        {...getHeaderProps('status')}
-                      >
-                        Status
-                        <span
-                          className="col-resize-handle"
-                          {...getResizeHandleProps('status')}
-                        />
-                      </TableHead>
-                      <TableHead
-                        className="relative"
-                        {...getHeaderProps('priority')}
-                      >
-                        Priority
-                        <span
-                          className="col-resize-handle"
-                          {...getResizeHandleProps('priority')}
-                        />
-                      </TableHead>
-                      <TableHead
-                        className="relative"
-                        {...getHeaderProps('created')}
-                      >
-                        Created
-                        <span
-                          className="col-resize-handle"
-                          {...getResizeHandleProps('created')}
-                        />
-                      </TableHead>
+                      {(!canViewTicketColumn || canViewTicketColumn('ticket_number')) && (
+                        <TableHead
+                          className="relative"
+                          {...getHeaderProps('ticket_number')}
+                        >
+                          Ticket #
+                          <span
+                            className="col-resize-handle"
+                            {...getResizeHandleProps('ticket_number')}
+                          />
+                        </TableHead>
+                      )}
+                      {(!canViewTicketColumn || canViewTicketColumn('subject')) && (
+                        <TableHead
+                          className="relative"
+                          {...getHeaderProps('subject')}
+                        >
+                          Subject
+                          <span
+                            className="col-resize-handle"
+                            {...getResizeHandleProps('subject')}
+                          />
+                        </TableHead>
+                      )}
+                      {(!canViewTicketColumn || canViewTicketColumn('status_id')) && (
+                        <TableHead
+                          className="relative"
+                          {...getHeaderProps('status')}
+                        >
+                          Status
+                          <span
+                            className="col-resize-handle"
+                            {...getResizeHandleProps('status')}
+                          />
+                        </TableHead>
+                      )}
+                      {(!canViewTicketColumn || canViewTicketColumn('priority_id')) && (
+                        <TableHead
+                          className="relative"
+                          {...getHeaderProps('priority')}
+                        >
+                          Priority
+                          <span
+                            className="col-resize-handle"
+                            {...getResizeHandleProps('priority')}
+                          />
+                        </TableHead>
+                      )}
+                      {(!canViewTicketColumn || canViewTicketColumn('created_at')) && (
+                        <TableHead
+                          className="relative"
+                          {...getHeaderProps('created')}
+                        >
+                          Created
+                          <span
+                            className="col-resize-handle"
+                            {...getResizeHandleProps('created')}
+                          />
+                        </TableHead>
+                      )}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {customerTickets.map((ticket) => (
                       <TableRow key={ticket.id}>
-                        <TableCell className="font-mono text-sm">
-                          #{ticket.ticket_number}
-                        </TableCell>
-                        <TableCell>
-                          <Link
-                            href={`/home/services/tickets/${ticket.id}`}
-                            className="text-primary text-leadgaze-primary block max-w-[200px] truncate font-medium hover:underline sm:max-w-[400px] lg:max-w-[550px]"
-                            title={ticket.subject}
-                          >
-                            {ticket.subject}
-                          </Link>
-                        </TableCell>
-                        <TableCell>
-                          <StatusBadge
-                            value={
-                              statusById.get(ticket.status_id)?.name as string
-                            }
-                            color={
-                              statusById.get(ticket.status_id)?.color as string
-                            }
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <StatusBadge
-                            value={
-                              priorityById.get(ticket.priority_id)
-                                ?.name as string
-                            }
-                            color={
-                              priorityById.get(ticket.priority_id)
-                                ?.color as string
-                            }
-                          />
-                        </TableCell>
-                        <TableCell className="text-muted-foreground text-sm">
-                          {ticket.created_at
-                            ? formatDate(ticket.created_at)
-                            : '-'}
-                        </TableCell>
+                        {(!canViewTicketColumn || canViewTicketColumn('ticket_number')) && (
+                          <TableCell className="font-mono text-sm">
+                            #{ticket.ticket_number}
+                          </TableCell>
+                        )}
+                        {(!canViewTicketColumn || canViewTicketColumn('subject')) && (
+                          <TableCell>
+                            <Link
+                              href={`/home/services/tickets/${ticket.id}`}
+                              className="text-primary text-leadgaze-primary block max-w-[200px] truncate font-medium hover:underline sm:max-w-[400px] lg:max-w-[550px]"
+                              title={ticket.subject}
+                            >
+                              {ticket.subject}
+                            </Link>
+                          </TableCell>
+                        )}
+                        {(!canViewTicketColumn || canViewTicketColumn('status_id')) && (
+                          <TableCell>
+                            <StatusBadge
+                              value={
+                                statusById.get(ticket.status_id)?.name as string
+                              }
+                              color={
+                                statusById.get(ticket.status_id)?.color as string
+                              }
+                            />
+                          </TableCell>
+                        )}
+                        {(!canViewTicketColumn || canViewTicketColumn('priority_id')) && (
+                          <TableCell>
+                            <StatusBadge
+                              value={
+                                priorityById.get(ticket.priority_id)
+                                  ?.name as string
+                              }
+                              color={
+                                priorityById.get(ticket.priority_id)
+                                  ?.color as string
+                              }
+                            />
+                          </TableCell>
+                        )}
+                        {(!canViewTicketColumn || canViewTicketColumn('created_at')) && (
+                          <TableCell className="text-muted-foreground text-sm">
+                            {ticket.created_at
+                              ? formatDate(ticket.created_at)
+                              : '-'}
+                          </TableCell>
+                        )}
                       </TableRow>
                     ))}
                   </TableBody>

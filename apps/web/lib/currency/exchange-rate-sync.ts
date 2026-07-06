@@ -161,9 +161,9 @@ export class ExchangeRateSync {
     }));
 
     const { data, error } = await adminClient
-    .schema('core')
+      .schema('core')
       .from('currency_exchange_rates')
-      .insert(records)
+      .upsert(records, { onConflict: 'base_currency,target_currency' })
       .select();
 
     if (error) {

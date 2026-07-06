@@ -123,17 +123,24 @@ export function useInventoryPermissions(workspaceId?: string) {
         return [];
       }
 
-      const { data: member, error: memberError } = await supabase
+      const { data: members, error: memberError } = await supabase
         .from('workspace_members')
-        .select('role_id')
+        .select('role_id, product_key')
         .eq('workspace_id', workspaceId)
         .eq('user_id', user.id)
-        .eq('status', 'accepted')
-        .maybeSingle();
+        .eq('status', 'accepted');
 
       if (memberError) {
         throw memberError;
       }
+
+      if (!members || members.length === 0) {
+        return [];
+      }
+
+      const member = members.find((m: any) => m.product_key === 'inventory')
+        || members.find((m: any) => m.product_key === null)
+        || members[0];
 
       const roleId =
         typeof member?.role_id === 'object'

@@ -53,8 +53,9 @@ export function useFieldPermissions({
     if (!effectiveWorkspaceId || !user?.id) return null;
 
     const isWorkspaceOwner = workspace?.owner_id === user.id;
-    const roleId = workspace?.role?.id ?? null;
-    const roleKey = workspace?.role?.role_key ?? null;
+    // currentRole is the correct property - workspace.role does not exist
+    const roleId = workspace?.currentRole?.id ?? null;
+    const roleKey = workspace?.currentRole?.role_key ?? null;
     let moduleKey = entityType;
     if (entityType === 'leads') {
       moduleKey = 'leads';
@@ -82,7 +83,7 @@ export function useFieldPermissions({
     effectiveWorkspaceId,
     user?.id,
     workspace?.owner_id,
-    workspace?.role,
+    workspace?.currentRole, // was incorrectly workspace?.role (doesn't exist)
     entityType,
     productKey,
     fields,

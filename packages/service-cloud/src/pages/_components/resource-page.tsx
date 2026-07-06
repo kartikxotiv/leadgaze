@@ -149,10 +149,18 @@ type ResourcePageProps = {
   /** Full entity field definitions for displaying column header lock icons and configuration */
   systemFields?: any[];
   /**
+   * Optional FLS function for the edit dialog.
+   * When provided, fields for which this returns false are hidden from the modal entirely.
+   * Fields for which this returns true but canEditField returns false are shown as disabled (read-only).
+   */
+  canViewField?: (fieldKey: string) => boolean;
+  /**
    * Optional FLS function for create/edit dialogs.
-   * When provided, form fields for which this returns false are hidden from the modal.
+   * When provided, form fields for which this returns false are shown as read-only (disabled).
    */
   canEditField?: (fieldKey: string) => boolean;
+  /** Logged in user's ID to restrict dynamic fields edits to their creators */
+  currentUserId?: string;
 };
 
 function getInitialForm(
@@ -190,7 +198,9 @@ export function ServiceCloudResourcePage({
   onColumnAddClick,
   canViewColumn,
   systemFields = [],
+  canViewField,
   canEditField,
+  currentUserId,
 }: ResourcePageProps) {
   // Apply FLS: filter out columns the current user cannot view
   const visibleColumns = useMemo(
@@ -437,7 +447,11 @@ export function ServiceCloudResourcePage({
                       className="relative"
                       isAdmin={isAdmin}
                       onEditClick={
-                        isAdmin && onColumnEditClick
+                        onColumnEditClick &&
+                        (isAdmin || (() => {
+                          const fieldObj = systemFields.find((f) => f.field_key === column.key);
+                          return fieldObj && !fieldObj.is_system && fieldObj.created_by === currentUserId;
+                        })())
                           ? () => onColumnEditClick(column.key)
                           : undefined
                       }
@@ -454,9 +468,10 @@ export function ServiceCloudResourcePage({
                     </ColumnHeader>
                   ))}
                   {canEdit || canDelete ? (
-                    isAdmin && onColumnAddClick ? (
+                    onColumnAddClick ? (
                       <TableHead className="sticky-right-header bg-background z-10 w-12 px-1">
                         <Button
+                          type="button"
                           variant="outline"
                           size="sm"
                           className="flex h-8 w-full items-center justify-center gap-1 border-dashed text-xs font-medium"
@@ -594,121 +609,141 @@ export function ServiceCloudResourcePage({
               <div className="flex-1 space-y-4 overflow-y-auto p-6 pb-8">
                 <div className="grid gap-4">
                   {fields
-                    .filter((field) => !canEditField || canEditField(field.key))
-                    .map((field) => (
-                      <div key={field.key} className="space-y-2">
-                        <Label>{field.label}</Label>
-                        {field.type === 'select' ? (
-                          <Select
-                            value={String(form[field.key] ?? '')}
-                            onValueChange={(value) =>
-                              setForm((prev: ServiceCloudRecord) => ({
-                                ...prev,
-                                [field.key]: value,
-                              }))
-                            }
-                          >
-                            <SelectTrigger>
-                              <SelectValue
-                                placeholder={`Select ${field.label}`}
-                              />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {(field.options ?? []).map((option) => (
-                                <SelectItem
-                                  key={option.value}
-                                  value={option.value}
-                                >
-                                  <div className="flex items-center gap-2">
-                                    {option.color ? (
-                                      <span
-                                        className="h-2 w-2 shrink-0 rounded-full border border-black/10 dark:border-white/10"
-                                        style={{
-                                          backgroundColor: option.color,
-                                        }}
-                                      />
-                                    ) : null}
-                                    <span>{option.label}</span>
-                                  </div>
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        ) : field.type === 'color' ? (
-                          <div className="space-y-3">
-                            <div className="flex flex-wrap gap-2">
-                              {PRESET_COLORS.map((color) => (
-                                <button
-                                  key={color}
-                                  type="button"
-                                  className={cn(
-                                    'focus:ring-ring h-8 w-8 rounded-full border-2 transition-all hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2 active:scale-95',
-                                    form[field.key] === color
-                                      ? 'border-primary ring-primary scale-105 shadow-md ring-2'
-                                      : 'border-zinc-300 dark:border-zinc-700',
-                                  )}
-                                  style={{ backgroundColor: color }}
-                                  onClick={() =>
-                                    setForm((prev: ServiceCloudRecord) => ({
-                                      ...prev,
-                                      [field.key]: color,
-                                    }))
-                                  }
-                                  title={color}
+                    // Hide field if canViewField is provided AND returns false
+                    .filter((field) => !canViewField || canViewField(field.key))
+                    .map((field) => {
+                      // Field is editable only if no canEditField guard, or it returns true
+                      const isEditable = !canEditField || canEditField(field.key);
+                      return (
+                        <div key={field.key} className="space-y-2">
+                          <Label className="flex items-center gap-1.5">
+                            {field.label}
+                            {!isEditable && (
+                              <span className="text-muted-foreground text-xs font-normal">(view only)</span>
+                            )}
+                          </Label>
+                          {field.type === 'select' ? (
+                            <Select
+                              value={String(form[field.key] ?? '')}
+                              onValueChange={(value) =>
+                                isEditable &&
+                                setForm((prev: ServiceCloudRecord) => ({
+                                  ...prev,
+                                  [field.key]: value,
+                                }))
+                              }
+                              disabled={!isEditable}
+                            >
+                              <SelectTrigger disabled={!isEditable}>
+                                <SelectValue
+                                  placeholder={`Select ${field.label}`}
                                 />
-                              ))}
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <div className="border-input focus-within:ring-ring relative h-9 w-9 overflow-hidden rounded-md border focus-within:ring-2 focus-within:ring-offset-2">
-                                <input
-                                  type="color"
-                                  className="absolute -left-2 -top-2 h-14 w-14 cursor-pointer border-0 p-0"
-                                  value={String(form[field.key] || '#64748b')}
+                              </SelectTrigger>
+                              <SelectContent>
+                                {(field.options ?? []).map((option) => (
+                                  <SelectItem
+                                    key={option.value}
+                                    value={option.value}
+                                  >
+                                    <div className="flex items-center gap-2">
+                                      {option.color ? (
+                                        <span
+                                          className="h-2 w-2 shrink-0 rounded-full border border-black/10 dark:border-white/10"
+                                          style={{
+                                            backgroundColor: option.color,
+                                          }}
+                                        />
+                                      ) : null}
+                                      <span>{option.label}</span>
+                                    </div>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          ) : field.type === 'color' ? (
+                            <div className={cn('space-y-3', !isEditable && 'pointer-events-none opacity-60')}>
+                              <div className="flex flex-wrap gap-2">
+                                {PRESET_COLORS.map((color) => (
+                                  <button
+                                    key={color}
+                                    type="button"
+                                    disabled={!isEditable}
+                                    className={cn(
+                                      'focus:ring-ring h-8 w-8 rounded-full border-2 transition-all hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2 active:scale-95',
+                                      form[field.key] === color
+                                        ? 'border-primary ring-primary scale-105 shadow-md ring-2'
+                                        : 'border-zinc-300 dark:border-zinc-700',
+                                    )}
+                                    style={{ backgroundColor: color }}
+                                    onClick={() =>
+                                      isEditable &&
+                                      setForm((prev: ServiceCloudRecord) => ({
+                                        ...prev,
+                                        [field.key]: color,
+                                      }))
+                                    }
+                                    title={color}
+                                  />
+                                ))}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <div className="border-input focus-within:ring-ring relative h-9 w-9 overflow-hidden rounded-md border focus-within:ring-2 focus-within:ring-offset-2">
+                                  <input
+                                    type="color"
+                                    disabled={!isEditable}
+                                    className="absolute -left-2 -top-2 h-14 w-14 cursor-pointer border-0 p-0"
+                                    value={String(form[field.key] || '#64748b')}
+                                    onChange={(event) =>
+                                      isEditable &&
+                                      setForm((prev: ServiceCloudRecord) => ({
+                                        ...prev,
+                                        [field.key]: event.target.value,
+                                      }))
+                                    }
+                                  />
+                                </div>
+                                <Input
+                                  type="text"
+                                  placeholder="#000000"
+                                  disabled={!isEditable}
+                                  value={String(form[field.key] ?? '')}
                                   onChange={(event) =>
+                                    isEditable &&
                                     setForm((prev: ServiceCloudRecord) => ({
                                       ...prev,
                                       [field.key]: event.target.value,
                                     }))
                                   }
+                                  className="w-32 font-mono text-sm uppercase"
                                 />
                               </div>
-                              <Input
-                                type="text"
-                                placeholder="#000000"
-                                value={String(form[field.key] ?? '')}
-                                onChange={(event) =>
-                                  setForm((prev: ServiceCloudRecord) => ({
-                                    ...prev,
-                                    [field.key]: event.target.value,
-                                  }))
-                                }
-                                className="w-32 font-mono text-sm uppercase"
-                              />
                             </div>
-                          </div>
-                        ) : (
-                          <Input
-                            type={
-                              field.type === 'number'
-                                ? 'number'
-                                : field.type === 'email'
-                                  ? 'email'
-                                  : 'text'
-                            }
-                            value={String(form[field.key] ?? '')}
-                            onChange={(event) =>
-                              setForm((prev: ServiceCloudRecord) => ({
-                                ...prev,
-                                [field.key]:
-                                  field.type === 'number'
-                                    ? Number(event.target.value)
-                                    : event.target.value,
-                              }))
-                            }
-                          />
-                        )}
-                      </div>
-                    ))}
+                          ) : (
+                            <Input
+                              type={
+                                field.type === 'number'
+                                  ? 'number'
+                                  : field.type === 'email'
+                                    ? 'email'
+                                    : 'text'
+                              }
+                              disabled={!isEditable}
+                              value={String(form[field.key] ?? '')}
+                              onChange={(event) =>
+                                isEditable &&
+                                setForm((prev: ServiceCloudRecord) => ({
+                                  ...prev,
+                                  [field.key]:
+                                    field.type === 'number'
+                                      ? Number(event.target.value)
+                                      : event.target.value,
+                                }))
+                              }
+                            />
+                          )}
+                        </div>
+                      );
+                    })}
                 </div>
               </div>
               <div className="border-t border-gray-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">

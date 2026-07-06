@@ -134,6 +134,12 @@ export function createCoreControllers(config: CoreResourceConfig) {
 
       let query = (supabase as any).schema('core').from(config.table).select('*').eq('workspace_id', workspaceId);
       if (config.softDelete !== false) query = query.eq('is_deleted', false);
+      const statusParam = url.searchParams.get('status');
+      if (statusParam === 'closed' && config.table === 'notes') {
+        query = query.eq('is_closed', true);
+      } else if (statusParam === 'active' && config.table === 'notes') {
+        query = query.eq('is_closed', false);
+      }
       if (id) query = query.eq('id', id).maybeSingle();
       if (!config.relation && entityType) query = query.eq('entity_type', entityType);
       if (!config.relation && entityId) query = query.eq('entity_id', entityId);

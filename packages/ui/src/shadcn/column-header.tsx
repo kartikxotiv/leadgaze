@@ -200,7 +200,7 @@ export function ColumnHeader({
             )}
           />
         )}
-        {isAdmin && resolvedEditClick && (
+        {(isAdmin || isDynamicField) && resolvedEditClick && (
           <Button
             variant="ghost"
             size="sm"

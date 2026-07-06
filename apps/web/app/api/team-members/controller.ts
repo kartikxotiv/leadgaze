@@ -41,6 +41,7 @@ const getMembers = catchAsync(
     const supabase = getSupabaseServerClient();
     const url = new URL(request.url);
     const workspaceId = url.searchParams.get('workspaceId');
+    const productKey = url.searchParams.get('productKey');
 
     if (!workspaceId) {
       return NextResponse.json(
@@ -49,17 +50,29 @@ const getMembers = catchAsync(
       );
     }
 
-    // Get members with related role data via join
-    const { data: members, error } = await (
-      supabase.from('workspace_members').select(
-        `
-        *,
-        role:workspace_roles(id, role_name, role_key, hierarchy_level, color)
+    // Build query with optional product_key filter
+    let query = supabase.from('workspace_members').select(
+      `
+        id,
+        workspace_id,
+        user_id,
+        role_id,
+        status,
+        product_key,
+        created_at,
+        role:workspace_roles(id, role_name, role_key, hierarchy_level, color, product_key)
       `,
-      ) as any
-    )
-      .eq('workspace_id', workspaceId)
-      .order('created_at', { ascending: false });
+    );
+
+    query = query.eq('workspace_id', workspaceId);
+
+    if (productKey) {
+      query = query.eq('product_key', productKey);
+    }
+
+    query = query.order('created_at', { ascending: false });
+
+    const { data: members, error } = await (query as any);
 
     if (error) {
       console.error('Get members error:', error);

@@ -43,6 +43,7 @@ import {
 } from '@kit/ui/select';
 import { Badge } from '@kit/ui/badge';
 import { Textarea } from '@kit/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@kit/ui/tabs';
 
 import { useLocalization } from '~/lib/localization/localization-provider';
 import { useHasPermission } from '~/lib/permissions/use-permissions';
@@ -82,6 +83,7 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
   const { formatDate } = useLocalization();
   const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState(false);
+  const [reminderTab, setReminderTab] = useState<'active' | 'sent'>('active');
   const [formData, setFormData] = useState({
     title: '',
     due_date: '',
@@ -90,13 +92,26 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
   const [editingReminder, setEditingReminder] = useState<any>(null);
 
   const { data: reminders = [], isLoading } = useQuery({
-    queryKey: ['reminders', entityType, entityId, workspace?.id],
+    queryKey: ['reminders', entityType, entityId, workspace?.id, reminderTab],
     queryFn: () => {
       if (!workspace?.id) return [];
-      return getRemindersService(workspace.id, entityType, entityId);
+      // 'active' tab → fetch only non-completed; 'sent' tab → fetch only completed
+      const apiStatus = reminderTab === 'sent' ? 'completed' : 'active';
+      return getRemindersService(workspace.id, entityType, entityId, apiStatus);
     },
     enabled: !!workspace?.id,
   });
+
+  // Split into active / sent views; limit sent to last 5 sorted by completion date
+  const displayedReminders = reminderTab === 'sent'
+    ? reminders
+        .filter((r: any) => r.is_completed)
+        .sort((a: any, b: any) =>
+          new Date(b.completed_at || b.updated_at).getTime() -
+          new Date(a.completed_at || a.updated_at).getTime(),
+        )
+        .slice(0, 5)
+    : reminders.filter((r: any) => !r.is_completed);
 
   const createMutation = useMutation({
     mutationFn: () =>
@@ -247,7 +262,11 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
                   onChange={(e) =>
                     setFormData({ ...formData, due_date: e.target.value })
                   }
-                  onClick={(e) => e.currentTarget.showPicker()}
+                  onClick={(e) => {
+                    try {
+                      e.currentTarget.showPicker();
+                    } catch (err) {}
+                  }}
                 />
               </div>
             </div>
@@ -273,13 +292,37 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
       }
     >
       <div className="px-6 py-3">
+        {/* Active / Sent toggle (mirrors Notes pattern) */}
+        <div className="flex bg-gray-100/60 dark:bg-gray-800/60 p-0.5 rounded-lg mb-4 w-fit border border-gray-200/20">
+          <button
+            onClick={() => setReminderTab('active')}
+            className={`rounded px-2.5 py-1 text-[11px] font-medium transition-all ${
+              reminderTab === 'active'
+                ? 'bg-white dark:bg-gray-900 text-blue-600 dark:text-blue-400 shadow-sm'
+                : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+            }`}
+          >
+            Active
+          </button>
+          <button
+            onClick={() => setReminderTab('sent')}
+            className={`rounded px-2.5 py-1 text-[11px] font-medium transition-all ${
+              reminderTab === 'sent'
+                ? 'bg-white dark:bg-gray-900 text-blue-600 dark:text-blue-400 shadow-sm'
+                : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+            }`}
+          >
+            Sent
+          </button>
+        </div>
+
         {isLoading ? (
           <div className="flex justify-center py-4">
             <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
           </div>
-        ) : reminders.length > 0 ? (
+        ) : displayedReminders.length > 0 ? (
           <CardWidgetList>
-            {reminders.map((reminder: any) => (
+            {displayedReminders.map((reminder: any) => (
               <CardWidgetListItem
                 key={reminder.id}
                 icon={
@@ -305,7 +348,7 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
                     {reminder.due_date && (
                       <span className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
-                        Due: {formatDate(reminder.due_date)}
+                         Due: {formatDate(reminder.due_date)} {new Date(reminder.due_date).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}
                       </span>
                     )}
                     <span>
@@ -401,6 +444,7 @@ export function EntityMeetings({ entityType, entityId }: EntityActivityProps) {
   const [newEmail, setNewEmail] = useState('');
   const [duration, setDuration] = useState(30);
   const [editingMeeting, setEditingMeeting] = useState<CoreMeeting | null>(null);
+  const [activeTab, setActiveTab] = useState<'upcoming' | 'past'>('upcoming');
 
   // Fetch meetings - include meetings where user is a participant
   const { data: meetings = [], isLoading } = useQuery({
@@ -412,6 +456,16 @@ export function EntityMeetings({ entityType, entityId }: EntityActivityProps) {
     },
     enabled: !!workspace?.id,
   });
+
+  const filteredMeetings = useMemo(() => {
+    const now = new Date();
+    return meetings.filter((meeting) => {
+      const start = meeting.scheduled_start || meeting.start_time || meeting.actual_start;
+      if (!start) return activeTab === 'upcoming';
+      const isUpcoming = new Date(start) >= now && meeting.status !== 'completed' && meeting.status !== 'cancelled';
+      return activeTab === 'upcoming' ? isUpcoming : !isUpcoming;
+    });
+  }, [meetings, activeTab]);
 
   // Calculate end time from start time + duration
   const getEndTime = (): string => {
@@ -633,6 +687,104 @@ export function EntityMeetings({ entityType, entityId }: EntityActivityProps) {
       return <span className="text-xs text-blue-600">Zoom</span>;
     }
     return null;
+  };
+
+  const renderMeetingsList = (items: CoreMeeting[]) => {
+    if (items.length === 0) {
+      return (
+        <div className="py-8 text-center">
+          <Calendar className="mx-auto mb-2 h-8 w-8 text-gray-300" />
+          <p className="text-sm text-gray-500">
+            {activeTab === 'upcoming' ? 'No upcoming meetings' : 'No previous meetings'}
+          </p>
+        </div>
+      );
+    }
+    return (
+      <CardWidgetList>
+        {items.map((meeting: CoreMeeting) => (
+          <CardWidgetListItem
+            key={meeting.id}
+            title={
+              <div className="flex items-center gap-2">
+                <span
+                  className="text-sm font-medium text-gray-900 dark:text-gray-100 cursor-pointer hover:text-blue-600"
+                  onClick={() => openEditDialog(meeting)}
+                >
+                  {meeting.title}
+                </span>
+                {getStatusBadge(meeting.status)}
+              </div>
+            }
+            content={
+              <div className="mt-1 flex items-center gap-2 text-xs text-gray-500">
+                {getProviderBadge(meeting)}
+                {meeting.location && (
+                  <>
+                    <span>•</span>
+                    <span className="flex items-center gap-1">
+                      <MapPin className="h-3 w-3" />
+                      {meeting.location}
+                    </span>
+                  </>
+                )}
+              </div>
+            }
+            metadata={
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                <span className="flex items-center gap-1">
+                  <CalendarIcon className="h-3 w-3" />
+                  {formatMeetingDate(meeting)}
+                </span>
+                {meeting.host && (
+                  <span>
+                    Created by {meeting.host.name || meeting.host.email || 'Unknown'} on {formatDate(meeting.created_at)}
+                  </span>
+                )}
+                {!meeting.host && (
+                  <span>Created on {formatDate(meeting.created_at)}</span>
+                )}
+                {meeting.entity_type && meeting.entity_type !== entityType && (
+                  <span className="text-blue-600 dark:text-blue-400">
+                    From {meeting.entity_type.charAt(0).toUpperCase() + meeting.entity_type.slice(1)}
+                    {meeting.entity_id ? `: ${meeting.entity_id}` : ''}
+                  </span>
+                )}
+              </div>
+            }
+            actions={
+              <div className="flex items-center gap-1">
+                {getMeetingLink(meeting)}
+                {canScheduleMeeting && (
+                  <>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => openEditDialog(meeting)}
+                      className="h-7 w-7 text-gray-400 hover:text-blue-500"
+                    >
+                      <Pencil className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => {
+                        if (confirm('Are you sure you want to delete this meeting?')) {
+                          deleteMutation.mutate(meeting.id);
+                        }
+                      }}
+                      className="h-7 w-7 text-gray-400 hover:text-red-500"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </>
+                )}
+              </div>
+            }
+          />
+        ))}
+      </CardWidgetList>
+    );
   };
 
   return (
@@ -888,100 +1040,19 @@ export function EntityMeetings({ entityType, entityId }: EntityActivityProps) {
           <div className="flex justify-center py-4">
             <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
           </div>
-        ) : meetings.length > 0 ? (
-          <CardWidgetList>
-            {meetings.map((meeting: CoreMeeting) => (
-              <CardWidgetListItem
-                key={meeting.id}
-                title={
-                  <div className="flex items-center gap-2">
-                    <span
-                      className="text-sm font-medium text-gray-900 dark:text-gray-100 cursor-pointer hover:text-blue-600"
-                      onClick={() => openEditDialog(meeting)}
-                    >
-                      {meeting.title}
-                    </span>
-                    {getStatusBadge(meeting.status)}
-                  </div>
-                }
-                content={
-                  <div className="mt-1 flex items-center gap-2 text-xs text-gray-500">
-                    {getProviderBadge(meeting)}
-                    {meeting.location && (
-                      <>
-                        <span>•</span>
-                        <span className="flex items-center gap-1">
-                          <MapPin className="h-3 w-3" />
-                          {meeting.location}
-                        </span>
-                      </>
-                    )}
-                  </div>
-                }
-                metadata={
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                    <span className="flex items-center gap-1">
-                      <CalendarIcon className="h-3 w-3" />
-                      {formatMeetingDate(meeting)}
-                    </span>
-                    {meeting.host && (
-                      <span>
-                        Created by {meeting.host.name || meeting.host.email || 'Unknown'} on {formatDate(meeting.created_at)}
-                      </span>
-                    )}
-                    {!meeting.host && (
-                      <span>Created on {formatDate(meeting.created_at)}</span>
-                    )}
-                    {/* {meeting.updated_by && (
-                      <span>
-                        Updated on {formatDate(meeting.updated_at)}
-                      </span>
-                    )} */}
-                    {meeting.entity_type && meeting.entity_type !== entityType && (
-                      <span className="text-blue-600 dark:text-blue-400">
-                        From {meeting.entity_type.charAt(0).toUpperCase() + meeting.entity_type.slice(1)}
-                        {meeting.entity_id ? `: ${meeting.entity_id}` : ''}
-                      </span>
-                    )}
-                  </div>
-                }
-                actions={
-                  <div className="flex items-center gap-1">
-                    {getMeetingLink(meeting)}
-                    {canScheduleMeeting && (
-                      <>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={() => openEditDialog(meeting)}
-                          className="h-7 w-7 text-gray-400 hover:text-blue-500"
-                        >
-                          <Pencil className="h-3 w-3" />
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={() => {
-                            if (confirm('Are you sure you want to delete this meeting?')) {
-                              deleteMutation.mutate(meeting.id);
-                            }
-                          }}
-                          className="h-7 w-7 text-gray-400 hover:text-red-500"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                }
-              />
-            ))}
-          </CardWidgetList>
         ) : (
-          <div className="py-8 text-center">
-            <Calendar className="mx-auto mb-2 h-8 w-8 text-gray-300" />
-            <p className="text-sm text-gray-500">No meetings</p>
-          </div>
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
+            <TabsList className="grid w-full grid-cols-2 mb-4">
+              <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
+              <TabsTrigger value="past">Previous</TabsTrigger>
+            </TabsList>
+            <TabsContent value="upcoming">
+              {renderMeetingsList(filteredMeetings)}
+            </TabsContent>
+            <TabsContent value="past">
+              {renderMeetingsList(filteredMeetings)}
+            </TabsContent>
+          </Tabs>
         )}
       </div>
     </CardWidgetContainer>
@@ -1216,11 +1287,27 @@ export function EntityDocuments({ entityType, entityId }: EntityActivityProps) {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-7 w-7 text-gray-400"
+                      className="h-7 w-7 text-gray-400 hover:text-blue-500"
+                      title="View"
                       asChild
                     >
                       <a
-                        href={`/api/documents/download/${doc.id}`}
+                        href={`/api/documents/${doc.id}/download?mode=view`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-gray-400 hover:text-green-500"
+                      title="Download"
+                      asChild
+                    >
+                      <a
+                        href={`/api/documents/${doc.id}/download?mode=download`}
                         target="_blank"
                         rel="noopener noreferrer"
                       >

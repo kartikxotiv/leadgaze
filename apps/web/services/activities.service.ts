@@ -13,6 +13,9 @@ export interface Note {
   entity_id: string;
   entity_name?: string | null;
   created_by_user?: { name: string; email: string };
+  is_closed?: boolean;
+  closed_at?: string | null;
+  closed_by?: string | null;
 }
 
 export interface Reminder {
@@ -68,8 +71,8 @@ export interface Document {
 
 // --- Notes ---
 export const getNotesService = asyncHandlerClient(
-  async (workspaceId: string, entityType?: string, entityId?: string) => {
-    let url = `/notes?workspaceId=${workspaceId}`;
+  async (workspaceId: string, entityType?: string, entityId?: string, status: 'active' | 'closed' = 'active') => {
+    let url = `/notes?workspaceId=${workspaceId}&status=${status}`;
     if (entityType) url += `&entityType=${entityType}`;
     if (entityId) url += `&entityId=${entityId}`;
     const response = await ApiClient.get(url);
@@ -90,7 +93,7 @@ export const createNoteService = asyncHandlerClient(
 );
 
 export const updateNoteService = asyncHandlerClient(
-  async (id: string, payload: { content: string }) => {
+  async (id: string, payload: { content?: string; is_closed?: boolean }) => {
     const response = await ApiClient.patch(`/notes/${id}`, payload);
     return response.data?.data;
   },
@@ -103,10 +106,11 @@ export const deleteNoteService = asyncHandlerClient(async (id: string) => {
 
 // --- Reminders ---
 export const getRemindersService = asyncHandlerClient(
-  async (workspaceId: string, entityType?: string, entityId?: string) => {
+  async (workspaceId: string, entityType?: string, entityId?: string, status?: string) => {
     let url = `/reminders?workspaceId=${workspaceId}`;
     if (entityType) url += `&entityType=${entityType}`;
     if (entityId) url += `&entityId=${entityId}`;
+    if (status) url += `&status=${status}`;
     const response = await ApiClient.get(url);
     return response.data?.data || [];
   },

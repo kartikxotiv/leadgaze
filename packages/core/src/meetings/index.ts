@@ -32,4 +32,3 @@ export type {
   ResponseStatus,
   ReminderChannel,
 } from '@kit/integration-core';
-export { CoreEntityPanel } from '../pages';

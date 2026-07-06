@@ -32,6 +32,7 @@ export interface EntityFieldDefinition {
     access_type: AccessType;
   } | null;
   access_members?: FieldAccessMember[];
+  created_by?: string | null;
 }
 
 export interface FieldPermissionContext {

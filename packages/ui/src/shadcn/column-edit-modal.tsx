@@ -104,6 +104,9 @@ export interface ColumnEditModalProps {
    * The consuming page handles the actual delete mutation.
    */
   onDelete?: (fieldId: string) => void;
+
+  /** Whether the current user is an admin. If false, permissions are restricted. */
+  isAdmin?: boolean;
 }
 
 // ─── Access type labels ───────────────────────────────────────────────────────
@@ -149,6 +152,7 @@ export function ColumnEditModal({
   isSaving = false,
   onSave,
   onDelete,
+  isAdmin = false,
 }: ColumnEditModalProps) {
   const [fieldLabel, setFieldLabel] = useState(field.field_label);
   const [accessType, setAccessType] = useState<ColumnEditAccessType>(
@@ -259,49 +263,71 @@ export function ColumnEditModal({
             <Input
               id="col-edit-label"
               value={fieldLabel}
+              disabled={!isAdmin}
               onChange={(e) => setFieldLabel(e.target.value)}
               placeholder="Enter column name"
             />
+            {/* {(!isAdmin || field.is_system) && (
+              <span className="text-muted-foreground text-xs">
+                {field.is_system ? 'System column names cannot be changed.' : 'Only administrators can rename columns.'}
+              </span>
+            )} */}
           </div>
 
           {/* Access Type */}
           <div className="space-y-2">
             <Label>Visibility</Label>
             <div className="grid grid-cols-1 gap-2">
-              {(Object.keys(ACCESS_TYPE_LABELS) as ColumnEditAccessType[]).map(
-                (type) => (
-                  <button
-                    key={type}
-                    type="button"
-                    onClick={() => setAccessType(type)}
-                    className={cn(
-                      'flex items-center gap-3 rounded-lg border px-3 py-2 text-left transition-colors',
-                      accessType === type
-                        ? 'border-primary bg-primary/5 text-primary'
-                        : 'border-border hover:bg-muted',
-                    )}
-                  >
-                    <div
+              {(Object.keys(ACCESS_TYPE_LABELS) as ColumnEditAccessType[])
+                .filter((type) => {
+                  // Non-admins can only select 'public' or 'private'
+                  if (!isAdmin && type !== 'public' && type !== 'private') {
+                    return false;
+                  }
+                  return true;
+                })
+                .map((type) => {
+                  const isDisabled = !isAdmin && field.is_system;
+                  return (
+                    <button
+                      key={type}
+                      type="button"
+                      disabled={isDisabled}
+                      onClick={() => setAccessType(type)}
                       className={cn(
-                        'flex h-4 w-4 items-center justify-center rounded-full border-2',
+                        'flex items-center gap-3 rounded-lg border px-3 py-2 text-left transition-colors',
                         accessType === type
-                          ? 'border-primary bg-primary'
-                          : 'border-muted-foreground',
+                          ? 'border-primary bg-primary/5 text-primary'
+                          : 'border-border hover:bg-muted',
+                        isDisabled && 'cursor-not-allowed opacity-50'
                       )}
                     >
-                      {accessType === type && (
-                        <Check className="text-primary-foreground h-2.5 w-2.5" />
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <div className="text-sm font-medium">
-                        {ACCESS_TYPE_LABELS[type]}
+                      <div
+                        className={cn(
+                          'flex h-4 w-4 items-center justify-center rounded-full border-2',
+                          accessType === type
+                            ? 'border-primary bg-primary'
+                            : 'border-muted-foreground',
+                        )}
+                      >
+                        {accessType === type && (
+                          <Check className="text-primary-foreground h-2.5 w-2.5" />
+                        )}
                       </div>
-                    </div>
-                  </button>
-                ),
-              )}
+                      <div className="flex-1">
+                        <div className="text-sm font-medium">
+                          {ACCESS_TYPE_LABELS[type]}
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
             </div>
+            {!isAdmin && field.is_system && (
+              <span className="text-muted-foreground text-xs block mt-1">
+                Only administrators can change system column visibility.
+              </span>
+            )}
           </div>
 
           {/* Role/User Selection for restricted access types */}
