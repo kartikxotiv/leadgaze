@@ -28,7 +28,7 @@ export function persistBillingCountry(countryCode: string) {
  *
  * Priority order for determining the footer text:
  *   1. `billing_country` saved in localStorage (set once company is saved to DB)
- *   2. IP-based country detection via ipapi.co
+ *   2. IP-based country detection via api.country.is
  *
  * India (country code "IN") → Xotiv Pvt. Ltd.
  * Anything else             → Programea LLC.
@@ -62,12 +62,12 @@ export function Footer() {
     // 3️⃣  If nothing in localStorage yet, fall back to IP geolocation
     try {
       if (!localStorage.getItem(BILLING_COUNTRY_KEY)) {
-        fetch('https://ipapi.co/json/')
+        fetch('https://api.country.is')
           .then((res) => res.json())
           .then((data) => {
             // Only apply IP result if billing country hasn't been set yet
-            if (!localStorage.getItem(BILLING_COUNTRY_KEY) && data?.country_code) {
-              resolve(data.country_code);
+            if (!localStorage.getItem(BILLING_COUNTRY_KEY) && data?.country) {
+              resolve(data.country);
             }
           })
           .catch(() => {
@@ -89,14 +89,14 @@ export function Footer() {
   if (isIndia === null) return null;
 
   const link = isIndia ? (
-    <>© 2026 Leadgaze. Operated by <a href="https://xotiv.com/" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'underline dotted' }}>Xotiv</a> Pvt. Ltd.</>
+    <>© 2026 Leadgaze. Operated by <a href="https://xotiv.com/" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'underline dotted' }}>Xotiv Pvt. Ltd.</a></>
   ) : (
-    <>© 2026 Leadgaze. Operated by <a href="https://programea.com/" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'underline dotted' }}>Programea</a> LLC.</>
+    <>© 2026 Leadgaze. Operated by <a href="https://programea.com/" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'underline dotted' }}>Programea LLC.</a></>
   );
 
   return (
     <footer
-      style={{ fontSize: '10px', position: 'fixed', bottom: '8px', right: '12px', zIndex: 50 }}
+      style={{ fontSize: '12px', position: 'fixed', bottom: '8px', right: '12px', zIndex: 50 }}
       className="text-leadgaze-muted select-none dark:text-white"
     >
       {link}

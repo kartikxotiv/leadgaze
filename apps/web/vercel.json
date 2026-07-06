@@ -5,6 +5,10 @@
       "schedule": "* * * * *"
     },
     {
+      "path": "/api/cron/emails-sync",
+      "schedule": "*/5 * * * *"
+    },
+    {
       "path": "/api/cron/exchange-rates",
       "schedule": "5 0 * * *"
     }

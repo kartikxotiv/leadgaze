@@ -14,6 +14,37 @@ export class MeetingChecker {
   private static readonly BATCH_SIZE = 10;
 
   /**
+   * Auto-complete meetings that have passed
+   */
+  static async autocompletePassedMeetings(supabase: any): Promise<number> {
+    try {
+      const now = new Date().toISOString();
+      const { data, error } = await supabase
+        .schema('core')
+        .from('meetings')
+        .update({ status: 'completed', updated_at: now })
+        .in('status', ['scheduled', 'in_progress'])
+        .eq('is_deleted', false)
+        .or(`scheduled_end.lte.${now},and(scheduled_end.is.null,scheduled_start.lte.${now})`)
+        .select('id');
+
+      if (error) {
+        console.error('[MeetingChecker] Error autocompleting passed meetings:', error);
+        return 0;
+      }
+
+      const count = data?.length ?? 0;
+      if (count > 0) {
+        console.log(`[MeetingChecker] Automatically marked ${count} passed meetings as completed.`);
+      }
+      return count;
+    } catch (error) {
+      console.error('[MeetingChecker] Error in autocompletePassedMeetings:', error);
+      return 0;
+    }
+  }
+
+  /**
    * Check for upcoming meetings and send reminder notifications
    * Returns the number of notifications sent
    */
@@ -24,16 +55,20 @@ export class MeetingChecker {
     try {
       console.log('[MeetingChecker] Starting meeting check...');
 
-      // Run legacy check and new core reminders check in parallel
-      const [legacyCount, coreRemindersCount] = await Promise.all([
-        MeetingChecker.checkLegacyMeetings(supabase),
-        MeetingChecker.checkCoreMeetingReminders(supabase),
-      ]);
+      // Auto-complete passed meetings first
+      await MeetingChecker.autocompletePassedMeetings(supabase);
 
-      notificationCount = legacyCount + coreRemindersCount;
+      // Run legacy check and new core reminders check in parallel
+      // const [legacyCount, coreRemindersCount] = await Promise.all([
+      //   MeetingChecker.checkLegacyMeetings(supabase),
+      //   MeetingChecker.checkCoreMeetingReminders(supabase),
+      // ]);
+
+      const coreRemindersCount = await MeetingChecker.checkCoreMeetingReminders(supabase);
+      notificationCount = coreRemindersCount;
 
       console.log(
-        `[MeetingChecker] Sent ${notificationCount} meeting notifications (legacy: ${legacyCount}, core: ${coreRemindersCount})`,
+        `[MeetingChecker] Sent ${notificationCount} meeting notifications (legacy: commented out, core: ${coreRemindersCount})`,
       );
       return notificationCount;
     } catch (error) {
