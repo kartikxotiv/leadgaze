@@ -198,7 +198,11 @@ export const updateMeetingService = asyncHandlerClient(
     send_invites?: boolean;
   }) => {
     const res = await CoreApiClient.patch('/meetings', payload);
-    return res?.data?.data as CoreMeeting;
+    return {
+      meeting: res?.data?.data as CoreMeeting,
+      zoom_warning: res?.data?.zoom_warning === true,
+      message: res?.data?.message as string | undefined,
+    };
   },
 );
 

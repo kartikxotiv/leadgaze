@@ -87,11 +87,13 @@ import { useColumnVisibility } from '@kit/ui/use-column-visibility';
 import { useDateRangeFilter } from '@kit/ui/use-date-range-filter';
 import { useTableSort } from '@kit/ui/use-table-sort';
 
+import { useSupabase } from '@kit/supabase/hooks/use-supabase';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { getAccountsService } from '~/services/accounts.service';
 import { getContactsService } from '~/services/contacts.service';
 import { getLeadsService } from '~/services/leads.service';
 import { getOpportunitiesService } from '~/services/opportunities.service';
+import { convertLocalTimeToUTC, convertUTCToLocalTime } from '~/utils/timezone-helpers';
 
 // =============================================================================
 // CONSTANTS
@@ -102,17 +104,17 @@ const MEETING_TYPES: {
   label: string;
   icon: React.ReactNode;
 }[] = [
-  {
-    value: 'scheduled',
-    label: 'Scheduled Meeting',
-    icon: <CalendarIcon className="h-4 w-4" />,
-  },
-  {
-    value: 'logged',
-    label: 'Log Past Meeting',
-    icon: <Clock className="h-4 w-4" />,
-  },
-];
+    {
+      value: 'scheduled',
+      label: 'Scheduled Meeting',
+      icon: <CalendarIcon className="h-4 w-4" />,
+    },
+    {
+      value: 'logged',
+      label: 'Log Past Meeting',
+      icon: <Clock className="h-4 w-4" />,
+    },
+  ];
 
 const PROVIDER_CARDS: {
   value: MeetingProvider;
@@ -120,41 +122,41 @@ const PROVIDER_CARDS: {
   icon: React.ReactNode;
   selectedBg: string;
 }[] = [
-  {
-    value: 'GOOGLE',
-    label: 'Google Meet',
-    icon: (
-      <Image
-        src={'/images/icons/google-meet.png'}
-        width={32}
-        height={32}
-        className="h-7 w-8"
-        alt="Google Meet"
-      />
-    ),
-    selectedBg: 'bg-blue-50/50',
-  },
-  {
-    value: 'ZOOM',
-    label: 'Zoom Meeting',
-    icon: (
-      <Image
-        src={'/images/icons/zoom.webp'}
-        width={32}
-        height={32}
-        className="h-8 w-8"
-        alt="Google Meet"
-      />
-    ),
-    selectedBg: 'bg-blue-50/50',
-  },
-  {
-    value: 'MANUAL',
-    label: 'Manual Link',
-    icon: <Link2 className="h-8 w-8 text-gray-400" />,
-    selectedBg: 'bg-gray-50',
-  },
-];
+    {
+      value: 'GOOGLE',
+      label: 'Google Meet',
+      icon: (
+        <Image
+          src={'/images/icons/google-meet.png'}
+          width={32}
+          height={32}
+          className="h-7 w-8"
+          alt="Google Meet"
+        />
+      ),
+      selectedBg: 'bg-blue-50/50',
+    },
+    {
+      value: 'ZOOM',
+      label: 'Zoom Meeting',
+      icon: (
+        <Image
+          src={'/images/icons/zoom.webp'}
+          width={32}
+          height={32}
+          className="h-8 w-8"
+          alt="Google Meet"
+        />
+      ),
+      selectedBg: 'bg-blue-50/50',
+    },
+    {
+      value: 'MANUAL',
+      label: 'Manual Link',
+      icon: <Link2 className="h-8 w-8 text-gray-400" />,
+      selectedBg: 'bg-gray-50',
+    },
+  ];
 
 const STATUS_CONFIG: Record<
   MeetingStatus,
@@ -225,26 +227,65 @@ const meetingStatuses = (Object.keys(STATUS_CONFIG) as MeetingStatus[]).map(
 // HELPERS
 // =============================================================================
 
-function formatMeetingTime(start?: string | null, end?: string | null): string {
+function formatMeetingTime(
+  start?: string | null,
+  end?: string | null,
+  meetingTz?: string | null,
+  userTz?: string | null
+): string {
   if (!start) return 'No time set';
-  const s = new Date(start);
-  const dateStr = s.toLocaleDateString('en-US', {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-  });
-  const timeStr = s.toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true,
-  });
-  if (!end) return `${dateStr} at ${timeStr}`;
-  const endTimeStr = new Date(end).toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true,
-  });
-  return `${dateStr}, ${timeStr} – ${endTimeStr}`;
+  const tz = userTz || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+  const originalTz = meetingTz || 'UTC';
+  const startDate = new Date(start);
+
+  const formatDateForTz = (date: Date, targetTz: string) => {
+    const dateStr = date.toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      timeZone: targetTz,
+    });
+    const timeStr = date.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+      timeZone: targetTz,
+    });
+    return { dateStr, timeStr };
+  };
+
+  const startFormatted = formatDateForTz(startDate, tz);
+  let mainStr = '';
+  if (end) {
+    const endDate = new Date(end);
+    const endFormatted = formatDateForTz(endDate, tz);
+    if (startFormatted.dateStr === endFormatted.dateStr) {
+      mainStr = `${startFormatted.dateStr}, ${startFormatted.timeStr} – ${endFormatted.timeStr} (${tz})`;
+    } else {
+      mainStr = `${startFormatted.dateStr} ${startFormatted.timeStr} – ${endFormatted.dateStr} ${endFormatted.timeStr} (${tz})`;
+    }
+  } else {
+    mainStr = `${startFormatted.dateStr} at ${startFormatted.timeStr} (${tz})`;
+  }
+
+  if (originalTz.toUpperCase() !== tz.toUpperCase()) {
+    const startOrig = formatDateForTz(startDate, originalTz);
+    let origStr = '';
+    if (end) {
+      const endDate = new Date(end);
+      const endOrig = formatDateForTz(endDate, originalTz);
+      if (startOrig.dateStr === endOrig.dateStr) {
+        origStr = `${startOrig.timeStr} – ${endOrig.timeStr} ${originalTz}`;
+      } else {
+        origStr = `${startOrig.dateStr} ${startOrig.timeStr} – ${endOrig.dateStr} ${endOrig.timeStr} ${originalTz}`;
+      }
+    } else {
+      origStr = `${startOrig.timeStr} ${originalTz}`;
+    }
+    return `${mainStr} [${origStr}]`;
+  }
+
+  return mainStr;
 }
 
 // Get current datetime in format required by datetime-local input (YYYY-MM-DDTHH:mm)
@@ -351,11 +392,10 @@ function ProviderSelector({
             key={p.value}
             type="button"
             onClick={() => onChange(p.value)}
-            className={`relative flex flex-col items-center gap-2.5 rounded-xl border-2 p-4 transition-all ${
-              isSelected
+            className={`relative flex flex-col items-center gap-2.5 rounded-xl border-2 p-4 transition-all ${isSelected
                 ? `border-blue-500 ${p.selectedBg} shadow-sm`
                 : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm dark:border-gray-700 dark:bg-gray-900'
-            }`}
+              }`}
           >
             {isSelected && (
               <div className="absolute top-2 right-2 flex h-5 w-5 items-center justify-center rounded-full bg-blue-500">
@@ -393,11 +433,10 @@ function MeetingTypeToggle({
           key={type.value}
           type="button"
           onClick={() => onChange(type.value)}
-          className={`flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-all ${
-            value === type.value
+          className={`flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-all ${value === type.value
               ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-sm dark:border-blue-400 dark:bg-blue-950 dark:text-blue-300'
               : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400'
-          }`}
+            }`}
         >
           {type.icon}
           {type.label}
@@ -411,20 +450,22 @@ function MeetingTypeToggle({
 // CREATE MEETING DIALOG
 // =============================================================================
 
-interface CreateMeetingDialogProps {
+export interface CreateMeetingDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   workspaceId: string;
-  integrationAccounts: IntegrationAccountRow[];
-  leads: EntityRecord[];
-  contacts: EntityRecord[];
-  accounts: EntityRecord[];
-  opportunities: EntityRecord[];
+  integrationAccounts?: IntegrationAccountRow[];
+  leads?: EntityRecord[];
+  contacts?: EntityRecord[];
+  accounts?: EntityRecord[];
+  opportunities?: EntityRecord[];
   initialType?: MeetingType;
   onSuccess: () => void;
+  initialEntityType?: string;
+  initialEntityId?: string;
 }
 
-function CreateMeetingDialog({
+export function CreateMeetingDialog({
   open,
   onOpenChange,
   workspaceId,
@@ -435,7 +476,58 @@ function CreateMeetingDialog({
   opportunities,
   initialType = 'scheduled',
   onSuccess,
+  initialEntityType,
+  initialEntityId,
 }: CreateMeetingDialogProps) {
+  // Query internal values if props not provided or empty
+  const { data: fetchedIntegrationAccounts = [] } = useQuery({
+    queryKey: ['integration-accounts', workspaceId],
+    queryFn: () => getIntegrationAccountsService(workspaceId),
+    enabled: !!workspaceId && (!integrationAccounts || integrationAccounts.length === 0) && open,
+  });
+
+  const { data: fetchedLeads = [] } = useQuery({
+    queryKey: ['leads', workspaceId],
+    queryFn: async () => {
+      const res = await getLeadsService({ workspaceId });
+      return res?.data ?? [];
+    },
+    enabled: !!workspaceId && (!leads || leads.length === 0) && open,
+  });
+
+  const { data: fetchedContacts = [] } = useQuery({
+    queryKey: ['contacts', workspaceId],
+    queryFn: async () => {
+      const res = await getContactsService({ workspaceId });
+      return res?.data ?? [];
+    },
+    enabled: !!workspaceId && (!contacts || contacts.length === 0) && open,
+  });
+
+  const { data: fetchedAccounts = [] } = useQuery({
+    queryKey: ['crm-accounts', workspaceId],
+    queryFn: async () => {
+      const res = await getAccountsService({ workspaceId });
+      return res?.data ?? [];
+    },
+    enabled: !!workspaceId && (!crmAccounts || crmAccounts.length === 0) && open,
+  });
+
+  const { data: fetchedOpportunities = [] } = useQuery({
+    queryKey: ['opportunities', workspaceId],
+    queryFn: async () => {
+      const res = await getOpportunitiesService({ workspaceId });
+      return res?.data ?? [];
+    },
+    enabled: !!workspaceId && (!opportunities || opportunities.length === 0) && open,
+  });
+
+  const resolvedIntegrationAccounts = (integrationAccounts && integrationAccounts.length > 0) ? integrationAccounts : fetchedIntegrationAccounts;
+  const resolvedLeads = (leads && leads.length > 0) ? leads : fetchedLeads;
+  const resolvedContacts = (contacts && contacts.length > 0) ? contacts : fetchedContacts;
+  const resolvedAccounts = (crmAccounts && crmAccounts.length > 0) ? crmAccounts : fetchedAccounts;
+  const resolvedOpportunities = (opportunities && opportunities.length > 0) ? opportunities : fetchedOpportunities;
+
   const [meetingType, setMeetingType] = useState<MeetingType>(initialType);
   const [provider, setProvider] = useState<MeetingProvider>('GOOGLE');
   const [title, setTitle] = useState('');
@@ -448,8 +540,8 @@ function CreateMeetingDialog({
   const [meetingUrl, setMeetingUrl] = useState('');
   const [location, setLocation] = useState('');
   const [selectedAccountId, setSelectedAccountId] = useState('');
-  const [entityType, setEntityType] = useState('lead');
-  const [entityId, setEntityId] = useState('');
+  const [entityType, setEntityType] = useState(initialEntityType || 'lead');
+  const [entityId, setEntityId] = useState(initialEntityId || '');
   const [externalEmails, setExternalEmails] = useState<string[]>([]);
   const [newEmail, setNewEmail] = useState('');
   const [reminders, setReminders] = useState<number[]>([30]);
@@ -457,6 +549,14 @@ function CreateMeetingDialog({
   const [isCreatingZoomMeeting, setIsCreatingZoomMeeting] = useState(false);
 
   const _queryClient = useQueryClient();
+
+  // Reset form with initials if provided
+  useEffect(() => {
+    if (open) {
+      if (initialEntityType) setEntityType(initialEntityType);
+      if (initialEntityId) setEntityId(initialEntityId);
+    }
+  }, [open, initialEntityType, initialEntityId]);
 
   const resetForm = () => {
     setMeetingType('scheduled');
@@ -471,8 +571,8 @@ function CreateMeetingDialog({
     setMeetingUrl('');
     setLocation('');
     setSelectedAccountId('');
-    setEntityType('lead');
-    setEntityId('');
+    setEntityType(initialEntityType || 'lead');
+    setEntityId(initialEntityId || '');
     setExternalEmails([]);
     setNewEmail('');
     setReminders([30]);
@@ -486,7 +586,9 @@ function CreateMeetingDialog({
   // Helper to compute end time from start time + duration (in minutes)
   const getEndTime = (): string => {
     if (!scheduledStart) return '';
-    const start = new Date(scheduledStart);
+    const utcStart = convertLocalTimeToUTC(scheduledStart, timezone);
+    if (!utcStart) return '';
+    const start = new Date(utcStart);
     start.setMinutes(start.getMinutes() + duration);
     return start.toISOString();
   };
@@ -506,6 +608,16 @@ function CreateMeetingDialog({
 
   const createMutation = useMutation({
     mutationFn: async () => {
+      const utcScheduledStart = scheduledStart
+        ? convertLocalTimeToUTC(scheduledStart, timezone)
+        : '';
+      const utcActualStart = actualStart
+        ? convertLocalTimeToUTC(actualStart, timezone)
+        : '';
+      const utcActualEnd = actualEnd
+        ? convertLocalTimeToUTC(actualEnd, timezone)
+        : '';
+
       if (
         provider === 'GOOGLE' &&
         selectedAccountId &&
@@ -518,7 +630,7 @@ function CreateMeetingDialog({
             account_id: selectedAccountId,
             title,
             description: description || undefined,
-            start_time: new Date(scheduledStart).toISOString(),
+            start_time: utcScheduledStart,
             end_time: getEndTime(),
             timezone,
             attendees: externalEmails.map((email) => ({ email })),
@@ -530,7 +642,7 @@ function CreateMeetingDialog({
             provider,
             title,
             description: description || undefined,
-            scheduled_start: new Date(scheduledStart).toISOString(),
+            scheduled_start: utcScheduledStart,
             scheduled_end: getEndTime(),
             timezone,
             meeting_url: googleResult.meeting_url,
@@ -574,7 +686,7 @@ function CreateMeetingDialog({
             account_id: selectedAccountId,
             title,
             description: description || undefined,
-            start_time: new Date(scheduledStart).toISOString(),
+            start_time: utcScheduledStart,
             end_time: getEndTime(),
             timezone,
             attendees: externalEmails.map((email) => ({ email })),
@@ -585,7 +697,7 @@ function CreateMeetingDialog({
             provider,
             title,
             description: description || undefined,
-            scheduled_start: new Date(scheduledStart).toISOString(),
+            scheduled_start: utcScheduledStart,
             scheduled_end: getEndTime(),
             timezone,
             meeting_url: zoomResult.meeting_url,
@@ -621,20 +733,20 @@ function CreateMeetingDialog({
         title,
         description: description || undefined,
         scheduled_start:
-          meetingType === 'scheduled' && scheduledStart
-            ? new Date(scheduledStart).toISOString()
+          meetingType === 'scheduled' && utcScheduledStart
+            ? utcScheduledStart
             : undefined,
         scheduled_end:
-          meetingType === 'scheduled' && scheduledStart
+          meetingType === 'scheduled' && utcScheduledStart
             ? getEndTime()
             : undefined,
         actual_start:
-          meetingType === 'logged' && actualStart
-            ? new Date(actualStart).toISOString()
+          meetingType === 'logged' && utcActualStart
+            ? utcActualStart
             : undefined,
         actual_end:
-          meetingType === 'logged' && actualEnd
-            ? new Date(actualEnd).toISOString()
+          meetingType === 'logged' && utcActualEnd
+            ? utcActualEnd
             : undefined,
         timezone,
         meeting_url: meetingUrl || undefined,
@@ -649,9 +761,9 @@ function CreateMeetingDialog({
         reminders:
           meetingType === 'scheduled'
             ? reminders.map((offset) => ({
-                offset_minutes: offset,
-                channel: 'EMAIL' as const,
-              }))
+              offset_minutes: offset,
+              channel: 'EMAIL' as const,
+            }))
             : undefined,
       });
     },
@@ -684,11 +796,11 @@ function CreateMeetingDialog({
     createMutation.mutate();
   };
 
-  const googleAccounts = integrationAccounts.filter(
-    (acc) => acc.connection?.provider === 'GOOGLE',
+  const googleAccounts = resolvedIntegrationAccounts.filter(
+    (acc: any) => acc.connection?.provider === 'GOOGLE',
   );
-  const zoomAccounts = integrationAccounts.filter(
-    (acc) => acc.connection?.provider === 'ZOOM',
+  const zoomAccounts = resolvedIntegrationAccounts.filter(
+    (acc: any) => acc.connection?.provider === 'ZOOM',
   );
   const isBusy =
     createMutation.isPending ||
@@ -759,7 +871,7 @@ function CreateMeetingDialog({
                     <SelectValue placeholder="Select Google account" />
                   </SelectTrigger>
                   <SelectContent>
-                    {googleAccounts.map((acc) => (
+                    {googleAccounts.map((acc: any) => (
                       <SelectItem key={acc.id} value={acc.id}>
                         {acc.email || acc.display_name}
                       </SelectItem>
@@ -795,7 +907,7 @@ function CreateMeetingDialog({
                     <SelectValue placeholder="Select Zoom account" />
                   </SelectTrigger>
                   <SelectContent>
-                    {zoomAccounts.map((acc) => (
+                    {zoomAccounts.map((acc: any) => (
                       <SelectItem key={acc.id} value={acc.id}>
                         {acc.email || acc.display_name}
                       </SelectItem>
@@ -1026,32 +1138,34 @@ function CreateMeetingDialog({
           )}
 
           {/* Related Entity */}
-          {/* <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label className="font-medium">Related To</Label>
-              <Select value={entityType} onValueChange={setEntityType}>
-                <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="lead">Lead</SelectItem>
-                  <SelectItem value="contact">Contact</SelectItem>
-                  <SelectItem value="account">Account</SelectItem>
-                  <SelectItem value="opportunity">Opportunity</SelectItem>
-                </SelectContent>
-              </Select>
+          {!initialEntityId && (
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label className="font-medium">Related To</Label>
+                <Select value={entityType} onValueChange={setEntityType}>
+                  <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="lead">Lead</SelectItem>
+                    <SelectItem value="contact">Contact</SelectItem>
+                    <SelectItem value="account">Account</SelectItem>
+                    <SelectItem value="opportunity">Opportunity</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label className="font-medium">Entity</Label>
+                <Select value={entityId || undefined} onValueChange={setEntityId}>
+                  <SelectTrigger className="h-11"><SelectValue placeholder="Select entity" /></SelectTrigger>
+                  <SelectContent>
+                    {entityType === 'lead' && resolvedLeads.map((l: EntityRecord) => (<SelectItem key={l.id} value={l.id}>{[l.first_name, l.last_name].filter(Boolean).join(' ') || l.name || l.email || l.id}</SelectItem>))}
+                    {entityType === 'contact' && resolvedContacts.map((c: EntityRecord) => (<SelectItem key={c.id} value={c.id}>{[c.first_name, c.last_name].filter(Boolean).join(' ') || c.name || c.email || c.id}</SelectItem>))}
+                    {entityType === 'account' && resolvedAccounts.map((a: EntityRecord) => (<SelectItem key={a.id} value={a.id}>{a.account_name || a.name || a.id}</SelectItem>))}
+                    {entityType === 'opportunity' && resolvedOpportunities.map((o: EntityRecord) => (<SelectItem key={o.id} value={o.id}>{o.opportunity_name || o.title || o.id}</SelectItem>))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label className="font-medium">Entity</Label>
-              <Select value={entityId} onValueChange={setEntityId}>
-                <SelectTrigger className="h-11"><SelectValue placeholder="Select entity" /></SelectTrigger>
-                <SelectContent>
-                  {entityType === 'lead' && leads.map((l: EntityRecord) => (<SelectItem key={l.id} value={l.id}>{l.name || l.email}</SelectItem>))}
-                  {entityType === 'contact' && contacts.map((c: EntityRecord) => (<SelectItem key={c.id} value={c.id}>{c.name || c.email}</SelectItem>))}
-                  {entityType === 'account' && crmAccounts.map((a: EntityRecord) => (<SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>))}
-                  {entityType === 'opportunity' && opportunities.map((o: EntityRecord) => (<SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div> */}
+          )}
         </div>
 
         {/* Footer */}
@@ -1083,16 +1197,16 @@ function CreateMeetingDialog({
 // EDIT MEETING DIALOG
 // =============================================================================
 
-interface EditMeetingDialogProps {
+export interface EditMeetingDialogProps {
   meeting: CoreMeeting | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   workspaceId: string;
-  integrationAccounts: IntegrationAccountRow[];
+  integrationAccounts?: IntegrationAccountRow[];
   onSuccess: () => void;
 }
 
-function EditMeetingDialog({
+export function EditMeetingDialog({
   meeting,
   open,
   onOpenChange,
@@ -1101,6 +1215,15 @@ function EditMeetingDialog({
   onSuccess,
 }: EditMeetingDialogProps) {
   const queryClient = useQueryClient();
+
+  const { data: fetchedIntegrationAccounts = [] } = useQuery({
+    queryKey: ['integration-accounts', workspaceId],
+    queryFn: () => getIntegrationAccountsService(workspaceId),
+    enabled: !!workspaceId && !integrationAccounts && open,
+  });
+
+  const resolvedIntegrationAccounts = integrationAccounts || fetchedIntegrationAccounts;
+
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [scheduledStart, setScheduledStart] = useState('');
@@ -1116,9 +1239,11 @@ function EditMeetingDialog({
     if (meeting && open) {
       setTitle(meeting.title || '');
       setDescription(meeting.description || '');
+      const tz = meeting.timezone || 'UTC';
+      setTimezone(tz);
       setScheduledStart(
         meeting.scheduled_start
-          ? new Date(meeting.scheduled_start).toISOString().slice(0, 16)
+          ? convertUTCToLocalTime(meeting.scheduled_start, tz)
           : '',
       );
       // Calculate duration from start and end times
@@ -1130,7 +1255,6 @@ function EditMeetingDialog({
       } else {
         setDuration(30);
       }
-      setTimezone(meeting.timezone || 'UTC');
       setLocation(meeting.location || '');
       setStatus(meeting.status || 'scheduled');
       setSelectedAccountId(meeting.meeting_host_email_account_id || '');
@@ -1171,20 +1295,23 @@ function EditMeetingDialog({
   const updateMutation = useMutation({
     mutationFn: async () => {
       if (!meeting) throw new Error('No meeting');
+      const utcScheduledStart = scheduledStart
+        ? convertLocalTimeToUTC(scheduledStart, timezone)
+        : '';
+      const utcScheduledEnd = scheduledStart && utcScheduledStart
+        ? new Date(
+          new Date(utcScheduledStart).getTime() + duration * 60000,
+        ).toISOString()
+        : undefined;
+
       return updateMeetingService({
         id: meeting.id,
         workspace_id: workspaceId,
         title: title.trim(),
         description: description || undefined,
         status,
-        scheduled_start: scheduledStart
-          ? new Date(scheduledStart).toISOString()
-          : undefined,
-        scheduled_end: scheduledStart
-          ? new Date(
-              new Date(scheduledStart).getTime() + duration * 60000,
-            ).toISOString()
-          : undefined,
+        scheduled_start: utcScheduledStart || undefined,
+        scheduled_end: utcScheduledEnd,
         timezone,
         location: location || undefined,
         participants: externalEmails.map((email) => ({
@@ -1196,8 +1323,12 @@ function EditMeetingDialog({
         send_invites: true,
       });
     },
-    onSuccess: () => {
-      toast.success('Meeting updated');
+    onSuccess: (result) => {
+      if (result?.zoom_warning) {
+        toast.warning(result.message || 'Meeting updated locally, but Zoom sync failed. Please check your Zoom account.');
+      } else {
+        toast.success('Meeting updated');
+      }
       handleClose();
       queryClient.invalidateQueries({ queryKey: ['meetings', workspaceId] });
       onSuccess();
@@ -1209,11 +1340,11 @@ function EditMeetingDialog({
   });
 
   if (!meeting) return null;
-  const googleAccounts = integrationAccounts.filter(
-    (acc) => acc.connection?.provider === 'GOOGLE',
+  const googleAccounts = resolvedIntegrationAccounts.filter(
+    (acc: any) => acc.connection?.provider === 'GOOGLE',
   );
-  const zoomAccounts = integrationAccounts.filter(
-    (acc) => acc.connection?.provider === 'ZOOM',
+  const zoomAccounts = resolvedIntegrationAccounts.filter(
+    (acc: any) => acc.connection?.provider === 'ZOOM',
   );
 
   return (
@@ -1267,10 +1398,10 @@ function EditMeetingDialog({
                     style={
                       status === s
                         ? {
-                            color: cfg.color,
-                            borderColor: `${cfg.color}60`,
-                            backgroundColor: `${cfg.color}10`,
-                          }
+                          color: cfg.color,
+                          borderColor: `${cfg.color}60`,
+                          backgroundColor: `${cfg.color}10`,
+                        }
                         : undefined
                     }
                   >
@@ -1352,7 +1483,7 @@ function EditMeetingDialog({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {googleAccounts.map((acc) => (
+                  {googleAccounts.map((acc: any) => (
                     <SelectItem key={acc.id} value={acc.id}>
                       {acc.email || acc.display_name}
                     </SelectItem>
@@ -1375,7 +1506,7 @@ function EditMeetingDialog({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {zoomAccounts.map((acc) => (
+                  {zoomAccounts.map((acc: any) => (
                     <SelectItem key={acc.id} value={acc.id}>
                       {acc.email || acc.display_name}
                     </SelectItem>
@@ -1452,7 +1583,7 @@ function EditMeetingDialog({
 // MEETING DETAILS DIALOG
 // =============================================================================
 
-interface MeetingDetailsDialogProps {
+export interface MeetingDetailsDialogProps {
   meeting: CoreMeeting | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -1461,7 +1592,7 @@ interface MeetingDetailsDialogProps {
   onDelete: (id: string) => void;
 }
 
-function MeetingDetailsDialog({
+export function MeetingDetailsDialog({
   meeting,
   open,
   onOpenChange,
@@ -1471,6 +1602,23 @@ function MeetingDetailsDialog({
 }: MeetingDetailsDialogProps) {
   const [newNote, setNewNote] = useState('');
   const queryClient = useQueryClient();
+  const supabase = useSupabase();
+
+  const { data: preferences } = useQuery({
+    queryKey: ['workspace-preferences', workspaceId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .schema('core')
+        .from('workspace_preferences')
+        .select('timezone')
+        .eq('workspace_id', workspaceId)
+        .single();
+      return { timezone: data?.timezone || 'UTC' };
+    },
+    enabled: !!workspaceId && open,
+  });
+
+  const userTz = preferences?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
   const { data: notes = [] } = useQuery({
     queryKey: ['meeting-notes', meeting?.id],
     queryFn: () => {
@@ -1573,6 +1721,8 @@ function MeetingDetailsDialog({
                     meeting.meeting_type === 'logged'
                       ? meeting.actual_end
                       : meeting.scheduled_end,
+                    meeting.timezone,
+                    userTz,
                   )}
                 </p>
                 <p className="text-muted-foreground text-sm">
@@ -1706,6 +1856,24 @@ function MeetingDetailsDialog({
 export default function MeetingsPage() {
   const { currentWorkspace: workspace, user } = useRBAC();
   const queryClient = useQueryClient();
+  const supabase = useSupabase();
+
+  const { data: preferences } = useQuery({
+    queryKey: ['workspace-preferences', workspace?.id],
+    queryFn: async () => {
+      if (!workspace?.id) return { timezone: 'UTC' };
+      const { data } = await supabase
+        .schema('core')
+        .from('workspace_preferences')
+        .select('timezone')
+        .eq('workspace_id', workspace.id)
+        .single();
+      return { timezone: data?.timezone || 'UTC' };
+    },
+    enabled: !!workspace?.id,
+  });
+
+  const userTz = preferences?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
@@ -1776,13 +1944,15 @@ export default function MeetingsPage() {
   const [isEditOpen, setIsEditOpen] = useState(false);
 
   // Fetch team members (for Created By filter dropdown)
+  const productKey = workspace?.currentProductKey;
   const { data: membersData } = useQuery({
-    queryKey: ['team-members', workspace?.id],
+    queryKey: ['team-members', workspace?.id, productKey],
     queryFn: async () => {
       if (!workspace?.id) return [];
-      const response = await fetch(
-        `/api/team-members?workspaceId=${workspace.id}`,
-      );
+      const url = productKey
+        ? `/api/team-members?workspaceId=${workspace.id}&productKey=${productKey}`
+        : `/api/team-members?workspaceId=${workspace.id}`;
+      const response = await fetch(url);
       if (!response.ok) throw new Error('Failed to fetch members');
       const data = await response.json();
       return data.data || [];
@@ -1932,11 +2102,11 @@ export default function MeetingsPage() {
     if (selectedTimeframe.length > 0) {
       const now = new Date();
       result = result.filter((meeting: CoreMeeting) => {
-        const start = meeting.scheduled_start || meeting.start_time || meeting.actual_start;
+        const start = meeting.scheduled_start || (meeting as any).start_time || meeting.actual_start;
         if (!start) return selectedTimeframe.includes('upcoming');
         const meetingDate = new Date(start);
         const isUpcoming = meetingDate >= now && meeting.status !== 'completed' && meeting.status !== 'cancelled';
-        
+
         if (selectedTimeframe.includes('upcoming') && selectedTimeframe.includes('past')) {
           return true;
         }
@@ -2071,20 +2241,25 @@ export default function MeetingsPage() {
                   ? 'All members'
                   : selectedCreatedByIds.length === 1
                     ? ((
-                        members.find(
-                          (m: any) => m.user_id === selectedCreatedByIds[0],
-                        ) as any
-                      )?.user?.user_metadata?.full_name ?? '1 selected')
+                      members.find(
+                        (m: any) => m.user_id === selectedCreatedByIds[0],
+                      ) as any
+                    )?.user?.user_metadata?.full_name ?? '1 selected')
                     : `${selectedCreatedByIds.length} selected`,
               options: members
                 .filter((m: any) => m.user_id)
-                .map((m: any) => ({
-                  value: m.user_id,
-                  label:
-                    m.user?.user_metadata?.full_name ||
-                    m.user?.email ||
-                    m.user_id,
-                })),
+                .reduce((acc: any[], m: any) => {
+                  if (!acc.some((x) => x.value === m.user_id)) {
+                    acc.push({
+                      value: m.user_id,
+                      label:
+                        m.user?.user_metadata?.full_name ||
+                        m.user?.email ||
+                        m.user_id,
+                    });
+                  }
+                  return acc;
+                }, []),
               onSelectValues: setSelectedCreatedByIds,
             },
             {
@@ -2300,23 +2475,11 @@ export default function MeetingsPage() {
               </TableHeader>
               <TableBody>
                 {isLoading ? (
-                  <MeetingsPageSkeleton
-                    colSpan={
-                      visibility
-                        ? Object.values(visibility).filter((v) => v !== false)
-                            .length + 1
-                        : 7
-                    }
-                  />
+                  <MeetingsPageSkeleton colSpan={7} />
                 ) : paginatedMeetings.length === 0 ? (
                   <TableRow>
                     <TableCell
-                      colSpan={
-                        visibility
-                          ? Object.values(visibility).filter((v) => v !== false)
-                              .length + 1
-                          : 7
-                      }
+                      colSpan={7}
                       className="h-32 text-center"
                     >
                       <p className="text-muted-foreground">
@@ -2389,6 +2552,8 @@ export default function MeetingsPage() {
                                   meeting.meeting_type === 'logged'
                                     ? meeting.actual_end
                                     : meeting.scheduled_end,
+                                  meeting.timezone,
+                                  userTz,
                                 )}
                               </div>
                             </TableCell>

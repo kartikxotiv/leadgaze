@@ -147,6 +147,23 @@ export const updateWorkspacePreferences = catchAsync(
       );
     }
 
+    if (default_currency !== undefined) {
+      // Unset other defaults in workspace_currencies
+      await supabase
+        .schema('core')
+        .from('workspace_currencies')
+        .update({ is_default: false })
+        .eq('workspace_id', workspace_id);
+
+      // Set the new default
+      await supabase
+        .schema('core')
+        .from('workspace_currencies')
+        .update({ is_default: true })
+        .eq('workspace_id', workspace_id)
+        .eq('currency_code', default_currency.toUpperCase());
+    }
+
     return successDataResponse(data, null);
   },
 );

@@ -19,6 +19,8 @@ import { IntegrationError, IntegrationErrorCode } from '@kit/integration-core';
 export const ZOOM_SCOPES = [
   'meeting:read:meeting',
   'meeting:write:meeting',
+  'meeting:update:meeting',
+  'meeting:delete:meeting',
   'user:read:user',
   'user:read:email',
 ];
