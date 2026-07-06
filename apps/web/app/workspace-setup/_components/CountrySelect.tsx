@@ -29,6 +29,12 @@ interface CountrySelectProps {
 export function CountrySelect({ value, onValueChange, disabled }: CountrySelectProps) {
   const [open, setOpen] = React.useState(false);
 
+  const selectedCountry = COUNTRIES.find(
+    (country) =>
+      country.name.toLowerCase() === value?.toLowerCase() ||
+      country.code.toLowerCase() === value?.toLowerCase()
+  );
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -39,9 +45,7 @@ export function CountrySelect({ value, onValueChange, disabled }: CountrySelectP
           className="w-full justify-between"
           disabled={disabled}
         >
-          {value
-            ? COUNTRIES.find((country) => country.name === value)?.name
-            : 'Select country...'}
+          {selectedCountry ? selectedCountry.name : 'Select country...'}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
@@ -55,15 +59,15 @@ export function CountrySelect({ value, onValueChange, disabled }: CountrySelectP
                 <CommandItem
                   key={country.code}
                   value={country.name}
-                  onSelect={(currentValue) => {
-                    onValueChange(currentValue === value ? '' : country.name);
+                  onSelect={() => {
+                    onValueChange(selectedCountry?.code === country.code ? '' : country.name);
                     setOpen(false);
                   }}
                 >
                   <Check
                     className={cn(
                       'mr-2 h-4 w-4',
-                      value === country.name ? 'opacity-100' : 'opacity-0'
+                      selectedCountry?.code === country.code ? 'opacity-100' : 'opacity-0'
                     )}
                   />
                   {country.name}

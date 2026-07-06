@@ -23,7 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@kit/ui/select';
-import { Checkbox } from '@kit/ui/checkbox';
+import { Badge } from '@kit/ui/badge';
 import { toast } from 'sonner';
 import { X } from 'lucide-react';
 
@@ -73,6 +73,22 @@ const COMMON_CURRENCIES = [
 
 // Timezone list - common IANA timezones
 const COMMON_TIMEZONES = (() => {
+  return [
+    'UTC',
+    'America/New_York',
+    'America/Chicago',
+    'America/Denver',
+    'America/Los_Angeles',
+    'Europe/London',
+    'Europe/Paris',
+    'Europe/Berlin',
+    'Asia/Kolkata',
+    'Asia/Dubai',
+    'Asia/Singapore',
+    'Asia/Tokyo',
+    'Australia/Sydney',
+    'Pacific/Auckland',
+  ];
   try {
     return Intl.supportedValuesOf('timeZone');
   } catch {
@@ -251,47 +267,6 @@ export function WorkspaceLocalizationSettings({
     deleteCurrencyMutation.mutate(currencyId);
   };
 
-  const handleSetDefaultCurrency = (currencyId: string, currencyCode: string) => {
-    // First, update the default currency preference
-    updateMutation.mutate({
-      workspace_id: workspaceId,
-      default_currency: currencyCode,
-    });
-    
-    // Also update the currency's is_default field in workspace_currencies
-    updateWorkspaceCurrencyMutation.mutate({
-      currencyId,
-      payload: { is_default: true },
-    });
-  };
-
-  // Update currency mutation
-  const updateWorkspaceCurrencyMutation = useMutation({
-    mutationFn: ({
-      currencyId,
-      payload,
-    }: {
-      currencyId: string;
-      payload: { is_default: boolean };
-    }) => updateWorkspaceCurrencyService(currencyId, payload),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ['workspace-currencies', workspaceId],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ['workspace-preferences', workspaceId],
-      });
-      toast.success('Default currency updated', {
-        description: 'The default currency has been changed.',
-      });
-    },
-    onError: (error: any) => {
-      toast.error('Failed to update default currency', {
-        description: error?.message || 'Something went wrong.',
-      });
-    },
-  });
-
   const handleSave = () => {
     updateMutation.mutate({
       workspace_id: workspaceId,
@@ -421,101 +396,42 @@ export function WorkspaceLocalizationSettings({
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4 p-4 pt-0">
-          {/* Default Currency */}
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium">Default Currency</label>
-            <Select
-              value={form.defaultCurrency}
-              onValueChange={(v) => handleChange('defaultCurrency', v)}
-            >
-              <SelectTrigger className="w-full max-w-sm">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {addedCurrencies && addedCurrencies.length > 0 ? (
-                  addedCurrencies.map((cur) => (
-                    <SelectItem key={cur.currency_code} value={cur.currency_code}>
-                      {cur.symbol} {cur.label}
+          <div className="grid gap-4 sm:grid-cols-2">
+            {/* Default Currency */}
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Default Currency</label>
+              <Select
+                value={form.defaultCurrency}
+                onValueChange={(v) => handleChange('defaultCurrency', v)}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {addedCurrencies && addedCurrencies.length > 0 ? (
+                    addedCurrencies.map((cur) => (
+                      <SelectItem key={cur.currency_code} value={cur.currency_code}>
+                        {cur.symbol} {cur.label}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="placeholder" disabled>
+                      No currencies added yet
                     </SelectItem>
-                  ))
-                ) : (
-                  <SelectItem value="placeholder" disabled>
-                    No currencies added yet
-                  </SelectItem>
-                )}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Enabled Currencies */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Enabled Currencies</label>
-            <div className="space-y-2">
-              {isCurrenciesLoading ? (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Loading currencies...
-                </div>
-              ) : currenciesData && currenciesData.length > 0 ? (
-                currenciesData.map((currency) => {
-                  const currencyInfo = COMMON_CURRENCIES.find(
-                    (c) => c.code === currency.currency_code,
-                  );
-                  return (
-                    <div
-                      key={currency.id}
-                      className="flex items-center justify-between rounded-md border p-3"
-                    >
-                      <div className="flex items-center gap-3">
-                        <Checkbox
-                          checked={currency.is_default}
-                          onCheckedChange={() =>
-                            handleSetDefaultCurrency(
-                              currency.id,
-                              currency.currency_code,
-                            )
-                          }
-                          disabled={currency.is_default}
-                        />
-                        <div className="flex flex-col">
-                          <span className="font-medium">
-                            {currency.currency_code}
-                          </span>
-                          <span className="text-xs text-muted-foreground">
-                            {currencyInfo?.label ||
-                              currency.currency_code}
-                          </span>
-                        </div>
-                      </div>
-                      {!currency.is_default && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleRemoveCurrency(currency.id)}
-                          disabled={deleteCurrencyMutation.isPending}
-                          className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="text-muted-foreground text-sm">
-                  No currencies added yet. Add one below.
-                </div>
-              )}
+                  )}
+                </SelectContent>
+              </Select>
             </div>
 
-            {/* Add Currency Dropdown */}
-            <div className="space-y-2">
+            {/* Add Currency */}
+            <div className="space-y-1.5">
               <label className="text-sm font-medium">Add Currency</label>
               <Select
                 onValueChange={(v) => handleAddCurrency(v)}
                 disabled={addCurrencyMutation.isPending}
+                value=""
               >
-                <SelectTrigger className="w-full max-w-sm">
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select a currency to add" />
                 </SelectTrigger>
                 <SelectContent>
@@ -537,6 +453,56 @@ export function WorkspaceLocalizationSettings({
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          {/* Enabled Currencies List */}
+          <div className="space-y-2 pt-2">
+            <label className="text-sm font-medium">Enabled Currencies</label>
+            {isCurrenciesLoading ? (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Loading currencies...
+              </div>
+            ) : currenciesData && currenciesData.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {currenciesData.map((currency) => {
+                  const currencyInfo = COMMON_CURRENCIES.find(
+                    (c) => c.code === currency.currency_code,
+                  );
+                  const isDefault = currency.currency_code === form.defaultCurrency;
+                  return (
+                    <Badge
+                      key={currency.id}
+                      variant={isDefault ? 'default' : 'secondary'}
+                      className="flex items-center gap-1.5 py-1.5 px-3 text-sm font-normal animate-in fade-in-50 duration-200"
+                    >
+                      <span className="font-semibold">{currency.currency_code}</span>
+                      <span className="text-muted-foreground/80 text-xs">
+                        ({currencyInfo?.symbol || currency.currency_code})
+                      </span>
+                      {isDefault ? (
+                        <span className="bg-primary-foreground text-primary ml-1 rounded-full px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider">
+                          Default
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveCurrency(currency.id)}
+                          disabled={deleteCurrencyMutation.isPending}
+                          className="hover:bg-muted ml-1 rounded-full p-0.5 transition-colors focus:outline-none"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+                    </Badge>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-muted-foreground text-sm">
+                No currencies enabled yet. Select one above to enable.
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
