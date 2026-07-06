@@ -566,7 +566,7 @@ export const updateMeetingController = catchAsync(async ({ request }) => {
     const { data: existingMeeting } = await (supabase as any)
       .schema('core')
       .from('meetings')
-      .select('provider_event_id, meeting_host_email_account_id, provider')
+      .select('provider_event_id, meeting_host_email_account_id, provider, scheduled_start, scheduled_end')
       .eq('workspace_id', workspaceId)
       .eq('id', body.id)
       .eq('is_deleted', false)
@@ -732,44 +732,62 @@ export const updateMeetingController = catchAsync(async ({ request }) => {
           if (body.title !== undefined) updatePayload.topic = body.title;
           if (body.description !== undefined)
             updatePayload.agenda = body.description;
-          if (body.timezone !== undefined)
-            updatePayload.timezone = body.timezone;
 
-          if (body.scheduled_start || body.scheduledStart) {
-            const startTime = new Date(
-              body.scheduled_start ?? body.scheduledStart,
-            );
+          // Resolve start/end times: prefer body values, fall back to existing DB values
+          const resolvedStart = body.scheduled_start ?? body.scheduledStart ?? existingMeeting.scheduled_start;
+          const resolvedEnd = body.scheduled_end ?? body.scheduledEnd ?? existingMeeting.scheduled_end;
+          const resolvedTimezone = body.timezone ?? 'UTC';
+
+          if (resolvedStart) {
+            const startTime = new Date(resolvedStart);
             updatePayload.start_time = startTime
               .toISOString()
               .replace(/\.\d{3}Z$/, 'Z');
+            updatePayload.timezone = resolvedTimezone;
 
-            if (body.scheduled_end || body.scheduledEnd) {
-              const endTime = new Date(body.scheduled_end ?? body.scheduledEnd);
+            if (resolvedEnd) {
+              const endTime = new Date(resolvedEnd);
               const durationMinutes = Math.ceil(
                 (endTime.getTime() - startTime.getTime()) / (1000 * 60),
               );
-              updatePayload.duration = durationMinutes;
+              if (durationMinutes > 0) updatePayload.duration = durationMinutes;
+            }
+          } else if (body.timezone !== undefined) {
+            // Timezone-only update: Zoom requires start_time to be resent alongside timezone
+            updatePayload.timezone = resolvedTimezone;
+          }
+
+          let zoomWarning: string | undefined;
+          if (Object.keys(updatePayload).length > 0) {
+            console.log('[Zoom Update] Sending update to Zoom:', updatePayload);
+            try {
+              await axios.patch(
+                `https://api.zoom.us/v2/meetings/${existingMeeting.provider_event_id}`,
+                updatePayload,
+                {
+                  headers: {
+                    Authorization: `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json',
+                  },
+                },
+              );
+              console.log('[Zoom Update] Successfully updated meeting in Zoom');
+            } catch (zoomApiError: any) {
+              const errMsg = zoomApiError?.response?.data?.message || zoomApiError?.message || 'Unknown Zoom error';
+              console.error('[Zoom Update] Failed to update Zoom meeting:', errMsg);
+              zoomWarning = `Meeting updated locally, but Zoom sync failed: ${errMsg}`;
             }
           }
 
-          if (Object.keys(updatePayload).length > 0) {
-            console.log('[Zoom Update] Sending update to Zoom:', updatePayload);
-            await axios.patch(
-              `https://api.zoom.us/v2/meetings/${existingMeeting.provider_event_id}`,
-              updatePayload,
-              {
-                headers: {
-                  Authorization: `Bearer ${accessToken}`,
-                  'Content-Type': 'application/json',
-                },
-              },
-            );
-            console.log('[Zoom Update] Successfully updated meeting in Zoom');
+          // Store warning to pass along in the success response
+          if (zoomWarning) {
+            // Will be attached to the response below after local DB update
+            (body as any).__zoomWarning = zoomWarning;
           }
         }
       } catch (zoomError) {
         console.error(
-          '[Zoom Update] Failed to update Zoom meeting:',
+          '[Zoom Update] Unexpected error during Zoom update:',
           zoomError,
         );
       }
@@ -869,6 +887,16 @@ export const updateMeetingController = catchAsync(async ({ request }) => {
           .from('meeting_participants')
           .insert(participantRows);
       }
+    }
+
+    const zoomWarning = (body as any).__zoomWarning;
+    if (zoomWarning) {
+      return NextResponse.json({
+        success: true,
+        message: zoomWarning,
+        data: meeting,
+        zoom_warning: true,
+      });
     }
 
     return successDataResponse('Meeting updated successfully', meeting);

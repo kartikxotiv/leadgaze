@@ -133,7 +133,7 @@ export const updateWorkspaceCurrency = catchAsync(
       const { data: currency } = await supabase
       .schema('core')
         .from('workspace_currencies')
-        .select('workspace_id')
+        .select('workspace_id, currency_code')
         .eq('id', currencyId)
         .single();
 
@@ -144,6 +144,18 @@ export const updateWorkspaceCurrency = catchAsync(
           .update({ is_default: false })
           .eq('workspace_id', currency.workspace_id)
           .neq('id', currencyId);
+
+        // Also update workspace_preferences
+        await supabase
+          .schema('core')
+          .from('workspace_preferences')
+          .upsert(
+            {
+              workspace_id: currency.workspace_id,
+              default_currency: currency.currency_code,
+            },
+            { onConflict: 'workspace_id' },
+          );
       }
     }
 
