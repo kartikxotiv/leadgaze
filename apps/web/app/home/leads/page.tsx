@@ -738,7 +738,7 @@ export default function LeadsPage() {
           >
             <Table>
               <TableHeader>
-                <TableRow className="group">
+                <TableRow>
                   {/* System columns */}
                   {SYSTEM_FIELDS.map((field) => {
                     if (!showColumn(field.id)) return null;
@@ -809,16 +809,15 @@ export default function LeadsPage() {
                   })}
 
                   {/* Add Column — last header column (replaces Actions header) */}
-                    <TableHead className="sticky-right-header bg-background z-10 w-12 px-1">
+                    <TableHead className="sticky-right-header bg-background z-10 w-12 px-1 text-center">
                       <Button
                         variant="outline"
-                        size="sm"
-                        className="flex h-8 w-full items-center justify-center gap-1 border-dashed text-xs font-medium"
+                        size="icon"
+                        className="h-8 w-8 mx-auto flex items-center justify-center border-dashed"
                         onClick={() => setAddColumnModalOpen(true)}
                         title="Add Column"
                       >
                         <Plus className="h-4 w-4" />
-                        <span className="hidden sm:inline">Add</span>
                       </Button>
                     </TableHead>
                 </TableRow>
