@@ -118,6 +118,10 @@ export function createCoreControllers(config: CoreResourceConfig) {
   const get = catchAsync(async ({ request }) => {
     const url = new URL(request.url);
     const { workspaceId, entityType, entityId, id, threadId } = entityFilters(url);
+    const createdAtFrom = url.searchParams.get('createdAtFrom');
+    const createdAtTo = url.searchParams.get('createdAtTo');
+    const updatedAtFrom = url.searchParams.get('updatedAtFrom');
+    const updatedAtTo = url.searchParams.get('updatedAtTo');
 
     if (!workspaceId) {
       return NextResponse.json({ success: false, message: 'workspaceId query parameter is required' }, { status: 400 });
@@ -145,6 +149,11 @@ export function createCoreControllers(config: CoreResourceConfig) {
       if (!config.relation && entityId) query = query.eq('entity_id', entityId);
       if (filteredIds) query = query.in('id', filteredIds);
       if (threadId && config.table === 'emails') query = query.eq('thread_id', threadId);
+
+      if (createdAtFrom) query = query.gte('created_at', `${createdAtFrom}T00:00:00.000Z`);
+      if (createdAtTo) query = query.lte('created_at', `${createdAtTo}T23:59:59.999Z`);
+      if (updatedAtFrom) query = query.gte('updated_at', `${updatedAtFrom}T00:00:00.000Z`);
+      if (updatedAtTo) query = query.lte('updated_at', `${updatedAtTo}T23:59:59.999Z`);
       if (!id) {
         const order = config.defaultOrder ?? { column: 'created_at', ascending: false };
         query = query.order(order.column, { ascending: order.ascending });

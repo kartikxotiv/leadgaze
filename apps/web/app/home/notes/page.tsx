@@ -8,16 +8,16 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Briefcase,
   Building2,
+  Check,
   Edit,
   Loader2,
   MoreHorizontal,
   MoreVertical,
   Plus,
+  RotateCcw,
   Trash2,
   User,
   Users,
-  Check,
-  RotateCcw,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -135,7 +135,9 @@ export default function NotesPage() {
   const { currentWorkspace: workspace } = useRBAC();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'active' | 'closed'>('active');
+  const [statusFilter, setStatusFilter] = useState<'active' | 'closed'>(
+    'active',
+  );
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(15);
@@ -194,10 +196,27 @@ export default function NotesPage() {
   const { getHeaderProps, getResizeHandleProps } = useColumnResize('notes');
 
   const { data: notes = [], isLoading } = useQuery({
-    queryKey: ['notes', workspace?.id, statusFilter],
+    queryKey: [
+      'notes',
+      workspace?.id,
+      statusFilter,
+      computedCreatedOnDates,
+      computedUpdatedOnDates,
+    ],
     queryFn: async () => {
       if (!workspace?.id) return [];
-      const res = await getNotesService(workspace.id, undefined, undefined, statusFilter);
+      const res = await getNotesService(
+        workspace.id,
+        undefined,
+        undefined,
+        statusFilter,
+        {
+          createdAtFrom: computedCreatedOnDates?.from,
+          createdAtTo: computedCreatedOnDates?.to,
+          updatedAtFrom: computedUpdatedOnDates?.from,
+          updatedAtTo: computedUpdatedOnDates?.to,
+        },
+      );
       return res;
     },
     enabled: !!workspace?.id,
@@ -267,8 +286,15 @@ export default function NotesPage() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, content, is_closed }: { id: string; content?: string; is_closed?: boolean }) =>
-      updateNoteService(id, { content, is_closed }),
+    mutationFn: ({
+      id,
+      content,
+      is_closed,
+    }: {
+      id: string;
+      content?: string;
+      is_closed?: boolean;
+    }) => updateNoteService(id, { content, is_closed }),
     onSuccess: (data, variables) => {
       if (variables.is_closed !== undefined) {
         toast.success(variables.is_closed ? 'Note closed' : 'Note reopened');
@@ -769,7 +795,9 @@ export default function NotesPage() {
                       )}
                       {isVisible('content') && (
                         <TableCell className="primary-text-medium">
-                          <p className={`line-clamp-2 max-w-[400px] text-sm whitespace-pre-wrap ${note.is_closed ? 'text-muted-foreground line-through' : ''}`}>
+                          <p
+                            className={`line-clamp-2 max-w-[400px] text-sm whitespace-pre-wrap ${note.is_closed ? 'text-muted-foreground line-through' : ''}`}
+                          >
                             {note.content}
                           </p>
                         </TableCell>
@@ -820,14 +848,24 @@ export default function NotesPage() {
                             {note.is_closed ? (
                               <DropdownMenuItem
                                 className="gap-2"
-                                onClick={() => updateMutation.mutate({ id: note.id, is_closed: false })}
+                                onClick={() =>
+                                  updateMutation.mutate({
+                                    id: note.id,
+                                    is_closed: false,
+                                  })
+                                }
                               >
                                 <RotateCcw className="h-4 w-4" /> Reopen Note
                               </DropdownMenuItem>
                             ) : (
                               <DropdownMenuItem
                                 className="gap-2"
-                                onClick={() => updateMutation.mutate({ id: note.id, is_closed: true })}
+                                onClick={() =>
+                                  updateMutation.mutate({
+                                    id: note.id,
+                                    is_closed: true,
+                                  })
+                                }
                               >
                                 <Check className="h-4 w-4" /> Close Note
                               </DropdownMenuItem>

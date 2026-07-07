@@ -66,11 +66,31 @@ const getAccountsService = asyncHandlerClient(
     searchTerm?: string;
     sortColumn?: string;
     sortDirection?: 'asc' | 'desc' | null;
+    createdAtFrom?: string;
+    createdAtTo?: string;
+    updatedAtFrom?: string;
+    updatedAtTo?: string;
   }) => {
-    const { workspaceId, page = 1, limit = 20, searchTerm = '', sortColumn = '', sortDirection = '' } = params;
-    const response = await ApiClient.get(
-      `/accounts?workspaceId=${workspaceId}&page=${page}&limit=${limit}&searchTerm=${searchTerm}&sortColumn=${sortColumn}&sortDirection=${sortDirection || ''}`,
-    );
+    const { 
+      workspaceId, 
+      page = 1, 
+      limit = 20, 
+      searchTerm = '', 
+      sortColumn = '', 
+      sortDirection = '',
+      createdAtFrom = '',
+      createdAtTo = '',
+      updatedAtFrom = '',
+      updatedAtTo = '',
+    } = params;
+    let url = `/accounts?workspaceId=${workspaceId}&page=${page}&limit=${limit}&searchTerm=${searchTerm}&sortColumn=${sortColumn}&sortDirection=${sortDirection || ''}`;
+    
+    if (createdAtFrom) url += `&createdAtFrom=${createdAtFrom}`;
+    if (createdAtTo) url += `&createdAtTo=${createdAtTo}`;
+    if (updatedAtFrom) url += `&updatedAtFrom=${updatedAtFrom}`;
+    if (updatedAtTo) url += `&updatedAtTo=${updatedAtTo}`;
+    
+    const response = await ApiClient.get(url);
     return {
       data: (response.data?.data || []) as Account[],
       count: (response.data?.count || 0) as number,

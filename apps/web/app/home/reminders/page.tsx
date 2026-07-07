@@ -208,16 +208,28 @@ export default function RemindersPage() {
   const { getHeaderProps, getResizeHandleProps } = useColumnResize('reminders');
 
   const { data: reminders = [], isLoading } = useQuery({
-    queryKey: ['reminders', workspace?.id, statusFilter],
+    queryKey: [
+      'reminders',
+      workspace?.id,
+      statusFilter,
+      computedCreatedOnDates,
+      computedUpdatedOnDates,
+    ],
     queryFn: () => {
       if (!workspace?.id) return [];
-      // Map filter value to API status param
-      // 'pending' → 'active' (not completed), 'completed' → 'completed', 'all' → both (no filter)
       const apiStatus =
-        statusFilter === 'completed' ? 'completed' :
-        statusFilter === 'pending' ? 'active' :
-        undefined;
-      return getRemindersService(workspace.id, undefined, undefined, apiStatus);
+        statusFilter === 'completed'
+          ? 'completed'
+          : statusFilter === 'pending'
+            ? 'active'
+            : undefined;
+      return getRemindersService(workspace.id, undefined, undefined, {
+        status: apiStatus,
+        createdAtFrom: computedCreatedOnDates?.from,
+        createdAtTo: computedCreatedOnDates?.to,
+        updatedAtFrom: computedUpdatedOnDates?.from,
+        updatedAtTo: computedUpdatedOnDates?.to,
+      });
     },
     enabled: !!workspace?.id,
   });

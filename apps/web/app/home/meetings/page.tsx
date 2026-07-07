@@ -1962,7 +1962,13 @@ export default function MeetingsPage() {
   const members = (membersData || []) as any[];
 
   const { data: meetings = [], isLoading } = useQuery({
-    queryKey: ['meetings', workspace?.id, viewFilter],
+    queryKey: [
+      'meetings',
+      workspace?.id,
+      viewFilter,
+      computedCreatedOnDates,
+      computedUpdatedOnDates,
+    ],
     queryFn: () => {
       if (!workspace?.id) return [];
       // Include meetings where current user is a participant or host
@@ -1974,6 +1980,12 @@ export default function MeetingsPage() {
         true,
         undefined,
         viewFilter,
+        {
+          createdAtFrom: computedCreatedOnDates?.from ?? undefined,
+          createdAtTo: computedCreatedOnDates?.to ?? undefined,
+          updatedAtFrom: computedUpdatedOnDates?.from ?? undefined,
+          updatedAtTo: computedUpdatedOnDates?.to ?? undefined,
+        },
       );
     },
     enabled: !!workspace?.id,
@@ -2241,13 +2253,13 @@ export default function MeetingsPage() {
                   ? 'All members'
                   : selectedCreatedByIds.length === 1
                     ? ((
-                      members.find(
-                        (m: any) => m.user_id === selectedCreatedByIds[0],
+                      (Array.isArray(members) ? members : []).find(
+                        (m: any) => m?.user_id === selectedCreatedByIds[0],
                       ) as any
                     )?.user?.user_metadata?.full_name ?? '1 selected')
                     : `${selectedCreatedByIds.length} selected`,
-              options: members
-                .filter((m: any) => m.user_id)
+              options: (Array.isArray(members) ? members : [])
+                .filter((m: any) => m?.user_id)
                 .reduce((acc: any[], m: any) => {
                   if (!acc.some((x) => x.value === m.user_id)) {
                     acc.push({

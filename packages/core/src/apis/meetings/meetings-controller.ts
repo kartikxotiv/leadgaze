@@ -30,6 +30,10 @@ export const getMeetingsController = catchAsync(async ({ request }) => {
   );
   const participantUserId = url.searchParams.get('participantUserId');
   const view = url.searchParams.get('view') || 'my';
+  const createdAtFrom = url.searchParams.get('createdAtFrom');
+  const createdAtTo = url.searchParams.get('createdAtTo');
+  const updatedAtFrom = url.searchParams.get('updatedAtFrom');
+  const updatedAtTo = url.searchParams.get('updatedAtTo');
 
   if (!workspaceId) {
     return NextResponse.json(
@@ -202,6 +206,11 @@ export const getMeetingsController = catchAsync(async ({ request }) => {
     if (provider) query = query.eq('provider', provider);
     if (status) query = query.eq('status', status);
     if (hostUserId) query = query.eq('host_user_id', hostUserId);
+
+    if (createdAtFrom) query = query.gte('created_at', `${createdAtFrom}T00:00:00.000Z`);
+    if (createdAtTo) query = query.lte('created_at', `${createdAtTo}T23:59:59.999Z`);
+    if (updatedAtFrom) query = query.gte('updated_at', `${updatedAtFrom}T00:00:00.000Z`);
+    if (updatedAtTo) query = query.lte('updated_at', `${updatedAtTo}T23:59:59.999Z`);
 
     if (!id) {
       query = query.order('scheduled_start', {
