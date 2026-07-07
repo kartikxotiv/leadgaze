@@ -16,6 +16,7 @@ interface ReminderEmailData {
   dueDate: string;
   entityType: string;
   entityId: string;
+  workspaceId?: string;
 }
 
 interface MeetingEmailData {
@@ -27,6 +28,8 @@ interface MeetingEmailData {
   location?: string;
   meetingLink?: string;
   intervalLabel: string;
+  workspaceId?: string;
+  recipientTz?: string;
 }
 
 export class NotificationService {
@@ -34,6 +37,33 @@ export class NotificationService {
     process.env.NEXT_PUBLIC_PRODUCT_NAME || 'Leadgaze';
   private static readonly FROM_EMAIL =
     process.env.SMTP_FROM || process.env.SMTP_USER || 'noreply@leadgaze.com';
+
+  /**
+   * Helper to retrieve billing country by workspace ID
+   */
+  private static async getBillingCountry(workspaceId?: string): Promise<string> {
+    if (!workspaceId) return 'US';
+    try {
+      const supabase = getSupabaseServerClient();
+      const { data: workspace } = await supabase
+        .from('workspaces')
+        .select('company_id')
+        .eq('id', workspaceId)
+        .single();
+
+      if (workspace?.company_id) {
+        const { data: company } = await supabase
+          .from('companies')
+          .select('billing_country')
+          .eq('id', workspace.company_id)
+          .single();
+        return company?.billing_country || 'US';
+      }
+    } catch (e) {
+      console.error('[NotificationService] Error fetching billing country:', e);
+    }
+    return 'US';
+  }
 
   /**
    * Send a reminder notification email
@@ -45,6 +75,8 @@ export class NotificationService {
         title: data.reminderTitle,
       });
 
+      const billingCountry = await this.getBillingCountry(data.workspaceId);
+
       await transporter.sendMail({
         from: this.FROM_EMAIL,
         to: data.to,
@@ -54,6 +86,7 @@ export class NotificationService {
           reminderDescription: data.reminderDescription,
           dueDate: data.dueDate,
           productName: this.PRODUCT_NAME,
+          billingCountry,
         }),
       });
 
@@ -79,6 +112,8 @@ export class NotificationService {
         interval: data.intervalLabel,
       });
 
+      const billingCountry = await this.getBillingCountry(data.workspaceId);
+
       await transporter.sendMail({
         from: this.FROM_EMAIL,
         to: data.to,
@@ -92,6 +127,8 @@ export class NotificationService {
           meetingLink: data.meetingLink,
           intervalLabel: data.intervalLabel,
           productName: this.PRODUCT_NAME,
+          billingCountry,
+          recipientTz: data.recipientTz,
         }),
       });
 

@@ -43,6 +43,7 @@ import {
 } from '@kit/service-cloud';
 import { getServiceCloudResourceService } from '@kit/service-cloud';
 import { useUser } from '@kit/supabase/hooks/use-user';
+import { useSupabase } from '@kit/supabase/hooks/use-supabase';
 import {
   Dialog,
   DialogContent,
@@ -106,43 +107,43 @@ function scopeCommonItems<T extends { path?: string }>(
   return items
     .filter((item) => item.path !== pathsConfig.app.teams)
     .map((item) => {
-    if (item.path === pathsConfig.app.profileSettings) {
-      return {
-        ...item,
-        path: paths.profileSettings,
-      };
-    }
+      if (item.path === pathsConfig.app.profileSettings) {
+        return {
+          ...item,
+          path: paths.profileSettings,
+        };
+      }
 
-    if (item.path === pathsConfig.app.teamMembers) {
-      return {
-        ...item,
-        path: paths.teamMembers,
-      };
-    }
+      if (item.path === pathsConfig.app.teamMembers) {
+        return {
+          ...item,
+          path: paths.teamMembers,
+        };
+      }
 
-    if (item.path === pathsConfig.app.roles) {
-      return {
-        ...item,
-        path: paths.roles,
-      };
-    }
+      if (item.path === pathsConfig.app.roles) {
+        return {
+          ...item,
+          path: paths.roles,
+        };
+      }
 
-    if (item.path === pathsConfig.app.auditLogs) {
-      return {
-        ...item,
-        path: paths.auditLogs,
-      };
-    }
+      if (item.path === pathsConfig.app.auditLogs) {
+        return {
+          ...item,
+          path: paths.auditLogs,
+        };
+      }
 
-    if (item.path === pathsConfig.app.workspaceSettings) {
-      return {
-        ...item,
-        path: paths.workspaceSettings,
-      };
-    }
+      if (item.path === pathsConfig.app.workspaceSettings) {
+        return {
+          ...item,
+          path: paths.workspaceSettings,
+        };
+      }
 
-    return item;
-  });
+      return item;
+    });
 }
 
 function formatLabel(label: string) {
@@ -465,7 +466,7 @@ function NavDropdown({
         <CreateLeadDialog
           open={dialogOpen}
           onOpenChange={setDialogOpen}
-          onSuccess={() => {}}
+          onSuccess={() => { }}
         />
       )}
 
@@ -473,7 +474,7 @@ function NavDropdown({
         <CreateContactDialog
           open={dialogOpen}
           onOpenChange={setDialogOpen}
-          onSuccess={() => {}}
+          onSuccess={() => { }}
         />
       )}
 
@@ -481,7 +482,7 @@ function NavDropdown({
         <CreateAccountDialog
           open={dialogOpen}
           onOpenChange={setDialogOpen}
-          onSuccess={() => {}}
+          onSuccess={() => { }}
         />
       )}
 
@@ -489,7 +490,7 @@ function NavDropdown({
         <OpportunityDialog
           isOpen={dialogOpen}
           onOpenChange={setDialogOpen}
-          onSuccess={() => {}}
+          onSuccess={() => { }}
         />
       )}
 
@@ -566,6 +567,31 @@ export function HomeMenuNavigation() {
   const pathname = usePathname() || '';
   const [isLauncherOpen, setIsLauncherOpen] = useState(false);
   const [windowWidth, setWindowWidth] = useState(1200);
+  const supabase = useSupabase();
+
+  useEffect(() => {
+    if (authUser?.id) {
+      const localTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      if (localTz) {
+        supabase
+          .from('accounts')
+          .select('timezone')
+          .eq('id', authUser.id)
+          .single()
+          .then(({ data }) => {
+            if (data && data.timezone !== localTz) {
+              supabase
+                .from('accounts')
+                .update({ timezone: localTz })
+                .eq('id', authUser.id)
+                .then(() => {
+                  console.log('[Timezone Sync] Updated account timezone to:', localTz);
+                });
+            }
+          });
+      }
+    }
+  }, [authUser?.id, supabase]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -686,36 +712,36 @@ export function HomeMenuNavigation() {
       const scopedTeamItems = scopeCommonItems(teamItems, '/home/funds');
       const settingsChildren = canViewWorkspaceSettings
         ? [
-            {
-              label: 'common:routes.workspace-settings',
-              path: commonPaths.workspaceSettings,
-              Icon: <Settings className="h-4 w-4" />,
-            },
-            ...scopedTeamItems.map((item) => {
-              const IconComponent = item.Icon;
-              return {
-                ...item,
-                Icon: <IconComponent className="h-4 w-4" />,
-              };
-            }),
-          ]
-        : scopedTeamItems.map((item) => {
+          {
+            label: 'common:routes.workspace-settings',
+            path: commonPaths.workspaceSettings,
+            Icon: <Settings className="h-4 w-4" />,
+          },
+          ...scopedTeamItems.map((item) => {
             const IconComponent = item.Icon;
             return {
               ...item,
               Icon: <IconComponent className="h-4 w-4" />,
             };
-          });
+          }),
+        ]
+        : scopedTeamItems.map((item) => {
+          const IconComponent = item.Icon;
+          return {
+            ...item,
+            Icon: <IconComponent className="h-4 w-4" />,
+          };
+        });
 
       return [
         ...getFundraiseRoutesForPermissions(canAccessFundraising),
         ...(settingsChildren.length > 0
           ? [
-              {
-                label: 'common:routes.settings',
-                children: settingsChildren,
-              },
-            ]
+            {
+              label: 'common:routes.settings',
+              children: settingsChildren,
+            },
+          ]
           : []),
       ];
     }
@@ -733,36 +759,36 @@ export function HomeMenuNavigation() {
       const scopedTeamItems = scopeCommonItems(teamItems, '/home/hrms');
       const settingsChildren = canViewWorkspaceSettings
         ? [
-            {
-              label: 'common:routes.workspace-settings',
-              path: commonPaths.workspaceSettings,
-              Icon: <Settings className="h-4 w-4" />,
-            },
-            ...scopedTeamItems.map((item) => {
-              const IconComponent = item.Icon;
-              return {
-                ...item,
-                Icon: <IconComponent className="h-4 w-4" />,
-              };
-            }),
-          ]
-        : scopedTeamItems.map((item) => {
+          {
+            label: 'common:routes.workspace-settings',
+            path: commonPaths.workspaceSettings,
+            Icon: <Settings className="h-4 w-4" />,
+          },
+          ...scopedTeamItems.map((item) => {
             const IconComponent = item.Icon;
             return {
               ...item,
               Icon: <IconComponent className="h-4 w-4" />,
             };
-          });
+          }),
+        ]
+        : scopedTeamItems.map((item) => {
+          const IconComponent = item.Icon;
+          return {
+            ...item,
+            Icon: <IconComponent className="h-4 w-4" />,
+          };
+        });
 
       return [
         hrmsRoutes,
         ...(settingsChildren.length > 0
           ? [
-              {
-                label: 'common:routes.settings',
-                children: settingsChildren,
-              },
-            ]
+            {
+              label: 'common:routes.settings',
+              children: settingsChildren,
+            },
+          ]
           : []),
       ];
     }
@@ -780,36 +806,36 @@ export function HomeMenuNavigation() {
       const commonPaths = getModuleCommonPaths('/home/inventory');
       const settingsChildren = canViewWorkspaceSettings
         ? [
-            {
-              label: 'common:routes.workspace-settings',
-              path: commonPaths.workspaceSettings,
-              Icon: <Settings className="h-4 w-4" />,
-            },
-            ...scopedTeamItems.map((item) => {
-              const IconComponent = item.Icon;
-              return {
-                ...item,
-                Icon: <IconComponent className="h-4 w-4" />,
-              };
-            }),
-          ]
-        : scopedTeamItems.map((item) => {
+          {
+            label: 'common:routes.workspace-settings',
+            path: commonPaths.workspaceSettings,
+            Icon: <Settings className="h-4 w-4" />,
+          },
+          ...scopedTeamItems.map((item) => {
             const IconComponent = item.Icon;
             return {
               ...item,
               Icon: <IconComponent className="h-4 w-4" />,
             };
-          });
+          }),
+        ]
+        : scopedTeamItems.map((item) => {
+          const IconComponent = item.Icon;
+          return {
+            ...item,
+            Icon: <IconComponent className="h-4 w-4" />,
+          };
+        });
 
       return [
         ...getInventoryRoutesForPermissions(canAccessInventory),
         ...(settingsChildren.length > 0
           ? [
-              {
-                label: 'common:routes.settings',
-                children: settingsChildren,
-              },
-            ]
+            {
+              label: 'common:routes.settings',
+              children: settingsChildren,
+            },
+          ]
           : []),
       ];
     }
@@ -827,36 +853,36 @@ export function HomeMenuNavigation() {
       const scopedTeamItems = scopeCommonItems(teamItems, '/home/services');
       const settingsChildren = canViewWorkspaceSettings
         ? [
-            {
-              label: 'common:routes.workspace-settings',
-              path: commonPaths.workspaceSettings,
-              Icon: <Settings className="h-4 w-4" />,
-            },
-            ...scopedTeamItems.map((item) => {
-              const IconComponent = item.Icon;
-              return {
-                ...item,
-                Icon: <IconComponent className="h-4 w-4" />,
-              };
-            }),
-          ]
-        : scopedTeamItems.map((item) => {
+          {
+            label: 'common:routes.workspace-settings',
+            path: commonPaths.workspaceSettings,
+            Icon: <Settings className="h-4 w-4" />,
+          },
+          ...scopedTeamItems.map((item) => {
             const IconComponent = item.Icon;
             return {
               ...item,
               Icon: <IconComponent className="h-4 w-4" />,
             };
-          });
+          }),
+        ]
+        : scopedTeamItems.map((item) => {
+          const IconComponent = item.Icon;
+          return {
+            ...item,
+            Icon: <IconComponent className="h-4 w-4" />,
+          };
+        });
 
       return [
         ...getServiceCloudRoutesForPermissions(canAccessServiceCloud),
         ...(settingsChildren.length > 0
           ? [
-              {
-                label: 'common:routes.settings',
-                children: settingsChildren,
-              },
-            ]
+            {
+              label: 'common:routes.settings',
+              children: settingsChildren,
+            },
+          ]
           : []),
       ];
     }
@@ -870,29 +896,29 @@ export function HomeMenuNavigation() {
       canAccess('emails', 'manage_email');
     const salesSettingsChildren = canViewWorkspaceSettings
       ? [
-          {
-            label: 'common:routes.workspace-settings',
-            path: pathsConfig.app.workspaceSettings,
-            Icon: <Settings className="h-4 w-4" />,
-          },
-          ...(teamItems.length > 0
-            ? teamItems.map((item) => {
-                const IconComponent = item.Icon;
-                return {
-                  ...item,
-                  Icon: <IconComponent className="h-4 w-4" />,
-                };
-              })
-            : []),
-        ]
-      : teamItems.length > 0
-        ? teamItems.map((item) => {
+        {
+          label: 'common:routes.workspace-settings',
+          path: pathsConfig.app.workspaceSettings,
+          Icon: <Settings className="h-4 w-4" />,
+        },
+        ...(teamItems.length > 0
+          ? teamItems.map((item) => {
             const IconComponent = item.Icon;
             return {
               ...item,
               Icon: <IconComponent className="h-4 w-4" />,
             };
           })
+          : []),
+      ]
+      : teamItems.length > 0
+        ? teamItems.map((item) => {
+          const IconComponent = item.Icon;
+          return {
+            ...item,
+            Icon: <IconComponent className="h-4 w-4" />,
+          };
+        })
         : [];
 
     return [
@@ -901,20 +927,20 @@ export function HomeMenuNavigation() {
         children: [
           ...(salesItems.length > 0
             ? [
-                {
-                  label: 'common:routes.dashboard',
-                  path: '/home/sales',
-                  Icon: <Activity className="h-4 w-4" />,
-                  end: true,
-                },
-                ...salesItems.map((item) => {
-                  const IconComponent = item.Icon;
-                  return {
-                    ...item,
-                    Icon: <IconComponent className="h-4 w-4" />,
-                  };
-                }),
-              ]
+              {
+                label: 'common:routes.dashboard',
+                path: '/home/sales',
+                Icon: <Activity className="h-4 w-4" />,
+                end: true,
+              },
+              ...salesItems.map((item) => {
+                const IconComponent = item.Icon;
+                return {
+                  ...item,
+                  Icon: <IconComponent className="h-4 w-4" />,
+                };
+              }),
+            ]
             : []),
           {
             label: 'Meetings',
@@ -940,11 +966,11 @@ export function HomeMenuNavigation() {
       },
       ...(salesSettingsChildren.length > 0
         ? [
-            {
-              label: 'common:routes.settings',
-              children: salesSettingsChildren,
-            },
-          ]
+          {
+            label: 'common:routes.settings',
+            children: salesSettingsChildren,
+          },
+        ]
         : []),
     ];
   }, [

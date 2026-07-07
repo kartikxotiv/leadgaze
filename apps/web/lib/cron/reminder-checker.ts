@@ -153,6 +153,7 @@ export class ReminderChecker {
         dueDate: reminder.due_date,
         entityType: reminder.entity_type,
         entityId: reminder.entity_id,
+        workspaceId: reminder.workspace_id,
       });
 
       if (sent) {

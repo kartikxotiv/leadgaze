@@ -25,7 +25,7 @@ export const getWorkspaceCurrencies = catchAsync(
     }
 
     const { data, error } = await supabase
-    .schema('core')
+      .schema('core')
       .from('workspace_currencies')
       .select('*')
       .eq('workspace_id', workspaceId)
@@ -34,7 +34,7 @@ export const getWorkspaceCurrencies = catchAsync(
       .order('currency_code', { ascending: true });
 
     if (error) {
-      console.log({error})
+      console.log({ error })
       return NextResponse.json(
         { message: 'Failed to fetch currencies' },
         { status: 500 },
@@ -66,14 +66,14 @@ export const addWorkspaceCurrency = catchAsync(
     // If setting as default, unset other defaults first
     if (is_default) {
       await supabase
-      .schema('core')
+        .schema('core')
         .from('workspace_currencies')
         .update({ is_default: false })
         .eq('workspace_id', workspace_id);
     }
 
     const { data, error } = await supabase
-    .schema('core')
+      .schema('core')
       .from('workspace_currencies')
       .insert({
         workspace_id,
@@ -131,7 +131,7 @@ export const updateWorkspaceCurrency = catchAsync(
     if (is_default) {
       // First get the workspace_id for this currency
       const { data: currency } = await supabase
-      .schema('core')
+        .schema('core')
         .from('workspace_currencies')
         .select('workspace_id, currency_code')
         .eq('id', currencyId)
@@ -139,7 +139,7 @@ export const updateWorkspaceCurrency = catchAsync(
 
       if (currency) {
         await supabase
-        .schema('core')
+          .schema('core')
           .from('workspace_currencies')
           .update({ is_default: false })
           .eq('workspace_id', currency.workspace_id)
@@ -165,7 +165,7 @@ export const updateWorkspaceCurrency = catchAsync(
     if (currency_symbol !== undefined) payload.currency_symbol = currency_symbol;
 
     const { data, error } = await supabase
-    .schema('core')
+      .schema('core')
       .from('workspace_currencies')
       .update(payload)
       .eq('id', currencyId)
@@ -200,7 +200,7 @@ export const deleteWorkspaceCurrency = catchAsync(
     }
 
     const { error } = await supabase
-    .schema('core')
+      .schema('core')
       .from('workspace_currencies')
       .delete()
       .eq('id', currencyId);
