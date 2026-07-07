@@ -70,6 +70,7 @@ const getAccountsService = asyncHandlerClient(
     createdAtTo?: string;
     updatedAtFrom?: string;
     updatedAtTo?: string;
+    createdByIds?: string | string[];
   }) => {
     const { 
       workspaceId, 
@@ -82,6 +83,7 @@ const getAccountsService = asyncHandlerClient(
       createdAtTo = '',
       updatedAtFrom = '',
       updatedAtTo = '',
+      createdByIds = '',
     } = params;
     let url = `/accounts?workspaceId=${workspaceId}&page=${page}&limit=${limit}&searchTerm=${searchTerm}&sortColumn=${sortColumn}&sortDirection=${sortDirection || ''}`;
     
@@ -89,6 +91,10 @@ const getAccountsService = asyncHandlerClient(
     if (createdAtTo) url += `&createdAtTo=${createdAtTo}`;
     if (updatedAtFrom) url += `&updatedAtFrom=${updatedAtFrom}`;
     if (updatedAtTo) url += `&updatedAtTo=${updatedAtTo}`;
+    if (createdByIds) {
+      const createdByParam = Array.isArray(createdByIds) ? createdByIds.join(',') : createdByIds;
+      url += `&createdByIds=${createdByParam}`;
+    }
     
     const response = await ApiClient.get(url);
     return {

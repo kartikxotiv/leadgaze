@@ -7,9 +7,13 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { FileUp, Loader2, Plus, Settings2 } from 'lucide-react';
 
+import { AddColumnModal } from '@kit/ui/add-column-modal';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { Card, CardContent } from '@kit/ui/card';
+import { ColumnEditModal } from '@kit/ui/column-edit-modal';
+import type { ColumnEditFieldShape } from '@kit/ui/column-edit-modal';
+import { ColumnHeader } from '@kit/ui/column-header';
 import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
 import { CsvImportDialog } from '@kit/ui/csv-import-dialog';
 import { CustomTableContainer } from '@kit/ui/custom-table-container';
@@ -31,10 +35,6 @@ import { useDateRangeFilter } from '@kit/ui/use-date-range-filter';
 import { useTableSort } from '@kit/ui/use-table-sort';
 import { cn } from '@kit/ui/utils';
 
-import { AddColumnModal } from '@kit/ui/add-column-modal';
-import { ColumnEditModal } from '@kit/ui/column-edit-modal';
-import type { ColumnEditFieldShape } from '@kit/ui/column-edit-modal';
-import { ColumnHeader } from '@kit/ui/column-header';
 import { filterExportColumns } from '~/lib/field-permission';
 import { useDebounce } from '~/lib/hooks/use-debounce';
 import {
@@ -50,6 +50,8 @@ import {
   useLeadsColumnPreferences,
   useSyncColumnVisibilityToDb,
 } from '~/lib/hooks/use-leads-column-preferences';
+import { usePackageMembers } from '~/lib/hooks/use-package-members';
+import { useTeamMembers } from '~/lib/hooks/use-team-members';
 import { calculateLeadScore } from '~/lib/lead-scoring/lead-scoring-engine';
 import { useLocalization } from '~/lib/localization/localization-provider';
 import { ModuleGuard } from '~/lib/rbac/module-guard';
@@ -60,8 +62,6 @@ import {
   getLeadsService,
 } from '~/services/leads.service';
 import { Lead } from '~/services/leads.service';
-import { getMembersService } from '~/services/team-members.service';
-import { useTeamMembers } from '~/lib/hooks/use-team-members';
 
 import { DeleteEntityDialog } from '../_components/delete-entity-dialog';
 import { EntityActionsDropdown } from '../_components/entity-actions-dropdown';
@@ -106,7 +106,12 @@ const SYSTEM_FIELDS: Array<{
     label: 'Industry',
     sortKey: 'industry.industry_name',
   },
-  { id: 'company_size', key: 'company_size', label: 'Company Size', sortable: false },
+  {
+    id: 'company_size',
+    key: 'company_size',
+    label: 'Company Size',
+    sortable: false,
+  },
   { id: 'location', key: 'location', label: 'Location' },
   { id: 'timezone', key: 'timezone', label: 'Timezone', sortable: false },
   {
@@ -402,14 +407,6 @@ export default function LeadsPage() {
       persistSort: false,
     });
 
-  // Fetch team members (also passed to ColumnEditModal for FLS user selection)
-  const { data: membersData } = useQuery({
-    queryKey: ['team-members', workspace?.id],
-    queryFn: () => getMembersService(workspace?.id || ''),
-    enabled: !!workspace?.id,
-  });
-  const members = (membersData?.data || []) as any[];
-
   // Fetch roles (passed to ColumnEditModal for FLS role selection)
   const { data: moduleRoles = [] } = useModuleRoles(productKey);
 
@@ -420,6 +417,9 @@ export default function LeadsPage() {
     enabled: !!workspace?.id,
   });
   const teamMembersForModal = teamMembersData?.data ?? [];
+
+  // Fetch team members filtered by package access (for Created By filter)
+  const { members } = usePackageMembers();
 
   // Fetch lead statuses
   const { data: statuses = [], isSuccess: isStatusesLoaded } = useQuery({
@@ -460,7 +460,8 @@ export default function LeadsPage() {
         page: currentPage,
         limit: pageSize,
         searchTerm: debouncedSearchTerm,
-        statusId: selectedStatuses.length > 0 ? selectedStatuses : defaultStatusIds,
+        statusId:
+          selectedStatuses.length > 0 ? selectedStatuses : defaultStatusIds,
         sortColumn: sortColumn ?? undefined,
         sortDirection: sortDirection ?? undefined,
         createdAtFrom: computedCreatedOnDates?.from ?? undefined,
@@ -628,11 +629,12 @@ export default function LeadsPage() {
                 value: s.id,
                 label: s.status_name,
                 color: s.color,
-                badge: s.status_key === 'unqualified' ? (
-                  <span className="text-[10px] font-semibold bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400 px-1.5 py-0.5 rounded uppercase tracking-wider">
-                    Closed
-                  </span>
-                ) : undefined,
+                badge:
+                  s.status_key === 'unqualified' ? (
+                    <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold tracking-wider text-amber-700 uppercase dark:bg-amber-900/20 dark:text-amber-400">
+                      Closed
+                    </span>
+                  ) : undefined,
               })),
               onSelectValues: setSelectedStatuses,
             },
@@ -760,9 +762,7 @@ export default function LeadsPage() {
                         isAdmin={isAdmin}
                         field={getEntityFieldByKey(field.key)}
                         onEditClick={
-                          isAdmin
-                            ? () => openColumnEdit(field.key)
-                            : undefined
+                          isAdmin ? () => openColumnEdit(field.key) : undefined
                         }
                         {...getHeaderProps(field.id)}
                       >
@@ -794,7 +794,8 @@ export default function LeadsPage() {
                             : undefined
                         }
                         onDeleteField={
-                          (isAdmin || (field as any).created_by === user?.id) && !field.is_system
+                          (isAdmin || (field as any).created_by === user?.id) &&
+                          !field.is_system
                             ? handleDeleteField
                             : undefined
                         }
@@ -809,17 +810,17 @@ export default function LeadsPage() {
                   })}
 
                   {/* Add Column — last header column (replaces Actions header) */}
-                    <TableHead className="sticky-right-header bg-background z-10 w-12 px-1 text-center">
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-8 w-8 mx-auto flex items-center justify-center border-dashed"
-                        onClick={() => setAddColumnModalOpen(true)}
-                        title="Add Column"
-                      >
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                    </TableHead>
+                  <TableHead className="sticky-right-header bg-background z-10 w-12 px-1 text-center">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="mx-auto flex h-8 w-8 items-center justify-center border-dashed"
+                      onClick={() => setAddColumnModalOpen(true)}
+                      title="Add Column"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

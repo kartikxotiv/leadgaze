@@ -1,20 +1,29 @@
 /**
- * Route-to-module mapping for team-members and roles pages.
+ * Route-to-module (product key) mapping.
  *
- * The URL segment before /team-members or /roles determines which
- * core module the page operates on.
+ * Maps frontend routes to their corresponding product keys (modules).
+ * This ensures proper filtering of team members, roles, and other
+ * package-specific data.
  *
  * Examples:
- *   /home/sales/team-members     → sales
- *   /home/hrms/team-members      → hrms
- *   /home/services/roles         → service_cloud
- *   /home/inventory/team-members → inventory
- *   /home/funds/roles            → funds
+ *   /home/leads              → sales
+ *   /home/opportunities      → sales
+ *   /home/sales/team-members → sales
+ *   /home/services/customers → service_cloud
+ *   /home/hrms/employees     → hrms
  */
 
 export const ROUTE_MODULE_MAP: Record<string, string> = {
-  // Sales CRM
+  // Sales CRM - All sales-related routes
   '/home/sales': 'sales',
+  '/home/leads': 'sales',
+  '/home/opportunities': 'sales',
+  '/home/accounts': 'sales',
+  '/home/contacts': 'sales',
+  '/home/meetings': 'sales',
+  '/home/notes': 'sales',
+  '/home/reminders': 'sales',
+  '/home/document': 'sales',
   // HRMS
   '/home/hrms': 'hrms',
   // Service Cloud

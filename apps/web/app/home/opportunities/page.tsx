@@ -49,6 +49,7 @@ import {
   useLeadsColumnPreferences,
   useSyncColumnVisibilityToDb,
 } from '~/lib/hooks/use-leads-column-preferences';
+import { usePackageMembers } from '~/lib/hooks/use-package-members';
 import { useTeamMembers } from '~/lib/hooks/use-team-members';
 import { useLocalization } from '~/lib/localization/localization-provider';
 import { ModuleGuard } from '~/lib/rbac/module-guard';
@@ -58,7 +59,6 @@ import {
   getOpportunitiesService,
   getOpportunityStatusesService,
 } from '~/services/opportunities.service';
-import { getMembersService } from '~/services/team-members.service';
 
 import { DeleteEntityDialog } from '../_components/delete-entity-dialog';
 import { EntityActionsDropdown } from '../_components/entity-actions-dropdown';
@@ -115,7 +115,7 @@ function OpportunitiesPageSkeleton() {
             </div>
           </div>
         </div>
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-4 pb-0 pt-6">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-4 pt-6 pb-0">
           <Card className="flex min-h-0 flex-1 flex-col border-none shadow-none">
             <CardContent className="flex min-h-0 flex-1 flex-col p-0">
               <div className="listing-table-container min-w-0 flex-1 overflow-x-auto overflow-y-auto rounded-lg pb-6">
@@ -569,22 +569,8 @@ export default function OpportunitiesPage() {
     staleTime: 24 * 60 * 60 * 1000, // 24 hours
   });
 
-  const { data: membersData } = useQuery({
-    queryKey: ['team-members', workspace?.id],
-    queryFn: () => getMembersService(workspace?.id || ''),
-    enabled: !!workspace?.id,
-  });
-  const members = useMemo(
-    () =>
-      (membersData?.data || []) as Array<{
-        user_id?: string;
-        user?: {
-          user_metadata?: { full_name?: string } | null;
-          email?: string | null;
-        };
-      }>,
-    [membersData],
-  );
+  // Fetch team members filtered by package access (for Created By filter)
+  const { members } = usePackageMembers();
 
   // Get workspace default currency
   const defaultCurrency =
@@ -785,7 +771,7 @@ export default function OpportunitiesPage() {
 
   return (
     <ModuleGuard module="opportunities">
-      <div className="flex w-full min-w-0 max-w-full shrink-0 flex-col gap-2 overflow-hidden">
+      <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden">
         <PageHeader
           title={`Opportunities (${totalCount})`}
           description="Manage your sales pipeline"
@@ -793,7 +779,7 @@ export default function OpportunitiesPage() {
       </div>
 
       {/* Full-width search / filter / actions toolbar */}
-      <div className="w-full min-w-0 max-w-full shrink-0 border-b pb-2">
+      <div className="w-full max-w-full min-w-0 shrink-0 border-b pb-2">
         <ListToolBar
           showSearch
           searchPlaceholder="Search by name or account..."
@@ -825,8 +811,8 @@ export default function OpportunitiesPage() {
         />
       </div>
 
-      <PageBody className="sticky flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col overflow-hidden">
-        <div className="flex min-h-0 w-full min-w-0 max-w-full flex-1 gap-0">
+      <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden">
+        <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 gap-0">
           <CustomTableContainer
             pagination={
               <TablePagination
@@ -915,7 +901,7 @@ export default function OpportunitiesPage() {
                       <Button
                         variant="outline"
                         size="icon"
-                        className="h-8 w-8 mx-auto flex items-center justify-center border-dashed"
+                        className="mx-auto flex h-8 w-8 items-center justify-center border-dashed"
                         onClick={() => setAddColumnModalOpen(true)}
                         title="Add Column"
                       >

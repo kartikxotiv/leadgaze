@@ -68,6 +68,7 @@ const getContactsService = asyncHandlerClient(
     createdAtTo?: string;
     updatedAtFrom?: string;
     updatedAtTo?: string;
+    createdByIds?: string | string[];
   }) => {
     const {
       workspaceId,
@@ -81,6 +82,7 @@ const getContactsService = asyncHandlerClient(
       createdAtTo = '',
       updatedAtFrom = '',
       updatedAtTo = '',
+      createdByIds = '',
     } = params;
     let url = `/contacts?workspaceId=${workspaceId}&page=${page}&limit=${limit}&searchTerm=${searchTerm}&sortColumn=${sortColumn}&sortDirection=${sortDirection || ''}`;
     
@@ -88,6 +90,10 @@ const getContactsService = asyncHandlerClient(
     if (createdAtTo) url += `&createdAtTo=${createdAtTo}`;
     if (updatedAtFrom) url += `&updatedAtFrom=${updatedAtFrom}`;
     if (updatedAtTo) url += `&updatedAtTo=${updatedAtTo}`;
+    if (createdByIds) {
+      const createdByParam = Array.isArray(createdByIds) ? createdByIds.join(',') : createdByIds;
+      url += `&createdByIds=${createdByParam}`;
+    }
     if (accountId) {
       url += `&accountId=${accountId}`;
     }

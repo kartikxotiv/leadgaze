@@ -65,6 +65,9 @@ const getMembers = catchAsync(
     );
 
     query = query.eq('workspace_id', workspaceId);
+    
+    // Filter out removed/deleted members
+    query = query.neq('status', 'removed');
 
     if (productKey) {
       query = query.eq('product_key', productKey);
