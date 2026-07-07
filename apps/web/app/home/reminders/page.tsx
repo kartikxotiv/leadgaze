@@ -69,6 +69,8 @@ import { useDateRangeFilter } from '@kit/ui/use-date-range-filter';
 import { useTableSort } from '@kit/ui/use-table-sort';
 
 import { useRBAC } from '~/lib/rbac/rbac-provider';
+import { useDebounce } from '~/lib/hooks/use-debounce';
+import { usePackageMembers } from '~/lib/hooks/use-package-members';
 import { getAccountsService } from '~/services/accounts.service';
 import {
   Reminder,
@@ -162,6 +164,10 @@ export default function RemindersPage() {
     clearDateRange: clearUpdatedOnRange,
   } = useDateRangeFilter();
 
+  const [selectedCreatedByIds, setSelectedCreatedByIds] = useState<string[]>([]);
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
+  const { members } = usePackageMembers();
+
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingReminder, setEditingReminder] = useState<Reminder | null>(null);
@@ -212,6 +218,9 @@ export default function RemindersPage() {
       'reminders',
       workspace?.id,
       statusFilter,
+      priorityFilter,
+      debouncedSearchTerm,
+      selectedCreatedByIds,
       computedCreatedOnDates,
       computedUpdatedOnDates,
     ],
@@ -225,10 +234,13 @@ export default function RemindersPage() {
             : undefined;
       return getRemindersService(workspace.id, undefined, undefined, {
         status: apiStatus,
+        priority: priorityFilter === 'all' ? undefined : priorityFilter,
+        searchTerm: debouncedSearchTerm || undefined,
         createdAtFrom: computedCreatedOnDates?.from,
         createdAtTo: computedCreatedOnDates?.to,
         updatedAtFrom: computedUpdatedOnDates?.from,
         updatedAtTo: computedUpdatedOnDates?.to,
+        createdByIds: selectedCreatedByIds.length > 0 ? selectedCreatedByIds : undefined,
       });
     },
     enabled: !!workspace?.id,
@@ -327,75 +339,18 @@ export default function RemindersPage() {
   useEffect(() => {
     setCurrentPage(1);
   }, [
-    searchTerm,
+    debouncedSearchTerm,
     priorityFilter,
     statusFilter,
+    selectedCreatedByIds,
     pageSize,
     createdOnRange,
     updatedOnRange,
   ]);
 
   const filteredReminders = useMemo(() => {
-    return reminders.filter((reminder: Reminder) => {
-      const matchesSearch =
-        reminder.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        reminder.description?.toLowerCase().includes(searchTerm.toLowerCase());
-
-      const matchesPriority =
-        priorityFilter === 'all' ||
-        (reminder.priority || '').toLowerCase() === priorityFilter;
-
-      // Status filtering is handled server-side via the API status param — no local re-filter needed
-      const matchesStatus = true;
-
-      const reminderDate = reminder.due_date
-        ? new Date(reminder.due_date)
-        : null;
-      const matchesDateRange =
-        !reminderDate ||
-        ((!dateRange.from || reminderDate >= dateRange.from) &&
-          (!dateRange.to || reminderDate <= dateRange.to));
-
-      let matchesCreated = true;
-      if (computedCreatedOnDates?.from) {
-        const createdDate = new Date(reminder.created_at).getTime();
-        const from = new Date(computedCreatedOnDates.from).getTime();
-        const to = computedCreatedOnDates.to
-          ? new Date(computedCreatedOnDates.to).getTime()
-          : new Date().getTime();
-        matchesCreated = createdDate >= from && createdDate <= to;
-      }
-
-      let matchesUpdated = true;
-      if (computedUpdatedOnDates?.from) {
-        const updatedDate = new Date(
-          reminder.updated_at || reminder.created_at,
-        ).getTime();
-        const from = new Date(computedUpdatedOnDates.from).getTime();
-        const to = computedUpdatedOnDates.to
-          ? new Date(computedUpdatedOnDates.to).getTime()
-          : new Date().getTime();
-        matchesUpdated = updatedDate >= from && updatedDate <= to;
-      }
-
-      return (
-        matchesSearch &&
-        matchesPriority &&
-        matchesStatus &&
-        matchesDateRange &&
-        matchesCreated &&
-        matchesUpdated
-      );
-    });
-  }, [
-    reminders,
-    searchTerm,
-    priorityFilter,
-    statusFilter,
-    dateRange,
-    computedCreatedOnDates,
-    computedUpdatedOnDates,
-  ]);
+    return reminders;
+  }, [reminders]);
 
   const { sortColumn, sortDirection, toggleSort, sortedData } =
     useTableSort<Reminder>('reminders', filteredReminders, {
@@ -578,6 +533,31 @@ export default function RemindersPage() {
         onSelect: (val: string) => setPriorityFilter(val || 'all'),
       },
       {
+        key: 'created_by',
+        label: 'Created By',
+        selectedValues: selectedCreatedByIds,
+        selectedLabel:
+          selectedCreatedByIds.length === 0
+            ? 'All members'
+            : selectedCreatedByIds.length === 1
+              ? ((
+                  members.find(
+                    (m: any) => m.user_id === selectedCreatedByIds[0],
+                  ) as any
+                )?.user?.user_metadata?.full_name ?? '1 selected')
+              : `${selectedCreatedByIds.length} selected`,
+        options: members
+          .filter((m: any) => m.user_id)
+          .map((m: any) => ({
+            value: m.user_id,
+            label:
+              m.user?.user_metadata?.full_name ||
+              m.user?.email ||
+              m.user_id,
+          })),
+        onSelectValues: setSelectedCreatedByIds,
+      },
+      {
         key: 'created_on',
         label: 'Created On',
         type: 'date',
@@ -598,21 +578,23 @@ export default function RemindersPage() {
         },
       },
     ];
-  }, [statusFilter, priorityFilter, dateRange, createdOnRange, updatedOnRange]);
+  }, [statusFilter, priorityFilter, dateRange, createdOnRange, updatedOnRange, selectedCreatedByIds, members]);
 
   const activeFilterCount = useMemo(() => {
     let count = 0;
     if (statusFilter !== 'all') count++;
     if (priorityFilter !== 'all') count++;
+    if (selectedCreatedByIds.length > 0) count++;
     if (dateRange.from || dateRange.to) count++;
     if (createdOnRange) count++;
     if (updatedOnRange) count++;
     return count;
-  }, [statusFilter, priorityFilter, dateRange, createdOnRange, updatedOnRange]);
+  }, [statusFilter, priorityFilter, selectedCreatedByIds, dateRange, createdOnRange, updatedOnRange]);
 
   const handleClearFilters = () => {
     setStatusFilter('all');
     setPriorityFilter('all');
+    setSelectedCreatedByIds([]);
     setDateRange({ from: undefined, to: undefined });
     clearCreatedOnRange();
     clearUpdatedOnRange();

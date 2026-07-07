@@ -89,6 +89,7 @@ import { useDateRangeFilter } from '@kit/ui/use-date-range-filter';
 import { useTableSort } from '@kit/ui/use-table-sort';
 
 import { usePackageMembers } from '~/lib/hooks/use-package-members';
+import { useDebounce } from '~/lib/hooks/use-debounce';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { getAccountsService } from '~/services/accounts.service';
 import { getContactsService } from '~/services/contacts.service';
@@ -1998,7 +1999,7 @@ export default function MeetingsPage() {
     'UTC';
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
   const [selectedTimeframe, setSelectedTimeframe] = useState<string[]>([
     'upcoming',
@@ -2075,9 +2076,12 @@ export default function MeetingsPage() {
       'meetings',
       workspace?.id,
       viewFilter,
+      debouncedSearchTerm,
+      selectedStatuses,
+      selectedTimeframe,
+      selectedCreatedByIds,
       computedCreatedOnDates,
       computedUpdatedOnDates,
-      selectedCreatedByIds,
     ],
     queryFn: () => {
       if (!workspace?.id) return [];
@@ -2096,6 +2100,9 @@ export default function MeetingsPage() {
           updatedAtFrom: computedUpdatedOnDates?.from ?? undefined,
           updatedAtTo: computedUpdatedOnDates?.to ?? undefined,
           createdByIds: selectedCreatedByIds.length > 0 ? selectedCreatedByIds : undefined,
+          statuses: selectedStatuses.length > 0 ? selectedStatuses : undefined,
+          timeframe: selectedTimeframe.length > 0 ? selectedTimeframe : undefined,
+          searchTerm: debouncedSearchTerm || undefined,
         },
       );
     },
@@ -2184,8 +2191,7 @@ export default function MeetingsPage() {
   useEffect(() => {
     setCurrentPage(1);
   }, [
-    searchTerm,
-    selectedTypes,
+    debouncedSearchTerm,
     selectedStatuses,
     selectedTimeframe,
     selectedCreatedByIds,
@@ -2195,100 +2201,8 @@ export default function MeetingsPage() {
   ]);
 
   const filteredMeetings = useMemo(() => {
-    let result = meetings;
-
-    // Search filter
-    if (searchTerm) {
-      result = result.filter((meeting: CoreMeeting) => {
-        const matchesSearch =
-          meeting.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          meeting.description?.toLowerCase().includes(searchTerm.toLowerCase());
-        return matchesSearch;
-      });
-    }
-
-    // Type filter
-    if (selectedTypes.length > 0) {
-      result = result.filter((meeting: CoreMeeting) =>
-        selectedTypes.includes(meeting.meeting_type),
-      );
-    }
-
-    // Status filter
-    if (selectedStatuses.length > 0) {
-      result = result.filter((meeting: CoreMeeting) =>
-        selectedStatuses.includes(meeting.status),
-      );
-    }
-
-    // Timeframe filter
-    if (selectedTimeframe.length > 0) {
-      const now = new Date();
-      result = result.filter((meeting: CoreMeeting) => {
-        const start =
-          meeting.scheduled_start ||
-          (meeting as any).start_time ||
-          meeting.actual_start;
-        if (!start) return selectedTimeframe.includes('upcoming');
-        const meetingDate = new Date(start);
-        const isUpcoming =
-          meetingDate >= now &&
-          meeting.status !== 'completed' &&
-          meeting.status !== 'cancelled';
-
-        if (
-          selectedTimeframe.includes('upcoming') &&
-          selectedTimeframe.includes('past')
-        ) {
-          return true;
-        }
-        if (selectedTimeframe.includes('upcoming')) {
-          return isUpcoming;
-        }
-        if (selectedTimeframe.includes('past')) {
-          return !isUpcoming;
-        }
-        return true;
-      });
-    }
-
-    // Created On range filter
-    if (computedCreatedOnDates?.from) {
-      result = result.filter((meeting: CoreMeeting) => {
-        const createdDate = new Date(meeting.created_at).getTime();
-        const from = new Date(computedCreatedOnDates.from!).getTime();
-        const to = computedCreatedOnDates.to
-          ? new Date(computedCreatedOnDates.to).getTime()
-          : new Date().getTime();
-        return createdDate >= from && createdDate <= to;
-      });
-    }
-
-    // Updated On range filter
-    if (computedUpdatedOnDates?.from) {
-      result = result.filter((meeting: CoreMeeting) => {
-        const updatedDate = new Date(
-          meeting.updated_at || meeting.created_at,
-        ).getTime();
-        const from = new Date(computedUpdatedOnDates.from!).getTime();
-        const to = computedUpdatedOnDates.to
-          ? new Date(computedUpdatedOnDates.to).getTime()
-          : new Date().getTime();
-        return updatedDate >= from && updatedDate <= to;
-      });
-    }
-
-    return result;
-  }, [
-    meetings,
-    searchTerm,
-    selectedTypes,
-    selectedStatuses,
-    selectedTimeframe,
-    selectedCreatedByIds,
-    computedCreatedOnDates,
-    computedUpdatedOnDates,
-  ]);
+    return meetings;
+  }, [meetings]);
 
   const { sortColumn, sortDirection, toggleSort, sortedData } =
     useTableSort<CoreMeeting>('meetings', filteredMeetings, {
@@ -2328,20 +2242,6 @@ export default function MeetingsPage() {
           onSearchChange={setSearchTerm}
           showFilter
           filterGroups={[
-            {
-              key: 'type',
-              label: 'Type',
-              selectedValues: selectedTypes,
-              selectedLabel:
-                selectedTypes.length === 0
-                  ? 'All types'
-                  : `${selectedTypes.length} selected`,
-              options: [
-                { value: 'scheduled', label: 'Scheduled' },
-                { value: 'logged', label: 'Logged' },
-              ],
-              onSelectValues: setSelectedTypes,
-            },
             {
               key: 'status',
               label: 'Status',
@@ -2427,7 +2327,6 @@ export default function MeetingsPage() {
             },
           ]}
           activeFilterCount={
-            selectedTypes.length +
             selectedStatuses.length +
             (selectedCreatedByIds.length > 0 ? 1 : 0) +
             (selectedTimeframe.includes('upcoming') &&
@@ -2438,7 +2337,6 @@ export default function MeetingsPage() {
             (updatedOnRange ? 1 : 0)
           }
           onClearFilters={() => {
-            setSelectedTypes([]);
             setSelectedStatuses([]);
             setSelectedCreatedByIds([]);
             setSelectedTimeframe(['upcoming']);

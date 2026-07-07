@@ -105,10 +105,33 @@ export interface TaskTimeLog {
 
 // --- Notes ---
 export const getNotesService = asyncHandlerClient(
-  async (workspaceId: string, entityType?: string, entityId?: string, status: 'active' | 'closed' = 'active') => {
+  async (
+    workspaceId: string,
+    entityType?: string,
+    entityId?: string,
+    status: 'active' | 'closed' = 'active',
+    filters?: {
+      searchTerm?: string;
+      createdAtFrom?: string;
+      createdAtTo?: string;
+      updatedAtFrom?: string;
+      updatedAtTo?: string;
+      createdByIds?: string[];
+    },
+  ) => {
     let url = `/notes?workspaceId=${workspaceId}&status=${status}`;
     if (entityType) url += `&entityType=${entityType}`;
     if (entityId) url += `&entityId=${entityId}`;
+    if (filters) {
+      if (filters.searchTerm) url += `&searchTerm=${encodeURIComponent(filters.searchTerm)}`;
+      if (filters.createdAtFrom) url += `&createdAtFrom=${filters.createdAtFrom}`;
+      if (filters.createdAtTo) url += `&createdAtTo=${filters.createdAtTo}`;
+      if (filters.updatedAtFrom) url += `&updatedAtFrom=${filters.updatedAtFrom}`;
+      if (filters.updatedAtTo) url += `&updatedAtTo=${filters.updatedAtTo}`;
+      if (filters.createdByIds && filters.createdByIds.length > 0) {
+        url += `&createdByIds=${filters.createdByIds.join(',')}`;
+      }
+    }
     const response = await ApiClient.get(url);
     return response.data?.data || [];
   },
@@ -140,11 +163,36 @@ export const deleteNoteService = asyncHandlerClient(async (id: string) => {
 
 // --- Reminders ---
 export const getRemindersService = asyncHandlerClient(
-  async (workspaceId: string, entityType?: string, entityId?: string, status?: string) => {
+  async (
+    workspaceId: string,
+    entityType?: string,
+    entityId?: string,
+    filters?: {
+      status?: string;
+      priority?: string;
+      searchTerm?: string;
+      createdAtFrom?: string;
+      createdAtTo?: string;
+      updatedAtFrom?: string;
+      updatedAtTo?: string;
+      createdByIds?: string[];
+    },
+  ) => {
     let url = `/reminders?workspaceId=${workspaceId}`;
     if (entityType) url += `&entityType=${entityType}`;
     if (entityId) url += `&entityId=${entityId}`;
-    if (status) url += `&status=${status}`;
+    if (filters) {
+      if (filters.status) url += `&status=${filters.status}`;
+      if (filters.priority) url += `&priority=${filters.priority}`;
+      if (filters.searchTerm) url += `&searchTerm=${encodeURIComponent(filters.searchTerm)}`;
+      if (filters.createdAtFrom) url += `&createdAtFrom=${filters.createdAtFrom}`;
+      if (filters.createdAtTo) url += `&createdAtTo=${filters.createdAtTo}`;
+      if (filters.updatedAtFrom) url += `&updatedAtFrom=${filters.updatedAtFrom}`;
+      if (filters.updatedAtTo) url += `&updatedAtTo=${filters.updatedAtTo}`;
+      if (filters.createdByIds && filters.createdByIds.length > 0) {
+        url += `&createdByIds=${filters.createdByIds.join(',')}`;
+      }
+    }
     const response = await ApiClient.get(url);
     return response.data?.data || [];
   },
@@ -240,10 +288,34 @@ export const deleteMeetingService = asyncHandlerClient(async (id: string) => {
 
 // --- Documents ---
 export const getDocumentsService = asyncHandlerClient(
-  async (workspaceId: string, entityType?: string, entityId?: string) => {
+  async (
+    workspaceId: string,
+    entityType?: string,
+    entityId?: string,
+    filters?: {
+      type?: string;
+      searchTerm?: string;
+      createdAtFrom?: string;
+      createdAtTo?: string;
+      updatedAtFrom?: string;
+      updatedAtTo?: string;
+      createdByIds?: string[];
+    },
+  ) => {
     let url = `/documents?workspaceId=${workspaceId}`;
     if (entityType) url += `&entityType=${entityType}`;
     if (entityId) url += `&entityId=${entityId}`;
+    if (filters) {
+      if (filters.type) url += `&type=${filters.type}`;
+      if (filters.searchTerm) url += `&searchTerm=${encodeURIComponent(filters.searchTerm)}`;
+      if (filters.createdAtFrom) url += `&createdAtFrom=${filters.createdAtFrom}`;
+      if (filters.createdAtTo) url += `&createdAtTo=${filters.createdAtTo}`;
+      if (filters.updatedAtFrom) url += `&updatedAtFrom=${filters.updatedAtFrom}`;
+      if (filters.updatedAtTo) url += `&updatedAtTo=${filters.updatedAtTo}`;
+      if (filters.createdByIds && filters.createdByIds.length > 0) {
+        url += `&createdByIds=${filters.createdByIds.join(',')}`;
+      }
+    }
     const response = await ApiClient.get(url);
     return response.data?.data || [];
   },

@@ -196,6 +196,7 @@ export default function ServiceCloudTicketsRoute() {
       <ServiceCloudTicketsPage
         workspaceId={workspaceId}
         isAdmin={isAdmin}
+        teamMembers={teamMembersForModal}
         onColumnAddClick={() => setAddColumnModalOpen(true)}
         onColumnEditClick={handleEditColumn}
         customColumns={customColumns}

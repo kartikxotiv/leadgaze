@@ -112,7 +112,16 @@ export const getMeetingsService = asyncHandlerClient(
     includeParticipantMeetings?: boolean,
     participantUserId?: string,
     view?: string,
-    params?: { createdAtFrom?: string; createdAtTo?: string; updatedAtFrom?: string; updatedAtTo?: string; createdByIds?: string | string[] },
+    params?: {
+      createdAtFrom?: string;
+      createdAtTo?: string;
+      updatedAtFrom?: string;
+      updatedAtTo?: string;
+      createdByIds?: string | string[];
+      statuses?: string[];
+      timeframe?: string[];
+      searchTerm?: string;
+    },
   ) => {
     let url = `/meetings?workspaceId=${workspaceId}`;
     if (entityType) url += `&entityType=${entityType}`;
@@ -136,6 +145,15 @@ export const getMeetingsService = asyncHandlerClient(
     if (params?.createdByIds) {
       const createdByParam = Array.isArray(params.createdByIds) ? params.createdByIds.join(',') : params.createdByIds;
       url += `&createdByIds=${createdByParam}`;
+    }
+    if (params?.statuses && params.statuses.length > 0) {
+      url += `&statuses=${params.statuses.join(',')}`;
+    }
+    if (params?.timeframe && params.timeframe.length > 0) {
+      url += `&timeframe=${params.timeframe.join(',')}`;
+    }
+    if (params?.searchTerm) {
+      url += `&searchTerm=${encodeURIComponent(params.searchTerm)}`;
     }
     const res = await CoreApiClient.get(url);
     return (res?.data?.data ?? []) as CoreMeeting[];

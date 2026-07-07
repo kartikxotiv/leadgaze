@@ -8,7 +8,13 @@ export const getServiceCloudResourceService = asyncHandlerClient(
     workspaceId: string,
     params: Record<string, string> = {},
   ) => {
-    const searchParams = new URLSearchParams({ workspaceId, ...params });
+    const cleanParams: Record<string, string> = { workspaceId };
+    for (const [key, val] of Object.entries(params)) {
+      if (val !== undefined && val !== null && val !== '') {
+        cleanParams[key] = String(val);
+      }
+    }
+    const searchParams = new URLSearchParams(cleanParams);
     const res = await ServiceCloudApiClient.get(
       `/${resource}?${searchParams.toString()}`,
     );
