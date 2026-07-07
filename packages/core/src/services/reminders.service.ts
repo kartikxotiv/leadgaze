@@ -2,8 +2,24 @@ import { CoreApiClient } from '../utils';
 import { asyncHandlerClient } from '../utils/async-handler';
 import { entityQuery } from './_entity-query';
 
-export const getRemindersService = asyncHandlerClient(async (workspaceId: string, entityType?: string, entityId?: string) => {
-  const res = await CoreApiClient.get(`/reminders?${entityQuery(workspaceId, entityType, entityId)}`);
+export const getRemindersService = asyncHandlerClient(async (workspaceId: string, entityType?: string, entityId?: string, params?: { status?: string; createdAtFrom?: string; createdAtTo?: string; updatedAtFrom?: string; updatedAtTo?: string }) => {
+  let url = `/reminders?${entityQuery(workspaceId, entityType, entityId)}`;
+  if (params?.status) {
+    url += `&status=${params.status}`;
+  }
+  if (params?.createdAtFrom) {
+    url += `&createdAtFrom=${params.createdAtFrom}`;
+  }
+  if (params?.createdAtTo) {
+    url += `&createdAtTo=${params.createdAtTo}`;
+  }
+  if (params?.updatedAtFrom) {
+    url += `&updatedAtFrom=${params.updatedAtFrom}`;
+  }
+  if (params?.updatedAtTo) {
+    url += `&updatedAtTo=${params.updatedAtTo}`;
+  }
+  const res = await CoreApiClient.get(url);
   return res?.data?.data ?? [];
 });
 

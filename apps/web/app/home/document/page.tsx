@@ -196,10 +196,20 @@ export default function DocumentPage() {
   const { getHeaderProps, getResizeHandleProps } = useColumnResize('documents');
 
   const { data: documents = [], isLoading } = useQuery({
-    queryKey: ['documents', workspace?.id],
+    queryKey: [
+      'documents',
+      workspace?.id,
+      computedCreatedOnDates,
+      computedUpdatedOnDates,
+    ],
     queryFn: () => {
       if (!workspace?.id) return [];
-      return getDocumentsService(workspace.id);
+      return getDocumentsService(workspace.id, undefined, undefined, {
+        createdAtFrom: computedCreatedOnDates?.from,
+        createdAtTo: computedCreatedOnDates?.to,
+        updatedAtFrom: computedUpdatedOnDates?.from,
+        updatedAtTo: computedUpdatedOnDates?.to,
+      });
     },
     enabled: !!workspace?.id,
   });

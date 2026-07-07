@@ -52,10 +52,12 @@ export function DateRangePickerPanel({
 
   const handleApplyCustom = () => {
     if (tempRange?.from) {
-      const from = tempRange.from.toISOString().split('T')[0] || null;
-      const to = tempRange.to
-        ? tempRange.to.toISOString().split('T')[0] || null
-        : from;
+      const formatLocalDate = (date: Date) => 
+        `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+
+      const from = formatLocalDate(tempRange.from);
+      const to = tempRange.to ? formatLocalDate(tempRange.to) : from;
+      
       onChange({
         preset: 'custom',
         from,

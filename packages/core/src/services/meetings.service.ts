@@ -112,6 +112,7 @@ export const getMeetingsService = asyncHandlerClient(
     includeParticipantMeetings?: boolean,
     participantUserId?: string,
     view?: string,
+    params?: { createdAtFrom?: string; createdAtTo?: string; updatedAtFrom?: string; updatedAtTo?: string; createdByIds?: string | string[] },
   ) => {
     let url = `/meetings?workspaceId=${workspaceId}`;
     if (entityType) url += `&entityType=${entityType}`;
@@ -120,6 +121,22 @@ export const getMeetingsService = asyncHandlerClient(
     if (includeParticipantMeetings) url += `&includeParticipantMeetings=true`;
     if (participantUserId) url += `&participantUserId=${participantUserId}`;
     if (view) url += `&view=${view}`;
+    if (params?.createdAtFrom) {
+      url += `&createdAtFrom=${params.createdAtFrom}`;
+    }
+    if (params?.createdAtTo) {
+      url += `&createdAtTo=${params.createdAtTo}`;
+    }
+    if (params?.updatedAtFrom) {
+      url += `&updatedAtFrom=${params.updatedAtFrom}`;
+    }
+    if (params?.updatedAtTo) {
+      url += `&updatedAtTo=${params.updatedAtTo}`;
+    }
+    if (params?.createdByIds) {
+      const createdByParam = Array.isArray(params.createdByIds) ? params.createdByIds.join(',') : params.createdByIds;
+      url += `&createdByIds=${createdByParam}`;
+    }
     const res = await CoreApiClient.get(url);
     return (res?.data?.data ?? []) as CoreMeeting[];
   },

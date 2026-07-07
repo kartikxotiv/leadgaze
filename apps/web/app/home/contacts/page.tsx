@@ -45,6 +45,7 @@ import {
   useLeadsColumnPreferences,
   useSyncColumnVisibilityToDb,
 } from '~/lib/hooks/use-leads-column-preferences';
+import { usePackageMembers } from '~/lib/hooks/use-package-members';
 import { useLocalization } from '~/lib/localization/localization-provider';
 import { ModuleGuard } from '~/lib/rbac/module-guard';
 import { useModuleRoles, useRBAC } from '~/lib/rbac/rbac-provider';
@@ -139,6 +140,9 @@ export default function ContactsPage() {
   const { currentWorkspace: workspace, canAccess, user } = useRBAC();
   const { formatDate } = useLocalization();
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCreatedByIds, setSelectedCreatedByIds] = useState<string[]>(
+    [],
+  );
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [contactToDelete, setContactToDelete] = useState<Contact | null>(null);
@@ -409,6 +413,9 @@ export default function ContactsPage() {
   });
   const teamMembersForModal = teamMembersData?.data ?? [];
 
+  // Fetch team members filtered by package access (for Created By filter)
+  const { members } = usePackageMembers();
+
   const {
     data: contactsData = { data: [], count: 0 },
     isLoading,
@@ -424,6 +431,7 @@ export default function ContactsPage() {
       sortState,
       computedCreatedOnDates,
       computedUpdatedOnDates,
+      selectedCreatedByIds,
     ],
     queryFn: () =>
       getContactsService({
@@ -437,6 +445,7 @@ export default function ContactsPage() {
         createdAtTo: computedCreatedOnDates?.to ?? undefined,
         updatedAtFrom: computedUpdatedOnDates?.from ?? undefined,
         updatedAtTo: computedUpdatedOnDates?.to ?? undefined,
+        createdByIds: selectedCreatedByIds.length > 0 ? selectedCreatedByIds : undefined,
       }),
     enabled: !!workspace?.id,
   });
@@ -447,7 +456,7 @@ export default function ContactsPage() {
   // Reset to first page when search changes
   React.useEffect(() => {
     setCurrentPage(1);
-  }, [debouncedSearchTerm, pageSize, createdOnRange, updatedOnRange]);
+  }, [debouncedSearchTerm, selectedCreatedByIds, pageSize, createdOnRange, updatedOnRange]);
 
   // Pagination Logic
   const totalPages = Math.ceil(totalCount / itemsPerPage);
@@ -496,6 +505,31 @@ export default function ContactsPage() {
           showFilter
           filterGroups={[
             {
+              key: 'created_by',
+              label: 'Created By',
+              selectedValues: selectedCreatedByIds,
+              selectedLabel:
+                selectedCreatedByIds.length === 0
+                  ? 'All members'
+                  : selectedCreatedByIds.length === 1
+                    ? ((
+                        members.find(
+                          (m: any) => m.user_id === selectedCreatedByIds[0],
+                        ) as any
+                      )?.user?.user_metadata?.full_name ?? '1 selected')
+                    : `${selectedCreatedByIds.length} selected`,
+              options: members
+                .filter((m: any) => m.user_id)
+                .map((m: any) => ({
+                  value: m.user_id,
+                  label:
+                    m.user?.user_metadata?.full_name ||
+                    m.user?.email ||
+                    m.user_id,
+                })),
+              onSelectValues: setSelectedCreatedByIds,
+            },
+            {
               key: 'created_on',
               label: 'Created On',
               type: 'date',
@@ -517,9 +551,11 @@ export default function ContactsPage() {
             },
           ]}
           activeFilterCount={
+            (selectedCreatedByIds.length > 0 ? 1 : 0) +
             (createdOnRange ? 1 : 0) + (updatedOnRange ? 1 : 0)
           }
           onClearFilters={() => {
+            setSelectedCreatedByIds([]);
             clearCreatedOnRange();
             clearUpdatedOnRange();
           }}

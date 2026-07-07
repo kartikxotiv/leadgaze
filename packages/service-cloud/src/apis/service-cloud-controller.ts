@@ -196,16 +196,16 @@ export const getServiceCloudResourceController = catchAsync(
     const updatedAtTo = url.searchParams.get('updatedAtTo');
 
     if (createdAtFrom) {
-      query = query.gte('created_at', createdAtFrom);
+      query = query.gte('created_at', `${createdAtFrom}T00:00:00.000Z`);
     }
     if (createdAtTo) {
-      query = query.lte('created_at', createdAtTo);
+      query = query.lte('created_at', `${createdAtTo}T23:59:59.999Z`);
     }
     if (updatedAtFrom) {
-      query = query.gte('updated_at', updatedAtFrom);
+      query = query.gte('updated_at', `${updatedAtFrom}T00:00:00.000Z`);
     }
     if (updatedAtTo) {
-      query = query.lte('updated_at', updatedAtTo);
+      query = query.lte('updated_at', `${updatedAtTo}T23:59:59.999Z`);
     }
 
     if (id) {

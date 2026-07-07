@@ -138,7 +138,7 @@ export default function RemindersPage() {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [priorityFilter, setPriorityFilter] = useState('all');
-  const [statusFilter, setStatusFilter] = useState('pending');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [dateRange, setDateRange] = useState<{
     from: Date | undefined;
     to: Date | undefined;
@@ -208,16 +208,28 @@ export default function RemindersPage() {
   const { getHeaderProps, getResizeHandleProps } = useColumnResize('reminders');
 
   const { data: reminders = [], isLoading } = useQuery({
-    queryKey: ['reminders', workspace?.id, statusFilter],
+    queryKey: [
+      'reminders',
+      workspace?.id,
+      statusFilter,
+      computedCreatedOnDates,
+      computedUpdatedOnDates,
+    ],
     queryFn: () => {
       if (!workspace?.id) return [];
-      // Map filter value to API status param
-      // 'pending' → 'active' (not completed), 'completed' → 'completed', 'all' → both (no filter)
       const apiStatus =
-        statusFilter === 'completed' ? 'completed' :
-        statusFilter === 'pending' ? 'active' :
-        undefined;
-      return getRemindersService(workspace.id, undefined, undefined, apiStatus);
+        statusFilter === 'completed'
+          ? 'completed'
+          : statusFilter === 'pending'
+            ? 'active'
+            : undefined;
+      return getRemindersService(workspace.id, undefined, undefined, {
+        status: apiStatus,
+        createdAtFrom: computedCreatedOnDates?.from,
+        createdAtTo: computedCreatedOnDates?.to,
+        updatedAtFrom: computedUpdatedOnDates?.from,
+        updatedAtTo: computedUpdatedOnDates?.to,
+      });
     },
     enabled: !!workspace?.id,
   });
@@ -548,7 +560,7 @@ export default function RemindersPage() {
           { value: 'completed', label: 'Completed' },
           { value: 'all', label: 'All' },
         ],
-        onSelect: (val: string) => setStatusFilter(val || 'pending'),
+        onSelect: (val: string) => setStatusFilter(val || 'all'),
       },
       {
         key: 'priority',
@@ -564,71 +576,6 @@ export default function RemindersPage() {
           { value: 'low', label: 'Low' },
         ],
         onSelect: (val: string) => setPriorityFilter(val || 'all'),
-      },
-      {
-        key: 'date_range',
-        label: 'Date Range',
-        selectedValue: dateRange.from || dateRange.to ? 'range' : '',
-        selectedLabel:
-          dateRange.from || dateRange.to
-            ? `${dateRange.from?.toLocaleDateString() || ''} - ${dateRange.to?.toLocaleDateString() || ''}`
-            : 'All time',
-        options: [],
-        onSelect: () => {},
-        customContent: (
-          <div className="flex flex-col gap-4 p-2">
-            <Calendar
-              mode="range"
-              selected={{
-                from: dateRange.from,
-                to: dateRange.to,
-              }}
-              onSelect={(range) => {
-                const to = range?.to ? new Date(range.to) : undefined;
-                if (to) {
-                  to.setHours(23, 59, 59, 999);
-                }
-                setDateRange({
-                  from: range?.from,
-                  to,
-                });
-              }}
-              initialFocus
-            />
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="text-xs"
-                onClick={() => {
-                  const today = new Date();
-                  today.setHours(0, 0, 0, 0);
-                  const todayEnd = new Date();
-                  todayEnd.setHours(23, 59, 59, 999);
-                  setDateRange({ from: today, to: todayEnd });
-                }}
-              >
-                Today
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="text-xs"
-                onClick={() => {
-                  const today = new Date();
-                  const todayEnd = new Date();
-                  todayEnd.setHours(23, 59, 59, 999);
-                  const lastWeek = new Date();
-                  lastWeek.setDate(today.getDate() - 7);
-                  lastWeek.setHours(0, 0, 0, 0);
-                  setDateRange({ from: lastWeek, to: todayEnd });
-                }}
-              >
-                Last 7 Days
-              </Button>
-            </div>
-          </div>
-        ),
       },
       {
         key: 'created_on',
