@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 
 import Image from 'next/image';
+import Link from 'next/link';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -2032,6 +2033,49 @@ export default function MeetingsPage() {
     );
   }, [workspace, user]);
 
+  const getCategoryBadge = (type: string) => {
+    switch (type?.toLowerCase()) {
+      case 'lead':
+        return (
+          <Badge
+            variant="outline"
+            className="border-blue-200 bg-blue-50 text-blue-600"
+          >
+            Lead
+          </Badge>
+        );
+      case 'contact':
+        return (
+          <Badge
+            variant="outline"
+            className="border-emerald-200 bg-emerald-50 text-emerald-600"
+          >
+            Contact
+          </Badge>
+        );
+      case 'opportunity':
+        return (
+          <Badge
+            variant="outline"
+            className="border-purple-200 bg-purple-50 text-purple-600"
+          >
+            Opportunity
+          </Badge>
+        );
+      case 'account':
+        return (
+          <Badge
+            variant="outline"
+            className="border-amber-200 bg-amber-50 text-amber-600"
+          >
+            Account
+          </Badge>
+        );
+      default:
+        return <Badge variant="secondary">{type || 'General'}</Badge>;
+    }
+  };
+
   const columns = useMemo(
     () => [
       { id: 'sno', label: 'S. No.' },
@@ -2040,6 +2084,8 @@ export default function MeetingsPage() {
       { id: 'provider', label: 'Provider' },
       { id: 'date_time', label: 'Date & Time' },
       { id: 'status', label: 'Status' },
+      { id: 'category', label: 'Entity' },
+      { id: 'associate', label: 'Associate With' },
     ],
     [],
   );
@@ -2052,6 +2098,8 @@ export default function MeetingsPage() {
       provider: true,
       date_time: true,
       status: true,
+      category: true,
+      associate: true,
     });
 
   const { getHeaderProps, getResizeHandleProps } = useColumnResize('meetings');
@@ -2496,6 +2544,40 @@ export default function MeetingsPage() {
                       />
                     </SortableTableHead>
                   )}
+                  {isVisible('category') && (
+                    <SortableTableHead
+                      label="Entity"
+                      columnId="category"
+                      sortKey="entity_type"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={toggleSort}
+                      className="relative"
+                      {...getHeaderProps('category')}
+                    >
+                      <span
+                        className="col-resize-handle"
+                        {...getResizeHandleProps('category')}
+                      />
+                    </SortableTableHead>
+                  )}
+                  {isVisible('associate') && (
+                    <SortableTableHead
+                      label="Associate With"
+                      columnId="associate"
+                      sortKey="entity_name"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={toggleSort}
+                      className="relative"
+                      {...getHeaderProps('associate')}
+                    >
+                      <span
+                        className="col-resize-handle"
+                        {...getResizeHandleProps('associate')}
+                      />
+                    </SortableTableHead>
+                  )}
                   <TableHead className="sticky right-0 text-right">
                     Actions
                   </TableHead>
@@ -2503,10 +2585,13 @@ export default function MeetingsPage() {
               </TableHeader>
               <TableBody>
                 {isLoading ? (
-                  <MeetingsPageSkeleton colSpan={7} />
+                  <MeetingsPageSkeleton colSpan={12} />
                 ) : paginatedMeetings.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="h-32 text-center">
+                    <TableCell
+                      colSpan={12}
+                      className="h-32 text-center"
+                    >
                       <p className="text-muted-foreground">
                         {searchTerm
                           ? 'No meetings match your search'
@@ -2602,6 +2687,24 @@ export default function MeetingsPage() {
                                 {statusCfg.icon}
                                 {statusCfg.label}
                               </Badge>
+                            </TableCell>
+                          )}
+                          {isVisible('category') && (
+                            <TableCell className="px-4 py-2" onClick={(e) => e.stopPropagation()}>
+                              {getCategoryBadge(meeting.entity_type)}
+                            </TableCell>
+                          )}
+                          {isVisible('associate') && (
+                            <TableCell className="px-4 py-2" onClick={(e) => e.stopPropagation()}>
+                              {meeting.entity_name && (
+                                <Link
+                                  href={`/home/sales/${meeting.entity_type === 'opportunity' ? 'opportunities' : `${meeting.entity_type}s`}/${meeting.entity_id}`}
+                                  className="primary-text-medium text-leadgaze-primary dark:text-leadgaze-primary text-xs font-medium hover:underline"
+                                  title={`${meeting.entity_type}: ${meeting.entity_name}`}
+                                >
+                                  {meeting.entity_name}
+                                </Link>
+                              )}
                             </TableCell>
                           )}
                           <TableCell className="bg-card sticky right-0 px-4 py-2 text-right">

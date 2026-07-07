@@ -55,11 +55,19 @@ const getRolesService = asyncHandlerClient(
     productKey?: string,
     sortColumn?: string,
     sortDirection?: string,
+    filters?: {
+      type?: string;
+      status?: string;
+      searchTerm?: string;
+    },
   ) => {
     const params = new URLSearchParams({ workspaceId });
     if (productKey) params.set('productKey', productKey);
     if (sortColumn) params.set('sortColumn', sortColumn);
     if (sortDirection) params.set('sortDirection', sortDirection);
+    if (filters?.type) params.set('type', filters.type);
+    if (filters?.status) params.set('status', filters.status);
+    if (filters?.searchTerm) params.set('searchTerm', filters.searchTerm);
     const response = await ApiClient.get(`/roles?${params.toString()}`);
     return response.data;
   },

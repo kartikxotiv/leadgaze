@@ -189,7 +189,8 @@ export default function RemindersPage() {
       { id: 'due_date', label: 'Due Date' },
       { id: 'priority', label: 'Priority' },
       { id: 'status', label: 'Status' },
-      { id: 'entity', label: 'Entity' },
+      { id: 'category', label: 'Entity' },
+      { id: 'associate', label: 'Associate With' },
       { id: 'created_by', label: 'Created By' },
       { id: 'created_at', label: 'Created On' },
       { id: 'updated_by', label: 'Last Updated By' },
@@ -205,7 +206,8 @@ export default function RemindersPage() {
       due_date: true,
       priority: true,
       status: true,
-      entity: true,
+      category: true,
+      associate: true,
       created_by: false,
       created_at: false,
       updated_by: false,
@@ -498,6 +500,49 @@ export default function RemindersPage() {
     );
   };
 
+  const getCategoryBadge = (type: string) => {
+    switch (type?.toLowerCase()) {
+      case 'lead':
+        return (
+          <Badge
+            variant="outline"
+            className="border-blue-200 bg-blue-50 text-blue-600"
+          >
+            Lead
+          </Badge>
+        );
+      case 'contact':
+        return (
+          <Badge
+            variant="outline"
+            className="border-emerald-200 bg-emerald-50 text-emerald-600"
+          >
+            Contact
+          </Badge>
+        );
+      case 'opportunity':
+        return (
+          <Badge
+            variant="outline"
+            className="border-purple-200 bg-purple-50 text-purple-600"
+          >
+            Opportunity
+          </Badge>
+        );
+      case 'account':
+        return (
+          <Badge
+            variant="outline"
+            className="border-amber-200 bg-amber-50 text-amber-600"
+          >
+            Account
+          </Badge>
+        );
+      default:
+        return <Badge variant="secondary">{type || 'General'}</Badge>;
+    }
+  };
+
   const filterGroups = useMemo(() => {
     return [
       {
@@ -776,20 +821,37 @@ export default function RemindersPage() {
                       />
                     </SortableTableHead>
                   )}
-                  {isVisible('entity') && (
+                  {isVisible('category') && (
                     <SortableTableHead
                       label="Entity"
-                      columnId="entity"
+                      columnId="category"
+                      sortKey="entity_type"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={toggleSort}
+                      className="relative"
+                      {...getHeaderProps('category')}
+                    >
+                      <span
+                        className="col-resize-handle"
+                        {...getResizeHandleProps('category')}
+                      />
+                    </SortableTableHead>
+                  )}
+                  {isVisible('associate') && (
+                    <SortableTableHead
+                      label="Associate With"
+                      columnId="associate"
                       sortKey="entity_name"
                       sortColumn={sortColumn}
                       sortDirection={sortDirection}
                       onSort={toggleSort}
                       className="relative"
-                      {...getHeaderProps('entity')}
+                      {...getHeaderProps('associate')}
                     >
                       <span
                         className="col-resize-handle"
-                        {...getResizeHandleProps('entity')}
+                        {...getResizeHandleProps('associate')}
                       />
                     </SortableTableHead>
                   )}
@@ -911,12 +973,17 @@ export default function RemindersPage() {
                             {getStatusBadge(reminder.is_completed)}
                           </TableCell>
                         )}
-                        {isVisible('entity') && (
+                        {isVisible('category') && (
+                          <TableCell>
+                            {getCategoryBadge(reminder.entity_type)}
+                          </TableCell>
+                        )}
+                        {isVisible('associate') && (
                           <TableCell>
                             {reminder.entity_name && (
                               <Link
                                 href={`/home/sales/${reminder.entity_type === 'opportunity' ? 'opportunities' : `${reminder.entity_type}s`}/${reminder.entity_id}`}
-                                className="primary-text-medium text-leadgaze-primary dark:text-leadgaze-primary text-xs"
+                                className="primary-text-medium text-leadgaze-primary dark:text-leadgaze-primary text-xs font-medium hover:underline"
                                 title={`${reminder.entity_type}: ${reminder.entity_name}`}
                               >
                                 {reminder.entity_name}

@@ -9,6 +9,23 @@ import {
 import { getRelatedEntityIds } from '../_helpers/get-related-entities';
 import { getEntityName } from '../_helpers/get-entity-name';
 
+// Map UI sales entity types to database convention (sales_*)
+function toDbEntityType(type: string): string {
+  const salesTypes = ['lead', 'contact', 'account', 'opportunity'];
+  if (salesTypes.includes(type)) {
+    return `sales_${type}`;
+  }
+  return type;
+}
+
+// Map database convention (sales_*) back to UI types
+function toUiEntityType(type: string): string {
+  if (type?.startsWith('sales_')) {
+    return type.substring(6);
+  }
+  return type;
+}
+
 /**
  * GET /api/meetings
  * Fetch meetings for an entity
@@ -70,11 +87,12 @@ export const getMeetings = catchAsync(
 
       // Build query - fetch meetings for all related entities
       const meetingPromises = entityIds.map(({ entity_type, entity_id }) => {
+        const dbType = toDbEntityType(entity_type);
         let query = supabase
           .from('crm_meetings')
           .select('*, created_by_user:accounts(name, email)')
           .eq('workspace_id', workspaceId)
-          .eq('entity_type', entity_type)
+          .eq('entity_type', dbType)
           .eq('entity_id', entity_id)
           .eq('is_deleted', false);
 
@@ -187,13 +205,15 @@ export const getMeetings = catchAsync(
     // Add entity names to each meeting
     const meetingsWithEntityNames = await Promise.all(
       uniqueMeetings.map(async (meeting) => {
+        const uiType = toUiEntityType(meeting.entity_type);
         const entityName = await getEntityName(
           supabase,
-          meeting.entity_type,
+          uiType as any,
           meeting.entity_id,
         );
         return {
           ...meeting,
+          entity_type: uiType,
           entity_name: entityName,
         };
       }),
@@ -236,11 +256,13 @@ export const createMeeting = catchAsync(
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
+    const dbType = toDbEntityType(entity_type);
+
     const { data: meeting, error } = await supabase
       .from('crm_meetings')
       .insert({
         workspace_id,
-        entity_type,
+        entity_type: dbType,
         entity_id,
         title,
         start_time,
