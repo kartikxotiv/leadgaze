@@ -41,6 +41,7 @@ import { ModuleGuard } from '~/lib/rbac/module-guard';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { getAuditLogsService } from '~/services/audit-logs.service';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
+import { useDateRangeFilter } from '@kit/ui/use-date-range-filter';
 
 export default function AuditLogsPage() {
   const { currentWorkspace: workspace } = useRBAC();
@@ -58,8 +59,18 @@ export default function AuditLogsPage() {
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
   const itemsPerPage = pageSize;
 
+  const {
+    dateRange: createdOnRange,
+    setDateRange: setCreatedOnRange,
+    computedDates: computedCreatedOnDates,
+    clearDateRange: clearCreatedOnRange,
+  } = useDateRangeFilter();
+
   const activeFilterCount =
-    (selectedModule !== 'all' ? 1 : 0) + (selectedAction !== 'all' ? 1 : 0) + (selectedProduct !== 'all' && !contextProductKey ? 1 : 0);
+    (selectedModule !== 'all' ? 1 : 0) +
+    (selectedAction !== 'all' ? 1 : 0) +
+    (selectedProduct !== 'all' && !contextProductKey ? 1 : 0) +
+    (createdOnRange ? 1 : 0);
 
   const columns = useMemo(
     () => [
@@ -92,6 +103,7 @@ export default function AuditLogsPage() {
       selectedAction,
       selectedProduct,
       itemsPerPage,
+      computedCreatedOnDates,
     ],
     queryFn: () => {
       if (!workspace?.id) return null;
@@ -102,6 +114,8 @@ export default function AuditLogsPage() {
         module: selectedModule === 'all' ? undefined : selectedModule,
         action: selectedAction === 'all' ? undefined : selectedAction,
         productKey: selectedProduct === 'all' ? undefined : selectedProduct,
+        createdAtFrom: computedCreatedOnDates?.from ?? undefined,
+        createdAtTo: computedCreatedOnDates?.to ?? undefined,
       });
     },
     enabled: !!workspace?.id,
@@ -149,7 +163,7 @@ export default function AuditLogsPage() {
   // Reset to first page when search or filters change
   useEffect(() => {
     setPage(1);
-  }, [debouncedSearchTerm, selectedModule, selectedAction, selectedProduct]);
+  }, [debouncedSearchTerm, selectedModule, selectedAction, selectedProduct, createdOnRange]);
 
   const filterGroups = useMemo(() => {
     const groups = [
@@ -194,8 +208,18 @@ export default function AuditLogsPage() {
         onSelect: (val: string) => setSelectedProduct(val || 'all'),
       });
     }
+    groups.push({
+      key: 'created_on',
+      label: 'Created On',
+      type: 'date',
+      dateValue: createdOnRange,
+      onDateChange: (val) => {
+        setCreatedOnRange(val);
+        setPage(1);
+      },
+    } as any);
     return groups;
-  }, [selectedModule, selectedAction, selectedProduct, contextProductKey]);
+  }, [selectedModule, selectedAction, selectedProduct, contextProductKey, createdOnRange]);
 
   return (
     <ModuleGuard module="audit_logs">
@@ -220,6 +244,7 @@ export default function AuditLogsPage() {
             setSelectedModule('all');
             setSelectedAction('all');
             if (!contextProductKey) setSelectedProduct('all');
+            clearCreatedOnRange();
           }}
           columnVisibilitySlot={
             <ColumnVisibilitySelector
@@ -372,7 +397,7 @@ export default function AuditLogsPage() {
                             className="group hover:bg-muted/30 transition-colors border-b last:border-0"
                           >
                             {isVisible('date_time') && (
-                              <TableCell className="py-3 align-middle">
+                              <TableCell className="py-2 align-middle">
                                 <div className="flex flex-col gap-0.5">
                                   <span className="text-sm font-medium">
                                     {formatDate(log.created_at)}
@@ -389,7 +414,7 @@ export default function AuditLogsPage() {
                               </TableCell>
                             )}
                             {isVisible('actor') && (
-                              <TableCell className="py-3 align-middle">
+                              <TableCell className="py-2 align-middle">
                                 <div className="flex items-center gap-3">
                                   <div className="bg-primary/10 text-primary flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold ring-1 ring-primary/20">
                                     {log.actor?.name?.[0] ||
@@ -408,7 +433,7 @@ export default function AuditLogsPage() {
                               </TableCell>
                             )}
                             {isVisible('module') && (
-                              <TableCell className="py-3 align-middle">
+                              <TableCell className="py-2 align-middle">
                                 <div className="flex items-center gap-2">
                                   <div className="h-1.5 w-1.5 rounded-full bg-slate-400 dark:bg-slate-600"></div>
                                   <span className="text-sm font-medium text-foreground/80">
@@ -418,7 +443,7 @@ export default function AuditLogsPage() {
                               </TableCell>
                             )}
                             {isVisible('action') && (
-                              <TableCell className="py-3 align-middle">
+                              <TableCell className="py-2 align-middle">
                                 {(() => {
                                   const styles = getActionStyles(log.action);
                                   return (
@@ -433,7 +458,7 @@ export default function AuditLogsPage() {
                               </TableCell>
                             )}
                             {isVisible('entity') && (
-                              <TableCell className="py-3 align-middle w-full max-w-[200px] sm:max-w-auto">
+                              <TableCell className="py-2 align-middle w-full max-w-[200px] sm:max-w-auto">
                                 <div className="flex flex-col gap-0.5">
                                   <span className="truncate text-sm font-medium">
                                     {log.entity_name || '-'}
@@ -444,7 +469,7 @@ export default function AuditLogsPage() {
                                 </div>
                               </TableCell>
                             )}
-                            <TableCell className="bg-card sticky right-0 py-3 text-right align-middle">
+                            <TableCell className="bg-card sticky right-0 py-2 text-right align-middle">
                               <Button
                                 variant="ghost"
                                 size="sm"

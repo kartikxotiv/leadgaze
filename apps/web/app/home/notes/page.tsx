@@ -8,16 +8,16 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Briefcase,
   Building2,
+  Check,
   Edit,
   Loader2,
   MoreHorizontal,
   MoreVertical,
   Plus,
+  RotateCcw,
   Trash2,
   User,
   Users,
-  Check,
-  RotateCcw,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -68,6 +68,8 @@ import { useDateRangeFilter } from '@kit/ui/use-date-range-filter';
 import { useTableSort } from '@kit/ui/use-table-sort';
 
 import { useRBAC } from '~/lib/rbac/rbac-provider';
+import { useDebounce } from '~/lib/hooks/use-debounce';
+import { usePackageMembers } from '~/lib/hooks/use-package-members';
 import { getAccountsService } from '~/services/accounts.service';
 import {
   Note,
@@ -135,7 +137,9 @@ export default function NotesPage() {
   const { currentWorkspace: workspace } = useRBAC();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'active' | 'closed'>('active');
+  const [statusFilter, setStatusFilter] = useState<'active' | 'closed'>(
+    'active',
+  );
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(15);
@@ -153,6 +157,10 @@ export default function NotesPage() {
     clearDateRange: clearUpdatedOnRange,
   } = useDateRangeFilter();
 
+  const [selectedCreatedByIds, setSelectedCreatedByIds] = useState<string[]>([]);
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
+  const { members } = usePackageMembers();
+
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [newNoteContent, setNewNoteContent] = useState('');
   const [entityType, setEntityType] = useState('lead');
@@ -166,7 +174,7 @@ export default function NotesPage() {
   const noteColumns = useMemo(
     () => [
       { id: 'sno', label: 'S. No.' },
-      { id: 'category', label: 'Category' },
+      { id: 'category', label: 'Entity' },
       { id: 'associate', label: 'Associate With' },
       { id: 'content', label: 'Note Content' },
       { id: 'author', label: 'Author' },
@@ -194,10 +202,32 @@ export default function NotesPage() {
   const { getHeaderProps, getResizeHandleProps } = useColumnResize('notes');
 
   const { data: notes = [], isLoading } = useQuery({
-    queryKey: ['notes', workspace?.id, statusFilter],
+    queryKey: [
+      'notes',
+      workspace?.id,
+      statusFilter,
+      categoryFilter,
+      debouncedSearchTerm,
+      selectedCreatedByIds,
+      computedCreatedOnDates,
+      computedUpdatedOnDates,
+    ],
     queryFn: async () => {
       if (!workspace?.id) return [];
-      const res = await getNotesService(workspace.id, undefined, undefined, statusFilter);
+      const res = await getNotesService(
+        workspace.id,
+        categoryFilter === 'all' ? undefined : categoryFilter,
+        undefined,
+        statusFilter,
+        {
+          searchTerm: debouncedSearchTerm || undefined,
+          createdAtFrom: computedCreatedOnDates?.from,
+          createdAtTo: computedCreatedOnDates?.to,
+          updatedAtFrom: computedUpdatedOnDates?.from,
+          updatedAtTo: computedUpdatedOnDates?.to,
+          createdByIds: selectedCreatedByIds.length > 0 ? selectedCreatedByIds : undefined,
+        },
+      );
       return res;
     },
     enabled: !!workspace?.id,
@@ -267,8 +297,15 @@ export default function NotesPage() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, content, is_closed }: { id: string; content?: string; is_closed?: boolean }) =>
-      updateNoteService(id, { content, is_closed }),
+    mutationFn: ({
+      id,
+      content,
+      is_closed,
+    }: {
+      id: string;
+      content?: string;
+      is_closed?: boolean;
+    }) => updateNoteService(id, { content, is_closed }),
     onSuccess: (data, variables) => {
       if (variables.is_closed !== undefined) {
         toast.success(variables.is_closed ? 'Note closed' : 'Note reopened');
@@ -293,51 +330,11 @@ export default function NotesPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, categoryFilter, pageSize, createdOnRange, updatedOnRange]);
+  }, [debouncedSearchTerm, categoryFilter, selectedCreatedByIds, pageSize, createdOnRange, updatedOnRange]);
 
   const filteredNotes = useMemo(() => {
-    return notes.filter((note: Note) => {
-      const matchesSearch = note.content
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase());
-
-      const matchesCategory =
-        categoryFilter === 'all' ||
-        note.entity_type?.toLowerCase() === categoryFilter.toLowerCase();
-
-      let matchesCreated = true;
-      if (computedCreatedOnDates?.from) {
-        const createdDate = new Date(note.created_at).getTime();
-        const from = new Date(computedCreatedOnDates.from).getTime();
-        const to = computedCreatedOnDates.to
-          ? new Date(computedCreatedOnDates.to).getTime()
-          : new Date().getTime();
-        matchesCreated = createdDate >= from && createdDate <= to;
-      }
-
-      let matchesUpdated = true;
-      if (computedUpdatedOnDates?.from) {
-        const updatedDate = new Date(
-          note.updated_at || note.created_at,
-        ).getTime();
-        const from = new Date(computedUpdatedOnDates.from).getTime();
-        const to = computedUpdatedOnDates.to
-          ? new Date(computedUpdatedOnDates.to).getTime()
-          : new Date().getTime();
-        matchesUpdated = updatedDate >= from && updatedDate <= to;
-      }
-
-      return (
-        matchesSearch && matchesCategory && matchesCreated && matchesUpdated
-      );
-    });
-  }, [
-    notes,
-    searchTerm,
-    categoryFilter,
-    computedCreatedOnDates,
-    computedUpdatedOnDates,
-  ]);
+    return notes;
+  }, [notes]);
 
   const { sortColumn, sortDirection, toggleSort, sortedData } =
     useTableSort<Note>('notes', filteredNotes, {
@@ -442,6 +439,31 @@ export default function NotesPage() {
         onSelect: (val: string) => setCategoryFilter(val || 'all'),
       },
       {
+        key: 'created_by',
+        label: 'Created By',
+        selectedValues: selectedCreatedByIds,
+        selectedLabel:
+          selectedCreatedByIds.length === 0
+            ? 'All members'
+            : selectedCreatedByIds.length === 1
+              ? ((
+                  members.find(
+                    (m: any) => m.user_id === selectedCreatedByIds[0],
+                  ) as any
+                )?.user?.user_metadata?.full_name ?? '1 selected')
+              : `${selectedCreatedByIds.length} selected`,
+        options: members
+          .filter((m: any) => m.user_id)
+          .map((m: any) => ({
+            value: m.user_id,
+            label:
+              m.user?.user_metadata?.full_name ||
+              m.user?.email ||
+              m.user_id,
+          })),
+        onSelectValues: setSelectedCreatedByIds,
+      },
+      {
         key: 'created_on',
         label: 'Created On',
         type: 'date',
@@ -476,7 +498,7 @@ export default function NotesPage() {
         },
       },
     ];
-  }, [categoryFilter, createdOnRange, updatedOnRange, statusFilter]);
+  }, [categoryFilter, createdOnRange, updatedOnRange, statusFilter, selectedCreatedByIds, members]);
 
   if (!workspace) {
     return <NotesPageSkeleton />;
@@ -505,11 +527,13 @@ export default function NotesPage() {
             (categoryFilter !== 'all' ? 1 : 0) +
             (createdOnRange ? 1 : 0) +
             (updatedOnRange ? 1 : 0) +
-            (statusFilter !== 'active' ? 1 : 0)
+            (statusFilter !== 'active' ? 1 : 0) +
+            (selectedCreatedByIds.length > 0 ? 1 : 0)
           }
           onClearFilters={() => {
             setCategoryFilter('all');
             setStatusFilter('active');
+            setSelectedCreatedByIds([]);
             clearCreatedOnRange();
             clearUpdatedOnRange();
           }}
@@ -579,7 +603,7 @@ export default function NotesPage() {
                   )}
                   {isVisible('category') && (
                     <SortableTableHead
-                      label="Category"
+                      label="Entity"
                       columnId="category"
                       sortKey="entity_type"
                       sortColumn={sortColumn}
@@ -769,7 +793,9 @@ export default function NotesPage() {
                       )}
                       {isVisible('content') && (
                         <TableCell className="primary-text-medium">
-                          <p className={`line-clamp-2 max-w-[400px] text-sm whitespace-pre-wrap ${note.is_closed ? 'text-muted-foreground line-through' : ''}`}>
+                          <p
+                            className={`line-clamp-2 max-w-[400px] text-sm whitespace-pre-wrap ${note.is_closed ? 'text-muted-foreground line-through' : ''}`}
+                          >
                             {note.content}
                           </p>
                         </TableCell>
@@ -820,14 +846,24 @@ export default function NotesPage() {
                             {note.is_closed ? (
                               <DropdownMenuItem
                                 className="gap-2"
-                                onClick={() => updateMutation.mutate({ id: note.id, is_closed: false })}
+                                onClick={() =>
+                                  updateMutation.mutate({
+                                    id: note.id,
+                                    is_closed: false,
+                                  })
+                                }
                               >
                                 <RotateCcw className="h-4 w-4" /> Reopen Note
                               </DropdownMenuItem>
                             ) : (
                               <DropdownMenuItem
                                 className="gap-2"
-                                onClick={() => updateMutation.mutate({ id: note.id, is_closed: true })}
+                                onClick={() =>
+                                  updateMutation.mutate({
+                                    id: note.id,
+                                    is_closed: true,
+                                  })
+                                }
                               >
                                 <Check className="h-4 w-4" /> Close Note
                               </DropdownMenuItem>

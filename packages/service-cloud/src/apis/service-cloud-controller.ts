@@ -196,16 +196,16 @@ export const getServiceCloudResourceController = catchAsync(
     const updatedAtTo = url.searchParams.get('updatedAtTo');
 
     if (createdAtFrom) {
-      query = query.gte('created_at', createdAtFrom);
+      query = query.gte('created_at', `${createdAtFrom}T00:00:00.000Z`);
     }
     if (createdAtTo) {
-      query = query.lte('created_at', createdAtTo);
+      query = query.lte('created_at', `${createdAtTo}T23:59:59.999Z`);
     }
     if (updatedAtFrom) {
-      query = query.gte('updated_at', updatedAtFrom);
+      query = query.gte('updated_at', `${updatedAtFrom}T00:00:00.000Z`);
     }
     if (updatedAtTo) {
-      query = query.lte('updated_at', updatedAtTo);
+      query = query.lte('updated_at', `${updatedAtTo}T23:59:59.999Z`);
     }
 
     if (id) {
@@ -224,7 +224,19 @@ export const getServiceCloudResourceController = catchAsync(
       );
     }
 
-    if (resource === 'tickets' && customerId) {
+    const createdByIds = url.searchParams.get('createdByIds') || '';
+    const statusIds = url.searchParams.get('statusIds') || '';
+    const priorityIds = url.searchParams.get('priorityIds') || '';
+    const assigneeIds = url.searchParams.get('assigneeIds') || '';
+
+    if (createdByIds && createdByIds !== 'all' && createdByIds !== 'undefined' && createdByIds !== 'null') {
+      const ids = createdByIds.split(',').map((id) => id.trim()).filter(Boolean);
+      if (ids.length > 0) {
+        query = query.in('created_by', ids);
+      }
+    }
+
+    if (resource === 'tickets' && customerId && customerId !== 'undefined' && customerId !== 'null') {
       query = query.eq('customer_id', customerId);
     }
 
@@ -253,6 +265,40 @@ export const getServiceCloudResourceController = catchAsync(
       }
 
       query = query.in('id', assignedTicketIds);
+    }
+
+    if (resource === 'tickets') {
+      if (statusIds && statusIds !== 'all' && statusIds !== 'undefined' && statusIds !== 'null') {
+        const ids = statusIds.split(',').map((id) => id.trim()).filter(Boolean);
+        if (ids.length > 0) {
+          query = query.in('status_id', ids);
+        }
+      }
+      if (priorityIds && priorityIds !== 'all' && priorityIds !== 'undefined' && priorityIds !== 'null') {
+        const ids = priorityIds.split(',').map((id) => id.trim()).filter(Boolean);
+        if (ids.length > 0) {
+          query = query.in('priority_id', ids);
+        }
+      }
+      if (assigneeIds && assigneeIds !== 'all' && assigneeIds !== 'undefined' && assigneeIds !== 'null') {
+        const ids = assigneeIds.split(',').map((id) => id.trim()).filter(Boolean);
+        if (ids.length > 0) {
+          const { data: ticketAssigneeData, error: taError } = await (supabase as any)
+            .schema('service_cloud')
+            .from('ticket_assignees')
+            .select('ticket_id')
+            .eq('workspace_id', workspaceId)
+            .in('account_id', ids);
+
+          if (taError) throw taError;
+          const ticketIds = Array.from(new Set(ticketAssigneeData?.map((ta: any) => ta.ticket_id).filter(Boolean) || []));
+          if (ticketIds.length === 0) {
+            query = query.in('id', ['00000000-0000-0000-0000-000000000000']);
+          } else {
+            query = query.in('id', ticketIds);
+          }
+        }
+      }
     }
 
     const sortColumn = url.searchParams.get('sortColumn');

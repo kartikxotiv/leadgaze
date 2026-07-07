@@ -106,6 +106,7 @@ export function ServiceCloudTicketsPage({
   canViewColumn,
   canEditField,
   currentUserId,
+  teamMembers = [],
 }: {
   workspaceId: string;
   isAdmin?: boolean;
@@ -118,6 +119,7 @@ export function ServiceCloudTicketsPage({
   /** Optional FLS function: form fields for which this returns false are hidden in create/edit modals. */
   canEditField?: (fieldKey: string) => boolean;
   currentUserId?: string;
+  teamMembers?: any[];
 }) {
   const { formatDate } = useLocalization();
   const [createOpen, setCreateOpen] = useState(false);
@@ -142,6 +144,11 @@ export function ServiceCloudTicketsPage({
     SERVICE_CLOUD_FEATURE_KEYS.delete,
   );
 
+  const [selectedCreatedByIds, setSelectedCreatedByIds] = useState<string[]>([]);
+  const [selectedStatusIds, setSelectedStatusIds] = useState<string[]>([]);
+  const [selectedPriorityIds, setSelectedPriorityIds] = useState<string[]>([]);
+  const [selectedAssigneeIds, setSelectedAssigneeIds] = useState<string[]>([]);
+
   const {
     dateRange: createdOnRange,
     setDateRange: setCreatedOnRange,
@@ -154,44 +161,6 @@ export function ServiceCloudTicketsPage({
     computedDates: computedUpdatedOnDates,
     clearDateRange: clearUpdatedOnRange,
   } = useDateRangeFilter();
-
-  const activeFilterCount =
-    (assignedToMeOnly ? 1 : 0) +
-    (createdOnRange ? 1 : 0) +
-    (updatedOnRange ? 1 : 0);
-
-  const filterGroups = [
-    {
-      key: 'created_on',
-      label: 'Created On',
-      type: 'date',
-      dateValue: createdOnRange,
-      onDateChange: setCreatedOnRange,
-    },
-    {
-      key: 'updated_on',
-      label: 'Updated On',
-      type: 'date',
-      dateValue: updatedOnRange,
-      onDateChange: setUpdatedOnRange,
-    },
-  ];
-
-  const queryParams = {
-    ...(assignedToMeOnly ? { assignedToMe: 'true' } : {}),
-    ...(computedCreatedOnDates?.from
-      ? { createdAtFrom: computedCreatedOnDates.from }
-      : {}),
-    ...(computedCreatedOnDates?.to
-      ? { createdAtTo: computedCreatedOnDates.to }
-      : {}),
-    ...(computedUpdatedOnDates?.from
-      ? { updatedAtFrom: computedUpdatedOnDates.from }
-      : {}),
-    ...(computedUpdatedOnDates?.to
-      ? { updatedAtTo: computedUpdatedOnDates.to }
-      : {}),
-  };
 
   // Optimized: single API call fetches statuses + priorities + categories in parallel on server
   const { data: lookups } = useQuery({
@@ -241,6 +210,136 @@ export function ServiceCloudTicketsPage({
   const priorityById = new Map<string, any>(
     allPriorities.map((priority: any) => [priority.id, priority]),
   );
+
+  const activeFilterCount =
+    (assignedToMeOnly ? 1 : 0) +
+    (selectedCreatedByIds.length > 0 ? 1 : 0) +
+    (selectedStatusIds.length > 0 ? 1 : 0) +
+    (selectedPriorityIds.length > 0 ? 1 : 0) +
+    (selectedAssigneeIds.length > 0 ? 1 : 0) +
+    (createdOnRange ? 1 : 0) +
+    (updatedOnRange ? 1 : 0);
+
+  const filterGroups = [
+    {
+      key: 'status',
+      label: 'Status',
+      selectedValues: selectedStatusIds,
+      selectedLabel:
+        selectedStatusIds.length === 0
+          ? 'All statuses'
+          : `${selectedStatusIds.length} selected`,
+      options: statusOptions,
+      onSelectValues: setSelectedStatusIds,
+    },
+    {
+      key: 'priority',
+      label: 'Priority',
+      selectedValues: selectedPriorityIds,
+      selectedLabel:
+        selectedPriorityIds.length === 0
+          ? 'All priorities'
+          : `${selectedPriorityIds.length} selected`,
+      options: priorityOptions,
+      onSelectValues: setSelectedPriorityIds,
+    },
+    {
+      key: 'assignees',
+      label: 'Assignees',
+      selectedValues: selectedAssigneeIds,
+      selectedLabel:
+        selectedAssigneeIds.length === 0
+          ? 'All assignees'
+          : selectedAssigneeIds.length === 1
+            ? ((
+                (Array.isArray(teamMembers) ? teamMembers : []).find(
+                  (m: any) => m?.user_id === selectedAssigneeIds[0],
+                ) as any
+              )?.user?.user_metadata?.full_name ?? '1 selected')
+            : `${selectedAssigneeIds.length} selected`,
+      options: (Array.isArray(teamMembers) ? teamMembers : [])
+        .filter((m: any) => m?.user_id)
+        .reduce((acc: any[], m: any) => {
+          if (!acc.some((x) => x.value === m.user_id)) {
+            acc.push({
+              value: m.user_id,
+              label:
+                m.user?.user_metadata?.full_name ||
+                m.user?.email ||
+                m.user_id,
+            });
+          }
+          return acc;
+        }, []),
+      onSelectValues: setSelectedAssigneeIds,
+    },
+    {
+      key: 'created_by',
+      label: 'Created By',
+      selectedValues: selectedCreatedByIds,
+      selectedLabel:
+        selectedCreatedByIds.length === 0
+          ? 'All members'
+          : selectedCreatedByIds.length === 1
+            ? ((
+                (Array.isArray(teamMembers) ? teamMembers : []).find(
+                  (m: any) => m?.user_id === selectedCreatedByIds[0],
+                ) as any
+              )?.user?.user_metadata?.full_name ?? '1 selected')
+            : `${selectedCreatedByIds.length} selected`,
+      options: (Array.isArray(teamMembers) ? teamMembers : [])
+        .filter((m: any) => m?.user_id)
+        .reduce((acc: any[], m: any) => {
+          if (!acc.some((x) => x.value === m.user_id)) {
+            acc.push({
+              value: m.user_id,
+              label:
+                m.user?.user_metadata?.full_name ||
+                m.user?.email ||
+                m.user_id,
+            });
+          }
+          return acc;
+        }, []),
+      onSelectValues: setSelectedCreatedByIds,
+    },
+    {
+      key: 'created_on',
+      label: 'Created On',
+      type: 'date',
+      dateValue: createdOnRange,
+      onDateChange: setCreatedOnRange,
+    },
+    {
+      key: 'updated_on',
+      label: 'Updated On',
+      type: 'date',
+      dateValue: updatedOnRange,
+      onDateChange: setUpdatedOnRange,
+    },
+  ];
+
+  const queryParams = {
+    ...(assignedToMeOnly ? { assignedToMe: 'true' } : {}),
+    ...(selectedCreatedByIds.length > 0 ? { createdByIds: selectedCreatedByIds.join(',') } : {}),
+    ...(selectedStatusIds.length > 0 ? { statusIds: selectedStatusIds.join(',') } : {}),
+    ...(selectedPriorityIds.length > 0 ? { priorityIds: selectedPriorityIds.join(',') } : {}),
+    ...(selectedAssigneeIds.length > 0 ? { assigneeIds: selectedAssigneeIds.join(',') } : {}),
+    ...(computedCreatedOnDates?.from
+      ? { createdAtFrom: computedCreatedOnDates.from }
+      : {}),
+    ...(computedCreatedOnDates?.to
+      ? { createdAtTo: computedCreatedOnDates.to }
+      : {}),
+    ...(computedUpdatedOnDates?.from
+      ? { updatedAtFrom: computedUpdatedOnDates.from }
+      : {}),
+    ...(computedUpdatedOnDates?.to
+      ? { updatedAtTo: computedUpdatedOnDates.to }
+      : {}),
+  };
+
+
 
   // --- Custom Create Ticket state ---
   const [customerMode, setCustomerMode] = useState<'existing' | 'new'>(
@@ -395,6 +494,10 @@ export function ServiceCloudTicketsPage({
         activeFilterCount={activeFilterCount}
         onClearFilters={() => {
           setAssignedToMeOnly(false);
+          setSelectedCreatedByIds([]);
+          setSelectedStatusIds([]);
+          setSelectedPriorityIds([]);
+          setSelectedAssigneeIds([]);
           clearCreatedOnRange();
           clearUpdatedOnRange();
         }}

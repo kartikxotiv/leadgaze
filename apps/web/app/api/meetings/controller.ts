@@ -28,6 +28,15 @@ export const getMeetings = catchAsync(
     const entityId = url.searchParams.get('entityId');
     const workspaceId = url.searchParams.get('workspaceId');
 
+    const searchTerm = url.searchParams.get('searchTerm') || '';
+    const createdByIds = url.searchParams.get('createdByIds') || '';
+    const statuses = url.searchParams.get('statuses') || '';
+    const timeframe = url.searchParams.get('timeframe') || '';
+    const createdAtFrom = url.searchParams.get('createdAtFrom') || '';
+    const createdAtTo = url.searchParams.get('createdAtTo') || '';
+    const updatedAtFrom = url.searchParams.get('updatedAtFrom') || '';
+    const updatedAtTo = url.searchParams.get('updatedAtTo') || '';
+
     if (!workspaceId) {
       return NextResponse.json(
         { message: 'workspaceId is required' },
@@ -73,6 +82,26 @@ export const getMeetings = catchAsync(
           query = query.eq('created_by', user.id);
         }
 
+        if (createdByIds && createdByIds !== 'all') {
+          const ids = createdByIds.split(',').map((id) => id.trim()).filter(Boolean);
+          if (ids.length > 0) {
+            query = query.in('created_by', ids);
+          }
+        }
+        if (statuses) {
+          const statusList = statuses.split(',').map((s) => s.trim()).filter(Boolean);
+          if (statusList.length > 0) {
+            query = query.in('status', statusList);
+          }
+        }
+        if (searchTerm) {
+          query = query.or(`title.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`);
+        }
+        if (createdAtFrom) query = query.gte('created_at', `${createdAtFrom}T00:00:00.000Z`);
+        if (createdAtTo) query = query.lte('created_at', `${createdAtTo}T23:59:59.999Z`);
+        if (updatedAtFrom) query = query.gte('updated_at', `${updatedAtFrom}T00:00:00.000Z`);
+        if (updatedAtTo) query = query.lte('updated_at', `${updatedAtTo}T23:59:59.999Z`);
+
         return query;
       });
 
@@ -90,6 +119,26 @@ export const getMeetings = catchAsync(
         query = query.eq('created_by', user.id);
       }
 
+      if (createdByIds && createdByIds !== 'all') {
+        const ids = createdByIds.split(',').map((id) => id.trim()).filter(Boolean);
+        if (ids.length > 0) {
+          query = query.in('created_by', ids);
+        }
+      }
+      if (statuses) {
+        const statusList = statuses.split(',').map((s) => s.trim()).filter(Boolean);
+        if (statusList.length > 0) {
+          query = query.in('status', statusList);
+        }
+      }
+      if (searchTerm) {
+        query = query.or(`title.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`);
+      }
+      if (createdAtFrom) query = query.gte('created_at', `${createdAtFrom}T00:00:00.000Z`);
+      if (createdAtTo) query = query.lte('created_at', `${createdAtTo}T23:59:59.999Z`);
+      if (updatedAtFrom) query = query.gte('updated_at', `${updatedAtFrom}T00:00:00.000Z`);
+      if (updatedAtTo) query = query.lte('updated_at', `${updatedAtTo}T23:59:59.999Z`);
+
       const { data, error } = await query;
       if (error) throw error;
       allMeetings = data || [];
@@ -99,11 +148,30 @@ export const getMeetings = catchAsync(
     const now = new Date();
     const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
-    const filteredMeetings = allMeetings.filter((meeting) => {
+    let filteredMeetings = allMeetings.filter((meeting) => {
       const endTime = new Date(meeting.end_time);
       // Show if end time is in the future OR within last 1 day
       return endTime >= oneDayAgo;
     });
+
+    if (timeframe) {
+      const timeframeList = timeframe.split(',').map((t) => t.trim()).filter(Boolean);
+      if (timeframeList.length > 0 && timeframeList.length < 2) {
+        const checkTime = new Date();
+        filteredMeetings = filteredMeetings.filter((meeting) => {
+          const start = meeting.start_time || meeting.scheduled_start || meeting.actual_start;
+          if (!start) return timeframeList.includes('upcoming');
+          const meetingDate = new Date(start);
+          const isUpcoming =
+            meetingDate >= checkTime &&
+            meeting.status !== 'completed' &&
+            meeting.status !== 'cancelled';
+          if (timeframeList.includes('upcoming')) return isUpcoming;
+          if (timeframeList.includes('past')) return !isUpcoming;
+          return true;
+        });
+      }
+    }
 
     // Remove duplicates
     const uniqueMeetings = Array.from(

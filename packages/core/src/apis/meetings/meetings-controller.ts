@@ -30,6 +30,11 @@ export const getMeetingsController = catchAsync(async ({ request }) => {
   );
   const participantUserId = url.searchParams.get('participantUserId');
   const view = url.searchParams.get('view') || 'my';
+  const createdAtFrom = url.searchParams.get('createdAtFrom');
+  const createdAtTo = url.searchParams.get('createdAtTo');
+  const updatedAtFrom = url.searchParams.get('updatedAtFrom');
+  const updatedAtTo = url.searchParams.get('updatedAtTo');
+  const createdByIds = url.searchParams.get('createdByIds');
 
   if (!workspaceId) {
     return NextResponse.json(
@@ -202,6 +207,20 @@ export const getMeetingsController = catchAsync(async ({ request }) => {
     if (provider) query = query.eq('provider', provider);
     if (status) query = query.eq('status', status);
     if (hostUserId) query = query.eq('host_user_id', hostUserId);
+
+    if (createdAtFrom) query = query.gte('created_at', `${createdAtFrom}T00:00:00.000Z`);
+    if (createdAtTo) query = query.lte('created_at', `${createdAtTo}T23:59:59.999Z`);
+    if (updatedAtFrom) query = query.gte('updated_at', `${updatedAtFrom}T00:00:00.000Z`);
+    if (updatedAtTo) query = query.lte('updated_at', `${updatedAtTo}T23:59:59.999Z`);
+
+    if (createdByIds && createdByIds !== 'all') {
+      const ids = createdByIds.split(',').map((id) => id.trim()).filter(Boolean);
+      if (ids.length === 1) {
+        query = query.eq('created_by', ids[0]);
+      } else if (ids.length > 1) {
+        query = query.in('created_by', ids);
+      }
+    }
 
     if (!id) {
       query = query.order('scheduled_start', {

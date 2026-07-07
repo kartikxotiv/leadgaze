@@ -8,8 +8,12 @@ import { useQuery } from '@tanstack/react-query';
 import { Plus } from 'lucide-react';
 
 import { useUser } from '@kit/supabase/hooks/use-user';
+import { AddColumnModal } from '@kit/ui/add-column-modal';
 import { Button } from '@kit/ui/button';
 import { Card, CardContent } from '@kit/ui/card';
+import { ColumnEditModal } from '@kit/ui/column-edit-modal';
+import type { ColumnEditFieldShape } from '@kit/ui/column-edit-modal';
+import { ColumnHeader } from '@kit/ui/column-header';
 import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
 import CustomTableContainer from '@kit/ui/custom-table-container';
 import { ListToolBar } from '@kit/ui/list-toolbar';
@@ -30,10 +34,6 @@ import { useDateRangeFilter } from '@kit/ui/use-date-range-filter';
 import { useTableSort } from '@kit/ui/use-table-sort';
 import { cn } from '@kit/ui/utils';
 
-import { AddColumnModal } from '@kit/ui/add-column-modal';
-import { ColumnEditModal } from '@kit/ui/column-edit-modal';
-import type { ColumnEditFieldShape } from '@kit/ui/column-edit-modal';
-import { ColumnHeader } from '@kit/ui/column-header';
 import { useDebounce } from '~/lib/hooks/use-debounce';
 import {
   useCreateField,
@@ -46,10 +46,11 @@ import {
   useLeadsColumnPreferences,
   useSyncColumnVisibilityToDb,
 } from '~/lib/hooks/use-leads-column-preferences';
+import { usePackageMembers } from '~/lib/hooks/use-package-members';
+import { useTeamMembers } from '~/lib/hooks/use-team-members';
 import { useLocalization } from '~/lib/localization/localization-provider';
 import { ModuleGuard } from '~/lib/rbac/module-guard';
 import { useModuleRoles, useRBAC } from '~/lib/rbac/rbac-provider';
-import { useTeamMembers } from '~/lib/hooks/use-team-members';
 import { Account, getAccountsService } from '~/services/accounts.service';
 
 import { DeleteEntityDialog } from '../_components/delete-entity-dialog';
@@ -119,6 +120,9 @@ export default function AccountsPage() {
   const { currentWorkspace: workspace, canAccess } = useRBAC();
   const { formatDate } = useLocalization();
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCreatedByIds, setSelectedCreatedByIds] = useState<string[]>(
+    [],
+  );
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [accountToDelete, setAccountToDelete] = useState<Account | null>(null);
@@ -433,6 +437,9 @@ export default function AccountsPage() {
   });
   const teamMembersForModal = teamMembersData?.data ?? [];
 
+  // Fetch team members filtered by package access (for Created By filter)
+  const { members } = usePackageMembers();
+
   const {
     data: accountsData = { data: [], count: 0 },
     isLoading,
@@ -448,6 +455,7 @@ export default function AccountsPage() {
       sortState,
       computedCreatedOnDates,
       computedUpdatedOnDates,
+      selectedCreatedByIds,
     ],
     queryFn: () =>
       getAccountsService({
@@ -461,6 +469,7 @@ export default function AccountsPage() {
         createdAtTo: computedCreatedOnDates?.to ?? undefined,
         updatedAtFrom: computedUpdatedOnDates?.from ?? undefined,
         updatedAtTo: computedUpdatedOnDates?.to ?? undefined,
+        createdByIds: selectedCreatedByIds.length > 0 ? selectedCreatedByIds : undefined,
       }),
     enabled: !!workspace?.id,
   });
@@ -471,7 +480,7 @@ export default function AccountsPage() {
   // Reset to first page when search changes
   React.useEffect(() => {
     setCurrentPage(1);
-  }, [debouncedSearchTerm, pageSize, createdOnRange, updatedOnRange]);
+  }, [debouncedSearchTerm, selectedCreatedByIds, pageSize, createdOnRange, updatedOnRange]);
 
   // Pagination Logic
   const totalPages = Math.ceil(totalCount / itemsPerPage);
@@ -523,6 +532,31 @@ export default function AccountsPage() {
           showFilter
           filterGroups={[
             {
+              key: 'created_by',
+              label: 'Created By',
+              selectedValues: selectedCreatedByIds,
+              selectedLabel:
+                selectedCreatedByIds.length === 0
+                  ? 'All members'
+                  : selectedCreatedByIds.length === 1
+                    ? ((
+                        members.find(
+                          (m: any) => m.user_id === selectedCreatedByIds[0],
+                        ) as any
+                      )?.user?.user_metadata?.full_name ?? '1 selected')
+                    : `${selectedCreatedByIds.length} selected`,
+              options: members
+                .filter((m: any) => m.user_id)
+                .map((m: any) => ({
+                  value: m.user_id,
+                  label:
+                    m.user?.user_metadata?.full_name ||
+                    m.user?.email ||
+                    m.user_id,
+                })),
+              onSelectValues: setSelectedCreatedByIds,
+            },
+            {
               key: 'created_on',
               label: 'Created On',
               type: 'date',
@@ -544,9 +578,12 @@ export default function AccountsPage() {
             },
           ]}
           activeFilterCount={
-            (createdOnRange ? 1 : 0) + (updatedOnRange ? 1 : 0)
+            (selectedCreatedByIds.length > 0 ? 1 : 0) +
+            (createdOnRange ? 1 : 0) +
+            (updatedOnRange ? 1 : 0)
           }
           onClearFilters={() => {
+            setSelectedCreatedByIds([]);
             clearCreatedOnRange();
             clearUpdatedOnRange();
           }}
@@ -661,7 +698,7 @@ export default function AccountsPage() {
                       <Button
                         variant="outline"
                         size="icon"
-                        className="h-8 w-8 mx-auto flex items-center justify-center border-dashed"
+                        className="mx-auto flex h-8 w-8 items-center justify-center border-dashed"
                         onClick={() => setAddColumnModalOpen(true)}
                         title="Add Column"
                       >
@@ -892,13 +929,13 @@ export default function AccountsPage() {
           }}
           field={
             (editingField ??
-            ({
-              id: '',
-              field_key: '',
-              field_label: '',
-              is_system: false,
-              workspace_id: workspace?.id || '',
-            } as EntityField)) as ColumnEditFieldShape
+              ({
+                id: '',
+                field_key: '',
+                field_label: '',
+                is_system: false,
+                workspace_id: workspace?.id || '',
+              } as EntityField)) as ColumnEditFieldShape
           }
           roles={moduleRoles}
           teamMembers={teamMembersForModal}

@@ -68,6 +68,8 @@ import { useTableSort } from '@kit/ui/use-table-sort';
 
 import { useLocalization } from '~/lib/localization/localization-provider';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
+import { useDebounce } from '~/lib/hooks/use-debounce';
+import { usePackageMembers } from '~/lib/hooks/use-package-members';
 import { getAccountsService } from '~/services/accounts.service';
 import {
   Document,
@@ -155,6 +157,10 @@ export default function DocumentPage() {
     clearDateRange: clearUpdatedOnRange,
   } = useDateRangeFilter();
 
+  const [selectedCreatedByIds, setSelectedCreatedByIds] = useState<string[]>([]);
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
+  const { members } = usePackageMembers();
+
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingDoc, setEditingDoc] = useState<Document | null>(null);
@@ -196,10 +202,32 @@ export default function DocumentPage() {
   const { getHeaderProps, getResizeHandleProps } = useColumnResize('documents');
 
   const { data: documents = [], isLoading } = useQuery({
-    queryKey: ['documents', workspace?.id],
+    queryKey: [
+      'documents',
+      workspace?.id,
+      typeFilter,
+      entityTypeFilter,
+      debouncedSearchTerm,
+      selectedCreatedByIds,
+      computedCreatedOnDates,
+      computedUpdatedOnDates,
+    ],
     queryFn: () => {
       if (!workspace?.id) return [];
-      return getDocumentsService(workspace.id);
+      return getDocumentsService(
+        workspace.id,
+        entityTypeFilter === 'all' ? undefined : entityTypeFilter,
+        undefined,
+        {
+          type: typeFilter === 'all' ? undefined : typeFilter,
+          searchTerm: debouncedSearchTerm || undefined,
+          createdAtFrom: computedCreatedOnDates?.from,
+          createdAtTo: computedCreatedOnDates?.to,
+          updatedAtFrom: computedUpdatedOnDates?.from,
+          updatedAtTo: computedUpdatedOnDates?.to,
+          createdByIds: selectedCreatedByIds.length > 0 ? selectedCreatedByIds : undefined,
+        },
+      );
     },
     enabled: !!workspace?.id,
   });
@@ -291,9 +319,10 @@ export default function DocumentPage() {
   useEffect(() => {
     setCurrentPage(1);
   }, [
-    searchTerm,
+    debouncedSearchTerm,
     typeFilter,
     entityTypeFilter,
+    selectedCreatedByIds,
     pageSize,
     createdOnRange,
     updatedOnRange,
@@ -321,56 +350,8 @@ export default function DocumentPage() {
   };
 
   const filteredDocuments = useMemo(() => {
-    return documents.filter((doc: Document) => {
-      const matchesSearch = doc.name
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase());
-
-      const category = getFileTypeCategory(doc.file_type || '');
-      const matchesType = typeFilter === 'all' || category === typeFilter;
-
-      const matchesEntityType =
-        entityTypeFilter === 'all' ||
-        doc.entity_type?.toLowerCase() === entityTypeFilter.toLowerCase();
-
-      let matchesCreated = true;
-      if (computedCreatedOnDates?.from) {
-        const createdDate = new Date(doc.created_at).getTime();
-        const from = new Date(computedCreatedOnDates.from).getTime();
-        const to = computedCreatedOnDates.to
-          ? new Date(computedCreatedOnDates.to).getTime()
-          : new Date().getTime();
-        matchesCreated = createdDate >= from && createdDate <= to;
-      }
-
-      let matchesUpdated = true;
-      if (computedUpdatedOnDates?.from) {
-        const updatedDate = new Date(
-          doc.updated_at || doc.created_at,
-        ).getTime();
-        const from = new Date(computedUpdatedOnDates.from).getTime();
-        const to = computedUpdatedOnDates.to
-          ? new Date(computedUpdatedOnDates.to).getTime()
-          : new Date().getTime();
-        matchesUpdated = updatedDate >= from && updatedDate <= to;
-      }
-
-      return (
-        matchesSearch &&
-        matchesType &&
-        matchesEntityType &&
-        matchesCreated &&
-        matchesUpdated
-      );
-    });
-  }, [
-    documents,
-    searchTerm,
-    typeFilter,
-    entityTypeFilter,
-    computedCreatedOnDates,
-    computedUpdatedOnDates,
-  ]);
+    return documents;
+  }, [documents]);
 
   const { sortColumn, sortDirection, toggleSort, sortedData } =
     useTableSort<Document>('documents', filteredDocuments, {
@@ -481,6 +462,31 @@ export default function DocumentPage() {
         onSelect: (val: string) => setEntityTypeFilter(val || 'all'),
       },
       {
+        key: 'created_by',
+        label: 'Created By',
+        selectedValues: selectedCreatedByIds,
+        selectedLabel:
+          selectedCreatedByIds.length === 0
+            ? 'All members'
+            : selectedCreatedByIds.length === 1
+              ? ((
+                  members.find(
+                    (m: any) => m.user_id === selectedCreatedByIds[0],
+                  ) as any
+                )?.user?.user_metadata?.full_name ?? '1 selected')
+              : `${selectedCreatedByIds.length} selected`,
+        options: members
+          .filter((m: any) => m.user_id)
+          .map((m: any) => ({
+            value: m.user_id,
+            label:
+              m.user?.user_metadata?.full_name ||
+              m.user?.email ||
+              m.user_id,
+          })),
+        onSelectValues: setSelectedCreatedByIds,
+      },
+      {
         key: 'created_on',
         label: 'Created On',
         type: 'date',
@@ -501,20 +507,22 @@ export default function DocumentPage() {
         },
       },
     ];
-  }, [typeFilter, entityTypeFilter, createdOnRange, updatedOnRange]);
+  }, [typeFilter, entityTypeFilter, createdOnRange, updatedOnRange, selectedCreatedByIds, members]);
 
   const activeFilterCount = useMemo(() => {
     let count = 0;
     if (typeFilter !== 'all') count++;
     if (entityTypeFilter !== 'all') count++;
+    if (selectedCreatedByIds.length > 0) count++;
     if (createdOnRange) count++;
     if (updatedOnRange) count++;
     return count;
-  }, [typeFilter, entityTypeFilter, createdOnRange, updatedOnRange]);
+  }, [typeFilter, entityTypeFilter, selectedCreatedByIds, createdOnRange, updatedOnRange]);
 
   const handleClearFilters = () => {
     setTypeFilter('all');
     setEntityTypeFilter('all');
+    setSelectedCreatedByIds([]);
     clearCreatedOnRange();
     clearUpdatedOnRange();
   };
