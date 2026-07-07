@@ -5,25 +5,18 @@ import { useMemo, useState } from 'react';
 import { usePathname } from 'next/navigation';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import {
-  Check,
-  Clock,
-  CreditCard,
-  Edit2,
-  Plus,
-  RotateCcw,
-  Trash2,
-} from 'lucide-react';
+import { Check, Clock, Edit2, Plus, RotateCcw, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
-import { StatusFilterDropdown } from '@kit/ui/status-filter-dropdown';
-import { ListToolBar } from '@kit/ui/list-toolbar';
+import { Card, CardContent } from '@kit/ui/card';
 import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
 import CustomTableContainer from '@kit/ui/custom-table-container';
+import { ListToolBar } from '@kit/ui/list-toolbar';
 import { PageBody, PageHeader } from '@kit/ui/page';
 import { Skeleton } from '@kit/ui/skeleton';
+import { SortableTableHead } from '@kit/ui/sortable-table-head';
 import {
   Table,
   TableBody,
@@ -33,10 +26,10 @@ import {
   TableRow,
 } from '@kit/ui/table';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@kit/ui/tooltip';
-import { useColumnVisibility } from '@kit/ui/use-column-visibility';
 import { useColumnResize } from '@kit/ui/use-column-resize';
+import { useColumnVisibility } from '@kit/ui/use-column-visibility';
 import { useTableSort } from '@kit/ui/use-table-sort';
-import { SortableTableHead } from '@kit/ui/sortable-table-head';
+import { cn } from '@kit/ui/utils';
 
 import { useDebounce } from '~/lib/hooks/use-debounce';
 import { ModuleGuard } from '~/lib/rbac/module-guard';
@@ -61,8 +54,6 @@ import {
 
 import { InviteMemberDialog } from './components/invite-member-dialog';
 import { UpdateMemberDialog } from './components/update-member-dialog';
-import { Card, CardContent } from '@kit/ui/card';
-import { cn } from '@kit/ui/utils';
 
 function TeamMembersPageSkeleton() {
   return (
@@ -122,7 +113,6 @@ export default function TeamMembersPage() {
   const { currentWorkspace, canAccess } = useRBAC();
   const pathname = usePathname();
   const productKey = getModuleKeyFromPath(pathname);
-  const canViewSubscription = canAccess('subscription', 'view');
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [updatingMember, setUpdatingMember] = useState<WorkspaceMember | null>(
     null,
@@ -130,7 +120,7 @@ export default function TeamMembersPage() {
   const [updateDialogOpen, setUpdateDialogOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<
     'all' | 'accepted' | 'pending'
-  >('all');
+  >('accepted');
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
@@ -143,7 +133,7 @@ export default function TeamMembersPage() {
 
   const currentModule = useMemo(() => {
     return subscriptionData?.enabled_modules?.find(
-      (m) => m.module_key === productKey,
+      (m: { module_key: string }) => m.module_key === productKey,
     );
   }, [subscriptionData, productKey]);
 
@@ -167,8 +157,8 @@ export default function TeamMembersPage() {
       primary_contact: true,
     });
 
-  const { getHeaderProps, getResizeHandleProps } = useColumnResize('team-members');
-
+  const { getHeaderProps, getResizeHandleProps } =
+    useColumnResize('team-members');
 
   // Fetch members
   const { data: membersData = [], isLoading } = useQuery({
@@ -235,17 +225,23 @@ export default function TeamMembersPage() {
       const term = debouncedSearchTerm.toLowerCase();
       filtered = filtered.filter(
         (m: WorkspaceMember) =>
-          (m.user?.user_metadata?.full_name || '').toLowerCase().includes(term) ||
+          (m.user?.user_metadata?.full_name || '')
+            .toLowerCase()
+            .includes(term) ||
           (m.user?.email || '').toLowerCase().includes(term),
       );
     }
     return filtered;
-  }, [statusFilter, allMembers, activeMembers, pendingMembers, debouncedSearchTerm]);
+  }, [
+    statusFilter,
+    allMembers,
+    activeMembers,
+    pendingMembers,
+    debouncedSearchTerm,
+  ]);
 
-  const { sortColumn, sortDirection, toggleSort, sortedData } = useTableSort<WorkspaceMember>(
-    'team-members',
-    members,
-  );
+  const { sortColumn, sortDirection, toggleSort, sortedData } =
+    useTableSort<WorkspaceMember>('team-members', members);
 
   // Remove member mutation
   const removeMutation = useMutation({
@@ -286,13 +282,19 @@ export default function TeamMembersPage() {
   const pendingInvitations: PendingInvitation[] =
     (pendingInvitationsData?.data as PendingInvitation[]) || [];
 
-  const { sortColumn: pendingSortCol, sortDirection: pendingSortDir, toggleSort: togglePendingSort, sortedData: sortedPending } = useTableSort<PendingInvitation>(
+  const {
+    sortColumn: pendingSortCol,
+    sortDirection: pendingSortDir,
+    toggleSort: togglePendingSort,
+    sortedData: sortedPending,
+  } = useTableSort<PendingInvitation>(
     'pending-invitations',
     pendingInvitations,
   );
 
-  // Status items for StatusFilterDropdown
-  const memberStatusItems = useMemo(
+  // Status items - kept for potential future use with StatusFilterDropdown
+  // Currently using filterGroups with ListToolBar instead
+  const _memberStatusItems = useMemo(
     () => [
       { id: 'accepted', status_name: 'Active', color: '#22c55e' },
       { id: 'pending', status_name: 'Pending', color: '#eab308' },
@@ -300,13 +302,36 @@ export default function TeamMembersPage() {
     [],
   );
 
-  const memberStatusBreakdown = useMemo(
+  const _memberStatusBreakdown = useMemo(
     () => ({
       accepted: { count: activeMembers.length },
       pending: { count: pendingInvitations.length || pendingMembers.length },
     }),
     [activeMembers.length, pendingInvitations.length, pendingMembers.length],
   );
+
+  const filterGroups = useMemo(() => {
+    return [
+      {
+        key: 'status',
+        label: 'Status',
+        selectedValue: statusFilter === 'all' ? '' : statusFilter,
+        selectedLabel:
+          statusFilter === 'all'
+            ? 'All Members'
+            : statusFilter === 'pending'
+              ? 'Pending'
+              : 'Active',
+        options: [
+          { value: 'pending', label: 'Pending' },
+          { value: 'accepted', label: 'Active' },
+          { value: 'all', label: 'All' },
+        ],
+        onSelect: (val: string) =>
+          setStatusFilter((val as 'all' | 'accepted' | 'pending') || 'all'),
+      },
+    ];
+  }, [statusFilter]);
 
   // Delete invitation mutation
   const deleteInvitationMutation = useMutation({
@@ -393,16 +418,17 @@ export default function TeamMembersPage() {
   return (
     <ModuleGuard module="team_members">
       <div className="flex shrink-0 flex-col gap-2 overflow-hidden">
-          <PageHeader
-            title={`Members (${statusFilter === 'pending' ? pendingInvitations.length : (statusFilter === 'all' ? allMembers.length : members.length)})`}
-            description={
-              statusFilter === 'all'
-                ? 'Manage your workspace team members and permissions'
-                : statusFilter === 'accepted'
-                  ? 'Showing active members only'
-                  : 'Showing pending invitations only'
-            }
-          ><div className="flex">
+        <PageHeader
+          title={`Members (${statusFilter === 'pending' ? pendingInvitations.length : statusFilter === 'all' ? allMembers.length : members.length})`}
+          description={
+            statusFilter === 'all'
+              ? 'Manage your workspace team members and permissions'
+              : statusFilter === 'accepted'
+                ? 'Showing active members only'
+                : 'Showing pending invitations only'
+          }
+        >
+          <div className="flex">
             {currentModule && (
               <Card
                 className={cn(
@@ -431,52 +457,44 @@ export default function TeamMembersPage() {
             )}
           </div>
         </PageHeader>
-          
       </div>
 
-        {/* Toolbar with search, status filter, actions */}
-        <div className="w-full max-w-full min-w-0 shrink-0 border-b pb-2">
-          <ListToolBar
-            statusSlot={
-              <StatusFilterDropdown
-                statuses={memberStatusItems}
-                selectedStatus={statusFilter}
-                onStatusChange={(id) =>
-                  setStatusFilter(id as 'all' | 'accepted' | 'pending')
-                }
-                statusBreakdown={memberStatusBreakdown}
-                totalCount={allMembers.length}
-                allLabel="All Members"
-              />
-            }
-            showSearch
-            searchPlaceholder="Search members..."
-            searchValue={searchTerm}
-            onSearchChange={setSearchTerm}
-            actions={[
-              ...(canAccess('team_members', 'create')
-                ? [
-                    {
-                      key: 'invite',
-                      label: 'Invite Member',
-                      icon: Plus,
-                      onClick: () => setInviteDialogOpen(true),
-                      show: true,
-                      buttonVariant: 'default' as const,
-                    },
-                  ]
-                : []),              
-            ]}
-            columnVisibilitySlot={
-              <ColumnVisibilitySelector
-                columns={columns}
-                visibility={visibility}
-                onToggle={toggleVisibility}
-                onReset={reset}
-              />
-            }
-          />
-        </div>
+      {/* Toolbar with search, filter, and actions */}
+      <div className="w-full max-w-full min-w-0 shrink-0 border-b pb-2">
+        <ListToolBar
+          showFilter
+          filterLabel="Show Filters"
+          filterGroups={filterGroups}
+          activeFilterCount={statusFilter !== 'all' ? 1 : 0}
+          onClearFilters={() => setStatusFilter('all')}
+          showSearch
+          searchPlaceholder="Search members..."
+          searchValue={searchTerm}
+          onSearchChange={setSearchTerm}
+          actions={[
+            ...(canAccess('team_members', 'create')
+              ? [
+                  {
+                    key: 'invite',
+                    label: 'Invite Member',
+                    icon: Plus,
+                    onClick: () => setInviteDialogOpen(true),
+                    show: true,
+                    buttonVariant: 'default' as const,
+                  },
+                ]
+              : []),
+          ]}
+          columnVisibilitySlot={
+            <ColumnVisibilitySelector
+              columns={columns}
+              visibility={visibility}
+              onToggle={toggleVisibility}
+              onReset={reset}
+            />
+          }
+        />
+      </div>
 
       <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden">
         <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 gap-0">
@@ -496,7 +514,10 @@ export default function TeamMembersPage() {
                         className="relative"
                         {...getHeaderProps('email')}
                       >
-                        <span className="col-resize-handle" {...getResizeHandleProps('email')} />
+                        <span
+                          className="col-resize-handle"
+                          {...getResizeHandleProps('email')}
+                        />
                       </SortableTableHead>
                       {isVisible('role') && (
                         <SortableTableHead
@@ -510,7 +531,10 @@ export default function TeamMembersPage() {
                           className="relative"
                           {...getHeaderProps('role')}
                         >
-                          <span className="col-resize-handle" {...getResizeHandleProps('role')} />
+                          <span
+                            className="col-resize-handle"
+                            {...getResizeHandleProps('role')}
+                          />
                         </SortableTableHead>
                       )}
                       <SortableTableHead
@@ -523,7 +547,10 @@ export default function TeamMembersPage() {
                         className="relative"
                         {...getHeaderProps('invited_at')}
                       >
-                        <span className="col-resize-handle" {...getResizeHandleProps('invited_at')} />
+                        <span
+                          className="col-resize-handle"
+                          {...getResizeHandleProps('invited_at')}
+                        />
                       </SortableTableHead>
                       {isVisible('status') && (
                         <SortableTableHead
@@ -536,7 +563,10 @@ export default function TeamMembersPage() {
                           className="relative"
                           {...getHeaderProps('status')}
                         >
-                          <span className="col-resize-handle" {...getResizeHandleProps('status')} />
+                          <span
+                            className="col-resize-handle"
+                            {...getResizeHandleProps('status')}
+                          />
                         </SortableTableHead>
                       )}
                     </>
@@ -553,7 +583,10 @@ export default function TeamMembersPage() {
                           className="relative"
                           {...getHeaderProps('member')}
                         >
-                          <span className="col-resize-handle" {...getResizeHandleProps('member')} />
+                          <span
+                            className="col-resize-handle"
+                            {...getResizeHandleProps('member')}
+                          />
                         </SortableTableHead>
                       )}
                       {isVisible('email') && (
@@ -567,7 +600,10 @@ export default function TeamMembersPage() {
                           className="relative"
                           {...getHeaderProps('email')}
                         >
-                          <span className="col-resize-handle" {...getResizeHandleProps('email')} />
+                          <span
+                            className="col-resize-handle"
+                            {...getResizeHandleProps('email')}
+                          />
                         </SortableTableHead>
                       )}
                       {isVisible('role') && (
@@ -581,7 +617,10 @@ export default function TeamMembersPage() {
                           className="relative"
                           {...getHeaderProps('role')}
                         >
-                          <span className="col-resize-handle" {...getResizeHandleProps('role')} />
+                          <span
+                            className="col-resize-handle"
+                            {...getResizeHandleProps('role')}
+                          />
                         </SortableTableHead>
                       )}
                       {isVisible('status') && (
@@ -594,7 +633,10 @@ export default function TeamMembersPage() {
                           className="relative"
                           {...getHeaderProps('status')}
                         >
-                          <span className="col-resize-handle" {...getResizeHandleProps('status')} />
+                          <span
+                            className="col-resize-handle"
+                            {...getResizeHandleProps('status')}
+                          />
                         </SortableTableHead>
                       )}
                       {isVisible('primary_contact') && (
@@ -608,7 +650,10 @@ export default function TeamMembersPage() {
                           className="relative"
                           {...getHeaderProps('primary_contact')}
                         >
-                          <span className="col-resize-handle" {...getResizeHandleProps('primary_contact')} />
+                          <span
+                            className="col-resize-handle"
+                            {...getResizeHandleProps('primary_contact')}
+                          />
                         </SortableTableHead>
                       )}
                     </>
@@ -765,7 +810,7 @@ export default function TeamMembersPage() {
                       </TableCell>
                     </TableRow>
                   ))
-                  ) : sortedData.length === 0 ? (
+                ) : sortedData.length === 0 ? (
                   <TableRow>
                     <TableCell
                       colSpan={6}
