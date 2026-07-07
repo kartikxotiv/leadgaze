@@ -173,9 +173,14 @@ export const ListToolBar: React.FC<ListToolBarProps> = ({
           })),
         );
       } else {
+        // No active filters - show one empty row by default
         rowIdCounter.current = 1;
-        const firstKey = filterGroups[0]!.key;
-        setFilterRows([{ id: 'row-0', filterGroupKey: firstKey }]);
+        setFilterRows([
+          {
+            id: 'row-0',
+            filterGroupKey: '', // No field selected
+          },
+        ]);
       }
     }
     if (!isFilterOpen) {
@@ -194,7 +199,7 @@ export const ListToolBar: React.FC<ListToolBarProps> = ({
       ...prev,
       {
         id: `row-${rowIdCounter.current}`,
-        filterGroupKey: filterGroups[0]?.key ?? '',
+        filterGroupKey: '', // Default to no field selected
       },
     ]);
   };
@@ -208,6 +213,27 @@ export const ListToolBar: React.FC<ListToolBarProps> = ({
   };
 
   const updateFilterRowGroup = (rowId: string, groupKey: string) => {
+    // Find the current row to get the previous group
+    const currentRow = filterRows.find((r) => r.id === rowId);
+    if (currentRow && currentRow.filterGroupKey !== groupKey) {
+      // Clear values from the previous group if switching fields
+      const previousGroup = filterGroups.find(
+        (g) => g.key === currentRow.filterGroupKey,
+      );
+      if (previousGroup) {
+        if (previousGroup.type === 'date') {
+          previousGroup.onDateChange?.(null);
+        } else if (
+          previousGroup.selectedValues &&
+          previousGroup.onSelectValues
+        ) {
+          previousGroup.onSelectValues([]);
+        } else if (previousGroup.onSelect) {
+          previousGroup.onSelect('');
+        }
+      }
+    }
+
     setFilterRows((prev) =>
       prev.map((r) =>
         r.id === rowId ? { ...r, filterGroupKey: groupKey } : r,
@@ -244,14 +270,17 @@ export const ListToolBar: React.FC<ListToolBarProps> = ({
 
   const clearRowValues = (row: FilterRow) => {
     const group = filterGroups.find((g) => g.key === row.filterGroupKey);
-    if (!group) return;
-    if (group.type === 'date') {
-      group.onDateChange?.(null);
-    } else if (group.selectedValues && group.onSelectValues) {
-      group.onSelectValues([]);
-    } else if (group.onSelect) {
-      group.onSelect('');
+    if (group) {
+      if (group.type === 'date') {
+        group.onDateChange?.(null);
+      } else if (group.selectedValues && group.onSelectValues) {
+        group.onSelectValues([]);
+      } else if (group.onSelect) {
+        group.onSelect('');
+      }
     }
+    // Clear the field selection (reset to no field selected)
+    updateFilterRowGroup(row.id, '');
   };
 
   const getGroupForRow = (row: FilterRow) =>
@@ -313,6 +342,7 @@ export const ListToolBar: React.FC<ListToolBarProps> = ({
 
   const handleClearAll = () => {
     onClearFilters?.();
+    // Clear all values
     filterGroups.forEach((g) => {
       if (g.type === 'date') {
         g.onDateChange?.(null);
@@ -322,6 +352,8 @@ export const ListToolBar: React.FC<ListToolBarProps> = ({
         g.onSelect?.('');
       }
     });
+    // Clear all filter rows (field selections)
+    setFilterRows([]);
   };
 
   const visibleActions = actions.filter((a) => a.show !== false);

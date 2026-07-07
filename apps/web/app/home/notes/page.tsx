@@ -168,7 +168,7 @@ export default function NotesPage() {
   const noteColumns = useMemo(
     () => [
       { id: 'sno', label: 'S. No.' },
-      { id: 'category', label: 'Category' },
+      { id: 'category', label: 'Entity' },
       { id: 'associate', label: 'Associate With' },
       { id: 'content', label: 'Note Content' },
       { id: 'author', label: 'Author' },
@@ -605,7 +605,7 @@ export default function NotesPage() {
                   )}
                   {isVisible('category') && (
                     <SortableTableHead
-                      label="Category"
+                      label="Entity"
                       columnId="category"
                       sortKey="entity_type"
                       sortColumn={sortColumn}
