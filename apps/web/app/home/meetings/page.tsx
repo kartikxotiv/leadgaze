@@ -2077,6 +2077,7 @@ export default function MeetingsPage() {
       viewFilter,
       computedCreatedOnDates,
       computedUpdatedOnDates,
+      selectedCreatedByIds,
     ],
     queryFn: () => {
       if (!workspace?.id) return [];

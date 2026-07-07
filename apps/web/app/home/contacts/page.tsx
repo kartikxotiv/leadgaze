@@ -431,6 +431,7 @@ export default function ContactsPage() {
       sortState,
       computedCreatedOnDates,
       computedUpdatedOnDates,
+      selectedCreatedByIds,
     ],
     queryFn: () =>
       getContactsService({

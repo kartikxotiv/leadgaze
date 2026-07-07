@@ -455,6 +455,7 @@ export default function AccountsPage() {
       sortState,
       computedCreatedOnDates,
       computedUpdatedOnDates,
+      selectedCreatedByIds,
     ],
     queryFn: () =>
       getAccountsService({
