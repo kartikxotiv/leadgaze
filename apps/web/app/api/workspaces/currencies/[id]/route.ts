@@ -5,16 +5,18 @@ import {
   deleteWorkspaceCurrency,
 } from '../controller';
 
-export const PATCH = (
+export const PATCH = async (
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) => {
-  return updateWorkspaceCurrency({ request, params });
+  const resolvedParams = await params;
+  return updateWorkspaceCurrency({ request, params: resolvedParams });
 };
 
-export const DELETE = (
+export const DELETE = async (
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) => {
-  return deleteWorkspaceCurrency({ params });
+  const resolvedParams = await params;
+  return deleteWorkspaceCurrency({ params: resolvedParams });
 };

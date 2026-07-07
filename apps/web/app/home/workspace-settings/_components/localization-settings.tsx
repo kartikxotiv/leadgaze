@@ -181,6 +181,9 @@ export function WorkspaceLocalizationSettings({
       queryClient.invalidateQueries({
         queryKey: ['workspace-preferences-settings', workspaceId],
       });
+      queryClient.invalidateQueries({
+        queryKey: ['workspace-currencies', workspaceId],
+      });
       setIsDirty(false);
       toast.success('Preferences saved', {
         description: 'Localization settings have been updated.',
@@ -484,6 +487,8 @@ export function WorkspaceLocalizationSettings({
                         <span className="bg-primary-foreground text-primary ml-1 rounded-full px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider">
                           Default
                         </span>
+                      ) : deleteCurrencyMutation.isPending && deleteCurrencyMutation.variables === currency.id ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin ml-1 text-muted-foreground" />
                       ) : (
                         <button
                           type="button"

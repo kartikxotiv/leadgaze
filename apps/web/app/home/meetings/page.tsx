@@ -534,19 +534,11 @@ export function CreateMeetingDialog({
       !!workspaceId && (!opportunities || opportunities.length === 0) && open,
   });
 
-  const resolvedIntegrationAccounts =
-    integrationAccounts && integrationAccounts.length > 0
-      ? integrationAccounts
-      : fetchedIntegrationAccounts;
-  const resolvedLeads = leads && leads.length > 0 ? leads : fetchedLeads;
-  const resolvedContacts =
-    contacts && contacts.length > 0 ? contacts : fetchedContacts;
-  const resolvedAccounts =
-    crmAccounts && crmAccounts.length > 0 ? crmAccounts : fetchedAccounts;
-  const resolvedOpportunities =
-    opportunities && opportunities.length > 0
-      ? opportunities
-      : fetchedOpportunities;
+  const resolvedIntegrationAccounts = ((integrationAccounts && integrationAccounts.length > 0) ? integrationAccounts : fetchedIntegrationAccounts) || [];
+  const resolvedLeads = ((leads && leads.length > 0) ? leads : fetchedLeads) || [];
+  const resolvedContacts = ((contacts && contacts.length > 0) ? contacts : fetchedContacts) || [];
+  const resolvedAccounts = ((crmAccounts && crmAccounts.length > 0) ? crmAccounts : fetchedAccounts) || [];
+  const resolvedOpportunities = ((opportunities && opportunities.length > 0) ? opportunities : fetchedOpportunities) || [];
 
   const [meetingType, setMeetingType] = useState<MeetingType>(initialType);
   const [provider, setProvider] = useState<MeetingProvider>('GOOGLE');
@@ -1277,8 +1269,23 @@ export function EditMeetingDialog({
     enabled: !!workspaceId && !integrationAccounts && open,
   });
 
-  const resolvedIntegrationAccounts =
-    integrationAccounts || fetchedIntegrationAccounts;
+  const resolvedIntegrationAccounts = integrationAccounts || fetchedIntegrationAccounts || [];
+
+  const supabase = useSupabase();
+  const { data: existingReminders = [] } = useQuery({
+    queryKey: ['meeting-reminders', meeting?.id],
+    queryFn: async () => {
+      if (!meeting?.id) return [];
+      const { data, error } = await supabase
+        .schema('core')
+        .from('meeting_reminders')
+        .select('offset_minutes')
+        .eq('meeting_id', meeting.id);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!meeting?.id && open,
+  });
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -1290,6 +1297,7 @@ export function EditMeetingDialog({
   const [externalEmails, setExternalEmails] = useState<string[]>([]);
   const [newEmail, setNewEmail] = useState('');
   const [selectedAccountId, setSelectedAccountId] = useState('');
+  const [reminders, setReminders] = useState<number[]>([30]);
 
   useEffect(() => {
     if (meeting && open) {
@@ -1322,6 +1330,24 @@ export function EditMeetingDialog({
     }
   }, [meeting, open]);
 
+  useEffect(() => {
+    if (meeting && open) {
+      if (existingReminders && existingReminders.length > 0) {
+        const mapped = existingReminders.map((r: any) => r.offset_minutes);
+        const isDiff =
+          mapped.length !== reminders.length ||
+          mapped.some((val, idx) => val !== reminders[idx]);
+        if (isDiff) {
+          setReminders(mapped);
+        }
+      } else {
+        if (reminders.length !== 1 || reminders[0] !== 30) {
+          setReminders([30]);
+        }
+      }
+    }
+  }, [meeting, open, existingReminders, reminders]);
+
   const handleClose = () => {
     setTitle('');
     setDescription('');
@@ -1333,6 +1359,7 @@ export function EditMeetingDialog({
     setExternalEmails([]);
     setNewEmail('');
     setSelectedAccountId('');
+    setReminders([30]);
     onOpenChange(false);
   };
   const handleAddEmail = () => {
@@ -1378,6 +1405,10 @@ export function EditMeetingDialog({
         })),
         attendees: externalEmails.map((email) => ({ email })),
         send_invites: true,
+        reminders: reminders.map((offset) => ({
+          offset_minutes: offset,
+          channel: 'EMAIL' as const,
+        })),
       });
     },
     onSuccess: (result) => {
@@ -1617,6 +1648,31 @@ export function EditMeetingDialog({
                 ))}
               </div>
             )}
+          </div>
+
+          {/* Reminders */}
+          <div className="space-y-2">
+            <Label className="font-medium">Reminders</Label>
+            <div className="flex flex-wrap gap-2">
+              {REMINDER_OPTIONS.map((opt) => (
+                <Badge
+                  key={opt.value}
+                  variant={
+                    reminders.includes(opt.value) ? 'default' : 'outline'
+                  }
+                  className="cursor-pointer transition-colors"
+                  onClick={() =>
+                    setReminders(
+                      reminders.includes(opt.value)
+                        ? reminders.filter((r) => r !== opt.value)
+                        : [...reminders, opt.value],
+                    )
+                  }
+                >
+                  {opt.label}
+                </Badge>
+              ))}
+            </div>
           </div>
         </div>
         <div className="bg-background sticky bottom-0 flex items-center justify-between border-t px-6 py-4">

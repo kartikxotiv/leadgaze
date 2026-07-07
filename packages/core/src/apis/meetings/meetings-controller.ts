@@ -908,6 +908,73 @@ export const updateMeetingController = catchAsync(async ({ request }) => {
       }
     }
 
+    // Handle reminders update
+    if (Array.isArray(body.reminders)) {
+      // Delete existing reminders
+      await (supabase as any)
+        .schema('core')
+        .from('meeting_reminders')
+        .delete()
+        .eq('meeting_id', body.id);
+
+      // Insert new reminders with the resolved start time
+      const resolvedStart = body.scheduled_start ?? body.scheduledStart ?? meeting.scheduled_start;
+      if (resolvedStart && body.reminders.length > 0) {
+        const reminderRows = body.reminders.map(
+          (r: { offset_minutes: number; channel?: string }) => {
+            const scheduledAt = new Date(
+              new Date(resolvedStart).getTime() -
+                r.offset_minutes * 60 * 1000,
+            );
+            return {
+              workspace_id: workspaceId,
+              meeting_id: body.id,
+              offset_minutes: r.offset_minutes,
+              channel: r.channel ?? 'EMAIL',
+              scheduled_at: scheduledAt.toISOString(),
+              status: 'pending',
+            };
+          },
+        );
+
+        await (supabase as any)
+          .schema('core')
+          .from('meeting_reminders')
+          .insert(reminderRows);
+      }
+    } else if (
+      body.scheduled_start !== undefined ||
+      body.scheduledStart !== undefined
+    ) {
+      // If reminders list is not sent, but the scheduled start time changes,
+      // recalculate the scheduled_at for all existing reminders.
+      const resolvedStart = body.scheduled_start ?? body.scheduledStart;
+      if (resolvedStart) {
+        const { data: existingReminders } = await (supabase as any)
+          .schema('core')
+          .from('meeting_reminders')
+          .select('id, offset_minutes')
+          .eq('meeting_id', body.id);
+
+        if (existingReminders && existingReminders.length > 0) {
+          for (const rem of existingReminders) {
+            const scheduledAt = new Date(
+              new Date(resolvedStart).getTime() -
+                rem.offset_minutes * 60 * 1000,
+            );
+            await (supabase as any)
+              .schema('core')
+              .from('meeting_reminders')
+              .update({
+                scheduled_at: scheduledAt.toISOString(),
+                status: 'pending', // Reset status to pending so it will trigger
+              })
+              .eq('id', rem.id);
+          }
+        }
+      }
+    }
+
     const zoomWarning = (body as any).__zoomWarning;
     if (zoomWarning) {
       return NextResponse.json({

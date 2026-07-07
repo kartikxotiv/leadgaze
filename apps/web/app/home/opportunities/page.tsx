@@ -537,7 +537,7 @@ export default function OpportunitiesPage() {
       const { data, error } = await supabase
         .schema('core')
         .from('workspace_currencies')
-        .select('currency_code, currency_symbol, is_default')
+        .select('id, currency_code, currency_symbol, is_default')
         .eq('workspace_id', workspace.id)
         .eq('is_active', true)
         .order('is_default', { ascending: false })

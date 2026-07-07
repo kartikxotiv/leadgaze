@@ -213,6 +213,7 @@ export const updateMeetingService = asyncHandlerClient(
     }>;
     attendees?: Array<{ email: string; display_name?: string }>;
     send_invites?: boolean;
+    reminders?: Array<{ offset_minutes: number; channel?: 'EMAIL' | 'SMS' }>;
   }) => {
     const res = await CoreApiClient.patch('/meetings', payload);
     return {
