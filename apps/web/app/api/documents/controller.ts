@@ -45,6 +45,14 @@ export const getDocuments = catchAsync(
     const entityId = url.searchParams.get('entityId');
     const workspaceId = url.searchParams.get('workspaceId');
 
+    const type = url.searchParams.get('type');
+    const searchTerm = url.searchParams.get('searchTerm') || '';
+    const createdByIds = url.searchParams.get('createdByIds') || '';
+    const createdAtFrom = url.searchParams.get('createdAtFrom') || '';
+    const createdAtTo = url.searchParams.get('createdAtTo') || '';
+    const updatedAtFrom = url.searchParams.get('updatedAtFrom') || '';
+    const updatedAtTo = url.searchParams.get('updatedAtTo') || '';
+
     if (!workspaceId) {
       return NextResponse.json(
         { message: 'workspaceId is required' },
@@ -104,6 +112,40 @@ export const getDocuments = catchAsync(
           query = query.eq('created_by', user.id);
         }
 
+        if (type && type !== 'all') {
+          if (type === 'pdf') {
+            query = query.ilike('file_type', '%pdf%');
+          } else if (type === 'image') {
+            query = query.or('file_type.ilike.%image%,file_type.ilike.%png%,file_type.ilike.%jpg%,file_type.ilike.%jpeg%');
+          } else if (type === 'sheet') {
+            query = query.or('file_type.ilike.%sheet%,file_type.ilike.%excel%,file_type.ilike.%xlsx%,file_type.ilike.%xls%,file_type.ilike.%csv%');
+          } else if (type === 'document') {
+            query = query.not('file_type', 'ilike', '%pdf%')
+                         .not('file_type', 'ilike', '%image%')
+                         .not('file_type', 'ilike', '%png%')
+                         .not('file_type', 'ilike', '%jpg%')
+                         .not('file_type', 'ilike', '%jpeg%')
+                         .not('file_type', 'ilike', '%sheet%')
+                         .not('file_type', 'ilike', '%excel%')
+                         .not('file_type', 'ilike', '%xlsx%')
+                         .not('file_type', 'ilike', '%xls%')
+                         .not('file_type', 'ilike', '%csv%');
+          }
+        }
+        if (createdByIds && createdByIds !== 'all') {
+          const ids = createdByIds.split(',').map((id) => id.trim()).filter(Boolean);
+          if (ids.length > 0) {
+            query = query.in('created_by', ids);
+          }
+        }
+        if (searchTerm) {
+          query = query.or(`name.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`);
+        }
+        if (createdAtFrom) query = query.gte('created_at', `${createdAtFrom}T00:00:00.000Z`);
+        if (createdAtTo) query = query.lte('created_at', `${createdAtTo}T23:59:59.999Z`);
+        if (updatedAtFrom) query = query.gte('updated_at', `${updatedAtFrom}T00:00:00.000Z`);
+        if (updatedAtTo) query = query.lte('updated_at', `${updatedAtTo}T23:59:59.999Z`);
+
         const { data } = await query;
         return data || [];
       });
@@ -125,6 +167,56 @@ export const getDocuments = catchAsync(
       if (!isWorkspaceOwner) {
         query = query.eq('created_by', user.id);
       }
+
+      if (entityType) {
+        const dbType = toDbEntityType(entityType);
+        const { data: relations } = await supabase
+          .schema('core')
+          .from('document_relations')
+          .select('document_id')
+          .eq('workspace_id', workspaceId)
+          .eq('entity_type', dbType);
+        const documentIds = Array.from(new Set(relations?.map((r) => r.document_id) || []));
+        if (documentIds.length === 0) {
+          query = query.in('id', ['00000000-0000-0000-0000-000000000000']);
+        } else {
+          query = query.in('id', documentIds);
+        }
+      }
+
+      if (type && type !== 'all') {
+        if (type === 'pdf') {
+          query = query.ilike('file_type', '%pdf%');
+        } else if (type === 'image') {
+          query = query.or('file_type.ilike.%image%,file_type.ilike.%png%,file_type.ilike.%jpg%,file_type.ilike.%jpeg%');
+        } else if (type === 'sheet') {
+          query = query.or('file_type.ilike.%sheet%,file_type.ilike.%excel%,file_type.ilike.%xlsx%,file_type.ilike.%xls%,file_type.ilike.%csv%');
+        } else if (type === 'document') {
+          query = query.not('file_type', 'ilike', '%pdf%')
+                       .not('file_type', 'ilike', '%image%')
+                       .not('file_type', 'ilike', '%png%')
+                       .not('file_type', 'ilike', '%jpg%')
+                       .not('file_type', 'ilike', '%jpeg%')
+                       .not('file_type', 'ilike', '%sheet%')
+                       .not('file_type', 'ilike', '%excel%')
+                       .not('file_type', 'ilike', '%xlsx%')
+                       .not('file_type', 'ilike', '%xls%')
+                       .not('file_type', 'ilike', '%csv%');
+        }
+      }
+      if (createdByIds && createdByIds !== 'all') {
+        const ids = createdByIds.split(',').map((id) => id.trim()).filter(Boolean);
+        if (ids.length > 0) {
+          query = query.in('created_by', ids);
+        }
+      }
+      if (searchTerm) {
+        query = query.or(`name.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`);
+      }
+      if (createdAtFrom) query = query.gte('created_at', `${createdAtFrom}T00:00:00.000Z`);
+      if (createdAtTo) query = query.lte('created_at', `${createdAtTo}T23:59:59.999Z`);
+      if (updatedAtFrom) query = query.gte('updated_at', `${updatedAtFrom}T00:00:00.000Z`);
+      if (updatedAtTo) query = query.lte('updated_at', `${updatedAtTo}T23:59:59.999Z`);
 
       const { data, error } = await query;
       if (error) throw error;

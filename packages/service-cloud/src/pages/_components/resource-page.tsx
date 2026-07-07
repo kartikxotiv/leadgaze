@@ -261,10 +261,11 @@ export function ServiceCloudResourcePage({
   const queryParamsWithSort = useMemo(
     () => ({
       ...queryParams,
+      search: debouncedSearchTerm || undefined,
       ...(sortColumn ? { sortColumn } : {}),
       ...(sortDirection ? { sortDirection } : {}),
     }),
-    [queryParams, sortColumn, sortDirection],
+    [queryParams, debouncedSearchTerm, sortColumn, sortDirection],
   );
 
   const {
@@ -289,15 +290,8 @@ export function ServiceCloudResourcePage({
   });
 
   const filteredData = useMemo(() => {
-    if (!debouncedSearchTerm) return data;
-    const term = debouncedSearchTerm.toLowerCase();
-    return data.filter((record: ServiceCloudRecord) =>
-      columns.some((col) => {
-        const val = record[col.key];
-        return val != null && String(val).toLowerCase().includes(term);
-      }),
-    );
-  }, [data, debouncedSearchTerm, columns]);
+    return data;
+  }, [data]);
 
   // Pagination derived values
   const totalCount = filteredData.length;

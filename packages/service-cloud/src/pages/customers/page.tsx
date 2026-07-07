@@ -75,6 +75,7 @@ export function ServiceCloudCustomersPage({
   canEditOrganizationField,
   canViewTicketColumn,
   currentUserId,
+  teamMembers = [],
 }: {
   workspaceId: string;
   isAdmin?: boolean;
@@ -102,6 +103,7 @@ export function ServiceCloudCustomersPage({
   /** Optional FLS function to hide columns in the customer tickets modal */
   canViewTicketColumn?: (columnKey: string) => boolean;
   currentUserId?: string;
+  teamMembers?: any[];
 }) {
   const { formatDate } = useLocalization();
   const { canAccess, isLoading } = useServiceCloudPermissions(workspaceId);
@@ -126,6 +128,8 @@ export function ServiceCloudCustomersPage({
     SERVICE_CLOUD_FEATURE_KEYS.create,
   );
 
+  const [selectedCreatedByIds, setSelectedCreatedByIds] = useState<string[]>([]);
+
   const {
     dateRange: createdOnRange,
     setDateRange: setCreatedOnRange,
@@ -139,9 +143,42 @@ export function ServiceCloudCustomersPage({
     clearDateRange: clearUpdatedOnRange,
   } = useDateRangeFilter();
 
-  const activeFilterCount = (createdOnRange ? 1 : 0) + (updatedOnRange ? 1 : 0);
+  const activeFilterCount =
+    (selectedCreatedByIds.length > 0 ? 1 : 0) +
+    (createdOnRange ? 1 : 0) +
+    (updatedOnRange ? 1 : 0);
 
   const filterGroups = [
+    {
+      key: 'created_by',
+      label: 'Created By',
+      selectedValues: selectedCreatedByIds,
+      selectedLabel:
+        selectedCreatedByIds.length === 0
+          ? 'All members'
+          : selectedCreatedByIds.length === 1
+            ? ((
+                (Array.isArray(teamMembers) ? teamMembers : []).find(
+                  (m: any) => m?.user_id === selectedCreatedByIds[0],
+                ) as any
+              )?.user?.user_metadata?.full_name ?? '1 selected')
+            : `${selectedCreatedByIds.length} selected`,
+      options: (Array.isArray(teamMembers) ? teamMembers : [])
+        .filter((m: any) => m?.user_id)
+        .reduce((acc: any[], m: any) => {
+          if (!acc.some((x) => x.value === m.user_id)) {
+            acc.push({
+              value: m.user_id,
+              label:
+                m.user?.user_metadata?.full_name ||
+                m.user?.email ||
+                m.user_id,
+            });
+          }
+          return acc;
+        }, []),
+      onSelectValues: setSelectedCreatedByIds,
+    },
     {
       key: 'created_on',
       label: 'Created On',
@@ -159,6 +196,9 @@ export function ServiceCloudCustomersPage({
   ];
 
   const queryParams = {
+    ...(selectedCreatedByIds.length > 0
+      ? { createdByIds: selectedCreatedByIds.join(',') }
+      : {}),
     ...(computedCreatedOnDates?.from
       ? { createdAtFrom: computedCreatedOnDates.from }
       : {}),
@@ -397,6 +437,7 @@ export function ServiceCloudCustomersPage({
             filterGroups={filterGroups}
             activeFilterCount={activeFilterCount}
             onClearFilters={() => {
+              setSelectedCreatedByIds([]);
               clearCreatedOnRange();
               clearUpdatedOnRange();
             }}
@@ -472,6 +513,7 @@ export function ServiceCloudCustomersPage({
             filterGroups={filterGroups}
             activeFilterCount={activeFilterCount}
             onClearFilters={() => {
+              setSelectedCreatedByIds([]);
               clearCreatedOnRange();
               clearUpdatedOnRange();
             }}

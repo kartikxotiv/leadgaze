@@ -47,6 +47,13 @@ export const getNotes = catchAsync(
     const status = url.searchParams.get('status') || 'active';
     const isClosedFilter = status === 'closed';
 
+    const searchTerm = url.searchParams.get('searchTerm') || '';
+    const createdByIds = url.searchParams.get('createdByIds') || '';
+    const createdAtFrom = url.searchParams.get('createdAtFrom') || '';
+    const createdAtTo = url.searchParams.get('createdAtTo') || '';
+    const updatedAtFrom = url.searchParams.get('updatedAtFrom') || '';
+    const updatedAtTo = url.searchParams.get('updatedAtTo') || '';
+
     if (!workspaceId) {
       return NextResponse.json(
         { message: 'workspaceId is required' },
@@ -112,6 +119,20 @@ export const getNotes = catchAsync(
           query = query.eq('created_by', user.id);
         }
 
+        if (createdByIds && createdByIds !== 'all') {
+          const ids = createdByIds.split(',').map((id) => id.trim()).filter(Boolean);
+          if (ids.length > 0) {
+            query = query.in('created_by', ids);
+          }
+        }
+        if (searchTerm) {
+          query = query.ilike('note', `%${searchTerm}%`);
+        }
+        if (createdAtFrom) query = query.gte('created_at', `${createdAtFrom}T00:00:00.000Z`);
+        if (createdAtTo) query = query.lte('created_at', `${createdAtTo}T23:59:59.999Z`);
+        if (updatedAtFrom) query = query.gte('updated_at', `${updatedAtFrom}T00:00:00.000Z`);
+        if (updatedAtTo) query = query.lte('updated_at', `${updatedAtTo}T23:59:59.999Z`);
+
         const { data, error } = await query;
         if (error) throw error;
         uniqueNotes = data || [];
@@ -129,6 +150,36 @@ export const getNotes = catchAsync(
       if (!isWorkspaceOwner) {
         query = query.eq('created_by', user.id);
       }
+
+      if (entityType) {
+        const dbType = toDbEntityType(entityType);
+        const { data: relations } = await supabase
+          .schema('core')
+          .from('note_relations')
+          .select('note_id')
+          .eq('workspace_id', workspaceId)
+          .eq('entity_type', dbType);
+        const noteIds = Array.from(new Set(relations?.map((r: any) => r.note_id) || []));
+        if (noteIds.length === 0) {
+          query = query.in('id', ['00000000-0000-0000-0000-000000000000']);
+        } else {
+          query = query.in('id', noteIds);
+        }
+      }
+
+      if (createdByIds && createdByIds !== 'all') {
+        const ids = createdByIds.split(',').map((id) => id.trim()).filter(Boolean);
+        if (ids.length > 0) {
+          query = query.in('created_by', ids);
+        }
+      }
+      if (searchTerm) {
+        query = query.ilike('note', `%${searchTerm}%`);
+      }
+      if (createdAtFrom) query = query.gte('created_at', `${createdAtFrom}T00:00:00.000Z`);
+      if (createdAtTo) query = query.lte('created_at', `${createdAtTo}T23:59:59.999Z`);
+      if (updatedAtFrom) query = query.gte('updated_at', `${updatedAtFrom}T00:00:00.000Z`);
+      if (updatedAtTo) query = query.lte('updated_at', `${updatedAtTo}T23:59:59.999Z`);
 
       const { data, error } = await query;
       if (error) throw error;

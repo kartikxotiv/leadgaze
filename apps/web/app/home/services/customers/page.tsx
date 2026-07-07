@@ -241,6 +241,7 @@ export default function ServiceCloudCustomersRoute() {
       <ServiceCloudCustomersPage
         workspaceId={workspaceId}
         isAdmin={isAdmin}
+        teamMembers={teamMembersForModal}
         onColumnAddClick={(type) => {
           setActiveEntityType(type);
           setAddColumnModalOpen(true);
