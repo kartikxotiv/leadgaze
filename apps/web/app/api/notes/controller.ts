@@ -151,6 +151,8 @@ export const getNotes = catchAsync(
         query = query.eq('created_by', user.id);
       }
 
+      const moduleParam = url.searchParams.get('module') || '';
+
       if (entityType) {
         const dbType = toDbEntityType(entityType);
         const { data: relations } = await supabase
@@ -159,6 +161,19 @@ export const getNotes = catchAsync(
           .select('note_id')
           .eq('workspace_id', workspaceId)
           .eq('entity_type', dbType);
+        const noteIds = Array.from(new Set(relations?.map((r: any) => r.note_id) || []));
+        if (noteIds.length === 0) {
+          query = query.in('id', ['00000000-0000-0000-0000-000000000000']);
+        } else {
+          query = query.in('id', noteIds);
+        }
+      } else if (moduleParam === 'sales') {
+        const { data: relations } = await supabase
+          .schema('core')
+          .from('note_relations')
+          .select('note_id')
+          .eq('workspace_id', workspaceId)
+          .in('entity_type', ['sales_lead', 'sales_contact', 'sales_account', 'sales_opportunity']);
         const noteIds = Array.from(new Set(relations?.map((r: any) => r.note_id) || []));
         if (noteIds.length === 0) {
           query = query.in('id', ['00000000-0000-0000-0000-000000000000']);

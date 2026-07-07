@@ -20,6 +20,9 @@ const getAllRoles = catchAsync(
     const productKey = url.searchParams.get('productKey');
     const sortColumn = url.searchParams.get('sortColumn') || 'hierarchy_level';
     const sortDirection = url.searchParams.get('sortDirection') || 'desc';
+    const type = url.searchParams.get('type');
+    const status = url.searchParams.get('status');
+    const searchTerm = url.searchParams.get('searchTerm');
 
     if (!workspaceId) {
       return NextResponse.json(
@@ -35,6 +38,22 @@ const getAllRoles = catchAsync(
 
     if (productKey) {
       query = query.eq('product_key', productKey);
+    }
+
+    if (type === 'system') {
+      query = query.eq('is_system', true);
+    } else if (type === 'custom') {
+      query = query.eq('is_system', false);
+    }
+
+    if (status === 'active') {
+      query = query.eq('is_active', true);
+    } else if (status === 'inactive') {
+      query = query.eq('is_active', false);
+    }
+
+    if (searchTerm) {
+      query = query.or(`role_name.ilike.%${searchTerm}%,role_key.ilike.%${searchTerm}%`);
     }
 
     if (sortColumn) {

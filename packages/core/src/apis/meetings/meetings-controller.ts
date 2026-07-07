@@ -11,6 +11,77 @@ import { assertCoreWorkspaceAccess } from '../_shared/workspace-access';
 // MEETING CONTROLLERS
 // =============================================================================
 
+// Map UI sales entity types to database convention (sales_*)
+function toDbEntityType(type: string): string {
+  const salesTypes = ['lead', 'contact', 'account', 'opportunity'];
+  if (salesTypes.includes(type)) {
+    return `sales_${type}`;
+  }
+  return type;
+}
+
+// Map database convention (sales_*) back to UI types
+function toUiEntityType(type: string | null): string | null {
+  if (!type) return null;
+  if (type.startsWith('sales_')) {
+    return type.substring(6);
+  }
+  return type;
+}
+
+// Get entity name based on entity type and ID
+async function getEntityName(
+  supabase: any,
+  entityType: string,
+  entityId: string,
+): Promise<string | null> {
+  try {
+    switch (entityType) {
+      case 'lead': {
+        const { data } = await supabase
+          .from('crm_leads')
+          .select('first_name, last_name')
+          .eq('id', entityId)
+          .single();
+        if (data) {
+          return `${data.first_name || ''} ${data.last_name || ''}`.trim() || null;
+        }
+        break;
+      }
+      case 'account': {
+        const { data } = await supabase
+          .from('crm_accounts')
+          .select('account_name')
+          .eq('id', entityId)
+          .single();
+        return data?.account_name || null;
+      }
+      case 'contact': {
+        const { data } = await supabase
+          .from('crm_contacts')
+          .select('first_name, last_name')
+          .eq('id', entityId)
+          .single();
+        if (data) {
+          return `${data.first_name || ''} ${data.last_name || ''}`.trim() || null;
+        }
+        break;
+      }
+      case 'opportunity': {
+        const { data } = await supabase
+          .from('crm_opportunities')
+          .select('opportunity_name')
+          .eq('id', entityId)
+          .single();
+        return data?.opportunity_name || null;
+      }
+    }
+  } catch (error) {
+    console.error(`Error fetching entity name for ${entityType}:${entityId}`, error);
+  }
+  return null;
+}
+
 /**
  * GET /api/core/meetings
  * Fetch meetings with optional filters
@@ -35,6 +106,9 @@ export const getMeetingsController = catchAsync(async ({ request }) => {
   const updatedAtFrom = url.searchParams.get('updatedAtFrom');
   const updatedAtTo = url.searchParams.get('updatedAtTo');
   const createdByIds = url.searchParams.get('createdByIds');
+  const statuses = url.searchParams.get('statuses');
+  const timeframe = url.searchParams.get('timeframe');
+  const searchTerm = url.searchParams.get('searchTerm');
 
   if (!workspaceId) {
     return NextResponse.json(
@@ -152,7 +226,7 @@ export const getMeetingsController = catchAsync(async ({ request }) => {
           .select('meeting_id')
           .eq('workspace_id', workspaceId);
 
-        if (entityType) relQuery = relQuery.eq('entity_type', entityType);
+        if (entityType) relQuery = relQuery.eq('entity_type', toDbEntityType(entityType));
         if (entityId) relQuery = relQuery.eq('entity_id', entityId);
 
         const { data: relData, error: relError } = await relQuery;
@@ -180,7 +254,7 @@ export const getMeetingsController = catchAsync(async ({ request }) => {
           .select('meeting_id')
           .eq('workspace_id', workspaceId);
 
-        if (entityType) relQuery = relQuery.eq('entity_type', entityType);
+        if (entityType) relQuery = relQuery.eq('entity_type', toDbEntityType(entityType));
         if (entityId) relQuery = relQuery.eq('entity_id', entityId);
 
         const { data: relData, error: relError } = await relQuery;
@@ -222,6 +296,18 @@ export const getMeetingsController = catchAsync(async ({ request }) => {
       }
     }
 
+    if (statuses) {
+      const statusList = statuses.split(',').map((s) => s.trim()).filter(Boolean);
+      if (statusList.length === 1) {
+        query = query.eq('status', statusList[0]);
+      } else if (statusList.length > 1) {
+        query = query.in('status', statusList);
+      }
+    }
+    if (searchTerm) {
+      query = query.or(`title.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`);
+    }
+
     if (!id) {
       query = query.order('scheduled_start', {
         ascending: false,
@@ -243,7 +329,37 @@ export const getMeetingsController = catchAsync(async ({ request }) => {
     }
 
     // Get relations and participants for each meeting
-    const meetings = Array.isArray(data) ? data : [data];
+    let meetings = Array.isArray(data) ? data : [data];
+
+    // Filter out old meetings (more than 1 day past end time)
+    const now = new Date();
+    const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+    meetings = meetings.filter((meeting) => {
+      const endTime = new Date(meeting.actual_end || meeting.scheduled_end || meeting.end_time);
+      // Show if end time is in the future OR within last 1 day
+      return endTime >= oneDayAgo;
+    });
+
+    if (timeframe) {
+      const timeframeList = timeframe.split(',').map((t) => t.trim()).filter(Boolean);
+      if (timeframeList.length > 0 && timeframeList.length < 2) {
+        const checkTime = new Date();
+        meetings = meetings.filter((meeting) => {
+          const start = meeting.scheduled_start || meeting.actual_start || meeting.start_time;
+          if (!start) return timeframeList.includes('upcoming');
+          const meetingDate = new Date(start);
+          const isUpcoming =
+            meetingDate >= checkTime &&
+            meeting.status !== 'completed' &&
+            meeting.status !== 'cancelled';
+          if (timeframeList.includes('upcoming')) return isUpcoming;
+          if (timeframeList.includes('past')) return !isUpcoming;
+          return true;
+        });
+      }
+    }
+
     const meetingIdsToFetch = meetings.map((m: { id: string }) => m.id);
 
     if (meetingIdsToFetch.length > 0) {
@@ -294,27 +410,36 @@ export const getMeetingsController = catchAsync(async ({ request }) => {
           : null,
       }));
 
-      // Attach to meetings
-      const enrichedMeetings = meetings.map((meeting: any) => ({
-        ...meeting,
-        host: meeting.host_user_id
-          ? (accountsMap[meeting.host_user_id] ?? null)
-          : null,
-        relations: (relations ?? []).filter(
-          (r: { meeting_id: string }) => r.meeting_id === meeting.id,
-        ),
-        participants: enrichedParticipants.filter(
-          (p: { meeting_id: string }) => p.meeting_id === meeting.id,
-        ),
-        entity_type:
-          (relations ?? []).find(
+      // Attach to meetings with entity name fetching
+      const enrichedMeetings = await Promise.all(
+        meetings.map(async (meeting: any) => {
+          const rel = (relations ?? []).find(
             (r: { meeting_id: string }) => r.meeting_id === meeting.id,
-          )?.entity_type ?? null,
-        entity_id:
-          (relations ?? []).find(
-            (r: { meeting_id: string }) => r.meeting_id === meeting.id,
-          )?.entity_id ?? null,
-      }));
+          );
+          const rawType = rel?.entity_type ?? null;
+          const uiType = toUiEntityType(rawType);
+          const entityIdVal = rel?.entity_id ?? null;
+          const entityName = (uiType && entityIdVal)
+            ? await getEntityName(supabase, uiType, entityIdVal)
+            : null;
+
+          return {
+            ...meeting,
+            host: meeting.host_user_id
+              ? (accountsMap[meeting.host_user_id] ?? null)
+              : null,
+            relations: (relations ?? []).filter(
+              (r: { meeting_id: string }) => r.meeting_id === meeting.id,
+            ),
+            participants: enrichedParticipants.filter(
+              (p: { meeting_id: string }) => p.meeting_id === meeting.id,
+            ),
+            entity_type: uiType,
+            entity_id: entityIdVal,
+            entity_name: entityName,
+          };
+        })
+      );
 
       return successDataResponse(
         'Meetings retrieved',
@@ -450,7 +575,7 @@ export const createMeetingController = catchAsync(async ({ request }) => {
       const relationRows = uniqueRelations.map((rel) => ({
         workspace_id: workspaceId,
         meeting_id: meeting.id,
-        entity_type: rel.entity_type,
+        entity_type: toDbEntityType(rel.entity_type),
         entity_id: rel.entity_id,
       }));
 

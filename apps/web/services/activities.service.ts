@@ -117,6 +117,7 @@ export const getNotesService = asyncHandlerClient(
       updatedAtFrom?: string;
       updatedAtTo?: string;
       createdByIds?: string[];
+      module?: string;
     },
   ) => {
     let url = `/notes?workspaceId=${workspaceId}&status=${status}`;
@@ -131,6 +132,7 @@ export const getNotesService = asyncHandlerClient(
       if (filters.createdByIds && filters.createdByIds.length > 0) {
         url += `&createdByIds=${filters.createdByIds.join(',')}`;
       }
+      if (filters.module) url += `&module=${filters.module}`;
     }
     const response = await ApiClient.get(url);
     return response.data?.data || [];

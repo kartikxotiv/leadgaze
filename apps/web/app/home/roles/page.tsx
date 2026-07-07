@@ -45,7 +45,6 @@ import {
   getRolesService,
   reorderRolesService,
 } from '~/services/roles.service';
-
 import { CreateRoleDialog } from './components/create-role-dialog';
 import { EditRoleDialog } from './components/edit-role-dialog';
 
@@ -63,6 +62,7 @@ export default function RolesPage() {
   const [draggedRoleIndex, setDraggedRoleIndex] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
   const columns = useMemo(
@@ -100,54 +100,57 @@ export default function RolesPage() {
     isLoading,
     error,
   } = useQuery({
-    queryKey: ['workspaceRoles', currentWorkspace?.id, productKey, sortState],
+    queryKey: ['workspaceRoles', currentWorkspace?.id, productKey, sortState, typeFilter, statusFilter, debouncedSearchTerm],
     queryFn: async () => {
       const res = await getRolesService(
         currentWorkspace?.id || '',
         productKey,
         sortColumn || undefined,
-        sortDirection || undefined
+        sortDirection || undefined,
+        {
+          type: typeFilter !== 'all' ? typeFilter : undefined,
+          status: statusFilter !== 'all' ? statusFilter : undefined,
+          searchTerm: debouncedSearchTerm || undefined,
+        }
       );
       return res?.data || [];
     },
     enabled: !!currentWorkspace?.id,
   });
 
-  // Type filter items for StatusFilterDropdown
-  const typeFilterItems = useMemo(
-    () => [
-      { id: 'system', status_name: 'System Roles', color: '#3b82f6' },
-      { id: 'custom', status_name: 'Custom Roles', color: '#eab308' },
-    ],
-    [],
-  );
-
-  const typeBreakdown = useMemo(
-    () => ({
-      system: { count: roles.filter((r: Role) => r.is_system).length },
-      custom: { count: roles.filter((r: Role) => !r.is_system).length },
-    }),
-    [roles],
-  );
+  const filterGroups = useMemo(() => {
+    return [
+      {
+        key: 'type',
+        label: 'Type',
+        selectedValue: typeFilter,
+        selectedLabel: typeFilter === 'system' ? 'System' : typeFilter === 'custom' ? 'Custom' : 'All Types',
+        options: [
+          { value: 'all', label: 'All Types' },
+          { value: 'system', label: 'System' },
+          { value: 'custom', label: 'Custom' },
+        ],
+        onSelect: (val: string) => setTypeFilter(val),
+      },
+      {
+        key: 'status',
+        label: 'Status',
+        selectedValue: statusFilter,
+        selectedLabel: statusFilter === 'active' ? 'Active' : statusFilter === 'inactive' ? 'Inactive' : 'All Statuses',
+        options: [
+          { value: 'all', label: 'All Statuses' },
+          { value: 'active', label: 'Active' },
+          { value: 'inactive', label: 'Inactive' },
+        ],
+        onSelect: (val: string) => setStatusFilter(val),
+      },
+    ];
+  }, [typeFilter, statusFilter]);
 
   // Filtered roles based on type filter and search term
   const filteredRoles = useMemo(() => {
-    let result = orderedRoles;
-    if (typeFilter === 'system') {
-      result = result.filter((r: Role) => r.is_system);
-    } else if (typeFilter === 'custom') {
-      result = result.filter((r: Role) => !r.is_system);
-    }
-    if (debouncedSearchTerm) {
-      const term = debouncedSearchTerm.toLowerCase();
-      result = result.filter(
-        (r: Role) =>
-          r.role_name.toLowerCase().includes(term) ||
-          r.role_key.toLowerCase().includes(term),
-      );
-    }
-    return result;
-  }, [orderedRoles, typeFilter, debouncedSearchTerm]);
+    return orderedRoles;
+  }, [orderedRoles]);
 
   // Determine if drag and drop should be disabled
   const isDragDisabled =
@@ -263,6 +266,18 @@ export default function RolesPage() {
     return `Level ${role.hierarchy_level || 0}`;
   };
 
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (typeFilter !== 'all') count++;
+    if (statusFilter !== 'all') count++;
+    return count;
+  }, [typeFilter, statusFilter]);
+
+  const handleClearFilters = () => {
+    setTypeFilter('all');
+    setStatusFilter('all');
+  };
+
   return (
     <ModuleGuard module="roles">
       <div className="flex shrink-0 flex-col gap-2 overflow-hidden">
@@ -275,16 +290,11 @@ export default function RolesPage() {
       {/* Toolbar with search, type filter, actions */}
       <div className="w-full max-w-full min-w-0 shrink-0 border-b pb-2">
         <ListToolBar
-          statusSlot={
-            <StatusFilterDropdown
-              statuses={typeFilterItems}
-              selectedStatus={typeFilter}
-              onStatusChange={setTypeFilter}
-              statusBreakdown={typeBreakdown}
-              totalCount={roles.length}
-              allLabel="All Roles"
-            />
-          }
+          filterGroups={filterGroups}
+          showFilter
+          filterLabel="Show Filters"
+          activeFilterCount={activeFilterCount}
+          onClearFilters={handleClearFilters}
           showSearch
           searchPlaceholder="Search roles..."
           searchValue={searchTerm}
@@ -338,16 +348,10 @@ export default function RolesPage() {
                   <TableBody>
                     {[...Array(8)].map((_, i) => (
                       <TableRow key={i}>
-                        <TableCell
-                          className="h-[52px] px-4 py-2"
-                          colSpan={
-                            visibility
-                              ? Object.values(visibility).filter(
-                                  (v) => v !== false,
-                                ).length + 1
-                              : 6
-                          }
-                        >
+                         <TableCell
+                           className="h-[52px] px-4 py-2"
+                           colSpan={6}
+                         >
                           <Skeleton className="h-7 w-full" />
                         </TableCell>
                       </TableRow>

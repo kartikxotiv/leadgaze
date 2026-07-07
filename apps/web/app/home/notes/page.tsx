@@ -226,6 +226,7 @@ export default function NotesPage() {
           updatedAtFrom: computedUpdatedOnDates?.from,
           updatedAtTo: computedUpdatedOnDates?.to,
           createdByIds: selectedCreatedByIds.length > 0 ? selectedCreatedByIds : undefined,
+          module: 'sales',
         },
       );
       return res;
