@@ -5465,6 +5465,7 @@ export type Database = {
           name: string
           picture_url: string | null
           public_data: Json
+          timezone: string | null
           updated_at: string | null
           updated_by: string | null
         }
@@ -5477,6 +5478,7 @@ export type Database = {
           name: string
           picture_url?: string | null
           public_data?: Json
+          timezone?: string | null
           updated_at?: string | null
           updated_by?: string | null
         }
@@ -5489,6 +5491,7 @@ export type Database = {
           name?: string
           picture_url?: string | null
           public_data?: Json
+          timezone?: string | null
           updated_at?: string | null
           updated_by?: string | null
         }
