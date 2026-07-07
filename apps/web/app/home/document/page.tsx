@@ -24,6 +24,7 @@ import {
 import { toast } from 'sonner';
 
 import { Button } from '@kit/ui/button';
+import { Badge } from '@kit/ui/badge';
 import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
 import CustomTableContainer from '@kit/ui/custom-table-container';
 import {
@@ -176,7 +177,8 @@ export default function DocumentPage() {
       { id: 'type', label: 'Type' },
       { id: 'size', label: 'Size' },
       { id: 'uploader', label: 'Uploaded By' },
-      { id: 'entity', label: 'Entity' },
+      { id: 'category', label: 'Entity' },
+      { id: 'associate', label: 'Associate With' },
       { id: 'last_modified', label: 'Last Modified' },
       { id: 'created_by', label: 'Created By' },
       { id: 'created_at', label: 'Created On' },
@@ -192,7 +194,8 @@ export default function DocumentPage() {
       type: true,
       size: true,
       uploader: true,
-      entity: true,
+      category: true,
+      associate: true,
       last_modified: false,
       created_by: false,
       created_at: false,
@@ -425,6 +428,49 @@ export default function DocumentPage() {
     }
 
     return 'Document';
+  };
+
+  const getCategoryBadge = (type: string) => {
+    switch (type?.toLowerCase()) {
+      case 'lead':
+        return (
+          <Badge
+            variant="outline"
+            className="border-blue-200 bg-blue-50 text-blue-600"
+          >
+            Lead
+          </Badge>
+        );
+      case 'contact':
+        return (
+          <Badge
+            variant="outline"
+            className="border-emerald-200 bg-emerald-50 text-emerald-600"
+          >
+            Contact
+          </Badge>
+        );
+      case 'opportunity':
+        return (
+          <Badge
+            variant="outline"
+            className="border-purple-200 bg-purple-50 text-purple-600"
+          >
+            Opportunity
+          </Badge>
+        );
+      case 'account':
+        return (
+          <Badge
+            variant="outline"
+            className="border-amber-200 bg-amber-50 text-amber-600"
+          >
+            Account
+          </Badge>
+        );
+      default:
+        return <Badge variant="secondary">{type || 'General'}</Badge>;
+    }
   };
 
   const filterGroups = useMemo(() => {
@@ -684,20 +730,37 @@ export default function DocumentPage() {
                       />
                     </SortableTableHead>
                   )}
-                  {isVisible('entity') && (
+                  {isVisible('category') && (
                     <SortableTableHead
                       label="Entity"
-                      columnId="entity"
+                      columnId="category"
+                      sortKey="entity_type"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={toggleSort}
+                      className="relative"
+                      {...getHeaderProps('category')}
+                    >
+                      <span
+                        className="col-resize-handle"
+                        {...getResizeHandleProps('category')}
+                      />
+                    </SortableTableHead>
+                  )}
+                  {isVisible('associate') && (
+                    <SortableTableHead
+                      label="Associate With"
+                      columnId="associate"
                       sortKey="entity_name"
                       sortColumn={sortColumn}
                       sortDirection={sortDirection}
                       onSort={toggleSort}
                       className="relative"
-                      {...getHeaderProps('entity')}
+                      {...getHeaderProps('associate')}
                     >
                       <span
                         className="col-resize-handle"
-                        {...getResizeHandleProps('entity')}
+                        {...getResizeHandleProps('associate')}
                       />
                     </SortableTableHead>
                   )}
@@ -826,12 +889,17 @@ export default function DocumentPage() {
                           {doc.created_by_user?.name || '-'}
                         </TableCell>
                       )}
-                      {isVisible('entity') && (
+                      {isVisible('category') && (
+                        <TableCell>
+                          {getCategoryBadge(doc.entity_type)}
+                        </TableCell>
+                      )}
+                      {isVisible('associate') && (
                         <TableCell>
                           {doc.entity_name && (
                             <Link
                               href={`/home/sales/${doc.entity_type === 'opportunity' ? 'opportunities' : `${doc.entity_type}s`}/${doc.entity_id}`}
-                              className="primary-text-medium text-leadgaze-primary dark:text-leadgaze-primary text-xs"
+                              className="primary-text-medium text-leadgaze-primary dark:text-leadgaze-primary text-xs font-medium hover:underline"
                               title={`${doc.entity_type}: ${doc.entity_name}`}
                             >
                               {doc.entity_name}
