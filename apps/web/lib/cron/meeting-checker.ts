@@ -19,13 +19,33 @@ export class MeetingChecker {
   static async autocompletePassedMeetings(supabase: any): Promise<number> {
     try {
       const now = new Date().toISOString();
+      
+      // Select candidate meeting IDs first
+      const { data: meetingsToComplete, error: selectError } = await supabase
+        .schema('core')
+        .from('meetings')
+        .select('id')
+        .in('status', ['scheduled', 'in_progress'])
+        .eq('is_deleted', false)
+        .or(`scheduled_end.lte.${now},and(scheduled_end.is.null,scheduled_start.lte.${now})`);
+
+      if (selectError) {
+        console.error('[MeetingChecker] Error selecting passed meetings:', selectError);
+        return 0;
+      }
+
+      if (!meetingsToComplete || meetingsToComplete.length === 0) {
+        return 0;
+      }
+
+      const ids = meetingsToComplete.map((m: any) => m.id);
+
+      // Update their status to completed
       const { data, error } = await supabase
         .schema('core')
         .from('meetings')
         .update({ status: 'completed', updated_at: now })
-        .in('status', ['scheduled', 'in_progress'])
-        .eq('is_deleted', false)
-        .or(`scheduled_end.lte.${now},and(scheduled_end.is.null,scheduled_start.lte.${now})`)
+        .in('id', ids)
         .select('id');
 
       if (error) {
@@ -147,33 +167,59 @@ export class MeetingChecker {
           const { data: participants } = await supabase
             .schema('core')
             .from('meeting_participants')
-            .select('external_email, internal_user_id')
+            .select('external_email, internal_user_id, participant_type')
             .eq('meeting_id', meeting.id);
 
-          // Build list of emails to notify
-          const emailsToNotify: string[] = [];
+          // Get workspace default timezone
+          const { data: pref } = await supabase
+            .schema('core')
+            .from('workspace_preferences')
+            .select('timezone')
+            .eq('workspace_id', meeting.workspace_id)
+            .maybeSingle();
+          const workspaceTz = pref?.timezone || 'UTC';
 
-          // Add participant emails
+          // Build list of recipients with their resolved timezones
+          const recipientsToNotify: Array<{ email: string; timezone: string }> = [];
+
+          // Add internal participant emails and resolve their timezones from accounts table
           if (participants && participants.length > 0) {
             for (const p of participants) {
-              if (p.external_email) {
-                emailsToNotify.push(p.external_email);
-              } else if (p.internal_user_id) {
-                const userEmail = await NotificationService.getUserEmail(
+              if (p.participant_type === 'INTERNAL' && p.internal_user_id) {
+                // Fetch email and timezone from accounts table
+                const { data: acc } = await supabase
+                  .from('accounts')
+                  .select('email, timezone')
+                  .eq('id', p.internal_user_id)
+                  .maybeSingle();
+
+                const userEmail = acc?.email || await NotificationService.getUserEmail(
                   p.internal_user_id,
                 );
-                if (userEmail) emailsToNotify.push(userEmail);
+                const userTz = acc?.timezone || workspaceTz;
+
+                if (userEmail && !recipientsToNotify.some((r) => r.email === userEmail)) {
+                  recipientsToNotify.push({ email: userEmail, timezone: userTz });
+                }
               }
             }
           }
 
           // Also notify the meeting host
           if (meeting.host_user_id) {
-            const hostEmail = await NotificationService.getUserEmail(
+            const { data: hostAcc } = await supabase
+              .from('accounts')
+              .select('email, timezone')
+              .eq('id', meeting.host_user_id)
+              .maybeSingle();
+
+            const hostEmail = hostAcc?.email || await NotificationService.getUserEmail(
               meeting.host_user_id,
             );
-            if (hostEmail && !emailsToNotify.includes(hostEmail)) {
-              emailsToNotify.push(hostEmail);
+            const hostTz = hostAcc?.timezone || workspaceTz;
+
+            if (hostEmail && !recipientsToNotify.some((r) => r.email === hostEmail)) {
+              recipientsToNotify.push({ email: hostEmail, timezone: hostTz });
             }
           }
 
@@ -192,9 +238,9 @@ export class MeetingChecker {
 
           // Send emails to all recipients
           const sendResults = await Promise.allSettled(
-            emailsToNotify.map((email) =>
+            recipientsToNotify.map((recipient) =>
               NotificationService.sendMeetingEmail({
-                to: email,
+                to: recipient.email,
                 meetingTitle: meeting.title,
                 meetingDescription: meeting.description,
                 startTime: meeting.scheduled_start,
@@ -202,6 +248,8 @@ export class MeetingChecker {
                 location: meeting.location,
                 meetingLink: meeting.meeting_url,
                 intervalLabel,
+                workspaceId: meeting.workspace_id,
+                recipientTz: recipient.timezone,
               }),
             ),
           );
@@ -215,7 +263,7 @@ export class MeetingChecker {
             .schema('core')
             .from('meeting_reminders')
             .update({
-              status: allSucceeded ? 'sent' : 'failed',
+              status: allSucceeded ? 'sent' : 'pending',
               sent_at: allSucceeded ? new Date().toISOString() : null,
             })
             .eq('id', reminder.id);
@@ -223,7 +271,7 @@ export class MeetingChecker {
           if (allSucceeded) {
             sent++;
             console.log(
-              `[MeetingChecker] Sent core reminder for "${meeting.title}" (${intervalLabel}) to ${emailsToNotify.length} recipients`,
+              `[MeetingChecker] Sent core reminder for "${meeting.title}" (${intervalLabel}) to ${recipientsToNotify.length} recipients`,
             );
           }
         } catch (error) {
@@ -231,12 +279,6 @@ export class MeetingChecker {
             `[MeetingChecker] Error processing core reminder ${reminder.id}:`,
             error,
           );
-          // Mark as failed
-          await supabase
-            .schema('core')
-            .from('meeting_reminders')
-            .update({ status: 'failed' })
-            .eq('id', reminder.id);
         }
       }
     } catch (error) {
@@ -404,6 +446,7 @@ export class MeetingChecker {
         location: meeting.location,
         meetingLink: meeting.meeting_link,
         intervalLabel: intervalLabel,
+        workspaceId: meeting.workspace_id,
       });
 
       if (emailSent) {

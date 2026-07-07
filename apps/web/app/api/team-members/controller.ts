@@ -318,9 +318,21 @@ const inviteMember = catchAsync(
     // Fetch workspace details for email
     const { data: workspace } = await supabase
       .from('workspaces')
-      .select('id, name')
+      .select('id, name, company_id')
       .eq('id', workspaceId)
       .single();
+
+    let billingCountry = 'US';
+    if (workspace?.company_id) {
+      const { data: company } = await supabase
+        .from('companies')
+        .select('billing_country')
+        .eq('id', workspace.company_id)
+        .single();
+      if (company?.billing_country) {
+        billingCountry = company.billing_country;
+      }
+    }
 
     // Send invitation email
     const inviteUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/invite?token=${token}`;
@@ -347,6 +359,7 @@ const inviteMember = catchAsync(
           inviterName,
           productName: process.env.NEXT_PUBLIC_PRODUCT_NAME || 'Leadgaze',
           appUrl: process.env.NEXT_PUBLIC_APP_URL,
+          billingCountry,
         }),
       });
     } catch (error) {
@@ -799,9 +812,21 @@ const resendInvitationEmail = catchAsync(
     // Fetch workspace details for email
     const { data: workspace } = await supabase
       .from('workspaces')
-      .select('id, name')
+      .select('id, name, company_id')
       .eq('id', invitation.workspace_id)
       .single();
+
+    let billingCountry = 'US';
+    if (workspace?.company_id) {
+      const { data: company } = await supabase
+        .from('companies')
+        .select('billing_country')
+        .eq('id', workspace.company_id)
+        .single();
+      if (company?.billing_country) {
+        billingCountry = company.billing_country;
+      }
+    }
 
     // Get inviter info
     const { data: { user } = {} } = await supabase.auth.getUser();
@@ -830,6 +855,7 @@ const resendInvitationEmail = catchAsync(
           inviterName,
           productName: process.env.NEXT_PUBLIC_PRODUCT_NAME || 'Leadgaze',
           appUrl: process.env.NEXT_PUBLIC_APP_URL,
+          billingCountry,
         }),
       });
     } catch (error) {
