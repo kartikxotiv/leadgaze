@@ -791,47 +791,25 @@ export function ServiceCloudTicketDetailPage({
                     >
                       <div className="space-y-4 px-6 pb-4">
                         <Field label="Date">
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <Button
-                                variant="outline"
-                                className={cn(
-                                  'w-full justify-start text-left font-normal',
-                                  !timeForm.logged_date &&
-                                  'text-muted-foreground',
-                                )}
-                              >
-                                <CalendarDays className="mr-2 h-4 w-4" />
-                                {timeForm.logged_date
-                                  ? formatDateOnly(timeForm.logged_date)
-                                  : 'Pick a date'}
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent
-                              className="w-auto p-0"
-                              align="start"
-                            >
-                              <Calendar
-                                mode="single"
-                                selected={
-                                  timeForm.logged_date
-                                    ? new Date(
-                                      timeForm.logged_date + 'T00:00:00',
-                                    )
-                                    : undefined
-                                }
-                                onSelect={(date) =>
-                                  setTimeForm((prev) => ({
-                                    ...prev,
-                                    logged_date: date
-                                      ? toLocalDateString(date)
-                                      : prev.logged_date,
-                                  }))
-                                }
-                                captionLayout="dropdown"
-                              />
-                            </PopoverContent>
-                          </Popover>
+                          <DateTimePicker
+                            mode="date"
+                            placeholder="Pick a date"
+                            value={
+                              timeForm.logged_date
+                                ? new Date(
+                                  timeForm.logged_date + 'T00:00:00',
+                                )
+                                : undefined
+                            }
+                            onChange={(date) =>
+                              setTimeForm((prev) => ({
+                                ...prev,
+                                logged_date: date
+                                  ? toLocalDateString(date)
+                                  : prev.logged_date,
+                              }))
+                            }
+                          />
                         </Field>
                         <div className="grid grid-cols-2 gap-3">
                           <Field label="Hours">
