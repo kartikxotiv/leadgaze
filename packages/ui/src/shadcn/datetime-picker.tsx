@@ -9,22 +9,218 @@ import { cn } from '../lib/utils';
 import { Button } from './button';
 import { Calendar } from './calendar';
 import { Popover, PopoverContent, PopoverTrigger } from './popover';
-import { ScrollArea } from './scroll-area';
 
+/**
+ * Props for the DateTimePicker component.
+ */
 interface DateTimePickerProps {
+  /**
+   * The currently selected date/time.
+   */
   value?: Date;
+  /**
+   * Callback fired when the date/time changes.
+   */
   onChange?: (date?: Date) => void;
+  /**
+   * The mode of the picker.
+   * 'date' - Only select date.
+   * 'time' - Only select time.
+   * 'datetime' - Select both date and time.
+   */
   mode?: 'date' | 'datetime' | 'time';
+  /**
+   * Alias for `mode="datetime" | "time"`. Will override mode if set to true.
+   */
   showTime?: boolean;
+  /**
+   * The format for the hours column (12 or 24).
+   */
   hourFormat?: 12 | 24;
+  /**
+   * The step interval for the minutes column.
+   */
   minuteStep?: 1 | 5 | 10 | 15 | 30;
+  /**
+   * Placeholder text shown when no date is selected.
+   */
   placeholder?: string;
+  /**
+   * Disables the entire picker.
+   */
   disabled?: boolean;
+  /**
+   * The minimum selectable date.
+   */
   minDate?: Date;
+  /**
+   * The maximum selectable date.
+   */
   maxDate?: Date;
+  /**
+   * Custom function to disable specific dates in the calendar.
+   */
   disabledDates?: (date: Date) => boolean;
+  /**
+   * Additional CSS classes for the trigger button.
+   */
   className?: string;
 }
+
+const VISIBLE_COUNT = 7; // odd number so selected is always centered
+const ITEM_HEIGHT = 36; // px
+
+/**
+ * Drum-roll / slot-machine style column.
+ * No DOM scroll manipulation — mouse wheel and arrow buttons
+ * advance the selected index, and the visible window follows.
+ * Items loop infinitely (01 → 02 → … → 12 → 01 → …).
+ */
+function TimePickerColumn({
+  options,
+  value,
+  onChange,
+  disabled,
+}: {
+  options: string[];
+  value: string;
+  onChange: (val: string) => void;
+  disabled?: boolean;
+}) {
+  const n = options.length;
+
+  // The "center" index into the virtual infinite list
+  const currentIndex = options.indexOf(value);
+  const [centerIdx, setCenterIdx] = React.useState(
+    currentIndex === -1 ? 0 : currentIndex,
+  );
+
+  // Sync if value changes externally
+  React.useEffect(() => {
+    const idx = options.indexOf(value);
+    if (idx !== -1 && idx !== ((centerIdx % n) + n) % n) {
+      setCenterIdx(idx);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
+
+  const step = (delta: number) => {
+    if (disabled) return;
+    const newCenter = centerIdx + delta;
+    setCenterIdx(newCenter);
+    const looped = ((newCenter % n) + n) % n;
+    onChange(options[looped]!);
+  };
+
+  // Mouse wheel: use a non-passive native listener so preventDefault works.
+  // React's synthetic onWheel is passive by default and cannot call preventDefault.
+  const wrapperRef = React.useRef<HTMLDivElement>(null);
+  const stepRef = React.useRef(step);
+  stepRef.current = step; // keep ref current without re-subscribing
+
+  React.useEffect(() => {
+    const el = wrapperRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (stepRef.current) {
+        if (e.deltaY > 0) stepRef.current(1);
+        else if (e.deltaY < 0) stepRef.current(-1);
+      }
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, []); // attach once — stepRef.current stays up-to-date
+
+  // Build the visible window: VISIBLE_COUNT items centered on centerIdx
+  const half = Math.floor(VISIBLE_COUNT / 2);
+  const visibleItems = Array.from({ length: VISIBLE_COUNT }, (_, i) => {
+    const offset = i - half;
+    const loopedIdx = ((centerIdx + offset) % n + n) % n;
+    return {
+      label: options[loopedIdx]!,
+      offset,
+      isSelected: offset === 0,
+    };
+  });
+
+  const colHeight = VISIBLE_COUNT * ITEM_HEIGHT;
+
+  return (
+    <div
+      ref={wrapperRef}
+      className="relative flex flex-col items-center select-none"
+      style={{ width: 64, userSelect: 'none' }}
+    >
+      {/* Up arrow */}
+      <button
+        type="button"
+        tabIndex={-1}
+        disabled={disabled}
+        onClick={() => step(-1)}
+        className="flex h-7 w-full items-center justify-center rounded text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground disabled:pointer-events-none disabled:opacity-40"
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="18 15 12 9 6 15"/></svg>
+      </button>
+
+      {/* Visible drum window */}
+      <div
+        className="relative overflow-hidden"
+        style={{ height: colHeight, width: 64 }}
+      >
+        {/* Selection highlight bar */}
+        <div
+          className="pointer-events-none absolute left-0 right-0 rounded-md bg-primary/10 ring-1 ring-primary/20"
+          style={{
+            top: half * ITEM_HEIGHT,
+            height: ITEM_HEIGHT,
+          }}
+        />
+
+        {/* Items */}
+        <div className="flex flex-col">
+          {visibleItems.map(({ label, offset, isSelected }) => (
+            <button
+              key={offset}
+              type="button"
+              tabIndex={-1}
+              disabled={disabled}
+              onClick={() => {
+                if (!isSelected) step(offset);
+              }}
+              className={[
+                'flex items-center justify-center rounded transition-all duration-150',
+                isSelected
+                  ? 'text-primary font-semibold text-sm scale-105'
+                  : Math.abs(offset) === 1
+                    ? 'text-foreground/70 text-sm font-normal'
+                    : 'text-muted-foreground/50 text-xs font-normal',
+                !disabled && !isSelected ? 'cursor-pointer hover:text-foreground' : '',
+                disabled ? 'pointer-events-none opacity-40' : '',
+              ].join(' ')}
+              style={{ height: ITEM_HEIGHT, width: 64 }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Down arrow */}
+      <button
+        type="button"
+        tabIndex={-1}
+        disabled={disabled}
+        onClick={() => step(1)}
+        className="flex h-7 w-full items-center justify-center rounded text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground disabled:pointer-events-none disabled:opacity-40"
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+    </div>
+  );
+}
+
 
 export function DateTimePicker({
   value,
@@ -138,24 +334,24 @@ export function DateTimePicker({
         <Button
           variant="outline"
           className={cn(
-            'w-full justify-start text-left font-normal',
+            'w-full justify-between text-left font-normal',
             !date && 'text-muted-foreground',
             className,
           )}
           disabled={disabled}
         >
-          {actualMode === 'time' ? (
-            <Clock className="mr-2 h-4 w-4 shrink-0" />
-          ) : (
-            <CalendarIcon className="mr-2 h-4 w-4 shrink-0" />
-          )}
           <span className="truncate">{formatDisplay()}</span>
+          {actualMode === 'time' ? (
+            <Clock className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          ) : (
+            <CalendarIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          )}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">
         <div className="flex flex-col sm:flex-row">
           {(actualMode === 'date' || actualMode === 'datetime') && (
-            <div className="border-b p-3 sm:border-r sm:border-b-0">
+            <div className="border-b p-3 sm:border-b-0 sm:border-r">
               <Calendar
                 mode="single"
                 selected={date}
@@ -174,63 +370,45 @@ export function DateTimePicker({
                 captionLayout="dropdown"
                 fromYear={minDate ? minDate.getFullYear() : 1900}
                 toYear={
-                  maxDate ? maxDate.getFullYear() : new Date().getFullYear() + 50
+                  maxDate
+                    ? maxDate.getFullYear()
+                    : new Date().getFullYear() + 50
                 }
               />
             </div>
           )}
           {(actualMode === 'time' || actualMode === 'datetime') && (
             <div className="flex gap-2 p-3">
-              <ScrollArea className="h-[280px] w-16">
-                <div className="flex flex-col gap-1 pr-3">
-                  {hours.map((h) => {
-                    const currentHour = date ? date.getHours() : 0;
-                    let isSelected = false;
-                    if (hourFormat === 12) {
-                      const displayH = currentHour % 12 || 12;
-                      isSelected = displayH.toString().padStart(2, '0') === h;
-                    } else {
-                      isSelected =
-                        currentHour.toString().padStart(2, '0') === h;
-                    }
-                    return (
-                      <Button
-                        key={h}
-                        variant={isSelected ? 'default' : 'ghost'}
-                        size="sm"
-                        className="w-full px-1 text-center"
-                        onClick={() => handleTimeChange('hour', h)}
-                        disabled={!date}
-                      >
-                        {h}
-                      </Button>
-                    );
-                  })}
-                </div>
-              </ScrollArea>
-              <ScrollArea className="h-[280px] w-16">
-                <div className="flex flex-col gap-1 pr-3">
-                  {minutes.map((m) => {
-                    const currentMinute = date ? date.getMinutes() : 0;
-                    const isSelected =
-                      currentMinute.toString().padStart(2, '0') === m;
-                    return (
-                      <Button
-                        key={m}
-                        variant={isSelected ? 'default' : 'ghost'}
-                        size="sm"
-                        className="w-full px-1 text-center"
-                        onClick={() => handleTimeChange('minute', m)}
-                        disabled={!date}
-                      >
-                        {m}
-                      </Button>
-                    );
-                  })}
-                </div>
-              </ScrollArea>
+              <TimePickerColumn
+                options={hours}
+                value={
+                  date
+                    ? (hourFormat === 12
+                        ? date.getHours() % 12 || 12
+                        : date.getHours()
+                      )
+                        .toString()
+                        .padStart(2, '0')
+                    : '12'
+                }
+                onChange={(val) => handleTimeChange('hour', val)}
+                disabled={!date}
+              />
+              <TimePickerColumn
+                options={minutes}
+                value={
+                  date
+                    ? date.getMinutes().toString().padStart(2, '0')
+                    : '00'
+                }
+                onChange={(val) => handleTimeChange('minute', val)}
+                disabled={!date}
+              />
               {hourFormat === 12 && (
-                <div className="flex h-[280px] flex-col gap-1 overflow-hidden">
+                <div
+                  className="flex w-16 flex-col items-center justify-center gap-2"
+                  style={{ height: VISIBLE_COUNT * ITEM_HEIGHT + 28 }}
+                >
                   <Button
                     variant={date && date.getHours() < 12 ? 'default' : 'ghost'}
                     size="sm"
