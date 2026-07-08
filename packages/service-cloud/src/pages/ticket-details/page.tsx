@@ -27,7 +27,8 @@ import {
   UserRound,
 } from 'lucide-react';
 import { toast } from 'sonner';
-
+import { DateTimePicker } from '@kit/ui/datetime-picker';
+import { format } from 'date-fns';
 import {
   CoreEmailComposeDialog,
   CoreEmailReplyDialog,
@@ -1240,16 +1241,17 @@ export function ServiceCloudTicketDetailPage({
                     <Field label="Due date">
                       <div className="flex items-center gap-2">
                         <CalendarDays className="text-muted-foreground h-4 w-4" />
-                        <Input
-                          type="date"
-                          value={formatDateInput(dueValue)}
+                        <DateTimePicker
+                          mode="date"
+                          placeholder="Select date"
+                          value={dueValue ? new Date(dueValue) : undefined}
                           disabled={
                             isUpdating ||
                             (canEditField ? !canEditField('due_at') : false)
                           }
-                          onChange={(event) =>
+                          onChange={(date) =>
                             updateTicket({
-                              due_date: event.target.value || null,
+                              due_date: date ? format(date, 'yyyy-MM-dd') : null,
                             })
                           }
                         />
