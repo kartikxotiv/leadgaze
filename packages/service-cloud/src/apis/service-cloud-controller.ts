@@ -304,16 +304,33 @@ export const getServiceCloudResourceController = catchAsync(
     const sortColumn = url.searchParams.get('sortColumn');
     const sortDirection = url.searchParams.get('sortDirection');
 
-    const finalSortColumn = sortColumn || config.orderBy;
-    const isAscending = sortColumn
+    let finalSortColumn = sortColumn || config.orderBy;
+    const isNodeJsSort = finalSortColumn === 'lifecycle';
+
+    if (isNodeJsSort) {
+      finalSortColumn = config.orderBy;
+    }
+
+    const isAscending = sortColumn && !isNodeJsSort
       ? sortDirection === 'asc'
       : resource === 'ticket-priorities';
 
-    const { data, error: fetchError } = await query.order(finalSortColumn, {
+    let { data, error: fetchError } = await query.order(finalSortColumn, {
       ascending: isAscending,
     });
 
     if (fetchError) throw fetchError;
+
+    if (isNodeJsSort && sortColumn && data) {
+      const ascending = sortDirection === 'asc';
+      data = [...data].sort((a: any, b: any) => {
+        const aVal = String(a[sortColumn] || '').toLowerCase();
+        const bVal = String(b[sortColumn] || '').toLowerCase();
+        if (aVal < bVal) return ascending ? -1 : 1;
+        if (aVal > bVal) return ascending ? 1 : -1;
+        return 0;
+      });
+    }
 
     if (resource === 'tickets') {
       const tickets = data ?? [];
