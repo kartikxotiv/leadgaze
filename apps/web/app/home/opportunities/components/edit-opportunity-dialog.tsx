@@ -10,6 +10,8 @@ import { z } from 'zod';
 
 import { Button } from '@kit/ui/button';
 import { Checkbox } from '@kit/ui/checkbox';
+import { DateTimePicker } from '@kit/ui/datetime-picker';
+import { format } from 'date-fns';
 import {
   Dialog,
   DialogContent,
@@ -302,7 +304,7 @@ export function EditOpportunityDialog({
                     <FormItem>
                       <FormLabel>Expected Close Date</FormLabel>
                       <FormControl>
-                        <Input {...field} type="date" />
+                        <DateTimePicker mode="date" placeholder="Select date" value={field.value ? new Date(field.value) : undefined} onChange={(date) => field.onChange(date ? format(date, 'yyyy-MM-dd') : '')} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

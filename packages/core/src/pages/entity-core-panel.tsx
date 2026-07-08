@@ -14,7 +14,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@kit/ui/tabs';
 import { Textarea } from '@kit/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@kit/ui/dialog';
 import { toast } from 'sonner';
-
+import { DateTimePicker } from '@kit/ui/datetime-picker';
+import { format } from 'date-fns';
 import {
   completeReminderService,
   createMeetingService,
@@ -305,8 +306,8 @@ function MeetingsPanel(props: CoreEntityPanelProps) {
       <div className="grid gap-3 rounded-md border p-4 sm:grid-cols-2">
         <Field label="Title"><Input value={form.title} onChange={(event) => setForm((prev) => ({ ...prev, title: event.target.value }))} placeholder="Investor pitch call" /></Field>
         <Field label="Location"><Input value={form.location} onChange={(event) => setForm((prev) => ({ ...prev, location: event.target.value }))} placeholder="Zoom / office / phone" /></Field>
-        <Field label="Start Time"><Input type="datetime-local" value={form.start_time} onChange={(event) => setForm((prev) => ({ ...prev, start_time: event.target.value }))} /></Field>
-        <Field label="End Time"><Input type="datetime-local" value={form.end_time} onChange={(event) => setForm((prev) => ({ ...prev, end_time: event.target.value }))} /></Field>
+        <Field label="Start Time"><DateTimePicker showTime value={form.start_time ? new Date(form.start_time) : undefined} onChange={(date) => setForm((prev) => ({ ...prev, start_time: date ? format(date, "yyyy-MM-dd'T'HH:mm") : '' }))} /></Field>
+        <Field label="End Time"><DateTimePicker showTime value={form.end_time ? new Date(form.end_time) : undefined} onChange={(date) => setForm((prev) => ({ ...prev, end_time: date ? format(date, "yyyy-MM-dd'T'HH:mm") : '' }))} /></Field>
         <div className="sm:col-span-2"><Field label="Description"><Textarea value={form.description} onChange={(event) => setForm((prev) => ({ ...prev, description: event.target.value }))} /></Field></div>
         <div className="flex justify-end sm:col-span-2"><Button disabled={!form.title || createMutation.isPending} onClick={() => createMutation.mutate({ ...entityPayload(props), ...form, start_time: form.start_time || null, end_time: form.end_time || null, location: form.location || null, description: form.description || null })}><Plus className="mr-2 h-4 w-4" /> Add Meeting</Button></div>
       </div>
@@ -412,7 +413,7 @@ function RemindersPanel(props: CoreEntityPanelProps) {
     <section className="grid gap-4">
       <div className="grid gap-3 rounded-md border p-4 sm:grid-cols-2">
         <Field label="Title"><Input value={form.title} onChange={(event) => setForm((prev) => ({ ...prev, title: event.target.value }))} placeholder="Follow up with investor" /></Field>
-        <Field label="Due At"><Input type="datetime-local" value={form.due_at} onChange={(event) => setForm((prev) => ({ ...prev, due_at: event.target.value }))} /></Field>
+        <Field label="Due At"><DateTimePicker showTime value={form.due_at ? new Date(form.due_at) : undefined} onChange={(date) => setForm((prev) => ({ ...prev, due_at: date ? format(date, "yyyy-MM-dd'T'HH:mm") : '' }))} /></Field>
         <Field label="Priority"><Select value={form.priority} onValueChange={(priority) => setForm((prev) => ({ ...prev, priority }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="low">Low</SelectItem><SelectItem value="medium">Medium</SelectItem><SelectItem value="high">High</SelectItem></SelectContent></Select></Field>
         <div className="sm:col-span-2"><Field label="Description"><Textarea value={form.description} onChange={(event) => setForm((prev) => ({ ...prev, description: event.target.value }))} /></Field></div>
         <div className="flex justify-end sm:col-span-2"><Button disabled={!form.title || createMutation.isPending} onClick={() => createMutation.mutate({ ...entityPayload(props), ...form, due_at: form.due_at || null, description: form.description || null })}><Plus className="mr-2 h-4 w-4" /> Add Follow-Up</Button></div>

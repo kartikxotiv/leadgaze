@@ -110,7 +110,6 @@ const SYSTEM_FIELDS: Array<{
     id: 'company_size',
     key: 'company_size',
     label: 'Company Size',
-    sortable: false,
   },
   { id: 'location', key: 'location', label: 'Location' },
   { id: 'timezone', key: 'timezone', label: 'Timezone', sortable: false },

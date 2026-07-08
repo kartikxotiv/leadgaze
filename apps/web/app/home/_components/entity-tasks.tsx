@@ -13,7 +13,8 @@ import {
   History,
 } from 'lucide-react';
 import { toast } from 'sonner';
-
+import { DateTimePicker } from '@kit/ui/datetime-picker';
+import { format } from 'date-fns';
 import { Button } from '@kit/ui/button';
 import { CardWidgetContainer } from '@kit/ui/card-widget-container';
 import { CardWidgetList, CardWidgetListItem } from '@kit/ui/card-widget-list';
@@ -278,10 +279,11 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
                 </div>
                 <div className="space-y-2">
                   <Label>Due Date</Label>
-                  <Input
-                    type="date"
-                    value={formData.due_date}
-                    onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
+                  <DateTimePicker
+                    mode="date"
+                    placeholder="Select date"
+                    value={formData.due_date ? new Date(formData.due_date) : undefined}
+                    onChange={(date) => setFormData({ ...formData, due_date: date ? format(date, 'yyyy-MM-dd') : '' })}
                   />
                 </div>
                 <div className="space-y-2">
@@ -478,10 +480,11 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
             </div>
             <div className="space-y-2">
               <Label>Work Date</Label>
-              <Input
-                type="date"
-                value={timeLogData.logged_at}
-                onChange={(e) => setTimeLogData({ ...timeLogData, logged_at: e.target.value })}
+              <DateTimePicker
+                mode="date"
+                placeholder="Select date"
+                value={timeLogData.logged_at ? new Date(timeLogData.logged_at) : undefined}
+                onChange={(date) => setTimeLogData({ ...timeLogData, logged_at: date ? format(date, 'yyyy-MM-dd') : '' })}
               />
             </div>
             <div className="space-y-2">

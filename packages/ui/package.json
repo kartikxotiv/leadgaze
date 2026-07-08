@@ -70,6 +70,7 @@
     "./avatar": "./src/shadcn/avatar.tsx",
     "./button": "./src/shadcn/button.tsx",
     "./calendar": "./src/shadcn/calendar.tsx",
+    "./datetime-picker": "./src/shadcn/datetime-picker.tsx",
     "./card": "./src/shadcn/card.tsx",
     "./checkbox": "./src/shadcn/checkbox.tsx",
     "./command": "./src/shadcn/command.tsx",

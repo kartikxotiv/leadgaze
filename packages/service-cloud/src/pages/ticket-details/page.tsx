@@ -27,7 +27,8 @@ import {
   UserRound,
 } from 'lucide-react';
 import { toast } from 'sonner';
-
+import { DateTimePicker } from '@kit/ui/datetime-picker';
+import { format } from 'date-fns';
 import {
   CoreEmailComposeDialog,
   CoreEmailReplyDialog,
@@ -790,47 +791,25 @@ export function ServiceCloudTicketDetailPage({
                     >
                       <div className="space-y-4 px-6 pb-4">
                         <Field label="Date">
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <Button
-                                variant="outline"
-                                className={cn(
-                                  'w-full justify-start text-left font-normal',
-                                  !timeForm.logged_date &&
-                                  'text-muted-foreground',
-                                )}
-                              >
-                                <CalendarDays className="mr-2 h-4 w-4" />
-                                {timeForm.logged_date
-                                  ? formatDateOnly(timeForm.logged_date)
-                                  : 'Pick a date'}
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent
-                              className="w-auto p-0"
-                              align="start"
-                            >
-                              <Calendar
-                                mode="single"
-                                selected={
-                                  timeForm.logged_date
-                                    ? new Date(
-                                      timeForm.logged_date + 'T00:00:00',
-                                    )
-                                    : undefined
-                                }
-                                onSelect={(date) =>
-                                  setTimeForm((prev) => ({
-                                    ...prev,
-                                    logged_date: date
-                                      ? toLocalDateString(date)
-                                      : prev.logged_date,
-                                  }))
-                                }
-                                captionLayout="dropdown"
-                              />
-                            </PopoverContent>
-                          </Popover>
+                          <DateTimePicker
+                            mode="date"
+                            placeholder="Pick a date"
+                            value={
+                              timeForm.logged_date
+                                ? new Date(
+                                  timeForm.logged_date + 'T00:00:00',
+                                )
+                                : undefined
+                            }
+                            onChange={(date) =>
+                              setTimeForm((prev) => ({
+                                ...prev,
+                                logged_date: date
+                                  ? toLocalDateString(date)
+                                  : prev.logged_date,
+                              }))
+                            }
+                          />
                         </Field>
                         <div className="grid grid-cols-2 gap-3">
                           <Field label="Hours">
@@ -1240,16 +1219,17 @@ export function ServiceCloudTicketDetailPage({
                     <Field label="Due date">
                       <div className="flex items-center gap-2">
                         <CalendarDays className="text-muted-foreground h-4 w-4" />
-                        <Input
-                          type="date"
-                          value={formatDateInput(dueValue)}
+                        <DateTimePicker
+                          mode="date"
+                          placeholder="Select date"
+                          value={dueValue ? new Date(dueValue) : undefined}
                           disabled={
                             isUpdating ||
                             (canEditField ? !canEditField('due_at') : false)
                           }
-                          onChange={(event) =>
+                          onChange={(date) =>
                             updateTicket({
-                              due_date: event.target.value || null,
+                              due_date: date ? format(date, 'yyyy-MM-dd') : null,
                             })
                           }
                         />

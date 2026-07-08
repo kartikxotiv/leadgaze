@@ -21,6 +21,8 @@ import {
 // Alias Calendar to CalendarIcon for consistent naming
 const CalendarIcon = Calendar;
 import { toast } from 'sonner';
+import { DateTimePicker } from '@kit/ui/datetime-picker';
+import { format } from 'date-fns';
 
 import { Button } from '@kit/ui/button';
 import { CardWidgetContainer } from '@kit/ui/card-widget-container';
@@ -262,17 +264,12 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
               </div>
               <div className="space-y-2">
                 <Label>Due Date</Label>
-                <Input
-                  type="datetime-local"
-                  value={formData.due_date}
-                  onChange={(e) =>
-                    setFormData({ ...formData, due_date: e.target.value })
+                <DateTimePicker
+                  showTime
+                  value={formData.due_date ? new Date(formData.due_date) : undefined}
+                  onChange={(date) =>
+                    setFormData({ ...formData, due_date: date ? format(date, "yyyy-MM-dd'T'HH:mm") : '' })
                   }
-                  onClick={(e) => {
-                    try {
-                      e.currentTarget.showPicker();
-                    } catch (err) {}
-                  }}
                 />
               </div>
             </div>
