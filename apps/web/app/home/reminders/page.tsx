@@ -21,7 +21,8 @@ import {
   Users,
 } from 'lucide-react';
 import { toast } from 'sonner';
-
+import { DateTimePicker } from '@kit/ui/datetime-picker';
+import { format } from 'date-fns';
 import { useLocalization } from '@kit/shared/localization';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
@@ -1197,22 +1198,13 @@ export default function RemindersPage() {
             </div>
             <div className="space-y-2">
               <Label>Due Date</Label>
-              <div className="relative">
-                <CalendarIcon className="pointer-events-none absolute top-2.5 left-3 h-4 w-4 text-gray-400" />
-                <Input
-                  type="datetime-local"
-                  onClick={(e) => {
-                    try {
-                      e.currentTarget.showPicker();
-                    } catch (err) {}
-                  }}
-                  value={formData.due_date}
-                  onChange={(e) =>
-                    setFormData({ ...formData, due_date: e.target.value })
+              <DateTimePicker
+                  showTime
+                  value={formData.due_date ? new Date(formData.due_date) : undefined}
+                  onChange={(date) =>
+                    setFormData({ ...formData, due_date: date ? format(date, "yyyy-MM-dd'T'HH:mm") : '' })
                   }
-                  className="pl-10"
                 />
-              </div>
             </div>
           </div>
           <div className="mt-auto border-t p-6">
@@ -1283,22 +1275,13 @@ export default function RemindersPage() {
             </div>
             <div className="space-y-2">
               <Label>Due Date</Label>
-              <div className="relative">
-                <CalendarIcon className="pointer-events-none absolute top-2.5 left-3 h-4 w-4 text-gray-400" />
-                <Input
-                  type="datetime-local"
-                  onClick={(e) => {
-                    try {
-                      e.currentTarget.showPicker();
-                    } catch (err) {}
-                  }}
-                  value={formData.due_date}
-                  onChange={(e) =>
-                    setFormData({ ...formData, due_date: e.target.value })
+              <DateTimePicker
+                  showTime
+                  value={formData.due_date ? new Date(formData.due_date) : undefined}
+                  onChange={(date) =>
+                    setFormData({ ...formData, due_date: date ? format(date, "yyyy-MM-dd'T'HH:mm") : '' })
                   }
-                  className="pl-10"
                 />
-              </div>
             </div>
             <Button
               onClick={handleSave}

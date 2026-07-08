@@ -54,7 +54,7 @@ export function SignUpMethodsContainer(props: {
       </If>
 
       <If condition={props.providers.oAuth.length}>
-        <Separator />
+        <Separator/>
 
         <OauthProviders
           enabledProviders={props.providers.oAuth}

@@ -60,6 +60,8 @@ import {
   DropdownMenuTrigger,
 } from '@kit/ui/dropdown-menu';
 import { Input } from '@kit/ui/input';
+import { DateTimePicker } from '@kit/ui/datetime-picker';
+import { format } from 'date-fns';
 import { Label } from '@kit/ui/label';
 import { ListToolBar } from '@kit/ui/list-toolbar';
 import { PageBody, PageHeader } from '@kit/ui/page';
@@ -961,13 +963,17 @@ export function CreateMeetingDialog({
                 <Label className="font-medium">
                   Meeting Date & Time <span className="text-red-500">*</span>
                 </Label>
-                <Input
-                  type="datetime-local"
-                  step="60"
-                  min={getCurrentDateTimeLocal()}
-                  value={scheduledStart}
-                  onChange={(e) => setScheduledStart(e.target.value)}
-                  className="h-11"
+                <DateTimePicker
+                  value={scheduledStart ? new Date(scheduledStart) : undefined}
+                  onChange={(date) => {
+                    if (date) {
+                      setScheduledStart(format(date, "yyyy-MM-dd'T'HH:mm"));
+                    } else {
+                      setScheduledStart('');
+                    }
+                  }}
+                  minDate={new Date()}
+                  className="h-11 w-full"
                 />
               </div>
               <div className="space-y-2">
@@ -995,24 +1001,32 @@ export function CreateMeetingDialog({
                 <Label className="font-medium">
                   Actual Start <span className="text-red-500">*</span>
                 </Label>
-                <Input
-                  type="datetime-local"
-                  step="60"
-                  value={actualStart}
-                  onChange={(e) => setActualStart(e.target.value)}
-                  className="h-11"
+                <DateTimePicker
+                  value={actualStart ? new Date(actualStart) : undefined}
+                  onChange={(date) => {
+                    if (date) {
+                      setActualStart(format(date, "yyyy-MM-dd'T'HH:mm"));
+                    } else {
+                      setActualStart('');
+                    }
+                  }}
+                  className="h-11 w-full"
                 />
               </div>
               <div className="space-y-2">
                 <Label className="font-medium">
                   Actual End <span className="text-red-500">*</span>
                 </Label>
-                <Input
-                  type="datetime-local"
-                  step="60"
-                  value={actualEnd}
-                  onChange={(e) => setActualEnd(e.target.value)}
-                  className="h-11"
+                <DateTimePicker
+                  value={actualEnd ? new Date(actualEnd) : undefined}
+                  onChange={(date) => {
+                    if (date) {
+                      setActualEnd(format(date, "yyyy-MM-dd'T'HH:mm"));
+                    } else {
+                      setActualEnd('');
+                    }
+                  }}
+                  className="h-11 w-full"
                 />
               </div>
             </div>
@@ -1508,13 +1522,17 @@ export function EditMeetingDialog({
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label className="font-medium">Meeting Date & Time</Label>
-              <Input
-                type="datetime-local"
-                step="60"
-                min={getCurrentDateTimeLocal()}
-                value={scheduledStart}
-                onChange={(e) => setScheduledStart(e.target.value)}
-                className="h-11"
+              <DateTimePicker
+                value={scheduledStart ? new Date(scheduledStart) : undefined}
+                onChange={(date) => {
+                  if (date) {
+                    setScheduledStart(format(date, "yyyy-MM-dd'T'HH:mm"));
+                  } else {
+                    setScheduledStart('');
+                  }
+                }}
+                minDate={new Date()}
+                className="h-11 w-full"
               />
             </div>
             <div className="space-y-2">

@@ -24,7 +24,6 @@ const LEAD_DIRECT_SORT_COLUMNS: Record<string, string> = {
   company_name: 'company_name',
   job_title:    'job_title',
   department:   'department',
-  company_size: 'company_size',
   location:     'location',
   trigger:      'trigger',
   created_at:   'created_at',
@@ -39,6 +38,7 @@ const LEAD_RELATIONAL_SORT_COLUMNS: Record<string, string> = {
   'industry.industry_name':  'industry.industry_name',
   'created_by_account.name': 'created_by_account.name',
   'updated_by_account.name': 'updated_by_account.name',
+  'company_size': 'company_size',
 };
 
 // Helper to read a dot-path value from an object

@@ -13,6 +13,8 @@ import {
 } from '@kit/ui/select';
 import { Switch } from '@kit/ui/switch';
 import { Textarea } from '@kit/ui/textarea';
+import { DateTimePicker } from '@kit/ui/datetime-picker';
+import { format } from 'date-fns';
 
 import type { EntityField } from '~/lib/hooks/use-dynamic-columns';
 
@@ -107,25 +109,22 @@ function renderInput(
       );
     case 'date':
       return (
-        <Input
-          id={id}
-          type="date"
-          value={strValue}
-          onChange={(e) => onChange(e.target.value)}
+        <DateTimePicker
+          mode="date"
+          placeholder="Select date"
+          value={strValue ? new Date(strValue) : undefined}
+          onChange={(date) => onChange(date ? format(date, 'yyyy-MM-dd') : '')}
           disabled={disabled}
-          readOnly={disabled}
           className={disabled ? 'opacity-60 cursor-not-allowed' : ''}
         />
       );
     case 'datetime':
       return (
-        <Input
-          id={id}
-          type="datetime-local"
-          value={strValue}
-          onChange={(e) => onChange(e.target.value)}
+        <DateTimePicker
+          showTime
+          value={strValue ? new Date(strValue) : undefined}
+          onChange={(date) => onChange(date ? format(date, "yyyy-MM-dd'T'HH:mm") : '')}
           disabled={disabled}
-          readOnly={disabled}
           className={disabled ? 'opacity-60 cursor-not-allowed' : ''}
         />
       );
