@@ -48,12 +48,12 @@ export function OpportunitiesKanbanColumn({
   });
 
   return (
-    <div className="flex w-[300px] shrink-0 flex-col rounded-xl border border-border/60 bg-zinc-100/60 shadow-sm dark:border-border/40 dark:bg-zinc-900/30 overflow-hidden first:ml-[1px]">
+    <div className="flex w-[300px] shrink-0 flex-col rounded-xl border border-border/100 bg-gray-light shadow-sm dark:border-border/100 dark:bg-zinc-900/30 overflow-hidden first:ml-[1px]">
       {/* Top Status Color Bar */}      
       <div className="h-1.5 w-full" style={{ backgroundColor: stage.status_name === "New" ? "#3953E7" : (stage.color || "#cbd5e1") }} />
 
       {/* Column Header */}
-      <div className="flex items-center justify-between border-b border-border/40 bg-background/40 px-3 py-3 backdrop-blur-sm">
+      <div className="flex items-center justify-between border-b border-border/100 bg-white px-3 py-3 backdrop-blur-sm dark:dark-black-light-bg">
         <div className="flex items-center gap-2">
           {/* Subtle colored dot for status */}
           <span

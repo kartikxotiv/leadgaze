@@ -52,7 +52,7 @@ export function OpportunitiesKanbanCard({
       ref={setNodeRef}
       style={style}
       className={cn(
-        'group relative flex flex-col gap-3 rounded-lg border bg-white p-3 shadow-sm transition-all dark:border-white/10 dark:bg-[#22272b]',
+        'group relative flex flex-col gap-2 rounded-lg border bg-white p-3 shadow-sm transition-all dark:border-white/10 dark:bg-[#22272b]',
         'hover:border-primary/40 hover:shadow-md',
         isDragging && 'scale-[1.02] opacity-60 shadow-xl ring-2 ring-primary/40',
         canUpdate && 'cursor-grab active:cursor-grabbing',

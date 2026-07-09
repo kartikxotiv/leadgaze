@@ -817,7 +817,7 @@ export default function LeadsPage() {
             <LeadsKanbanBoard
               leads={kanbanLeads}
               statuses={statuses}
-              isLoading={kanbanIsLoading}
+              isLoading={kanbanIsLoading || !isStatusesLoaded}
               canUpdate={canAccess('leads', 'update')}
               canDelete={canAccess('leads', 'delete')}
               canCreate={canAccess('leads', 'create')}

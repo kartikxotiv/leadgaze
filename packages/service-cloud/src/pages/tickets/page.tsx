@@ -61,6 +61,10 @@ function assigneeInitials(assignee: any) {
     .join('');
 }
 
+import { useRouter } from 'next/navigation';
+import { ViewToggle } from '../_components/view-toggle';
+import { TicketsKanbanBoard } from './components/kanban/tickets-kanban-board';
+
 function AssigneeStack({ assignees = [] }: { assignees?: any[] }) {
   if (assignees.length === 0) {
     return <span className="text-muted-foreground text-xs">Unassigned</span>;
@@ -122,8 +126,18 @@ export function ServiceCloudTicketsPage({
   teamMembers?: any[];
 }) {
   const { formatDate } = useLocalization();
+  const router = useRouter();
   const [createOpen, setCreateOpen] = useState(false);
   const [assignedToMeOnly, setAssignedToMeOnly] = useState(false);
+  
+  const [viewMode, setViewMode] = useState<'table' | 'kanban'>(() => {
+    if (typeof window === 'undefined') return 'table';
+    return (localStorage.getItem('leadgaze-view-mode-tickets') as any) ?? 'table';
+  });
+  const handleViewModeChange = (mode: 'table' | 'kanban') => {
+    setViewMode(mode);
+    localStorage.setItem('leadgaze-view-mode-tickets', mode);
+  };
   const { canAccess, isLoading } = useServiceCloudPermissions(workspaceId);
   const getLabel = (key: string, fallback: string) =>
     systemFields.find((f: any) => f.field_key === key)?.field_label ?? fallback;
@@ -163,7 +177,7 @@ export function ServiceCloudTicketsPage({
   } = useDateRangeFilter();
 
   // Optimized: single API call fetches statuses + priorities + categories in parallel on server
-  const { data: lookups } = useQuery({
+  const { data: lookups, isLoading: lookupsIsLoading } = useQuery({
     queryKey: ['service-cloud', 'ticket-lookups', workspaceId],
     queryFn: () => getServiceCloudTicketLookupsService(workspaceId),
     enabled: Boolean(workspaceId),
@@ -476,6 +490,26 @@ export function ServiceCloudTicketsPage({
     <>
       <ServiceCloudResourcePage
         workspaceId={workspaceId}
+        viewMode={viewMode}
+        kanbanSlot={(data, refetch) => (
+          <TicketsKanbanBoard
+            workspaceId={workspaceId}
+            tickets={data}
+            statuses={statuses}
+            priorities={priorities}
+            isLoading={lookupsIsLoading}
+            canUpdate={canEdit}
+            canCreate={canCreate}
+            canDelete={canDelete}
+            onClick={(id) => router.push(`/home/services/tickets/${id}`)}
+            onDelete={() => {}}
+            onCreateTicket={(statusId) => {
+              setTicketStatusId(statusId);
+              setCreateOpen(true);
+            }}
+            refetch={refetch}
+          />
+        )}
         resource="tickets"
         title="Tickets"
         description="Create, assign, and track support requests."
@@ -503,6 +537,7 @@ export function ServiceCloudTicketsPage({
         }}
         toolbar={
           <div className="flex items-center gap-2">
+            <ViewToggle view={viewMode} onChange={handleViewModeChange} />
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button

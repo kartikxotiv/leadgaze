@@ -49,23 +49,21 @@ interface LeadsKanbanBoardProps {
 // Gray column shells with gray card rectangles, no colors or real content.
 // ---------------------------------------------------------------------------
 function KanbanBoardSkeleton() {
-  // Show 5 skeleton columns (same as a typical status set)
-  const SKELETON_COLUMNS = 5;
-  // Each column gets a different number of card skeletons for a realistic look
-  const CARD_COUNTS = [3, 2, 3, 2, 1];
+  const SKELETON_COLUMNS = 6;
+  const CARD_COUNTS = [3, 2, 3, 1, 2, 1];
 
   return (
-    <div className="flex h-full min-h-0 gap-3 overflow-x-auto pb-3 pr-2">
+    <div className="flex h-full w-full min-h-0 gap-3 overflow-x-auto pb-3 pr-2 pl-[1px]">
       {Array.from({ length: SKELETON_COLUMNS }).map((_, colIdx) => (
         <div
           key={colIdx}
-          className="flex w-[300px] shrink-0 flex-col rounded-xl border border-border/60 bg-zinc-100/60 shadow-sm dark:border-border/40 dark:bg-zinc-900/30 overflow-hidden"
+          className="flex min-w-[220px] flex-1 flex-col rounded-xl border border-border/60 bg-zinc-100/60 shadow-sm dark:border-border/40 dark:bg-zinc-900/30 overflow-hidden"
         >
           {/* Skeleton Top Status Color Bar */}
           <div className="h-1.5 w-full bg-muted-foreground/20" />
 
           {/* Skeleton column header */}
-          <div className="flex items-center gap-2 px-3 py-3 border-b border-border/40 bg-background/40">
+          <div className="flex items-center gap-2 px-3 py-3 border-b border-border/40 bg-white dark:bg-[#151718]">
             <Skeleton className="h-2.5 w-2.5 shrink-0 rounded-full" />
             <Skeleton className="h-4 flex-1 rounded" />
             <Skeleton className="h-5 w-6 rounded-full" />
@@ -98,6 +96,7 @@ function KanbanBoardSkeleton() {
     </div>
   );
 }
+
 
 // ---------------------------------------------------------------------------
 // Main board
@@ -209,6 +208,18 @@ export function LeadsKanbanBoard({
     return <KanbanBoardSkeleton />;
   }
 
+  if (sortedStatuses.length === 0) {
+    return (
+      <div className="flex h-full w-full items-center justify-center p-8">
+        <div className="flex max-w-sm flex-col items-center text-center">
+          <p className="text-muted-foreground text-sm">
+            No statuses configured. Go to Settings → Status Management to add statuses.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <DndContext
       sensors={sensors}
@@ -234,13 +245,6 @@ export function LeadsKanbanBoard({
           />
         ))}
 
-        {/* Fallback: no statuses */}
-        {sortedStatuses.length === 0 && (
-          <div className="flex w-full items-center justify-center text-muted-foreground text-sm py-16">
-            No statuses configured. Go to Settings → Status Management to add
-            statuses.
-          </div>
-        )}
       </div>
 
       {/* Drag overlay: floating ghost card while dragging */}
