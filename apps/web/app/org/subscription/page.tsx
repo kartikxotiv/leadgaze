@@ -52,6 +52,7 @@ import {
 import { cn } from '@kit/ui/utils';
 
 import { useRBAC } from '~/lib/rbac/rbac-provider';
+import { useSupabase } from '@kit/supabase/hooks/use-supabase';
 import {
   type ModuleEntitlement,
   type SeatAssignment,
@@ -157,6 +158,23 @@ function getProductStyle(key: string) {
 
 // ─── Main Page ───────────────────────────────────────────────────
 
+function getPriceAndCurrency(
+  product: SubscriptionProduct | null | undefined,
+  billingCountry: string | null | undefined,
+  billingCycle: 'monthly' | 'yearly',
+) {
+  if (!product) return { price: 0, currencySymbol: '$' };
+  const isIndia = billingCountry === 'IN';
+  const price = isIndia
+    ? billingCycle === 'yearly'
+      ? (product.india_yearly_price_per_seat ?? 0)
+      : (product.india_monthly_price_per_seat ?? 0)
+    : billingCycle === 'yearly'
+      ? (product.yearly_price_per_seat ?? 0)
+      : (product.monthly_price_per_seat ?? 0);
+  return { price, currencySymbol: isIndia ? '₹' : '$' };
+}
+
 export default function OrgSubscriptionPage({
   canManageSubscription: canManageSubscriptionProp,
 }: {
@@ -168,6 +186,7 @@ export default function OrgSubscriptionPage({
   const canManageSubscription =
     canManageSubscriptionProp ?? canAccess('subscription', 'manage');
   const searchParams = useSearchParams();
+  const currencySymbol = billingCountry === 'IN' ? '₹' : '$';
   const queryClient = useQueryClient();
 
   const [pendingChanges, setPendingChanges] = useState<Record<string, number>>(
@@ -242,6 +261,28 @@ export default function OrgSubscriptionPage({
   const { data: seatsData } = useQuery({
     queryKey: ['workspace-seats', workspaceId],
     queryFn: () => getWorkspaceSeatsService(workspaceId),
+    enabled: !!workspaceId,
+  });
+
+  const supabase = useSupabase();
+  const { data: billingCountry } = useQuery({
+    queryKey: ['workspace-billing-country', workspaceId],
+    queryFn: async () => {
+      const { data: workspace } = await supabase
+        .from('workspaces')
+        .select('company_id')
+        .eq('id', workspaceId)
+        .single();
+      if (workspace?.company_id) {
+        const { data: company } = await supabase
+          .from('companies')
+          .select('billing_country')
+          .eq('id', workspace.company_id)
+          .single();
+        return company?.billing_country || null;
+      }
+      return null;
+    },
     enabled: !!workspaceId,
   });
 
@@ -358,10 +399,7 @@ export default function OrgSubscriptionPage({
         const pending = pendingChanges[seat.product_id] ?? seat.seats_purchased;
         const product = seat.subscription_products;
         if (product) {
-          const price =
-            billingCycle === 'yearly'
-              ? (product.yearly_price_per_seat ?? 0)
-              : (product.monthly_price_per_seat ?? 0);
+          const { price } = getPriceAndCurrency(product, billingCountry, billingCycle);
           monthly += price * pending;
           seatsTotal += pending;
           if (pending !== seat.seats_purchased) {
@@ -376,10 +414,7 @@ export default function OrgSubscriptionPage({
       )) {
         const product = products.find((p) => p.product_key === productKey);
         if (product) {
-          const price =
-            billingCycle === 'yearly'
-              ? (product.yearly_price_per_seat ?? 0)
-              : (product.monthly_price_per_seat ?? 0);
+          const { price } = getPriceAndCurrency(product, billingCountry, billingCycle);
           monthly += price * seatCount;
           seatsTotal += seatCount;
           newItems.push({ productKey, seats: seatCount });
@@ -692,10 +727,7 @@ export default function OrgSubscriptionPage({
             {/* Pricing breakdown rows */}
             {seats.map((seat) => {
               const product = seat.subscription_products;
-              const pricePerSeat =
-                billingCycle === 'yearly'
-                  ? product?.yearly_price_per_seat
-                  : product?.monthly_price_per_seat;
+              const { price: pricePerSeat, currencySymbol } = getPriceAndCurrency(product, billingCountry, billingCycle);
               const pending =
                 pendingChanges[seat.product_id] ?? seat.seats_purchased;
               const displaySeats = isPaid ? seat.seats_purchased : pending;
@@ -704,8 +736,7 @@ export default function OrgSubscriptionPage({
               if (!pricePerSeat) return null;
 
               return (
-                <PricingBreakdownRow
-                  key={`breakdown-${seat.id}`}
+                <PricingBreakdownRow currencySymbol={currencySymbol} key={`breakdown-${seat.id}`}
                   seat={seat}
                   workspaceId={workspaceId}
                   pricePerSeat={Number(pricePerSeat)}
@@ -837,8 +868,7 @@ export default function OrgSubscriptionPage({
           ) : (
             <div className="grid gap-4 px-1 sm:grid-cols-2 lg:grid-cols-3">
               {availableProducts.map((product) => (
-                <AvailableModuleCard
-                  key={product.id}
+                <AvailableModuleCard billingCountry={billingCountry} key={product.id}
                   product={product}
                   billingCycle={billingCycle}
                   canManageSubscription={canManageSubscription}
@@ -1247,6 +1277,7 @@ function ActiveModuleRow({
   onPendingChange,
   onDirectUpdate,
   onRemove,
+  billingCountry,
 }: {
   seat: WorkspaceSeat;
   workspaceId: string;
@@ -1258,6 +1289,7 @@ function ActiveModuleRow({
   onPendingChange: (count: number) => void;
   onDirectUpdate: (count: number) => void;
   onRemove: () => void;
+  billingCountry?: string | null;
 }) {
   const [updating, setUpdating] = useState(false);
   const product = seat.subscription_products;
@@ -1268,10 +1300,7 @@ function ActiveModuleRow({
 
   const displaySeats = isPaid ? seat.seats_purchased : pendingSeats;
 
-  const pricePerSeat =
-    billingCycle === 'yearly'
-      ? product?.yearly_price_per_seat
-      : product?.monthly_price_per_seat;
+  const { price: pricePerSeat, currencySymbol } = getPriceAndCurrency(product, billingCountry, billingCycle);
   const total = pricePerSeat ? Number(pricePerSeat) * displaySeats : 0;
 
   const handleIncrement = async () => {
@@ -1391,7 +1420,7 @@ function ActiveModuleRow({
       <TableCell className="text-foreground text-sm whitespace-nowrap">
         {pricePerSeat ? (
           <>
-            <span className="font-semibold">${pricePerSeat}</span>
+            <span className="font-semibold">{currencySymbol}{pricePerSeat}</span>
             <span className="text-muted-foreground text-xs">
               /{billingCycle === 'yearly' ? 'yr' : 'mo'}
             </span>
@@ -1407,7 +1436,7 @@ function ActiveModuleRow({
           <div className="text-foreground text-sm whitespace-nowrap">
             {pricePerSeat ? (
               <>
-                <span className="font-semibold">${total}</span>
+                <span className="font-semibold">{currencySymbol}{total}</span>
                 <span className="text-muted-foreground text-xs">
                   /{billingCycle === 'yearly' ? 'yr' : 'mo'}
                 </span>
@@ -1440,6 +1469,7 @@ function PricingBreakdownRow({
   displaySeats,
   billingCycle,
   accentColor,
+  currencySymbol,
 }: {
   seat: WorkspaceSeat;
   workspaceId: string;
@@ -1447,6 +1477,7 @@ function PricingBreakdownRow({
   displaySeats: number;
   billingCycle: 'monthly' | 'yearly';
   accentColor: string;
+  currencySymbol?: string;
 }) {
   const [expanded, setExpanded] = useState(false);
   const period = billingCycle === 'yearly' ? 'yr' : 'mo';
@@ -1459,11 +1490,11 @@ function PricingBreakdownRow({
             className="text-sm font-semibold"
             style={{ color: accentColor }}
           >
-            ${pricePerSeat}/seat/{period}
+            {currencySymbol}{pricePerSeat}/seat/{period}
           </span>
           <span className="text-muted-foreground text-xs">·</span>
           <span className="text-muted-foreground text-xs">
-            {displaySeats} seat{displaySeats !== 1 ? 's' : ''} × ${pricePerSeat}
+            {displaySeats} seat{displaySeats !== 1 ? 's' : ''} × {currencySymbol}{pricePerSeat}
           </span>
         </div>
         <Button
@@ -1505,6 +1536,7 @@ function AvailableModuleCard({
   onSelect,
   onDeselect,
   onSeatsChange,
+  billingCountry,
 }: {
   product: SubscriptionProduct;
   billingCycle: 'monthly' | 'yearly';
@@ -1514,6 +1546,7 @@ function AvailableModuleCard({
   onSelect: () => void;
   onDeselect: () => void;
   onSeatsChange: (seats: number) => void;
+  billingCountry?: string | null;
 }) {
   const style = getProductStyle(product.product_key);
   const icon = PRODUCT_ICONS[product.product_key] ?? (
@@ -1573,7 +1606,7 @@ function AvailableModuleCard({
           {pricePerSeat ? (
             <div className="flex items-baseline gap-0.5">
               <span className="text-foreground text-2xl font-bold">
-                ${pricePerSeat}
+                {currencySymbol}{pricePerSeat}
               </span>
               <span className="text-muted-foreground text-sm">
                 /seat/{period}
@@ -1680,6 +1713,7 @@ function CheckoutBar({
   isTrialExpired,
   isPending,
   onCheckout,
+  currencySymbol,
 }: {
   totalMonthly: number;
   totalSeats: number;
@@ -1689,6 +1723,7 @@ function CheckoutBar({
   isTrialExpired: boolean;
   isPending: boolean;
   onCheckout: () => void;
+  currencySymbol?: string;
 }) {
   const ctaLabel = isTrialExpired
     ? 'Subscribe Now'
@@ -1717,7 +1752,7 @@ function CheckoutBar({
         <div className="flex items-center gap-6">
           <div className="flex items-baseline gap-0.5">
             <span className="text-foreground text-xl font-bold">
-              ${totalMonthly}
+              {currencySymbol}{totalMonthly}
             </span>
             <span className="text-muted-foreground text-sm">
               {billingCycle === 'yearly' ? '/yr' : '/mo'}

@@ -8,6 +8,7 @@ import {
   getOrCreateStripeCustomer,
   getStripeClient,
 } from '~/lib/stripe/stripe-client';
+import { getStripePriceId } from '~/lib/stripe/stripe-price-helper';
 
 import { catchAsync } from '../../../../utils/response-handler';
 
@@ -64,6 +65,25 @@ export const createCheckoutSession = catchAsync(
       workspaceId,
     });
 
+    // ── Fetch workspace and billing country ──────────────────────────
+    const { data: workspace } = await adminClient
+      .from('workspaces')
+      .select('name, company_id')
+      .eq('id', workspaceId)
+      .single();
+
+    let billingCountry: string | null = null;
+    if (workspace?.company_id) {
+      const { data: company } = await adminClient
+        .from('companies')
+        .select('billing_country')
+        .eq('id', workspace?.company_id)
+        .single();
+      if (company?.billing_country) {
+        billingCountry = company.billing_country;
+      }
+    }
+
     // ── Resolve product and Stripe price ID ──────────────────────────
     const { data: product, error: productError } = await adminClient
       .from('subscription_products')
@@ -79,11 +99,8 @@ export const createCheckoutSession = catchAsync(
       );
     }
 
-    // Resolve the Stripe price ID based on billing cycle
-    const stripePriceId =
-      cycle === 'yearly'
-        ? product.stripe_yearly_price_id
-        : product.stripe_monthly_price_id;
+    // Resolve the Stripe price ID based on billing cycle and country
+    const stripePriceId = getStripePriceId(product, billingCountry, cycle);
 
     if (!stripePriceId) {
       return NextResponse.json(
@@ -121,12 +138,6 @@ export const createCheckoutSession = catchAsync(
     const {
       data: { user: authUser },
     } = await supabase.auth.getUser();
-
-    const { data: workspace } = await adminClient
-      .from('workspaces')
-      .select('name')
-      .eq('id', workspaceId)
-      .single();
 
     const stripeCustomerId = await getOrCreateStripeCustomer(
       adminClient,
