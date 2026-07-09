@@ -189,7 +189,6 @@ function getPatterns() {
         // /home/services, /home/inventory, /home/funds.
         const allowedModulePrefixes = [
           '/home/sales',
-          '/home/hrms',
           '/home/services',
           '/home/inventory',
           '/home/funds',
