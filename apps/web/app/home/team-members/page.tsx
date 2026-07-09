@@ -118,9 +118,9 @@ export default function TeamMembersPage() {
     null,
   );
   const [updateDialogOpen, setUpdateDialogOpen] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<'accepted' | 'pending'>(
-    'accepted',
-  );
+  const [statusFilter, setStatusFilter] = useState<
+    'accepted' | 'pending' | 'all' | ''
+  >('');
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
@@ -218,8 +218,11 @@ export default function TeamMembersPage() {
       case 'pending':
         filtered = pendingMembers;
         break;
-      default:
+      case 'all':
         filtered = allMembers;
+        break;
+      default:
+        filtered = activeMembers;
     }
     if (debouncedSearchTerm) {
       const term = debouncedSearchTerm.toLowerCase();
@@ -315,14 +318,22 @@ export default function TeamMembersPage() {
       {
         key: 'status',
         label: 'Status',
-        selectedValue: statusFilter,
-        selectedLabel: statusFilter === 'pending' ? 'Pending' : 'Active',
+        selectedValue: statusFilter || undefined,
+        selectedLabel:
+          statusFilter === 'pending'
+            ? 'Pending'
+            : statusFilter === 'accepted'
+              ? 'Active'
+              : statusFilter === 'all'
+                ? 'All'
+                : undefined,
         options: [
+          { value: 'all', label: 'All' },
           { value: 'pending', label: 'Pending' },
           { value: 'accepted', label: 'Active' },
         ],
         onSelect: (val: string) =>
-          setStatusFilter(val as 'accepted' | 'pending'),
+          setStatusFilter(val as 'accepted' | 'pending' | 'all'),
       },
     ];
   }, [statusFilter]);
@@ -415,9 +426,11 @@ export default function TeamMembersPage() {
         <PageHeader
           title={`Members (${statusFilter === 'pending' ? pendingInvitations.length : members.length})`}
           description={
-            statusFilter === 'accepted'
-              ? 'Showing active members only'
-              : 'Showing pending invitations only'
+            statusFilter === 'pending'
+              ? 'Showing pending invitations only'
+              : statusFilter === 'all'
+                ? 'Showing all members'
+                : 'Showing active members only'
           }
         >
           <div className="flex">
@@ -457,8 +470,8 @@ export default function TeamMembersPage() {
           showFilter
           filterLabel="Show Filters"
           filterGroups={filterGroups}
-          activeFilterCount={statusFilter !== 'accepted' ? 1 : 0}
-          onClearFilters={() => setStatusFilter('accepted')}
+          activeFilterCount={statusFilter ? 1 : 0}
+          onClearFilters={() => setStatusFilter('')}
           showSearch
           searchPlaceholder="Search members..."
           searchValue={searchTerm}

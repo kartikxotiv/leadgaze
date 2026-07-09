@@ -134,8 +134,10 @@ export function WorkspaceGeneralSettings({ workspaceId }: WorkspaceGeneralSettin
       }
 
       // Validate Tax ID if changed and provided
+      // Validate Tax ID if tax ID or billing country has changed
       const originalTaxId = (workspaceData as any)?.companies?.tax_id || '';
-      if (taxId.trim() && taxId.trim() !== originalTaxId) {
+      const originalBillingCountry = (workspaceData as any)?.companies?.billing_country || '';
+      if (taxId.trim() && (taxId.trim() !== originalTaxId || billingCountry !== originalBillingCountry)) {
         const valResponse = await fetch('/api/companies/validate-tax', {
           method: 'POST',
           headers: {
