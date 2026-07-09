@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 
 import { useQuery } from '@tanstack/react-query';
 import { FileUp, Loader2, Plus, Settings2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 import { AddColumnModal } from '@kit/ui/add-column-modal';
 import { Badge } from '@kit/ui/badge';
@@ -60,12 +61,15 @@ import { getModuleKeyFromPath } from '~/lib/rbac/route-module-map';
 import {
   getLeadStatusesService,
   getLeadsService,
+  updateLeadService,
 } from '~/services/leads.service';
 import { Lead } from '~/services/leads.service';
 
 import { DeleteEntityDialog } from '../_components/delete-entity-dialog';
 import { EntityActionsDropdown } from '../_components/entity-actions-dropdown';
+import { LeadsKanbanBoard } from './components/kanban/leads-kanban-board';
 import CreateLeadDialog from './components/create-lead-dialog';
+import { ViewToggle, type ViewMode } from './components/view-toggle';
 
 // System fields that exist in the database
 const SYSTEM_FIELDS: Array<{
@@ -194,6 +198,19 @@ export default function LeadsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(15);
   const [addColumnModalOpen, setAddColumnModalOpen] = useState(false);
+
+  // View mode: 'table' | 'kanban' — persisted in localStorage
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    if (typeof window === 'undefined') return 'table';
+    return (localStorage.getItem('leadgaze-view-mode-leads') as ViewMode) ?? 'table';
+  });
+
+  const handleViewModeChange = (mode: ViewMode) => {
+    setViewMode(mode);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('leadgaze-view-mode-leads', mode);
+    }
+  };
 
   const itemsPerPage = pageSize;
   const {
@@ -433,7 +450,7 @@ export default function LeadsPage() {
       .map((s: any) => s.id);
   }, [statuses]);
 
-  // Fetch leads data
+  // Fetch leads data (table view — paginated)
   const {
     data: leadsData = { data: [], count: 0, statusBreakdown: {} },
     isLoading,
@@ -468,11 +485,44 @@ export default function LeadsPage() {
         updatedAtFrom: computedUpdatedOnDates?.from ?? undefined,
         updatedAtTo: computedUpdatedOnDates?.to ?? undefined,
       }),
-    enabled: !!workspace?.id && isStatusesLoaded,
+    enabled: !!workspace?.id && isStatusesLoaded && viewMode === 'table',
+  });
+
+  // Fetch ALL leads for kanban view (no pagination, excludes unqualified via defaultStatusIds)
+  const {
+    data: kanbanLeadsData = { data: [], count: 0, statusBreakdown: {} },
+    isLoading: kanbanIsLoading,
+    refetch: refetchKanban,
+  } = useQuery({
+    queryKey: [
+      'leads-kanban',
+      workspace?.id,
+      debouncedSearchTerm,
+      selectedStatuses,
+      selectedCreatedByIds,
+      computedCreatedOnDates,
+      computedUpdatedOnDates,
+      defaultStatusIds,
+    ],
+    queryFn: () =>
+      getLeadsService({
+        workspaceId: workspace?.id || '',
+        page: 1,
+        limit: 500,
+        searchTerm: debouncedSearchTerm,
+        statusId:
+          selectedStatuses.length > 0 ? selectedStatuses : defaultStatusIds,
+        createdAtFrom: computedCreatedOnDates?.from ?? undefined,
+        createdAtTo: computedCreatedOnDates?.to ?? undefined,
+        updatedAtFrom: computedUpdatedOnDates?.from ?? undefined,
+        updatedAtTo: computedUpdatedOnDates?.to ?? undefined,
+      }),
+    enabled: !!workspace?.id && isStatusesLoaded && viewMode === 'kanban',
   });
 
   const leads = leadsData.data;
   const totalCount = leadsData.count;
+  const kanbanLeads = kanbanLeadsData.data;
 
   // Client-side filter for created-by
   const filteredLeads = useMemo(() => {
@@ -503,6 +553,39 @@ export default function LeadsPage() {
   const handleCreateSuccess = () => {
     setIsCreateDialogOpen(false);
     refetch();
+    refetchKanban();
+  };
+
+  // Handle status change from kanban drag-and-drop
+  const handleKanbanStatusChange = async (
+    leadId: string,
+    newStatusId: string,
+  ) => {
+    const lead = kanbanLeads.find((l: Lead) => l.id === leadId);
+    const newStatus = statuses.find((s: any) => s.id === newStatusId);
+    if (!lead) return;
+
+    const { totalScore } = calculateLeadScore({
+      first_name: lead.first_name,
+      last_name: lead.last_name,
+      company_name: lead.company_name,
+      industry_id: lead.industry_id || lead.industry?.id,
+      company_size: lead.company_size,
+      location: lead.location,
+      timezone: lead.timezone,
+      job_title: lead.job_title,
+      contacted_count: lead.contacted_count,
+      status_key: newStatus?.status_key,
+      custom_fields: lead.custom_fields || {},
+      source_id: lead.source_id,
+    });
+
+    await updateLeadService(leadId, {
+      status_id: newStatusId,
+      lead_score: totalScore,
+    });
+    toast.success('Lead status updated');
+    refetchKanban();
   };
 
   // Handle update field (access type, permissions)
@@ -708,19 +791,48 @@ export default function LeadsPage() {
               buttonVariant: 'default',
             },
           ]}
-          columnVisibilitySlot={
-            <ColumnVisibilitySelector
-              columns={columns}
-              visibility={visibility}
-              onToggle={toggleVisibility}
-              onReset={reset}
+          statusSlot={
+            <ViewToggle
+              view={viewMode}
+              onChange={handleViewModeChange}
             />
+          }
+          columnVisibilitySlot={
+            viewMode === 'table' ? (
+              <ColumnVisibilitySelector
+                columns={columns}
+                visibility={visibility}
+                onToggle={toggleVisibility}
+                onReset={reset}
+              />
+            ) : null
           }
         />
       </div>
 
       <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden">
-        <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 gap-0">
+        {viewMode === 'kanban' ? (
+          /* ── Kanban Board ─────────────────────────────────────────────── */
+          <div className="flex min-h-0 flex-1 overflow-hidden p-2">
+            <LeadsKanbanBoard
+              leads={kanbanLeads}
+              statuses={statuses}
+              isLoading={kanbanIsLoading}
+              canUpdate={canAccess('leads', 'update')}
+              canDelete={canAccess('leads', 'delete')}
+              canCreate={canAccess('leads', 'create')}
+              onLeadClick={(id) => router.push(`/home/sales/leads/${id}`)}
+              onDelete={(lead) => {
+                setLeadToDelete(lead);
+                setDeleteDialogOpen(true);
+              }}
+              onStatusChange={handleKanbanStatusChange}
+              onCreateLead={() => setIsCreateDialogOpen(true)}
+            />
+          </div>
+        ) : (
+          /* ── Table View ───────────────────────────────────────────────── */
+          <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 gap-0">
           <CustomTableContainer
             pagination={
               <TablePagination
@@ -1070,7 +1182,8 @@ export default function LeadsPage() {
               </TableBody>
             </Table>
           </CustomTableContainer>
-        </div>
+          </div>
+          )}
 
         {/* Create Lead Dialog */}
         <CreateLeadDialog

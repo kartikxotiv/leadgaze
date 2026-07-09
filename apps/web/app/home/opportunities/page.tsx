@@ -58,11 +58,16 @@ import {
   Opportunity,
   getOpportunitiesService,
   getOpportunityStatusesService,
+  updateOpportunityService,
 } from '~/services/opportunities.service';
+import { getLeadStatusesService } from '~/services/leads.service';
+import { toast } from 'sonner';
 
 import { DeleteEntityDialog } from '../_components/delete-entity-dialog';
 import { EntityActionsDropdown } from '../_components/entity-actions-dropdown';
 import { OpportunityDialog } from './components/opportunity-dialog';
+import { OpportunitiesKanbanBoard } from './components/kanban/opportunities-kanban-board';
+import { ViewToggle } from '../leads/components/view-toggle';
 
 function PriorityBadge({ priority }: { priority: string | null | undefined }) {
   switch (priority?.toLowerCase()) {
@@ -161,6 +166,18 @@ export default function OpportunitiesPage() {
   const { formatDate, formatCurrency } = useLocalization();
   const supabase = useSupabase();
   const [searchTerm, setSearchTerm] = useState('');
+  const [viewMode, setViewMode] = useState<'table' | 'kanban'>(() => {
+    if (typeof window === 'undefined') return 'table';
+    return (localStorage.getItem('leadgaze-view-mode-opportunities') as any) ?? 'table';
+  });
+
+  const handleViewModeChange = (mode: 'table' | 'kanban') => {
+    setViewMode(mode);
+    localStorage.setItem('leadgaze-view-mode-opportunities', mode);
+  };
+
+  const [optimisticOpportunities, setOptimisticOpportunities] = useState<Opportunity[] | null>(null);
+
   const [selectedStage, setSelectedStage] = useState<string>('all');
   const [selectedCreatedId, setSelectedCreatedId] = useState<string>('all');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -522,12 +539,72 @@ export default function OpportunitiesPage() {
   });
 
   const { data: stages = [] } = useQuery<
-    Array<{ id: string; status_name: string; color?: string }>
+    Array<{ id: string; status_name: string; color?: string; sort_order?: number }>
   >({
     queryKey: ['opportunity-stages', workspace?.id],
     queryFn: () => getOpportunityStatusesService(workspace?.id || ''),
     enabled: !!workspace?.id,
   });
+
+  const { data: leadStages = [] } = useQuery({
+    queryKey: ['lead-statuses', workspace?.id],
+    queryFn: () => getLeadStatusesService(workspace?.id || ''),
+    enabled: !!workspace?.id,
+  });
+
+  const combinedStages = useMemo(() => {
+    const oppStages = [...stages];
+    const newLeadStage = leadStages.find((s) => s.status_name.toLowerCase() === 'new');
+    if (newLeadStage && !oppStages.find((s) => s.id === newLeadStage.id)) {
+      oppStages.push({
+        id: newLeadStage.id,
+        status_name: newLeadStage.status_name,
+        color: newLeadStage.color,
+        sort_order: -999,
+      });
+    }
+    return oppStages;
+  }, [stages, leadStages]);
+
+  const {
+    data: kanbanOpportunitiesData = { data: [] },
+    isLoading: kanbanIsLoading,
+    refetch: refetchKanban,
+  } = useQuery({
+    queryKey: [
+      'opportunities-kanban',
+      workspace?.id,
+      debouncedSearchTerm,
+      selectedStage,
+      selectedCreatedId,
+      computedCreatedOnDates,
+      computedUpdatedOnDates,
+    ],
+    queryFn: () =>
+      getOpportunitiesService({
+        workspaceId: workspace?.id || '',
+        page: 1,
+        limit: 500, // fetch all for kanban
+        searchTerm: debouncedSearchTerm,
+        stageId: selectedStage === 'all' ? '' : selectedStage,
+        createdAtFrom: computedCreatedOnDates?.from ?? undefined,
+        createdAtTo: computedCreatedOnDates?.to ?? undefined,
+        updatedAtFrom: computedUpdatedOnDates?.from ?? undefined,
+        updatedAtTo: computedUpdatedOnDates?.to ?? undefined,
+      }),
+    enabled: !!workspace?.id && viewMode === 'kanban',
+  });
+
+  const handleKanbanStageChange = async (opportunityId: string, newStageId: string) => {
+    try {
+      await updateOpportunityService(opportunityId, { stage_id: newStageId });
+      refetchKanban();
+      toast.success('Stage updated');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update stage');
+      setOptimisticOpportunities(null); // revert on failure
+    }
+  };
 
   // Fetch workspace currencies for currency conversion
   const { data: currenciesData } = useQuery({
@@ -800,6 +877,12 @@ export default function OpportunitiesPage() {
               buttonVariant: 'default',
             },
           ]}
+          statusSlot={
+            <ViewToggle
+              view={viewMode}
+              onChange={handleViewModeChange}
+            />
+          }
           columnVisibilitySlot={
             <ColumnVisibilitySelector
               columns={columns}
@@ -812,8 +895,25 @@ export default function OpportunitiesPage() {
       </div>
 
       <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden">
-        <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 gap-0">
-          <CustomTableContainer
+        {viewMode === 'kanban' ? (
+          <OpportunitiesKanbanBoard
+            opportunities={optimisticOpportunities ?? kanbanOpportunitiesData.data}
+            stages={combinedStages}
+            isLoading={kanbanIsLoading}
+            canUpdate={canAccess('opportunities', 'update')}
+            canDelete={canAccess('opportunities', 'delete')}
+            canCreate={canAccess('opportunities', 'create')}
+            onOpportunityClick={(id) => router.push(`/home/sales/opportunities/${id}`)}
+            onDelete={(opportunity) => {
+              setOpportunityToDelete(opportunity);
+              setDeleteDialogOpen(true);
+            }}
+            onStageChange={handleKanbanStageChange}
+            onCreateOpportunity={() => setIsCreateDialogOpen(true)}
+          />
+        ) : (
+          <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 gap-0">
+            <CustomTableContainer
             pagination={
               <TablePagination
                 currentPage={currentPage}
@@ -1109,6 +1209,7 @@ export default function OpportunitiesPage() {
             </Table>
           </CustomTableContainer>
         </div>
+        )}
 
         <OpportunityDialog
           isOpen={isCreateDialogOpen}
