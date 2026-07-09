@@ -61,8 +61,8 @@ export default function RolesPage() {
   const [orderedRoles, setOrderedRoles] = useState<Role[]>([]);
   const [draggedRoleIndex, setDraggedRoleIndex] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [typeFilter, setTypeFilter] = useState<string>('all');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [typeFilter, setTypeFilter] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<string>('');
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
   const columns = useMemo(
@@ -108,8 +108,9 @@ export default function RolesPage() {
         sortColumn || undefined,
         sortDirection || undefined,
         {
-          type: typeFilter !== 'all' ? typeFilter : undefined,
-          status: statusFilter !== 'all' ? statusFilter : undefined,
+          type: typeFilter && typeFilter !== 'all' ? typeFilter : undefined,
+          status:
+            statusFilter && statusFilter !== 'all' ? statusFilter : undefined,
           searchTerm: debouncedSearchTerm || undefined,
         }
       );
@@ -123,10 +124,14 @@ export default function RolesPage() {
       {
         key: 'type',
         label: 'Type',
-        selectedValue: typeFilter,
-        selectedLabel: typeFilter === 'system' ? 'System' : typeFilter === 'custom' ? 'Custom' : 'All Types',
+        selectedValue: typeFilter || undefined,
+        selectedLabel:
+          typeFilter === 'system'
+            ? 'System'
+            : typeFilter === 'custom'
+              ? 'Custom'
+              : undefined,
         options: [
-          { value: 'all', label: 'All Types' },
           { value: 'system', label: 'System' },
           { value: 'custom', label: 'Custom' },
         ],
@@ -135,10 +140,14 @@ export default function RolesPage() {
       {
         key: 'status',
         label: 'Status',
-        selectedValue: statusFilter,
-        selectedLabel: statusFilter === 'active' ? 'Active' : statusFilter === 'inactive' ? 'Inactive' : 'All Statuses',
+        selectedValue: statusFilter || undefined,
+        selectedLabel:
+          statusFilter === 'active'
+            ? 'Active'
+            : statusFilter === 'inactive'
+              ? 'Inactive'
+              : undefined,
         options: [
-          { value: 'all', label: 'All Statuses' },
           { value: 'active', label: 'Active' },
           { value: 'inactive', label: 'Inactive' },
         ],
@@ -152,10 +161,9 @@ export default function RolesPage() {
     return orderedRoles;
   }, [orderedRoles]);
 
-  // Determine if drag and drop should be disabled
   const isDragDisabled =
     (sortColumn !== null && sortColumn !== 'hierarchy_level') ||
-    typeFilter !== 'all' ||
+    (typeFilter !== 'all' && typeFilter !== '') ||
     !!debouncedSearchTerm;
 
   // Reorder mutation
@@ -268,14 +276,14 @@ export default function RolesPage() {
 
   const activeFilterCount = useMemo(() => {
     let count = 0;
-    if (typeFilter !== 'all') count++;
-    if (statusFilter !== 'all') count++;
+    if (typeFilter && typeFilter !== 'all') count++;
+    if (statusFilter && statusFilter !== 'all') count++;
     return count;
   }, [typeFilter, statusFilter]);
 
   const handleClearFilters = () => {
-    setTypeFilter('all');
-    setStatusFilter('all');
+    setTypeFilter('');
+    setStatusFilter('');
   };
 
   return (
