@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import Link from 'next/link';
 
@@ -218,11 +218,79 @@ export function ServiceCloudTicketsPage({
     label: category.name,
     value: category.id,
   }));
-  const statusById = new Map<string, any>(
+  const statusById = useMemo(() => new Map<string, any>(
     allStatuses.map((status: any) => [status.id, status]),
-  );
-  const priorityById = new Map<string, any>(
+  ), [allStatuses]);
+  const priorityById = useMemo(() => new Map<string, any>(
     allPriorities.map((priority: any) => [priority.id, priority]),
+  ), [allPriorities]);
+  const categoryById = useMemo(() => new Map<string, any>(
+    allCategories.map((cat: any) => [cat.id, cat]),
+  ), [allCategories]);
+
+  // CSV Export fields config
+  const EXPORT_COLUMNS = useMemo(
+    () => [
+      { key: 'ticket_number', label: 'Ticket #' },
+      { key: 'subject', label: 'Subject' },
+      { key: 'description', label: 'Description' },
+      { key: 'status', label: 'Status' },
+      { key: 'priority', label: 'Priority' },
+      { key: 'category', label: 'Category' },
+      { key: 'customer_name', label: 'Customer Name' },
+      { key: 'customer_email', label: 'Customer Email' },
+      { key: 'organization', label: 'Organization' },
+      { key: 'assignees', label: 'Assignees' },
+      { key: 'source', label: 'Source' },
+      { key: 'created_at', label: 'Created At' },
+      { key: 'updated_at', label: 'Updated At' },
+    ],
+    [],
+  );
+
+  const exportColumns = useMemo(
+    () => [
+      ...EXPORT_COLUMNS,
+      ...systemFields
+        .filter((f: any) => !f.is_system)
+        .map((f: any) => ({ key: f.field_key, label: f.field_label })),
+    ],
+    [EXPORT_COLUMNS, systemFields],
+  );
+
+  const serializeTicketRow = useCallback(
+    (ticket: any): Record<string, string> => {
+      const base: Record<string, string> = {
+        ticket_number: ticket.ticket_number ?? '',
+        subject: ticket.subject ?? '',
+        description: ticket.description ?? '',
+        status: statusById.get(ticket.status_id)?.name ?? '',
+        priority: priorityById.get(ticket.priority_id)?.name ?? '',
+        category: categoryById.get(ticket.category_id)?.name ?? '',
+        customer_name: ticket.customer?.name ?? '',
+        customer_email: ticket.customer?.email ?? '',
+        organization: ticket.organization?.name ?? '',
+        assignees: Array.isArray(ticket.assignees)
+          ? ticket.assignees
+              .map((a: any) => a.account?.name || a.account?.email || '')
+              .filter(Boolean)
+              .join(', ')
+          : '',
+        source: ticket.source ?? '',
+        created_at: ticket.created_at ? formatDate(ticket.created_at) : '',
+        updated_at: ticket.updated_at ? formatDate(ticket.updated_at) : '',
+      };
+
+      // Append custom fields
+      systemFields
+        .filter((f: any) => !f.is_system)
+        .forEach((cf: any) => {
+          base[cf.field_key] = String(ticket.custom_fields?.[cf.field_key] ?? '');
+        });
+
+      return base;
+    },
+    [statusById, priorityById, categoryById, formatDate, systemFields],
   );
 
   const activeFilterCount =
@@ -523,6 +591,9 @@ export function ServiceCloudTicketsPage({
         canEditField={canEditField}
         currentUserId={currentUserId}
         systemFields={systemFields}
+        enableExport={true}
+        serializeRow={serializeTicketRow}
+        exportColumns={exportColumns}
         queryParams={queryParams}
         filterGroups={filterGroups}
         activeFilterCount={activeFilterCount}
@@ -557,24 +628,20 @@ export function ServiceCloudTicketsPage({
                 <span>Assigned to me</span>
               </TooltipContent>
             </Tooltip>
-            {canCreate ? (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    type="button"
-                    onClick={openCreateDialog}
-                    variant="default"
-                    className="h-9 shrink-0 gap-1.5"
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom">
-                  <span>New Ticket</span>
-                </TooltipContent>
-              </Tooltip>
-            ) : null}
           </div>
+        }
+        actions={
+          canCreate
+            ? [
+                {
+                  key: 'create',
+                  label: 'New Ticket',
+                  icon: Plus,
+                  onClick: openCreateDialog,
+                  buttonVariant: 'default' as const,
+                },
+              ]
+            : []
         }
         fields={[
           {

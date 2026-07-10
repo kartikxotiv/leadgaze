@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 
 import { useRouter } from 'next/navigation';
 
@@ -14,12 +14,15 @@ import { AddColumnModal } from '@kit/ui/add-column-modal';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { Card, CardContent } from '@kit/ui/card';
+import { Checkbox } from '@kit/ui/checkbox';
 import { ColumnEditModal } from '@kit/ui/column-edit-modal';
 import type { ColumnEditFieldShape } from '@kit/ui/column-edit-modal';
 import { ColumnHeader } from '@kit/ui/column-header';
 import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
+import { CsvExportButton } from '@kit/ui/csv-export-button';
 import CustomTableContainer from '@kit/ui/custom-table-container';
 import { ListToolBar } from '@kit/ui/list-toolbar';
+import type { FilterGroup } from '@kit/ui/list-toolbar';
 import { PageBody, PageHeader } from '@kit/ui/page';
 import { Skeleton } from '@kit/ui/skeleton';
 import {
@@ -33,6 +36,7 @@ import {
 import { TablePagination } from '@kit/ui/table-pagination';
 import { useColumnResize } from '@kit/ui/use-column-resize';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
+import { useCsvExport } from '@kit/ui/use-csv-export';
 import { useDateRangeFilter } from '@kit/ui/use-date-range-filter';
 import { useTableSort } from '@kit/ui/use-table-sort';
 import { cn } from '@kit/ui/utils';
@@ -189,6 +193,10 @@ export default function OpportunitiesPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(15);
   const itemsPerPage = pageSize;
+
+  // Row selection state (for CSV export)
+  const [selectedOpportunityIds, setSelectedOpportunityIds] = useState<Set<string>>(new Set());
+  const [isExporting, setIsExporting] = useState(false);
   const {
     dateRange: createdOnRange,
     setDateRange: setCreatedOnRange,
@@ -253,6 +261,32 @@ export default function OpportunitiesPage() {
         label: 'Last Updated By',
         sortKey: 'updated_by_account.name',
       },
+    ],
+    [],
+  );
+
+  // ---------------------------------------------------------------------------
+  // Export column definitions — ALL fields
+  // ---------------------------------------------------------------------------
+  const EXPORT_COLUMNS = useMemo(
+    () => [
+      { key: 'opportunity_name', label: 'Opportunity Name' },
+      { key: 'account', label: 'Account' },
+      { key: 'stage', label: 'Stage' },
+      { key: 'amount', label: 'Amount' },
+      { key: 'currency', label: 'Currency' },
+      { key: 'probability', label: 'Probability' },
+      { key: 'expected_close_date', label: 'Close Date' },
+      { key: 'priority', label: 'Priority' },
+      { key: 'opportunity_type', label: 'Opportunity Type' },
+      { key: 'lead_source', label: 'Lead Source' },
+      { key: 'competitor', label: 'Competitor' },
+      { key: 'is_closed', label: 'Closed' },
+      { key: 'is_won', label: 'Won' },
+      { key: 'owner', label: 'Owner' },
+      { key: 'created_by', label: 'Created By' },
+      { key: 'created_at', label: 'Created On' },
+      { key: 'updated_by', label: 'Last Updated By' },
     ],
     [],
   );
@@ -554,7 +588,7 @@ export default function OpportunitiesPage() {
 
   const combinedStages = useMemo(() => {
     const oppStages = [...stages];
-    const newLeadStage = leadStages.find((s) => s.status_name.toLowerCase() === 'new');
+    const newLeadStage = leadStages.find((s: any) => s.status_name.toLowerCase() === 'new');
     if (newLeadStage && !oppStages.find((s) => s.id === newLeadStage.id)) {
       oppStages.push({
         id: newLeadStage.id,
@@ -683,9 +717,10 @@ export default function OpportunitiesPage() {
 
   const totalCount = opportunitiesData.count;
 
-  // Reset to first page when search or filters change
+  // Reset to first page + selection when search or filters change
   React.useEffect(() => {
     setCurrentPage(1);
+    setSelectedOpportunityIds(new Set());
   }, [
     debouncedSearchTerm,
     selectedStage,
@@ -693,7 +728,13 @@ export default function OpportunitiesPage() {
     pageSize,
     createdOnRange,
     updatedOnRange,
+    viewMode,
   ]);
+
+  // Clear selection when page changes
+  React.useEffect(() => {
+    setSelectedOpportunityIds(new Set());
+  }, [currentPage]);
 
   // Client-side filtering for Created By if not supported by API
   const filteredOpportunities = useMemo(() => {
@@ -709,7 +750,7 @@ export default function OpportunitiesPage() {
   }, [opportunitiesData.data, selectedCreatedId]);
 
   // Filter groups for ListToolBar
-  const filterGroups = useMemo(() => {
+  const filterGroups: FilterGroup[] = useMemo(() => {
     const stageOptions: Array<{
       value: string;
       label: string;
@@ -822,6 +863,198 @@ export default function OpportunitiesPage() {
   const totalPages = Math.ceil(totalCount / itemsPerPage);
   const paginatedOpportunities = filteredOpportunities;
 
+  // ---------------------------------------------------------------------------
+  // Row selection (checkbox) logic
+  // ---------------------------------------------------------------------------
+  const allVisibleIds = paginatedOpportunities.map((o: Opportunity) => o.id);
+
+  const isAllSelected =
+    allVisibleIds.length > 0 &&
+    allVisibleIds.every((id: string) => selectedOpportunityIds.has(id));
+
+  const isIndeterminate =
+    !isAllSelected && allVisibleIds.some((id: string) => selectedOpportunityIds.has(id));
+
+  const handleSelectAll = useCallback(() => {
+    if (isAllSelected) {
+      setSelectedOpportunityIds((prev) => {
+        const next = new Set(prev);
+        allVisibleIds.forEach((id: string) => next.delete(id));
+        return next;
+      });
+    } else {
+      setSelectedOpportunityIds((prev) => {
+        const next = new Set(prev);
+        allVisibleIds.forEach((id: string) => next.add(id));
+        return next;
+      });
+    }
+  }, [isAllSelected, allVisibleIds]);
+
+  const handleSelectRow = useCallback((id: string) => {
+    setSelectedOpportunityIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  // ---------------------------------------------------------------------------
+  // CSV Export
+  // ---------------------------------------------------------------------------
+
+  const serializeOpportunityRow = useCallback(
+    (opportunity: Opportunity): Record<string, string> => {
+      const base: Record<string, string> = {
+        opportunity_name:    opportunity.opportunity_name ?? '',
+        account:             opportunity.account?.account_name ?? '',
+        stage:               opportunity.stage?.status_name ?? '',
+        amount:              opportunity.amount ? formatOpportunityAmount(opportunity) : '',
+        currency:            opportunity.currency ?? '',
+        probability:         opportunity.probability ? `${opportunity.probability}%` : '',
+        expected_close_date: opportunity.expected_close_date ? formatDate(opportunity.expected_close_date) : '',
+        priority:            opportunity.priority ?? '',
+        opportunity_type:    opportunity.opportunity_type ?? '',
+        lead_source:         opportunity.lead_source ?? '',
+        competitor:          opportunity.competitor ?? '',
+        is_closed:           opportunity.is_closed ? 'Yes' : 'No',
+        is_won:              opportunity.is_won ? 'Yes' : 'No',
+        owner:               opportunity.owner?.name ?? '',
+        created_by:          opportunity.created_by_account?.name ?? opportunity.created_by ?? '',
+        created_at:          opportunity.created_at ? formatDate(opportunity.created_at) : '',
+        updated_by:          opportunity.updated_by_account?.name ?? opportunity.updated_by ?? '',
+      };
+
+      // Append custom fields
+      customFields.forEach((cf) => {
+        base[cf.field_key] = renderCustomFieldValue(
+          (opportunity as any).custom_fields?.[cf.field_key],
+        );
+      });
+
+      return base;
+    },
+    [customFields, formatDate, formatOpportunityAmount],
+  );
+
+  const exportColumns = useMemo(
+    () => [
+      ...EXPORT_COLUMNS,
+      ...customFields.map((cf) => ({ key: cf.field_key, label: cf.field_label })),
+    ],
+    [customFields, EXPORT_COLUMNS],
+  );
+
+  const handleExportAll = useCallback(async () => {
+    if (!workspace?.id) return;
+    try {
+      setIsExporting(true);
+      const allOpportunitiesResult = await getOpportunitiesService({
+        workspaceId: workspace.id,
+        page: 1,
+        limit: 10000,
+        searchTerm: debouncedSearchTerm,
+        stageId: selectedStage === 'all' ? '' : selectedStage,
+        sortColumn: sortColumn ?? undefined,
+        sortDirection: sortDirection ?? undefined,
+        createdAtFrom: computedCreatedOnDates?.from ?? undefined,
+        createdAtTo: computedCreatedOnDates?.to ?? undefined,
+        updatedAtFrom: computedUpdatedOnDates?.from ?? undefined,
+        updatedAtTo: computedUpdatedOnDates?.to ?? undefined,
+      });
+
+      let allOpportunities = allOpportunitiesResult.data as Opportunity[];
+
+      // Client-side filtering if needed
+      if (selectedCreatedId !== 'all') {
+        allOpportunities = allOpportunities.filter(
+          (opp: Opportunity) =>
+            opp.created_by === selectedCreatedId ||
+            opp.created_by_account?.id === selectedCreatedId,
+        );
+      }
+
+      if (allOpportunities.length === 0) {
+        toast.info('No opportunities to export.');
+        return;
+      }
+
+      const { stringifyCsv } = await import('@kit/ui/csv-utils');
+      const headerRow = exportColumns.map((c) => c.label);
+      const dataRows = allOpportunities.map((opportunity) => {
+        const flat = serializeOpportunityRow(opportunity);
+        return exportColumns.map((c) => flat[c.key] ?? '');
+      });
+      const csvText = stringifyCsv([headerRow, ...dataRows]);
+      const blob = new Blob([csvText], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const dateSuffix = new Date().toISOString().slice(0, 10);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `opportunities_export_${dateSuffix}.csv`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      toast.success(`Exported ${allOpportunities.length} opportunities successfully.`);
+    } catch (err) {
+      toast.error('Failed to export opportunities.');
+      console.error('Export All error:', err);
+    } finally {
+      setIsExporting(false);
+    }
+  }, [
+    workspace?.id,
+    debouncedSearchTerm,
+    selectedStage,
+    sortColumn,
+    sortDirection,
+    computedCreatedOnDates,
+    computedUpdatedOnDates,
+    selectedCreatedId,
+    exportColumns,
+    serializeOpportunityRow,
+  ]);
+
+  const handleExportSelected = useCallback(async () => {
+    const selectedRows = paginatedOpportunities.filter((o: Opportunity) =>
+      selectedOpportunityIds.has(o.id),
+    ) as Opportunity[];
+
+    if (selectedRows.length === 0) {
+      toast.info('No rows selected.');
+      return;
+    }
+
+    try {
+      setIsExporting(true);
+      const { stringifyCsv } = await import('@kit/ui/csv-utils');
+      const headerRow = exportColumns.map((c) => c.label);
+      const dataRows = selectedRows.map((opportunity) => {
+        const flat = serializeOpportunityRow(opportunity);
+        return exportColumns.map((c) => flat[c.key] ?? '');
+      });
+      const csvText = stringifyCsv([headerRow, ...dataRows]);
+      const blob = new Blob([csvText], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const dateSuffix = new Date().toISOString().slice(0, 10);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `opportunities_export_selected_${dateSuffix}.csv`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      toast.success(`Exported ${selectedRows.length} selected opportunity/opportunities successfully.`);
+    } catch (err) {
+      toast.error('Failed to export selected opportunities.');
+      console.error('Export Selected error:', err);
+    } finally {
+      setIsExporting(false);
+    }
+  }, [paginatedOpportunities, selectedOpportunityIds, exportColumns, serializeOpportunityRow]);
+
   if (!workspace) {
     return <OpportunitiesPageSkeleton />;
   }
@@ -877,6 +1110,16 @@ export default function OpportunitiesPage() {
               buttonVariant: 'default',
             },
           ]}
+          exportSlot={
+            canAccess('opportunities', 'read') ? (
+              <CsvExportButton
+                selectedCount={selectedOpportunityIds.size}
+                onExportAll={handleExportAll}
+                onExportSelected={handleExportSelected}
+                isExporting={isExporting}
+              />
+            ) : null
+          }
           statusSlot={
             <ViewToggle
               view={viewMode}
@@ -932,6 +1175,22 @@ export default function OpportunitiesPage() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  {/* Checkbox column */}
+                  <TableHead className="w-10 px-3">
+                    <Checkbox
+                      checked={
+                        isAllSelected
+                          ? true
+                          : isIndeterminate
+                            ? 'indeterminate'
+                            : false
+                      }
+                      onCheckedChange={handleSelectAll}
+                      aria-label="Select all rows"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </TableHead>
+
                   {SYSTEM_FIELDS.map((field) => {
                     if (!showColumn(field.id)) return null;
                     const entityField = getEntityFieldByKey(field.key);
@@ -1024,8 +1283,8 @@ export default function OpportunitiesPage() {
                             visibility
                               ? Object.values(visibility).filter(
                                   (v) => v !== false,
-                                ).length + 1
-                              : 7
+                                ).length + 2
+                              : 8
                           }
                         >
                           <Skeleton className="h-7 w-full" />
@@ -1039,8 +1298,8 @@ export default function OpportunitiesPage() {
                       colSpan={
                         visibility
                           ? Object.values(visibility).filter((v) => v !== false)
-                              .length + 1
-                          : 7
+                              .length + 2
+                          : 8
                       }
                       className="h-24 text-center"
                     >
@@ -1063,6 +1322,18 @@ export default function OpportunitiesPage() {
                           )
                         }
                       >
+                        {/* Checkbox */}
+                        <TableCell
+                          className="w-10 px-3"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Checkbox
+                            checked={selectedOpportunityIds.has(opportunity.id)}
+                            onCheckedChange={() => handleSelectRow(opportunity.id)}
+                            aria-label={`Select opportunity ${opportunity.opportunity_name}`}
+                          />
+                        </TableCell>
+
                         {showColumn('sno') && (
                           <TableCell className="text-muted-foreground w-12">
                             {(currentPage - 1) * itemsPerPage + index + 1}

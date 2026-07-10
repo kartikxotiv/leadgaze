@@ -104,6 +104,7 @@ export interface ListToolBarProps {
   onClearFilters?: () => void;
   actions?: ToolbarAction[];
   columnVisibilitySlot?: React.ReactNode;
+  exportSlot?: React.ReactNode;
   statusSlot?: React.ReactNode;
   align?: 'left' | 'right' | 'full';
   className?: string;
@@ -134,6 +135,7 @@ export const ListToolBar: React.FC<ListToolBarProps> = ({
   onClearFilters,
   actions = [],
   columnVisibilitySlot,
+  exportSlot,
   statusSlot,
   align,
   className,
@@ -626,6 +628,9 @@ export const ListToolBar: React.FC<ListToolBarProps> = ({
 
         {/* ── Status filter slot ────────────────────────────────────────────── */}
         {statusSlot}
+
+        {/* ── Export slot ──────────────────────────────────────────────────── */}
+        {exportSlot}
 
         {/* ── Action buttons ───────────────────────────────────────────────── */}
         {visibleActions.map((action) => {

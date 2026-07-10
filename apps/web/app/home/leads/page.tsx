@@ -5,17 +5,19 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 
 import { useQuery } from '@tanstack/react-query';
-import { FileUp, Loader2, Plus, Settings2 } from 'lucide-react';
+import { FileDown, FileUp, Loader2, Plus, Settings2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { AddColumnModal } from '@kit/ui/add-column-modal';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { Card, CardContent } from '@kit/ui/card';
+import { Checkbox } from '@kit/ui/checkbox';
 import { ColumnEditModal } from '@kit/ui/column-edit-modal';
 import type { ColumnEditFieldShape } from '@kit/ui/column-edit-modal';
 import { ColumnHeader } from '@kit/ui/column-header';
 import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
+import { CsvExportButton } from '@kit/ui/csv-export-button';
 import { CsvImportDialog } from '@kit/ui/csv-import-dialog';
 import { CustomTableContainer } from '@kit/ui/custom-table-container';
 import { ListToolBar } from '@kit/ui/list-toolbar';
@@ -32,6 +34,7 @@ import {
 import { TablePagination } from '@kit/ui/table-pagination';
 import { useColumnResize } from '@kit/ui/use-column-resize';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
+import { useCsvExport } from '@kit/ui/use-csv-export';
 import { useDateRangeFilter } from '@kit/ui/use-date-range-filter';
 import { useTableSort } from '@kit/ui/use-table-sort';
 import { cn } from '@kit/ui/utils';
@@ -177,6 +180,36 @@ const DEFAULT_VISIBILITY: Record<string, boolean> = {
   updated_by: true,
 };
 
+// ---------------------------------------------------------------------------
+// Export column definitions — ALL fields, regardless of visibility
+// ---------------------------------------------------------------------------
+const EXPORT_COLUMNS = [
+  { key: 'first_name',           label: 'First Name' },
+  { key: 'last_name',            label: 'Last Name' },
+  { key: 'email',                label: 'Email' },
+  { key: 'alt_email',            label: 'Alt Email' },
+  { key: 'phone_number',         label: 'Phone' },
+  { key: 'mobile_number',        label: 'Mobile' },
+  { key: 'company_name',         label: 'Company' },
+  { key: 'company_website',      label: 'Company Website' },
+  { key: 'company_linkedin_url', label: 'Company LinkedIn' },
+  { key: 'linkedin_url',         label: 'LinkedIn' },
+  { key: 'job_title',            label: 'Job Title' },
+  { key: 'department',           label: 'Department' },
+  { key: 'industry',             label: 'Industry' },
+  { key: 'company_size',         label: 'Company Size' },
+  { key: 'location',             label: 'Location' },
+  { key: 'timezone',             label: 'Timezone' },
+  { key: 'status',               label: 'Status' },
+  { key: 'source',               label: 'Source' },
+  { key: 'trigger',              label: 'Trigger' },
+  { key: 'notes',                label: 'Notes' },
+  { key: 'score',                label: 'Score' },
+  { key: 'created_by',           label: 'Created By' },
+  { key: 'created_at',           label: 'Created On' },
+  { key: 'updated_by',           label: 'Last Updated By' },
+];
+
 export default function LeadsPage() {
   const router = useRouter();
   const pathname = usePathname();
@@ -198,6 +231,10 @@ export default function LeadsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(15);
   const [addColumnModalOpen, setAddColumnModalOpen] = useState(false);
+
+  // Row selection state (for CSV export)
+  const [selectedLeadIds, setSelectedLeadIds] = useState<Set<string>>(new Set());
+  const [isExporting, setIsExporting] = useState(false);
 
   // View mode: 'table' | 'kanban' — persisted in localStorage
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
@@ -303,7 +340,7 @@ export default function LeadsPage() {
     } as EntityField);
   };
 
-  const trailingColumnCount = 1;
+  const trailingColumnCount = 2; // +1 for actions, +1 for checkbox column
 
   // Check if current user is admin
   const isAdmin = useMemo(() => {
@@ -535,9 +572,10 @@ export default function LeadsPage() {
     return result;
   }, [leads, selectedCreatedByIds]);
 
-  // Reset to first page when filters change
+  // Reset to first page + selection when filters change
   React.useEffect(() => {
     setCurrentPage(1);
+    setSelectedLeadIds(new Set());
   }, [
     debouncedSearchTerm,
     selectedStatuses,
@@ -545,10 +583,239 @@ export default function LeadsPage() {
     pageSize,
     createdOnRange,
     updatedOnRange,
+    viewMode,
   ]);
+
+  // Also clear selection when page changes
+  React.useEffect(() => {
+    setSelectedLeadIds(new Set());
+  }, [currentPage]);
 
   const paginatedLeads = filteredLeads;
   const totalPages = Math.ceil(totalCount / itemsPerPage);
+
+  // ---------------------------------------------------------------------------
+  // Row selection (checkbox) logic
+  // ---------------------------------------------------------------------------
+  const allVisibleIds = paginatedLeads.map((l: Lead) => l.id);
+
+  const isAllSelected =
+    allVisibleIds.length > 0 &&
+    allVisibleIds.every((id: string) => selectedLeadIds.has(id));
+
+  const isIndeterminate =
+    !isAllSelected && allVisibleIds.some((id: string) => selectedLeadIds.has(id));
+
+  const handleSelectAll = useCallback(() => {
+    if (isAllSelected) {
+      setSelectedLeadIds((prev) => {
+        const next = new Set(prev);
+        allVisibleIds.forEach((id: string) => next.delete(id));
+        return next;
+      });
+    } else {
+      setSelectedLeadIds((prev) => {
+        const next = new Set(prev);
+        allVisibleIds.forEach((id: string) => next.add(id));
+        return next;
+      });
+    }
+  }, [isAllSelected, allVisibleIds]);
+
+  const handleSelectRow = useCallback((id: string) => {
+    setSelectedLeadIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  // ---------------------------------------------------------------------------
+  // CSV Export
+  // ---------------------------------------------------------------------------
+
+  /** Flattens a Lead object into a plain { key: string } record for CSV serialisation */
+  const serializeLeadRow = useCallback(
+    (lead: Lead): Record<string, string> => {
+      const score = calculateLeadScore({
+        first_name: lead.first_name,
+        last_name: lead.last_name,
+        company_name: lead.company_name,
+        industry_id: lead.industry_id || (lead.industry as any)?.id,
+        company_size: lead.company_size,
+        location: lead.location,
+        timezone: lead.timezone,
+        job_title: lead.job_title,
+        contacted_count: lead.contacted_count,
+        status_key: lead.status?.status_key,
+        custom_fields: lead.custom_fields || {},
+        source_id: lead.source_id,
+      }).totalScore;
+
+      const base: Record<string, string> = {
+        first_name:           lead.first_name ?? '',
+        last_name:            lead.last_name ?? '',
+        email:                lead.email ?? '',
+        alt_email:            lead.alt_email ?? '',
+        phone_number:         lead.phone_number ?? '',
+        mobile_number:        lead.mobile_number ?? '',
+        company_name:         lead.company_name ?? '',
+        company_website:      lead.company_website ?? '',
+        company_linkedin_url: lead.company_linkedin_url ?? '',
+        linkedin_url:         lead.linkedin_url ?? '',
+        job_title:            lead.job_title ?? '',
+        department:           lead.department ?? '',
+        industry:             lead.industry?.industry_name ?? '',
+        company_size:         lead.company_size ?? '',
+        location:             lead.location ?? '',
+        timezone:             lead.timezone ?? '',
+        status:               lead.status?.status_name ?? '',
+        source:               lead.source?.source_name ?? '',
+        trigger:              lead.trigger ?? '',
+        notes:                lead.notes ?? '',
+        score:                String(score),
+        created_by:           lead.created_by_account?.name ?? lead.created_by ?? '',
+        created_at:           lead.created_at ? formatDate(lead.created_at) : '',
+        updated_by:           lead.updated_by_account?.name ?? lead.updated_by ?? '',
+      };
+
+      // Append custom fields
+      customFields.forEach((cf) => {
+        base[cf.field_key] = String(
+          (lead as any).custom_fields?.[cf.field_key] ?? '',
+        );
+      });
+
+      return base;
+    },
+    [customFields, formatDate],
+  );
+
+  /** Full columns list: system + custom (for export header row) */
+  const exportColumns = useMemo(
+    () => [
+      ...EXPORT_COLUMNS,
+      ...customFields.map((cf) => ({ key: cf.field_key, label: cf.field_label })),
+    ],
+    [customFields],
+  );
+
+  const { exportToCsv: triggerExport } = useCsvExport<Lead>({
+    filename: 'leads_export',
+    columns: exportColumns,
+    // getRows is overridden per-call via the handlers below
+    getRows: () => paginatedLeads as Lead[],
+    serializeRow: serializeLeadRow as (row: Lead) => Record<string, string>,
+  });
+
+  /** Export All — fetches ALL matching leads (across pages) then downloads */
+  const handleExportAll = useCallback(async () => {
+    if (!workspace?.id) return;
+    try {
+      setIsExporting(true);
+      // Fetch all leads without pagination (large limit)
+      const allLeadsResult = await getLeadsService({
+        workspaceId: workspace.id,
+        page: 1,
+        limit: 10000,
+        searchTerm: debouncedSearchTerm,
+        statusId: selectedStatuses.length > 0 ? selectedStatuses : defaultStatusIds,
+        sortColumn: sortColumn ?? undefined,
+        sortDirection: sortDirection ?? undefined,
+        createdAtFrom: computedCreatedOnDates?.from ?? undefined,
+        createdAtTo: computedCreatedOnDates?.to ?? undefined,
+        updatedAtFrom: computedUpdatedOnDates?.from ?? undefined,
+        updatedAtTo: computedUpdatedOnDates?.to ?? undefined,
+      });
+
+      const allLeads = allLeadsResult.data as Lead[];
+
+      if (allLeads.length === 0) {
+        toast.info('No leads to export.');
+        return;
+      }
+
+      const { exportToCsv } = {
+        exportToCsv: async () => {
+          const { stringifyCsv } = await import('@kit/ui/csv-utils');
+          const headerRow = exportColumns.map((c) => c.label);
+          const dataRows = allLeads.map((lead) => {
+            const flat = serializeLeadRow(lead);
+            return exportColumns.map((c) => flat[c.key] ?? '');
+          });
+          const csvText = stringifyCsv([headerRow, ...dataRows]);
+          const blob = new Blob([csvText], { type: 'text/csv;charset=utf-8;' });
+          const url = URL.createObjectURL(blob);
+          const dateSuffix = new Date().toISOString().slice(0, 10);
+          const anchor = document.createElement('a');
+          anchor.href = url;
+          anchor.download = `leads_export_${dateSuffix}.csv`;
+          document.body.appendChild(anchor);
+          anchor.click();
+          document.body.removeChild(anchor);
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
+        },
+      };
+      await exportToCsv();
+      toast.success(`Exported ${allLeads.length} leads successfully.`);
+    } catch (err) {
+      toast.error('Failed to export leads. Please try again.');
+      console.error('Export All error:', err);
+    } finally {
+      setIsExporting(false);
+    }
+  }, [
+    workspace?.id,
+    debouncedSearchTerm,
+    selectedStatuses,
+    defaultStatusIds,
+    sortColumn,
+    sortDirection,
+    computedCreatedOnDates,
+    computedUpdatedOnDates,
+    exportColumns,
+    serializeLeadRow,
+  ]);
+
+  /** Export Selected — exports only the checked rows from the current page */
+  const handleExportSelected = useCallback(async () => {
+    const selectedRows = paginatedLeads.filter((l: Lead) =>
+      selectedLeadIds.has(l.id),
+    ) as Lead[];
+
+    if (selectedRows.length === 0) {
+      toast.info('No rows selected.');
+      return;
+    }
+
+    try {
+      setIsExporting(true);
+      const { stringifyCsv } = await import('@kit/ui/csv-utils');
+      const headerRow = exportColumns.map((c) => c.label);
+      const dataRows = selectedRows.map((lead) => {
+        const flat = serializeLeadRow(lead);
+        return exportColumns.map((c) => flat[c.key] ?? '');
+      });
+      const csvText = stringifyCsv([headerRow, ...dataRows]);
+      const blob = new Blob([csvText], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const dateSuffix = new Date().toISOString().slice(0, 10);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `leads_export_selected_${dateSuffix}.csv`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      toast.success(`Exported ${selectedRows.length} selected lead${selectedRows.length > 1 ? 's' : ''} successfully.`);
+    } catch (err) {
+      toast.error('Failed to export selected leads.');
+      console.error('Export Selected error:', err);
+    } finally {
+      setIsExporting(false);
+    }
+  }, [paginatedLeads, selectedLeadIds, exportColumns, serializeLeadRow]);
 
   const handleCreateSuccess = () => {
     setIsCreateDialogOpen(false);
@@ -797,6 +1064,16 @@ export default function LeadsPage() {
               onChange={handleViewModeChange}
             />
           }
+          exportSlot={
+            canAccess('leads', 'read') ? (
+              <CsvExportButton
+                selectedCount={selectedLeadIds.size}
+                onExportAll={handleExportAll}
+                onExportSelected={handleExportSelected}
+                isExporting={isExporting}
+              />
+            ) : null
+          }
           columnVisibilitySlot={
             viewMode === 'table' ? (
               <ColumnVisibilitySelector
@@ -852,6 +1129,22 @@ export default function LeadsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  {/* Checkbox column */}
+                  <TableHead className="w-10 px-3">
+                    <Checkbox
+                      checked={
+                        isAllSelected
+                          ? true
+                          : isIndeterminate
+                            ? 'indeterminate'
+                            : false
+                      }
+                      onCheckedChange={handleSelectAll}
+                      aria-label="Select all rows"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </TableHead>
+
                   {/* System columns */}
                   {SYSTEM_FIELDS.map((field) => {
                     if (!showColumn(field.id)) return null;
@@ -946,7 +1239,7 @@ export default function LeadsPage() {
                               ? Object.values(visibility).filter(
                                   (v) => v !== false,
                                 ).length + trailingColumnCount
-                              : 7
+                              : 8
                           }
                         >
                           <Skeleton className="h-7 w-full rounded-md" />
@@ -961,7 +1254,7 @@ export default function LeadsPage() {
                         visibility
                           ? Object.values(visibility).filter((v) => v !== false)
                               .length + trailingColumnCount
-                          : 7
+                          : 8
                       }
                       className="h-24 text-center"
                     >
@@ -983,6 +1276,18 @@ export default function LeadsPage() {
                         router.push(`/home/sales/leads/${lead.id}`)
                       }
                     >
+                      {/* Checkbox */}
+                      <TableCell
+                        className="w-10 px-3"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Checkbox
+                          checked={selectedLeadIds.has(lead.id)}
+                          onCheckedChange={() => handleSelectRow(lead.id)}
+                          aria-label={`Select lead ${lead.first_name}`}
+                        />
+                      </TableCell>
+
                       {/* System columns */}
                       {showColumn('sno') && (
                         <TableCell className="text-muted-foreground w-12">

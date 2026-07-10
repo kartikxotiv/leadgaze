@@ -31,7 +31,16 @@ import {
 } from './select';
 import { cn } from '../lib/utils';
 
-export type CsvRow = string[];
+import {
+  type CsvRow,
+  buildFormDataFromCsvFile,
+  createCsvFile,
+  normalizeCsvHeader,
+  parseCsv,
+  stringifyCsv,
+} from './csv-utils';
+
+export type { CsvRow };
 
 type CsvHeaderRow = {
   id: string;
@@ -42,67 +51,6 @@ type CsvHeaderRow = {
 };
 
 const IGNORE_VALUE = '__ignore__';
-
-function normalizeCsvHeader(value: string) {
-  return value
-    .trim()
-    .toLowerCase()
-    .replace(/[\s_-]+/g, '')
-    .replace(/[^a-z0-9]/g, '');
-}
-
-function parseCsv(text: string): CsvRow[] {
-  const rows: CsvRow[] = [];
-  let row: string[] = [];
-  let field = '';
-  let inQuotes = false;
-
-  const pushField = () => { row.push(field); field = ''; };
-  const pushRow = () => {
-    const hasContent = row.some((v) => v.length > 0) || field.length > 0;
-    if (hasContent) { if (field.length > 0 || row.length > 0) pushField(); rows.push(row); }
-    row = []; field = '';
-  };
-
-  for (let i = 0; i < text.length; i += 1) {
-    const char = text[i];
-    const nextChar = text[i + 1];
-    if (inQuotes) {
-      if (char === '"') { if (nextChar === '"') { field += '"'; i += 1; } else { inQuotes = false; } }
-      else { field += char; }
-      continue;
-    }
-    if (char === '"') { inQuotes = true; continue; }
-    if (char === ',') { pushField(); continue; }
-    if (char === '\r') { if (nextChar === '\n') i += 1; pushRow(); continue; }
-    if (char === '\n') { pushRow(); continue; }
-    field += char;
-  }
-  if (field.length > 0 || row.length > 0) pushRow();
-  return rows;
-}
-
-function stringifyCsv(rows: CsvRow[]) {
-  return rows
-    .map((row) =>
-      row.map((value) => {
-        const v = value ?? '';
-        if (/[",\n\r]/.test(v) || /^\s|\s$/.test(v)) return `"${v.replace(/"/g, '""')}"`;
-        return v;
-      }).join(','),
-    )
-    .join('\n');
-}
-
-function createCsvFile(headers: string[], rows: CsvRow[], fileName: string) {
-  return new File([stringifyCsv([headers, ...rows])], fileName, { type: 'text/csv;charset=utf-8' });
-}
-
-function buildFormDataFromCsvFile(file: File, fieldName = 'file') {
-  const fd = new FormData();
-  fd.append(fieldName, file);
-  return fd;
-}
 
 export interface CsvImportColumn {
   key: string;

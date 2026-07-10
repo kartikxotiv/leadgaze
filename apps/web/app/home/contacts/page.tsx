@@ -1,14 +1,16 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 
 import { useRouter } from 'next/navigation';
 
 import { useQuery } from '@tanstack/react-query';
-import { Plus } from 'lucide-react';
+import { FileDown, Plus } from 'lucide-react';
+import { toast } from 'sonner';
 
 import { Button } from '@kit/ui/button';
 import { Card, CardContent } from '@kit/ui/card';
+import { Checkbox } from '@kit/ui/checkbox';
 import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
 import CustomTableContainer from '@kit/ui/custom-table-container';
 import { ListToolBar } from '@kit/ui/list-toolbar';
@@ -25,6 +27,7 @@ import {
 import { TablePagination } from '@kit/ui/table-pagination';
 import { useColumnResize } from '@kit/ui/use-column-resize';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
+import { useCsvExport } from '@kit/ui/use-csv-export';
 import { useDateRangeFilter } from '@kit/ui/use-date-range-filter';
 import { useTableSort } from '@kit/ui/use-table-sort';
 import { cn } from '@kit/ui/utils';
@@ -33,6 +36,7 @@ import { AddColumnModal } from '@kit/ui/add-column-modal';
 import { ColumnEditModal } from '@kit/ui/column-edit-modal';
 import type { ColumnEditFieldShape } from '@kit/ui/column-edit-modal';
 import { ColumnHeader } from '@kit/ui/column-header';
+import { CsvExportButton } from '@kit/ui/csv-export-button';
 import { useDebounce } from '~/lib/hooks/use-debounce';
 import {
   useCreateField,
@@ -149,6 +153,10 @@ export default function ContactsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(15);
   const itemsPerPage = pageSize;
+
+  // Row selection state (for CSV export)
+  const [selectedContactIds, setSelectedContactIds] = useState<Set<string>>(new Set());
+  const [isExporting, setIsExporting] = useState(false);
   const {
     dateRange: createdOnRange,
     setDateRange: setCreatedOnRange,
@@ -191,6 +199,26 @@ export default function ContactsPage() {
         label: 'Last Updated By',
         sortKey: 'updated_by_account.name',
       },
+    ],
+    [],
+  );
+
+  // ---------------------------------------------------------------------------
+  // Export column definitions — ALL fields
+  // ---------------------------------------------------------------------------
+  const EXPORT_COLUMNS = useMemo(
+    () => [
+      { key: 'first_name', label: 'First Name' },
+      { key: 'last_name', label: 'Last Name' },
+      { key: 'email', label: 'Email' },
+      { key: 'phone_number', label: 'Phone' },
+      { key: 'job_title', label: 'Job Title' },
+      { key: 'account', label: 'Account' },
+      { key: 'notes', label: 'Notes' },
+      { key: 'owner', label: 'Owner' },
+      { key: 'created_by', label: 'Created By' },
+      { key: 'created_at', label: 'Created On' },
+      { key: 'updated_by', label: 'Last Updated By' },
     ],
     [],
   );
@@ -453,14 +481,196 @@ export default function ContactsPage() {
   const contacts = contactsData.data;
   const totalCount = contactsData.count;
 
-  // Reset to first page when search changes
+  // Reset to first page + selection when filters change
   React.useEffect(() => {
     setCurrentPage(1);
+    setSelectedContactIds(new Set());
   }, [debouncedSearchTerm, selectedCreatedByIds, pageSize, createdOnRange, updatedOnRange]);
+
+  // Clear selection when page changes
+  React.useEffect(() => {
+    setSelectedContactIds(new Set());
+  }, [currentPage]);
 
   // Pagination Logic
   const totalPages = Math.ceil(totalCount / itemsPerPage);
   const paginatedContacts = contacts; // Data is already paginated from server
+
+  // ---------------------------------------------------------------------------
+  // Row selection (checkbox) logic
+  // ---------------------------------------------------------------------------
+  const allVisibleIds = paginatedContacts.map((c: Contact) => c.id);
+
+  const isAllSelected =
+    allVisibleIds.length > 0 &&
+    allVisibleIds.every((id: string) => selectedContactIds.has(id));
+
+  const isIndeterminate =
+    !isAllSelected && allVisibleIds.some((id: string) => selectedContactIds.has(id));
+
+  const handleSelectAll = useCallback(() => {
+    if (isAllSelected) {
+      setSelectedContactIds((prev) => {
+        const next = new Set(prev);
+        allVisibleIds.forEach((id: string) => next.delete(id));
+        return next;
+      });
+    } else {
+      setSelectedContactIds((prev) => {
+        const next = new Set(prev);
+        allVisibleIds.forEach((id: string) => next.add(id));
+        return next;
+      });
+    }
+  }, [isAllSelected, allVisibleIds]);
+
+  const handleSelectRow = useCallback((id: string) => {
+    setSelectedContactIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  // ---------------------------------------------------------------------------
+  // CSV Export
+  // ---------------------------------------------------------------------------
+
+  const serializeContactRow = useCallback(
+    (contact: Contact): Record<string, string> => {
+      const base: Record<string, string> = {
+        first_name:   contact.first_name ?? '',
+        last_name:    contact.last_name ?? '',
+        email:        contact.email ?? '',
+        phone_number: contact.phone_number ?? '',
+        job_title:    contact.job_title ?? '',
+        account:      contact.account?.account_name ?? '',
+        notes:        contact.notes ?? '',
+        owner:        contact.owner?.name ?? '',
+        created_by:   contact.created_by_account?.name ?? contact.created_by ?? '',
+        created_at:   contact.created_at ? formatDate(contact.created_at) : '',
+        updated_by:   contact.updated_by_account?.name ?? contact.updated_by ?? '',
+      };
+
+      // Append custom fields
+      customFields.forEach((cf) => {
+        base[cf.field_key] = String(
+          (contact as any).custom_fields?.[cf.field_key] ?? '',
+        );
+      });
+
+      return base;
+    },
+    [customFields, formatDate],
+  );
+
+  const exportColumns = useMemo(
+    () => [
+      ...EXPORT_COLUMNS,
+      ...customFields.map((cf) => ({ key: cf.field_key, label: cf.field_label })),
+    ],
+    [customFields, EXPORT_COLUMNS],
+  );
+
+  const handleExportAll = useCallback(async () => {
+    if (!workspace?.id) return;
+    try {
+      setIsExporting(true);
+      const allContactsResult = await getContactsService({
+        workspaceId: workspace.id,
+        page: 1,
+        limit: 10000,
+        searchTerm: debouncedSearchTerm,
+        sortColumn: sortColumn ?? undefined,
+        sortDirection: sortDirection ?? undefined,
+        createdAtFrom: computedCreatedOnDates?.from ?? undefined,
+        createdAtTo: computedCreatedOnDates?.to ?? undefined,
+        updatedAtFrom: computedUpdatedOnDates?.from ?? undefined,
+        updatedAtTo: computedUpdatedOnDates?.to ?? undefined,
+        createdByIds: selectedCreatedByIds.length > 0 ? selectedCreatedByIds : undefined,
+      });
+
+      const allContacts = allContactsResult.data as Contact[];
+
+      if (allContacts.length === 0) {
+        toast.info('No contacts to export.');
+        return;
+      }
+
+      const { stringifyCsv } = await import('@kit/ui/csv-utils');
+      const headerRow = exportColumns.map((c) => c.label);
+      const dataRows = allContacts.map((contact) => {
+        const flat = serializeContactRow(contact);
+        return exportColumns.map((c) => flat[c.key] ?? '');
+      });
+      const csvText = stringifyCsv([headerRow, ...dataRows]);
+      const blob = new Blob([csvText], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const dateSuffix = new Date().toISOString().slice(0, 10);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `contacts_export_${dateSuffix}.csv`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      toast.success(`Exported ${allContacts.length} contacts successfully.`);
+    } catch (err) {
+      toast.error('Failed to export contacts.');
+      console.error('Export All error:', err);
+    } finally {
+      setIsExporting(false);
+    }
+  }, [
+    workspace?.id,
+    debouncedSearchTerm,
+    sortColumn,
+    sortDirection,
+    computedCreatedOnDates,
+    computedUpdatedOnDates,
+    selectedCreatedByIds,
+    exportColumns,
+    serializeContactRow,
+  ]);
+
+  const handleExportSelected = useCallback(async () => {
+    const selectedRows = paginatedContacts.filter((c: Contact) =>
+      selectedContactIds.has(c.id),
+    ) as Contact[];
+
+    if (selectedRows.length === 0) {
+      toast.info('No rows selected.');
+      return;
+    }
+
+    try {
+      setIsExporting(true);
+      const { stringifyCsv } = await import('@kit/ui/csv-utils');
+      const headerRow = exportColumns.map((c) => c.label);
+      const dataRows = selectedRows.map((contact) => {
+        const flat = serializeContactRow(contact);
+        return exportColumns.map((c) => flat[c.key] ?? '');
+      });
+      const csvText = stringifyCsv([headerRow, ...dataRows]);
+      const blob = new Blob([csvText], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const dateSuffix = new Date().toISOString().slice(0, 10);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `contacts_export_selected_${dateSuffix}.csv`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      toast.success(`Exported ${selectedRows.length} selected contact${selectedRows.length > 1 ? 's' : ''} successfully.`);
+    } catch (err) {
+      toast.error('Failed to export selected contacts.');
+      console.error('Export Selected error:', err);
+    } finally {
+      setIsExporting(false);
+    }
+  }, [paginatedContacts, selectedContactIds, exportColumns, serializeContactRow]);
 
   if (!workspace) {
     return <ContactsPageSkeleton />;
@@ -569,6 +779,16 @@ export default function ContactsPage() {
               buttonVariant: 'default',
             },
           ]}
+          exportSlot={
+            canAccess('contacts', 'read') ? (
+              <CsvExportButton
+                selectedCount={selectedContactIds.size}
+                onExportAll={handleExportAll}
+                onExportSelected={handleExportSelected}
+                isExporting={isExporting}
+              />
+            ) : null
+          }
           columnVisibilitySlot={
             <ColumnVisibilitySelector
               columns={columns}
@@ -601,6 +821,22 @@ export default function ContactsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  {/* Checkbox column */}
+                  <TableHead className="w-10 px-3">
+                    <Checkbox
+                      checked={
+                        isAllSelected
+                          ? true
+                          : isIndeterminate
+                            ? 'indeterminate'
+                            : false
+                      }
+                      onCheckedChange={handleSelectAll}
+                      aria-label="Select all rows"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </TableHead>
+
                   {SYSTEM_FIELDS.map((field) => {
                     if (!showColumn(field.id)) return null;
                     const entityField = getEntityFieldByKey(field.key);
@@ -693,8 +929,8 @@ export default function ContactsPage() {
                             visibility
                               ? Object.values(visibility).filter(
                                   (v) => v !== false,
-                                ).length + 1
-                              : 7
+                                ).length + 2
+                              : 8
                           }
                         >
                           <Skeleton className="h-7 w-full" />
@@ -708,8 +944,8 @@ export default function ContactsPage() {
                       colSpan={
                         visibility
                           ? Object.values(visibility).filter((v) => v !== false)
-                              .length + 1
-                          : 7
+                              .length + 2
+                          : 8
                       }
                       className="h-24 text-center"
                     >
@@ -729,6 +965,18 @@ export default function ContactsPage() {
                         router.push(`/home/sales/contacts/${contact.id}`)
                       }
                     >
+                      {/* Checkbox */}
+                      <TableCell
+                        className="w-10 px-3"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Checkbox
+                          checked={selectedContactIds.has(contact.id)}
+                          onCheckedChange={() => handleSelectRow(contact.id)}
+                          aria-label={`Select contact ${contact.first_name}`}
+                        />
+                      </TableCell>
+
                       {showColumn('sno') && (
                         <TableCell className="text-muted-foreground w-12">
                           {(currentPage - 1) * itemsPerPage + index + 1}

@@ -151,7 +151,7 @@ export default function ServiceCloudTicketsRoute() {
           is_required: editingField.is_required,
           is_system: true,
           settings: editingField.settings || {},
-          access_type: updates.access_type || 'public',
+          access_type: (updates.access_type || 'public') as any,
           access_members: updates.access_members,
         });
         setEditingField(null);
@@ -169,7 +169,7 @@ export default function ServiceCloudTicketsRoute() {
 
       await updateFieldAccess.mutateAsync({
         fieldId,
-        accessType: updates.access_type || 'public',
+        accessType: (updates.access_type || 'public') as any,
         members: updates.access_members,
       });
       setEditingField(null);
