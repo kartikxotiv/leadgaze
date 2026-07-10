@@ -9,6 +9,8 @@ export interface SubscriptionProduct {
   display_name: string;
   monthly_price_per_seat: number | null;
   yearly_price_per_seat: number | null;
+  india_monthly_price_per_seat: number | null;
+  india_yearly_price_per_seat: number | null;
   currency: string;
   min_seats: number;
   is_active: boolean;

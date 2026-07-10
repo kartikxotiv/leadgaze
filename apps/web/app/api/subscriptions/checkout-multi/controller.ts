@@ -8,6 +8,7 @@ import {
   getOrCreateStripeCustomer,
   getStripeClient,
 } from '~/lib/stripe/stripe-client';
+import { getStripePriceId } from '~/lib/stripe/stripe-price-helper';
 
 import { catchAsync } from '../../../../utils/response-handler';
 
@@ -76,12 +77,31 @@ export const createMultiProductCheckout = catchAsync(
       workspaceId,
     });
 
+    // ── Fetch workspace and billing country ──────────────────────────
+    const { data: workspace } = await adminClient
+      .from('workspaces')
+      .select('name, company_id')
+      .eq('id', workspaceId)
+      .single();
+
+    let billingCountry: string | null = null;
+    if (workspace?.company_id) {
+      const { data: company } = await adminClient
+        .from('companies')
+        .select('billing_country')
+        .eq('id', workspace?.company_id)
+        .single();
+      if (company?.billing_country) {
+        billingCountry = company.billing_country;
+      }
+    }
+
     // ── Validate all products and resolve Stripe price IDs ─────────
     const productKeys = items.map((i) => i.productKey);
     const { data: products, error: productsError } = await adminClient
       .from('subscription_products')
       .select(
-        'id, product_key, display_name, stripe_product_id, stripe_monthly_price_id, stripe_yearly_price_id, min_seats',
+        'id, product_key, display_name, stripe_product_id, stripe_monthly_price_id, stripe_yearly_price_id, stripe_india_monthly_price_id, stripe_india_yearly_price_id, min_seats',
       )
       .in('product_key', productKeys)
       .eq('is_active', true);
@@ -116,10 +136,7 @@ export const createMultiProductCheckout = catchAsync(
         );
       }
 
-      const stripePriceId =
-        cycle === 'yearly'
-          ? product.stripe_yearly_price_id
-          : product.stripe_monthly_price_id;
+      const stripePriceId = getStripePriceId(product, billingCountry, cycle);
 
       if (!stripePriceId) {
         return NextResponse.json(
@@ -175,6 +192,7 @@ export const createMultiProductCheckout = catchAsync(
         items,
         productMap,
         cycle,
+        billingCountry,
         user.id,
         workspaceId,
       );
@@ -193,10 +211,7 @@ export const createMultiProductCheckout = catchAsync(
 
     items.forEach((item, idx) => {
       const product = productMap.get(item.productKey);
-      const stripePriceId =
-        cycle === 'yearly'
-          ? product.stripe_yearly_price_id
-          : product.stripe_monthly_price_id;
+      const stripePriceId = getStripePriceId(product, billingCountry, cycle);
 
       lineItems.push({
         price: stripePriceId,
@@ -213,12 +228,6 @@ export const createMultiProductCheckout = catchAsync(
     const {
       data: { user: authUser },
     } = await supabase.auth.getUser();
-
-    const { data: workspace } = await adminClient
-      .from('workspaces')
-      .select('name')
-      .eq('id', workspaceId)
-      .single();
 
     const stripeCustomerId = await getOrCreateStripeCustomer(
       adminClient,
@@ -274,7 +283,8 @@ async function addItemsToExistingSubscription(
   items: Array<{ productKey: string; seats: number }>,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   productMap: Map<string, any>,
-  billingCycle: string,
+  billingCycle: 'monthly' | 'yearly',
+  billingCountry: string | null | undefined,
   userId: string,
   workspaceId: string,
 ) {
@@ -290,10 +300,7 @@ async function addItemsToExistingSubscription(
 
   for (const item of items) {
     const product = productMap.get(item.productKey);
-    const stripePriceId =
-      billingCycle === 'yearly'
-        ? product.stripe_yearly_price_id
-        : product.stripe_monthly_price_id;
+    const stripePriceId = getStripePriceId(product, billingCountry, billingCycle);
 
     // Check if this product already has an item in the subscription
     const existingItem = subscription.items.data.find(

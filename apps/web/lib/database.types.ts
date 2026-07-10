@@ -1634,6 +1634,8 @@ export type Database = {
           min_seats: number
           module_id: string
           monthly_price_per_seat: number
+          stripe_india_monthly_price_id: string | null
+          stripe_india_yearly_price_id: string | null
           stripe_monthly_price_id: string | null
           stripe_yearly_price_id: string | null
           tier_key: string
@@ -1651,6 +1653,8 @@ export type Database = {
           min_seats?: number
           module_id: string
           monthly_price_per_seat?: number
+          stripe_india_monthly_price_id?: string | null
+          stripe_india_yearly_price_id?: string | null
           stripe_monthly_price_id?: string | null
           stripe_yearly_price_id?: string | null
           tier_key: string
@@ -1668,6 +1672,8 @@ export type Database = {
           min_seats?: number
           module_id?: string
           monthly_price_per_seat?: number
+          stripe_india_monthly_price_id?: string | null
+          stripe_india_yearly_price_id?: string | null
           stripe_monthly_price_id?: string | null
           stripe_yearly_price_id?: string | null
           tier_key?: string
@@ -8024,11 +8030,15 @@ export type Database = {
           description: string | null
           display_name: string
           id: string
+          india_monthly_price_per_seat: number | null
+          india_yearly_price_per_seat: number | null
           is_active: boolean
           is_public: boolean
           min_seats: number
           monthly_price_per_seat: number | null
           product_key: string
+          stripe_india_monthly_price_id: string | null
+          stripe_india_yearly_price_id: string | null
           stripe_monthly_price_id: string | null
           stripe_product_id: string | null
           stripe_yearly_price_id: string | null
@@ -8041,11 +8051,15 @@ export type Database = {
           description?: string | null
           display_name: string
           id?: string
+          india_monthly_price_per_seat?: number | null
+          india_yearly_price_per_seat?: number | null
           is_active?: boolean
           is_public?: boolean
           min_seats?: number
           monthly_price_per_seat?: number | null
           product_key: string
+          stripe_india_monthly_price_id?: string | null
+          stripe_india_yearly_price_id?: string | null
           stripe_monthly_price_id?: string | null
           stripe_product_id?: string | null
           stripe_yearly_price_id?: string | null
@@ -8058,11 +8072,15 @@ export type Database = {
           description?: string | null
           display_name?: string
           id?: string
+          india_monthly_price_per_seat?: number | null
+          india_yearly_price_per_seat?: number | null
           is_active?: boolean
           is_public?: boolean
           min_seats?: number
           monthly_price_per_seat?: number | null
           product_key?: string
+          stripe_india_monthly_price_id?: string | null
+          stripe_india_yearly_price_id?: string | null
           stripe_monthly_price_id?: string | null
           stripe_product_id?: string | null
           stripe_yearly_price_id?: string | null
