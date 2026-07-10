@@ -71,7 +71,7 @@ async function withCsrfMiddleware(
     ignoreMethods: isServerAction(request)
       ? ['POST']
       : // always ignore GET, HEAD, and OPTIONS requests
-        ['GET', 'HEAD', 'OPTIONS'],
+      ['GET', 'HEAD', 'OPTIONS'],
   });
 
   try {
@@ -133,7 +133,7 @@ async function hasValidTrustedDevice(
       .from('trusted_devices')
       .update({ last_used_at: new Date().toISOString() })
       .eq('id', device.id)
-      .then(() => {});
+      .then(() => { });
 
     return true;
   } catch {
@@ -189,10 +189,10 @@ function getPatterns() {
         // /home/services, /home/inventory, /home/funds.
         const allowedModulePrefixes = [
           '/home/sales',
-          '/home/hrms',
           '/home/services',
-          '/home/inventory',
-          '/home/funds',
+          // '/home/hrms',
+          // '/home/inventory',
+          // '/home/funds',
         ];
         const isAllowedRoute = allowedModulePrefixes.some(
           (prefix) => next === prefix || next.startsWith(`${prefix}/`),

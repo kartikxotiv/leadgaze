@@ -172,7 +172,7 @@ export function RBACProvider({ children }: { children: ReactNode }) {
         // If productKey is null/blank, it applies globally to all known products.
         const targetProductKeys = productKey 
           ? [productKey] 
-          : ['sales', 'hrms', 'inventory', 'service_cloud', 'funds'];
+          : ['sales', 'inventory', 'service_cloud', 'funds'];
 
         for (const pKey of targetProductKeys) {
           if (!workspacesMap.has(workspaceId)) {
