@@ -106,6 +106,19 @@ export function WorkspaceGeneralSettings({ workspaceId }: WorkspaceGeneralSettin
       return;
     }
 
+    const originalBillingCountry = (workspaceData as any)?.companies?.billing_country || '';
+    const isOriginalIndia = originalBillingCountry === 'IN' || originalBillingCountry?.toLowerCase() === 'india';
+    const isNewIndia = billingCountry === 'IN' || billingCountry?.toLowerCase() === 'india';
+
+    if (isOriginalIndia && !isNewIndia) {
+      toast.error('Contact support team to switch your billing country from India to another');
+      return;
+    }
+    if (!isOriginalIndia && isNewIndia) {
+      toast.error('Contact support team to switch your billing country to India');
+      return;
+    }
+
     setIsSaving(true);
 
     try {
@@ -134,8 +147,10 @@ export function WorkspaceGeneralSettings({ workspaceId }: WorkspaceGeneralSettin
       }
 
       // Validate Tax ID if changed and provided
+      // Validate Tax ID if tax ID or billing country has changed
       const originalTaxId = (workspaceData as any)?.companies?.tax_id || '';
-      if (taxId.trim() && taxId.trim() !== originalTaxId) {
+      const originalBillingCountry = (workspaceData as any)?.companies?.billing_country || '';
+      if (taxId.trim() && (taxId.trim() !== originalTaxId || billingCountry !== originalBillingCountry)) {
         const valResponse = await fetch('/api/companies/validate-tax', {
           method: 'POST',
           headers: {
