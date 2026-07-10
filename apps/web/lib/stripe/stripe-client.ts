@@ -138,6 +138,7 @@ async function getOrCreateStripeCustomer(
         workspace_id: workspaceId,
       },
     });
+    stripeCustomerId = customer.id;
 
     console.log({ existingSeat });
     console.log({ customer });

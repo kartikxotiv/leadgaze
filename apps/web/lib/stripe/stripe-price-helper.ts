@@ -17,7 +17,7 @@ export function getStripePriceId(
   billingCountry: string | null | undefined,
   billingCycle: 'monthly' | 'yearly',
 ): string | null | undefined {
-  if (billingCountry === 'IN') {
+  if (billingCountry === 'IN' || billingCountry?.toLowerCase() === 'india') {
     return billingCycle === 'monthly'
       ? product.stripe_india_monthly_price_id
       : product.stripe_india_yearly_price_id;

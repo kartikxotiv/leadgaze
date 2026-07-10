@@ -52,7 +52,6 @@ import {
 import { cn } from '@kit/ui/utils';
 
 import { useRBAC } from '~/lib/rbac/rbac-provider';
-import { useSupabase } from '@kit/supabase/hooks/use-supabase';
 import {
   type ModuleEntitlement,
   type SeatAssignment,
@@ -159,12 +158,17 @@ function getProductStyle(key: string) {
 // ─── Main Page ───────────────────────────────────────────────────
 
 function getPriceAndCurrency(
-  product: SubscriptionProduct | null | undefined,
+  product: {
+    monthly_price_per_seat?: number | null;
+    yearly_price_per_seat?: number | null;
+    india_monthly_price_per_seat?: number | null;
+    india_yearly_price_per_seat?: number | null;
+  } | null | undefined,
   billingCountry: string | null | undefined,
   billingCycle: 'monthly' | 'yearly',
 ) {
   if (!product) return { price: 0, currencySymbol: '$' };
-  const isIndia = billingCountry === 'IN';
+  const isIndia = billingCountry === 'IN' || billingCountry?.toLowerCase() === 'india';
   const price = isIndia
     ? billingCycle === 'yearly'
       ? (product.india_yearly_price_per_seat ?? 0)
@@ -186,7 +190,6 @@ export default function OrgSubscriptionPage({
   const canManageSubscription =
     canManageSubscriptionProp ?? canAccess('subscription', 'manage');
   const searchParams = useSearchParams();
-  const currencySymbol = billingCountry === 'IN' ? '₹' : '$';
   const queryClient = useQueryClient();
 
   const [pendingChanges, setPendingChanges] = useState<Record<string, number>>(
@@ -217,6 +220,7 @@ export default function OrgSubscriptionPage({
     currentSeats: 0,
     newSeats: 0,
   });
+  const [isDirectUpdating, setIsDirectUpdating] = useState(false);
 
   useEffect(() => {
     const checkout = searchParams.get('checkout');
@@ -264,27 +268,8 @@ export default function OrgSubscriptionPage({
     enabled: !!workspaceId,
   });
 
-  const supabase = useSupabase();
-  const { data: billingCountry } = useQuery({
-    queryKey: ['workspace-billing-country', workspaceId],
-    queryFn: async () => {
-      const { data: workspace } = await supabase
-        .from('workspaces')
-        .select('company_id')
-        .eq('id', workspaceId)
-        .single();
-      if (workspace?.company_id) {
-        const { data: company } = await supabase
-          .from('companies')
-          .select('billing_country')
-          .eq('id', workspace.company_id)
-          .single();
-        return company?.billing_country || null;
-      }
-      return null;
-    },
-    enabled: !!workspaceId,
-  });
+  const billingCountry = currentWorkspace?.billing_country;
+  const currencySymbol = billingCountry === 'IN' || billingCountry?.toLowerCase() === 'india' ? '₹' : '$';
 
   // Fetch workspace entitlements (free access grants)
   const { data: entitlementsData } = useQuery({
@@ -694,6 +679,7 @@ export default function OrgSubscriptionPage({
               <TableBody>
                 {seats.map((seat) => (
                   <ActiveModuleRow
+                    billingCountry={billingCountry}
                     key={seat.id}
                     seat={seat}
                     workspaceId={workspaceId}
@@ -911,6 +897,7 @@ export default function OrgSubscriptionPage({
         (((!isPaid || isTrial) && seats.length > 0) ||
           selectedNewItems.length > 0) && (
           <CheckoutBar
+            currencySymbol={currencySymbol}
             totalMonthly={totalMonthly}
             totalSeats={totalSeats}
             billingCycle={billingCycle}
@@ -919,6 +906,7 @@ export default function OrgSubscriptionPage({
             isTrialExpired={isTrialExpired}
             isPending={checkoutMutation.isPending}
             onCheckout={() => checkoutMutation.mutate()}
+            isPaid={isPaid}
           />
         )}
 
@@ -1028,23 +1016,28 @@ export default function OrgSubscriptionPage({
               Cancel
             </Button>
             <Button
-              disabled={!canManageSubscription}
+              disabled={!canManageSubscription || isDirectUpdating}
               onClick={async () => {
                 if (!canManageSubscription) return;
-
-                await handleDirectUpdate(
-                  seatUpdateDialog.seatId,
-                  seatUpdateDialog.newSeats,
-                );
-                setSeatUpdateDialog({
-                  open: false,
-                  seatId: '',
-                  displayName: '',
-                  currentSeats: 0,
-                  newSeats: 0,
-                });
+                setIsDirectUpdating(true);
+                try {
+                  await handleDirectUpdate(
+                    seatUpdateDialog.seatId,
+                    seatUpdateDialog.newSeats,
+                  );
+                } finally {
+                  setIsDirectUpdating(false);
+                  setSeatUpdateDialog({
+                    open: false,
+                    seatId: '',
+                    displayName: '',
+                    currentSeats: 0,
+                    newSeats: 0,
+                  });
+                }
               }}
             >
+              {isDirectUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Confirm Update
             </Button>
           </DialogFooter>
@@ -1553,10 +1546,11 @@ function AvailableModuleCard({
     <Package className="h-5 w-5" />
   );
 
-  const pricePerSeat =
-    billingCycle === 'yearly'
-      ? product.yearly_price_per_seat
-      : product.monthly_price_per_seat;
+  const { price: pricePerSeat, currencySymbol } = getPriceAndCurrency(
+    product,
+    billingCountry,
+    billingCycle,
+  );
 
   const period = billingCycle === 'yearly' ? 'yr' : 'mo';
 
@@ -1714,6 +1708,7 @@ function CheckoutBar({
   isPending,
   onCheckout,
   currencySymbol,
+  isPaid,
 }: {
   totalMonthly: number;
   totalSeats: number;
@@ -1724,6 +1719,7 @@ function CheckoutBar({
   isPending: boolean;
   onCheckout: () => void;
   currencySymbol?: string;
+  isPaid: boolean;
 }) {
   const ctaLabel = isTrialExpired
     ? 'Subscribe Now'
@@ -1732,6 +1728,9 @@ function CheckoutBar({
         ? 'Subscribe with Changes'
         : 'Subscribe Now'
       : 'Proceed to Payment';
+
+  const periodLabel = billingCycle === 'yearly' ? 'New Yearly Total' : 'New Monthly Total';
+  const normalPeriodLabel = billingCycle === 'yearly' ? 'Total Yearly' : 'Total Monthly';
 
   return (
     <Card className="sticky bottom-0 z-10 border-t shadow-lg">
@@ -1750,13 +1749,18 @@ function CheckoutBar({
         </div>
 
         <div className="flex items-center gap-6">
-          <div className="flex items-baseline gap-0.5">
-            <span className="text-foreground text-xl font-bold">
-              {currencySymbol}{totalMonthly}
+          <div className="flex flex-col items-end mr-2">
+            <span className="text-muted-foreground text-[10px] uppercase tracking-wider font-bold">
+              {isPaid ? periodLabel : normalPeriodLabel}
             </span>
-            <span className="text-muted-foreground text-sm">
-              {billingCycle === 'yearly' ? '/yr' : '/mo'}
-            </span>
+            <div className="flex items-baseline gap-0.5">
+              <span className="text-foreground text-xl font-bold">
+                {currencySymbol}{totalMonthly}
+              </span>
+              <span className="text-muted-foreground text-sm">
+                {billingCycle === 'yearly' ? '/yr' : '/mo'}
+              </span>
+            </div>
           </div>
 
           {isPending ? (

@@ -101,7 +101,7 @@ export const createMultiProductCheckout = catchAsync(
     const { data: products, error: productsError } = await adminClient
       .from('subscription_products')
       .select(
-        'id, product_key, display_name, stripe_product_id, stripe_monthly_price_id, stripe_yearly_price_id, min_seats',
+        'id, product_key, display_name, stripe_product_id, stripe_monthly_price_id, stripe_yearly_price_id, stripe_india_monthly_price_id, stripe_india_yearly_price_id, min_seats',
       )
       .in('product_key', productKeys)
       .eq('is_active', true);
