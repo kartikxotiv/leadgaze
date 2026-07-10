@@ -14,9 +14,10 @@ WHERE product_id IN (
   SELECT id FROM public.subscription_products WHERE product_key = 'hrms'
 );
 
--- Delete HRMS specific workspace members
+-- Delete HRMS specific workspace members referencing HRMS roles or product key
 DELETE FROM public.workspace_members
-WHERE product_key = 'hrms';
+WHERE product_key = 'hrms'
+   OR role_id IN (SELECT id FROM public.workspace_roles WHERE product_key = 'hrms');
 
 -- Delete HRMS specific workspace roles
 DELETE FROM public.workspace_roles
