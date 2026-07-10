@@ -51,9 +51,9 @@ export function AssignUserModal({
 
   // Get all workspace members
   const { data: members = [], isLoading: membersLoading } = useQuery({
-    queryKey: ['workspace-members', workspaceId],
+    queryKey: ['workspace-members', workspaceId, 'sales'],
     queryFn: async () => {
-      const res = await getWorkspaceMembersService(workspaceId);
+      const res = await getWorkspaceMembersService(workspaceId, 'sales');
 
       return res;
     },
