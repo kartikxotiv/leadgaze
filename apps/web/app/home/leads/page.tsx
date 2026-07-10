@@ -774,14 +774,14 @@ export default function LeadsPage() {
             clearUpdatedOnRange();
           }}
           actions={[
-            // {
-            //   key: 'import',
-            //   label: 'Import',
-            //   icon: FileUp,
-            //   onClick: () => setIsImportDialogOpen(true),
-            //   show: canAccess('leads', 'import'),
-            //   buttonVariant: 'outline',
-            // },
+            {
+              key: 'import',
+              label: 'Import',
+              icon: FileUp,
+              onClick: () => setIsImportDialogOpen(true),
+              show: canAccess('leads', 'import'),
+              buttonVariant: 'outline',
+            },
             {
               key: 'add',
               label: 'New Lead',
