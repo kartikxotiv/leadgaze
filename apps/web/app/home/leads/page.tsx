@@ -413,11 +413,20 @@ export default function LeadsPage() {
       { key: 'source_id', label: 'Source' },
       { key: 'trigger', label: 'Trigger' },
       { key: 'notes', label: 'Notes' },
+      { key: 'owner_id', label: 'Owner ID' },
+      { key: 'tags', label: 'Tags' },
+      { key: 'annual_revenue', label: 'Annual Revenue' },
+      { key: 'lead_score', label: 'Score' },
+      ...customFields.map((field) => ({
+        key: field.field_key,
+        label: field.field_label,
+        required: false,
+      })),
     ];
     return fieldPermissionCtx
       ? filterExportColumns(cols, fieldPermissionCtx)
       : cols;
-  }, [fieldPermissionCtx]);
+  }, [fieldPermissionCtx, customFields]);
 
   // Initialize column visibility (merged with DB preferences when available)
   const { visibility, toggleVisibility, isVisible, reset, mergeNewColumns } =

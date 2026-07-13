@@ -398,7 +398,7 @@ export const ListToolBar: React.FC<ListToolBarProps> = ({
                 )}
                 aria-label="Open filters"
               >
-                <Filter className="h-4 w-4 text-gray-500 dark:text-white" />
+                <Filter className="h-4 w-4 border-light-gray primary-text-medium text-leadgaze-dark dark:text-white" />
                 {activeFilterCount > 0 && (
                   <span className="ml-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#4eacff] text-[10px] font-bold text-white">
                     {activeFilterCount}
@@ -637,6 +637,7 @@ export const ListToolBar: React.FC<ListToolBarProps> = ({
           const Icon = action.icon;
           const isIconOnly = action.variant === 'icon';
           const btnVariant = action.buttonVariant ?? 'outline';
+          const iconKey = action.key;
 
           return (
             <Tooltip key={action.key}>
@@ -655,7 +656,7 @@ export const ListToolBar: React.FC<ListToolBarProps> = ({
                   )}
                   aria-label={action.label}
                 >
-                  <Icon className="h-4 w-4" />
+                  <Icon className={`h-4 w-4 ${iconKey === 'import' && 'border-light-gray primary-text-medium text-leadgaze-dark dark:text-white'}`} />
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="bottom">

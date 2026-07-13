@@ -11,6 +11,11 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from './popover';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from './tooltip';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -66,30 +71,37 @@ export const CsvExportButton: React.FC<CsvExportButtonProps> = ({
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          disabled={disabled || isExporting}
-          className={cn(
-            'relative h-9 shrink-0 gap-1.5 primary-text-medium dark:text-white',
-            className,
-          )}
-          aria-label="Export data"
-        >
-          {isExporting ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <FileDown className="h-4 w-4" />
-          )}
+      <Tooltip open={open ? false : undefined}>
+        <TooltipTrigger asChild>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              disabled={disabled || isExporting}
+              className={cn(
+                'relative h-9 shrink-0 gap-1.5 primary-text-medium dark:text-white',
+                className,
+              )}
+              aria-label="Export data"
+            >
+              {isExporting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <FileDown className="h-4 w-4 border-light-gray primary-text-medium text-leadgaze-dark dark:text-white" />
+              )}
 
-          {/* Selected-count badge — shown when rows are selected */}
-          {selectedCount > 0 && !isExporting && (
-            <span className="ml-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#4eacff] text-[10px] font-bold text-white">
-              {selectedCount > 99 ? '99+' : selectedCount}
-            </span>
-          )}
-        </Button>
-      </PopoverTrigger>
+              {/* Selected-count badge — shown when rows are selected */}
+              {selectedCount > 0 && !isExporting && (
+                <span className="ml-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#4eacff] text-[10px] font-bold text-white">
+                  {selectedCount > 99 ? '99+' : selectedCount}
+                </span>
+              )}
+            </Button>
+          </PopoverTrigger>
+        </TooltipTrigger>
+        <TooltipContent side="bottom">
+          <span>Export</span>
+        </TooltipContent>
+      </Tooltip>
 
       <PopoverContent
         className="w-52 p-1"
@@ -101,7 +113,7 @@ export const CsvExportButton: React.FC<CsvExportButtonProps> = ({
           className="flex w-full items-center gap-2.5 rounded-sm px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-800"
           onClick={handleExportAll}
         >
-          <Download className="h-4 w-4 shrink-0 text-gray-500 dark:text-gray-400" />
+          <Download className="h-4 w-4 border-light-gray primary-text-medium text-leadgaze-dark dark:text-white" />
           <span className="font-medium">Export All</span>
         </button>
 
@@ -121,7 +133,7 @@ export const CsvExportButton: React.FC<CsvExportButtonProps> = ({
               : `Export ${selectedCount} selected row${selectedCount > 1 ? 's' : ''}`
           }
         >
-          <CheckSquare className="h-4 w-4 shrink-0 text-gray-500 dark:text-gray-400" />
+          <CheckSquare className="h-4 w-4 border-light-gray primary-text-medium text-leadgaze-dark dark:text-white" />
           <span className="font-medium">
             Export Selected
             {selectedCount > 0 && (

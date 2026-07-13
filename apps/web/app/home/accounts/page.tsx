@@ -5,7 +5,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { useQuery } from '@tanstack/react-query';
-import { FileDown, Plus } from 'lucide-react';
+import { FileDown, FileUp, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { useUser } from '@kit/supabase/hooks/use-user';
@@ -17,6 +17,7 @@ import { ColumnEditModal } from '@kit/ui/column-edit-modal';
 import type { ColumnEditFieldShape } from '@kit/ui/column-edit-modal';
 import { ColumnHeader } from '@kit/ui/column-header';
 import { CsvExportButton } from '@kit/ui/csv-export-button';
+import { CsvImportDialog } from '@kit/ui/csv-import-dialog';
 import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
 import CustomTableContainer from '@kit/ui/custom-table-container';
 import { ListToolBar } from '@kit/ui/list-toolbar';
@@ -38,6 +39,7 @@ import { useDateRangeFilter } from '@kit/ui/use-date-range-filter';
 import { useTableSort } from '@kit/ui/use-table-sort';
 import { cn } from '@kit/ui/utils';
 
+import { filterExportColumns } from '~/lib/field-permission';
 import { useDebounce } from '~/lib/hooks/use-debounce';
 import {
   useCreateField,
@@ -128,6 +130,7 @@ export default function AccountsPage() {
     [],
   );
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [accountToDelete, setAccountToDelete] = useState<Account | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -315,6 +318,33 @@ export default function AccountsPage() {
       required: false,
     })),
   ];
+
+  const importColumns = useMemo(() => {
+    const cols = [
+      { key: 'account_name', label: 'Account Name', required: true },
+      { key: 'website', label: 'Website' },
+      { key: 'phone_number', label: 'Phone Number' },
+      { key: 'industry_id', label: 'Industry' },
+      { key: 'company_size', label: 'Company Size' },
+      { key: 'account_type', label: 'Account Type' },
+      { key: 'billing_street', label: 'Street Address' },
+      { key: 'billing_city', label: 'City' },
+      { key: 'billing_state', label: 'State/Province' },
+      { key: 'billing_postal_code', label: 'Postal Code' },
+      { key: 'billing_country', label: 'Country' },
+      { key: 'description', label: 'Description' },
+      { key: 'owner_id', label: 'Owner ID' },
+      { key: 'tags', label: 'Tags' },
+      ...customFields.map((field) => ({
+        key: field.field_key,
+        label: field.field_label,
+        required: false,
+      })),
+    ];
+    return _fieldPermissionCtx
+      ? filterExportColumns(cols, _fieldPermissionCtx)
+      : cols;
+  }, [_fieldPermissionCtx, customFields]);
 
   const { visibility, toggleVisibility, isVisible, reset, mergeNewColumns } =
     useColumnVisibility('accounts', mergedDefaults);
@@ -807,6 +837,14 @@ export default function AccountsPage() {
           }}
           actions={[
             {
+              key: 'import',
+              label: 'Import',
+              icon: FileUp,
+              onClick: () => setIsImportDialogOpen(true),
+              show: canAccess('accounts', 'import'),
+              buttonVariant: 'outline',
+            },
+            {
               key: 'add',
               label: 'New Account',
               icon: Plus,
@@ -1156,6 +1194,20 @@ export default function AccountsPage() {
           open={createDialogOpen}
           onOpenChange={setCreateDialogOpen}
           onSuccess={() => refetch()}
+        />
+
+        <CsvImportDialog
+          open={isImportDialogOpen}
+          onOpenChange={setIsImportDialogOpen}
+          title="Import Accounts from CSV"
+          description="Upload a CSV, match each header to a database column, and save the adjusted file before the API upload step."
+          columns={importColumns}
+          onUpload={async ({ formData, file }) => {
+            console.log('CSV ready for upload', {
+              fileName: file.name,
+              formData,
+            });
+          }}
         />
 
         <AddColumnModal

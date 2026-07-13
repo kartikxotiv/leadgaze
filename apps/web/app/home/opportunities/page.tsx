@@ -5,7 +5,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { useQuery } from '@tanstack/react-query';
-import { Plus } from 'lucide-react';
+import { FileUp, Plus } from 'lucide-react';
 
 import { convertFromUSD, findLatestRateToUsd } from '@kit/shared/currency';
 import type { ExchangeRateRecord } from '@kit/shared/currency';
@@ -20,6 +20,8 @@ import type { ColumnEditFieldShape } from '@kit/ui/column-edit-modal';
 import { ColumnHeader } from '@kit/ui/column-header';
 import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
 import { CsvExportButton } from '@kit/ui/csv-export-button';
+import { CsvImportDialog } from '@kit/ui/csv-import-dialog';
+import { filterExportColumns } from '~/lib/field-permission';
 import CustomTableContainer from '@kit/ui/custom-table-container';
 import { ListToolBar } from '@kit/ui/list-toolbar';
 import type { FilterGroup } from '@kit/ui/list-toolbar';
@@ -185,6 +187,7 @@ export default function OpportunitiesPage() {
   const [selectedStage, setSelectedStage] = useState<string>('all');
   const [selectedCreatedId, setSelectedCreatedId] = useState<string>('all');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [opportunityToDelete, setOpportunityToDelete] =
     useState<Opportunity | null>(null);
@@ -367,6 +370,33 @@ export default function OpportunitiesPage() {
       required: false,
     })),
   ];
+
+  const importColumns = useMemo(() => {
+    const cols = [
+      { key: 'opportunity_name', label: 'Opportunity Name', required: true },
+      { key: 'account_id', label: 'Account ID', required: true },
+      { key: 'stage_id', label: 'Stage ID', required: true },
+      { key: 'amount', label: 'Amount' },
+      { key: 'currency', label: 'Currency' },
+      { key: 'probability', label: 'Probability (%)' },
+      { key: 'expected_close_date', label: 'Expected Close Date' },
+      { key: 'priority', label: 'Priority' },
+      { key: 'opportunity_type', label: 'Opportunity Type' },
+      { key: 'lead_source', label: 'Lead Source' },
+      { key: 'description', label: 'Description' },
+      { key: 'competitor', label: 'Competitor' },
+      { key: 'owner_id', label: 'Owner ID' },
+      { key: 'tags', label: 'Tags' },
+      ...customFields.map((field) => ({
+        key: field.field_key,
+        label: field.field_label,
+        required: false,
+      })),
+    ];
+    return _fieldPermissionCtx
+      ? filterExportColumns(cols, _fieldPermissionCtx)
+      : cols;
+  }, [_fieldPermissionCtx, customFields]);
 
   const { visibility, toggleVisibility, isVisible, reset, mergeNewColumns } =
     useColumnVisibility('opportunities', mergedDefaults);
@@ -1102,6 +1132,14 @@ export default function OpportunitiesPage() {
           onClearFilters={handleClearFilters}
           actions={[
             {
+              key: 'import',
+              label: 'Import',
+              icon: FileUp,
+              onClick: () => setIsImportDialogOpen(true),
+              show: canAccess('opportunities', 'import'),
+              buttonVariant: 'outline',
+            },
+            {
               key: 'add',
               label: 'New Opportunity',
               icon: Plus,
@@ -1485,6 +1523,20 @@ export default function OpportunitiesPage() {
         <OpportunityDialog
           isOpen={isCreateDialogOpen}
           onOpenChange={setIsCreateDialogOpen}
+        />
+
+        <CsvImportDialog
+          open={isImportDialogOpen}
+          onOpenChange={setIsImportDialogOpen}
+          title="Import Opportunities from CSV"
+          description="Upload a CSV, match each header to a database column, and save the adjusted file before the API upload step."
+          columns={importColumns}
+          onUpload={async ({ formData, file }) => {
+            console.log('CSV ready for upload', {
+              fileName: file.name,
+              formData,
+            });
+          }}
         />
 
         <AddColumnModal

@@ -5,7 +5,7 @@ import { useCallback, useMemo, useState } from 'react';
 import Link from 'next/link';
 
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { Check, Loader2, Plus, User } from 'lucide-react';
+import { Check, FileUp, Loader2, Plus, User } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { useLocalization } from '@kit/shared/localization';
@@ -111,6 +111,8 @@ export function ServiceCloudTicketsPage({
   canEditField,
   currentUserId,
   teamMembers = [],
+  canImport = false,
+  onImportClick,
 }: {
   workspaceId: string;
   isAdmin?: boolean;
@@ -124,6 +126,8 @@ export function ServiceCloudTicketsPage({
   canEditField?: (fieldKey: string) => boolean;
   currentUserId?: string;
   teamMembers?: any[];
+  canImport?: boolean;
+  onImportClick?: () => void;
 }) {
   const { formatDate } = useLocalization();
   const router = useRouter();
@@ -630,8 +634,19 @@ export function ServiceCloudTicketsPage({
             </Tooltip>
           </div>
         }
-        actions={
-          canCreate
+        actions={[
+          ...(canImport && onImportClick
+            ? [
+                {
+                  key: 'import',
+                  label: 'Import',
+                  icon: FileUp,
+                  onClick: onImportClick,
+                  buttonVariant: 'outline' as const,
+                },
+              ]
+            : []),
+          ...(canCreate
             ? [
                 {
                   key: 'create',
@@ -641,8 +656,8 @@ export function ServiceCloudTicketsPage({
                   buttonVariant: 'default' as const,
                 },
               ]
-            : []
-        }
+            : []),
+        ]}
         fields={[
           {
             key: 'subject',

@@ -5,7 +5,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { useQuery } from '@tanstack/react-query';
-import { FileDown, Plus } from 'lucide-react';
+import { FileDown, FileUp, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@kit/ui/button';
@@ -37,6 +37,8 @@ import { ColumnEditModal } from '@kit/ui/column-edit-modal';
 import type { ColumnEditFieldShape } from '@kit/ui/column-edit-modal';
 import { ColumnHeader } from '@kit/ui/column-header';
 import { CsvExportButton } from '@kit/ui/csv-export-button';
+import { CsvImportDialog } from '@kit/ui/csv-import-dialog';
+import { filterExportColumns } from '~/lib/field-permission';
 import { useDebounce } from '~/lib/hooks/use-debounce';
 import {
   useCreateField,
@@ -148,6 +150,7 @@ export default function ContactsPage() {
     [],
   );
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [contactToDelete, setContactToDelete] = useState<Contact | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -313,6 +316,42 @@ export default function ContactsPage() {
     () => (columnId: string) => isVisible(columnId) && canViewColumn(columnId),
     [isVisible, canViewColumn],
   );
+
+  const importColumns = useMemo(() => {
+    const cols = [
+      { key: 'first_name', label: 'First Name', required: true },
+      { key: 'last_name', label: 'Last Name' },
+      { key: 'email', label: 'Email' },
+      { key: 'alt_email', label: 'Alt Email' },
+      { key: 'phone_number', label: 'Phone' },
+      { key: 'mobile_number', label: 'Mobile' },
+      { key: 'alt_phone', label: 'Alt Phone' },
+      { key: 'job_title', label: 'Job Title' },
+      { key: 'department', label: 'Department' },
+      { key: 'account_id', label: 'Account ID' },
+      { key: 'status_id', label: 'Status ID' },
+      { key: 'owner_id', label: 'Owner ID' },
+      { key: 'is_primary', label: 'Is Primary' },
+      { key: 'do_not_call', label: 'Do Not Call' },
+      { key: 'do_not_email', label: 'Do Not Email' },
+      { key: 'email_bounced', label: 'Email Bounced' },
+      { key: 'location', label: 'Location' },
+      { key: 'timezone', label: 'Timezone' },
+      { key: 'language', label: 'Language' },
+      { key: 'preferred_contact_method', label: 'Preferred Contact Method' },
+      { key: 'linkedin_url', label: 'LinkedIn URL' },
+      { key: 'twitter_handle', label: 'Twitter Handle' },
+      { key: 'notes', label: 'Notes' },
+      ...customFields.map((field) => ({
+        key: field.field_key,
+        label: field.field_label,
+        required: false,
+      })),
+    ];
+    return _fieldPermissionCtx
+      ? filterExportColumns(cols, _fieldPermissionCtx)
+      : cols;
+  }, [_fieldPermissionCtx, customFields]);
 
   const openColumnEdit = (fieldKey: string) => {
     const existing = getEntityFieldByKey(fieldKey);
@@ -771,6 +810,14 @@ export default function ContactsPage() {
           }}
           actions={[
             {
+              key: 'import',
+              label: 'Import',
+              icon: FileUp,
+              onClick: () => setIsImportDialogOpen(true),
+              show: canAccess('contacts', 'import'),
+              buttonVariant: 'outline',
+            },
+            {
               key: 'add',
               label: 'New Contact',
               icon: Plus,
@@ -1090,6 +1137,20 @@ export default function ContactsPage() {
           open={createDialogOpen}
           onOpenChange={setCreateDialogOpen}
           onSuccess={() => refetch()}
+        />
+
+        <CsvImportDialog
+          open={isImportDialogOpen}
+          onOpenChange={setIsImportDialogOpen}
+          title="Import Contacts from CSV"
+          description="Upload a CSV, match each header to a database column, and save the adjusted file before the API upload step."
+          columns={importColumns}
+          onUpload={async ({ formData, file }) => {
+            console.log('CSV ready for upload', {
+              fileName: file.name,
+              formData,
+            });
+          }}
         />
 
         <AddColumnModal

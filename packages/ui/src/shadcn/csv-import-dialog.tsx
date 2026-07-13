@@ -334,7 +334,7 @@ export function CsvImportDialog({
                 onDrop={handleDrop}
               >
                 <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-sm dark:bg-slate-950">
-                  <FileUp className="h-7 w-7 text-sky-600" />
+                  <FileUp className="h-7 w-7 border-light-gray primary-text-medium text-leadgaze-dark dark:text-white" />
                 </div>
                 <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
                   Drop your CSV file here

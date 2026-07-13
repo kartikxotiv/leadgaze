@@ -6,6 +6,8 @@ import { ServiceCloudTicketsPage } from '@kit/service-cloud';
 import { AddColumnModal } from '@kit/ui/add-column-modal';
 import { ColumnEditModal } from '@kit/ui/column-edit-modal';
 import type { ColumnEditFieldShape } from '@kit/ui/column-edit-modal';
+import { CsvImportDialog } from '@kit/ui/csv-import-dialog';
+import { filterExportColumns } from '~/lib/field-permission';
 
 import {
   type EntityField,
@@ -35,8 +37,8 @@ export default function ServiceCloudTicketsRoute() {
   const { currentWorkspace, canAccess, user } = useRBAC();
   const workspaceId = currentWorkspace?.id;
 
-  // Modals state
   const [addColumnModalOpen, setAddColumnModalOpen] = useState(false);
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [editingField, setEditingField] = useState<EntityField | null>(null);
 
   const productKey = 'service-cloud';
@@ -77,12 +79,36 @@ export default function ServiceCloudTicketsRoute() {
   });
 
   // 4. Field-Level Security (FLS): which columns can the current user view/edit?
-  const { canViewColumn, canEdit: canEditTicketField } = useFieldPermissions({
+  const { canViewColumn, canEdit: canEditTicketField, ctx: fieldPermissionCtx } = useFieldPermissions({
     entityType,
     workspaceId: workspaceId,
     enabled: !!workspaceId && !!user?.id,
     productKey,
   });
+
+  const importColumns = useMemo(() => {
+    const cols = [
+      { key: 'subject', label: 'Subject', required: true },
+      { key: 'description', label: 'Description' },
+      { key: 'status_id', label: 'Status', required: true },
+      { key: 'priority_id', label: 'Priority' },
+      { key: 'category_id', label: 'Category' },
+      { key: 'customer_id', label: 'Customer ID' },
+      { key: 'organization_id', label: 'Organization ID' },
+      { key: 'owner_id', label: 'Owner ID' },
+      { key: 'tags', label: 'Tags' },
+      ...allEntityFields
+        .filter((f) => !f.is_system)
+        .map((field) => ({
+          key: field.field_key,
+          label: field.field_label,
+          required: false,
+        })),
+    ];
+    return fieldPermissionCtx
+      ? filterExportColumns(cols, fieldPermissionCtx)
+      : cols;
+  }, [fieldPermissionCtx, allEntityFields]);
 
   const createField = useCreateField();
   const updateField = useUpdateField();
@@ -204,6 +230,22 @@ export default function ServiceCloudTicketsRoute() {
         canViewColumn={canViewColumn}
         canEditField={canEditTicketField}
         currentUserId={user?.id}
+        canImport={canAccess('service_cloud', 'import')}
+        onImportClick={() => setIsImportDialogOpen(true)}
+      />
+
+      <CsvImportDialog
+        open={isImportDialogOpen}
+        onOpenChange={setIsImportDialogOpen}
+        title="Import Tickets from CSV"
+        description="Upload a CSV, match each header to a database column, and save the adjusted file before the API upload step."
+        columns={importColumns}
+        onUpload={async ({ formData, file }) => {
+          console.log('CSV ready for upload', {
+            fileName: file.name,
+            formData,
+          });
+        }}
       />
 
       <AddColumnModal
