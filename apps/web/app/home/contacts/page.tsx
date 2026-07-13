@@ -4,7 +4,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 
 import { useRouter } from 'next/navigation';
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { FileDown, FileUp, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -143,6 +143,7 @@ function ContactsPageSkeleton() {
 
 export default function ContactsPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { currentWorkspace: workspace, canAccess, user } = useRBAC();
   const { formatDate } = useLocalization();
   const [searchTerm, setSearchTerm] = useState('');
@@ -518,6 +519,34 @@ export default function ContactsPage() {
   });
 
   const contacts = contactsData.data;
+
+  const importMutation = useMutation({
+    mutationFn: async (payload: any[]) => {
+      const res = await fetch('/api/contacts/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          workspaceId: workspace?.id,
+          data: payload,
+        }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || 'Failed to import contacts');
+      }
+
+      return res.json();
+    },
+    onSuccess: (data, variables) => {
+      toast.success(`Imported ${variables.length} contacts successfully`);
+      queryClient.invalidateQueries({ queryKey: ['contacts'] });
+      refetch();
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'An error occurred during import');
+    },
+  });
   const totalCount = contactsData.count;
 
   // Reset to first page + selection when filters change
@@ -1145,11 +1174,31 @@ export default function ContactsPage() {
           title="Import Contacts from CSV"
           description="Upload a CSV, match each header to a database column, and save the adjusted file before the API upload step."
           columns={importColumns}
-          onUpload={async ({ formData, file }) => {
-            console.log('CSV ready for upload', {
-              fileName: file.name,
-              formData,
+          onUpload={async ({ headers, rows }) => {
+            const customFieldKeys = new Set(customFields.map((cf) => cf.field_key));
+
+            const payload = rows.map((row) => {
+              const obj: any = { custom_fields: {} };
+              headers.forEach((header, index) => {
+                if (!header) return;
+                const val = row[index];
+                if (val === undefined || val === '') return;
+
+                if (customFieldKeys.has(header)) {
+                  obj.custom_fields[header] = val;
+                } else {
+                  obj[header] = val;
+                }
+              });
+              return obj;
             });
+
+            try {
+              await importMutation.mutateAsync(payload);
+              setIsImportDialogOpen(false);
+            } catch (error: any) {
+              // error is already handled by onError in mutation
+            }
           }}
         />
 

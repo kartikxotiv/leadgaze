@@ -4,7 +4,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 
 import { useRouter } from 'next/navigation';
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { FileUp, Plus } from 'lucide-react';
 
 import { convertFromUSD, findLatestRateToUsd } from '@kit/shared/currency';
@@ -168,6 +168,7 @@ function OpportunitiesPageSkeleton() {
 
 export default function OpportunitiesPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { currentWorkspace: workspace, user, canAccess } = useRBAC();
   const { formatDate, formatCurrency } = useLocalization();
   const supabase = useSupabase();
@@ -600,6 +601,34 @@ export default function OpportunitiesPage() {
         updatedAtTo: computedUpdatedOnDates?.to ?? undefined,
       }),
     enabled: !!workspace?.id,
+  });
+
+  const importMutation = useMutation({
+    mutationFn: async (payload: any[]) => {
+      const res = await fetch('/api/opportunities/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          workspaceId: workspace?.id,
+          data: payload,
+        }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || 'Failed to import opportunities');
+      }
+
+      return res.json();
+    },
+    onSuccess: (data, variables) => {
+      toast.success(`Imported ${variables.length} opportunities successfully`);
+      queryClient.invalidateQueries({ queryKey: ['opportunities'] });
+      refetch();
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'An error occurred during import');
+    },
   });
 
   const { data: stages = [] } = useQuery<
@@ -1531,11 +1560,31 @@ export default function OpportunitiesPage() {
           title="Import Opportunities from CSV"
           description="Upload a CSV, match each header to a database column, and save the adjusted file before the API upload step."
           columns={importColumns}
-          onUpload={async ({ formData, file }) => {
-            console.log('CSV ready for upload', {
-              fileName: file.name,
-              formData,
+          onUpload={async ({ headers, rows }) => {
+            const customFieldKeys = new Set(customFields.map((cf) => cf.field_key));
+
+            const payload = rows.map((row) => {
+              const obj: any = { custom_fields: {} };
+              headers.forEach((header, index) => {
+                if (!header) return;
+                const val = row[index];
+                if (val === undefined || val === '') return;
+
+                if (customFieldKeys.has(header)) {
+                  obj.custom_fields[header] = val;
+                } else {
+                  obj[header] = val;
+                }
+              });
+              return obj;
             });
+
+            try {
+              await importMutation.mutateAsync(payload);
+              setIsImportDialogOpen(false);
+            } catch (error: any) {
+              // error is already handled by onError in mutation
+            }
           }}
         />
 

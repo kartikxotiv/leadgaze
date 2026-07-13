@@ -2,6 +2,9 @@
 
 import React, { useMemo, useState } from 'react';
 
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
+
 import { ServiceCloudTicketsPage } from '@kit/service-cloud';
 import { AddColumnModal } from '@kit/ui/add-column-modal';
 import { ColumnEditModal } from '@kit/ui/column-edit-modal';
@@ -40,6 +43,37 @@ export default function ServiceCloudTicketsRoute() {
   const [addColumnModalOpen, setAddColumnModalOpen] = useState(false);
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [editingField, setEditingField] = useState<EntityField | null>(null);
+
+  const queryClient = useQueryClient();
+
+  const importMutation = useMutation({
+    mutationFn: async (payload: any[]) => {
+      const res = await fetch('/api/services/tickets/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          workspaceId: workspaceId,
+          data: payload,
+        }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || 'Failed to import tickets');
+      }
+
+      return res.json();
+    },
+    onSuccess: (data, variables) => {
+      toast.success(`Imported ${variables.length} tickets successfully`);
+      // Invalidating all queries as a fallback, and then reloading the page
+      queryClient.invalidateQueries();
+      window.location.reload();
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'An error occurred during import');
+    },
+  });
 
   const productKey = 'service-cloud';
   const entityType = 'tickets';
@@ -240,11 +274,24 @@ export default function ServiceCloudTicketsRoute() {
         title="Import Tickets from CSV"
         description="Upload a CSV, match each header to a database column, and save the adjusted file before the API upload step."
         columns={importColumns}
-        onUpload={async ({ formData, file }) => {
-          console.log('CSV ready for upload', {
-            fileName: file.name,
-            formData,
+        onUpload={async ({ headers, rows }) => {
+          const payload = rows.map((row) => {
+            const obj: any = {};
+            headers.forEach((header, index) => {
+              if (!header) return;
+              const val = row[index];
+              if (val === undefined || val === '') return;
+              obj[header] = val;
+            });
+            return obj;
           });
+
+            try {
+              await importMutation.mutateAsync(payload);
+              setIsImportDialogOpen(false);
+            } catch (error: any) {
+              // error is already handled by onError in mutation
+            }
         }}
       />
 

@@ -111,9 +111,7 @@ export function CsvImportDialog({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [headerRows, setHeaderRows] = useState<CsvHeaderRow[]>([]);
   const [rows, setRows] = useState<string[][]>([]);
-  const [hasSavedHeaders, setHasSavedHeaders] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -144,7 +142,7 @@ export function CsvImportDialog({
     [requiredColumns, headerRows],
   );
 
-  const isReadyToSave =
+  const isReadyToUpload =
     Boolean(selectedFile) &&
     headerRows.length > 0 &&
     missingRequired.length === 0;
@@ -155,9 +153,7 @@ export function CsvImportDialog({
     setSelectedFile(null);
     setHeaderRows([]);
     setRows([]);
-    setHasSavedHeaders(false);
     setIsDragging(false);
-    setIsSaving(false);
     setIsUploading(false);
     setErrorMessage(null);
   };
@@ -187,7 +183,6 @@ export function CsvImportDialog({
         })),
       );
       setRows(fileRows);
-      setHasSavedHeaders(false);
       setErrorMessage(null);
     } catch (error) {
       const msg = error instanceof Error ? error.message : 'Unable to read the CSV file.';
@@ -220,36 +215,19 @@ export function CsvImportDialog({
     setHeaderRows((prev) =>
       prev.map((h) => (h.id === headerId ? { ...h, mappedKey: newKey } : h)),
     );
-    setHasSavedHeaders(false);
   };
 
   const handleRemoveColumn = (headerId: string, colIndex: number) => {
     setHeaderRows((prev) => prev.filter((h) => h.id !== headerId));
     setRows((prev) => prev.map((r) => r.filter((_, i) => i !== colIndex)));
-    setHasSavedHeaders(false);
   };
 
-  /* ─── save / upload ────────────────────────────────────────────────────── */
-
-  const handleSaveHeaders = async () => {
-    if (!selectedFile) return;
-    if (!isReadyToSave) {
-      toast.error('Please map all required columns before saving.');
-      return;
-    }
-    setIsSaving(true);
-    try {
-      setHasSavedHeaders(true);
-      toast.success('Column mapping saved.');
-    } finally {
-      setIsSaving(false);
-    }
-  };
+  /* ─── upload ───────────────────────────────────────────────────────────── */
 
   const handleUpload = async () => {
     if (!selectedFile) return;
-    if (!hasSavedHeaders) {
-      toast.error('Save the header changes before uploading.');
+    if (!isReadyToUpload) {
+      toast.error('Please map all required columns before uploading.');
       return;
     }
     setIsUploading(true);
@@ -263,7 +241,7 @@ export function CsvImportDialog({
         .filter((i) => headerRows[i]!.mappedKey && headerRows[i]!.mappedKey !== IGNORE_VALUE);
 
       const finalHeaders = activeIndices.map((i) => activeHeaders[i]!);
-      const finalRows = rows.map((row) => activeIndices.map((i) => row[i] ?? ''));
+      const finalRows = rows.map((row) => activeIndices.map((i) => (row[i] || '').trim()));
 
       const normalizedFile = createCsvFile(
         finalHeaders,
@@ -285,11 +263,8 @@ export function CsvImportDialog({
       };
 
       await onUpload?.(result);
-      toast.success('CSV uploaded successfully.');
-      onOpenChange(false);
     } catch (error) {
-      const msg = error instanceof Error ? error.message : 'Failed to upload the CSV.';
-      toast.error(msg);
+      console.error('CSV Upload Error:', error);
     } finally {
       setIsUploading(false);
     }
@@ -609,22 +584,15 @@ export function CsvImportDialog({
             <div className="flex items-center gap-2 text-sm text-slate-500">
               <span className="font-medium">{requiredColumns.length} required</span>
               <span className="text-slate-300 dark:text-slate-600">·</span>
-              <span>Map all required fields, then save before uploading.</span>
+              <span>Map all required fields before uploading.</span>
             </div>
             <div className="flex items-center gap-2">
               <Button variant="outline" onClick={handleBrowse}>
                 Upload another file
               </Button>
               <Button
-                variant="outline"
-                onClick={handleSaveHeaders}
-                disabled={!isReadyToSave || isSaving}
-              >
-                {isSaving ? 'Saving...' : saveButtonLabel}
-              </Button>
-              <Button
                 onClick={handleUpload}
-                disabled={!hasSavedHeaders || isUploading}
+                disabled={!isReadyToUpload || isUploading}
                 className="gap-2"
               >
                 <Upload className="h-4 w-4" />
