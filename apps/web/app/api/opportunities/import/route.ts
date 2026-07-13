@@ -27,6 +27,14 @@ const importOpportunities = catchAsync(async ({ request }: { request: NextReques
     .eq('module_key', 'opportunities')
     .single();
 
+  const sanitizeNumber = (val: any) => {
+    if (val === undefined || val === null || val === '') return null;
+    if (typeof val === 'number') return val;
+    const cleaned = String(val).replace(/[^0-9.-]+/g, '');
+    const parsed = parseFloat(cleaned);
+    return isNaN(parsed) ? null : parsed;
+  };
+
   // 2. Pre-fetch dictionaries for mapping
   const [
     { data: stagesData },
@@ -95,6 +103,10 @@ const importOpportunities = catchAsync(async ({ request }: { request: NextReques
     if (cleanedRow.owner_id && !uuidRegex.test(cleanedRow.owner_id)) {
       cleanedRow.owner_id = user.id;
     }
+
+    // 7. Sanitize Numbers
+    if (cleanedRow.amount !== undefined) cleanedRow.amount = sanitizeNumber(cleanedRow.amount);
+    if (cleanedRow.probability !== undefined) cleanedRow.probability = sanitizeNumber(cleanedRow.probability);
 
     return {
       workspace_id: workspaceId,

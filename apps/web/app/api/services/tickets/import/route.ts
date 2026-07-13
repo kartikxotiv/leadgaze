@@ -20,20 +20,26 @@ const importTickets = catchAsync(async ({ request }: { request: NextRequest }) =
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 
-  // 1. Pre-fetch dictionaries for mapping (all use 'name' instead of 'status_name')
+  // 1. Pre-fetch dictionaries for mapping
   const [
     { data: statusesData },
     { data: prioritiesData },
-    { data: categoriesData }
+    { data: categoriesData },
+    { data: customersData },
+    { data: organizationsData }
   ] = await Promise.all([
     supabase.schema('service_cloud').from('ticket_statuses').select('id, name, is_default').eq('workspace_id', workspaceId),
     supabase.schema('service_cloud').from('ticket_priorities').select('id, name, is_default').eq('workspace_id', workspaceId),
-    supabase.schema('service_cloud').from('ticket_categories').select('id, name').eq('workspace_id', workspaceId)
+    supabase.schema('service_cloud').from('ticket_categories').select('id, name').eq('workspace_id', workspaceId),
+    supabase.schema('service_cloud').from('customers').select('id, name, email').eq('workspace_id', workspaceId),
+    supabase.schema('service_cloud').from('organizations').select('id, name').eq('workspace_id', workspaceId)
   ]);
 
   const statuses = statusesData || [];
   const priorities = prioritiesData || [];
   const categories = categoriesData || [];
+  const customers = customersData || [];
+  const organizations = organizationsData || [];
   
   const defaultStatus = statuses.find((s) => s.is_default) || statuses[0];
   const defaultPriority = priorities.find((p) => p.is_default) || priorities[0];
@@ -72,16 +78,42 @@ const importTickets = catchAsync(async ({ request }: { request: NextRequest }) =
       }
     }
 
-    // 5. Assigned Agent ID Mapping (uses assignee_id in Tickets)
+    // 5. Customer Mapping
+    if (cleanedRow.customer_id) {
+      const search = cleanedRow.customer_id.toLowerCase();
+      const match = customers.find((c) => c.name?.toLowerCase() === search || c.email?.toLowerCase() === search);
+      if (match) {
+        cleanedRow.customer_id = match.id;
+      } else {
+        delete cleanedRow.customer_id;
+      }
+    }
+
+    // 6. Organization Mapping
+    if (cleanedRow.organization_id) {
+      const match = organizations.find((o) => o.name?.toLowerCase() === cleanedRow.organization_id.toLowerCase());
+      if (match) {
+        cleanedRow.organization_id = match.id;
+      } else {
+        delete cleanedRow.organization_id;
+      }
+    }
+
+    // 7. Assigned Agent ID Mapping (Frontend maps it as owner_id)
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    if (cleanedRow.assignee_id && !uuidRegex.test(cleanedRow.assignee_id)) {
-      cleanedRow.assignee_id = user.id;
+    if (cleanedRow.owner_id) {
+      if (!uuidRegex.test(cleanedRow.owner_id)) {
+        cleanedRow.assigned_agent_id = user.id;
+      } else {
+        cleanedRow.assigned_agent_id = cleanedRow.owner_id;
+      }
+      delete cleanedRow.owner_id;
     }
 
     return {
       workspace_id: workspaceId,
       created_by: user.id,
-      assignee_id: user.id,
+      assigned_agent_id: cleanedRow.assigned_agent_id || user.id,
       ...cleanedRow,
     };
   });

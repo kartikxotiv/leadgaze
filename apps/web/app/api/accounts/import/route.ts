@@ -26,6 +26,14 @@ const importAccounts = catchAsync(async ({ request }: { request: NextRequest }) 
     .select('id, industry_name')
     .eq('workspace_id', workspaceId);
 
+  const sanitizeNumber = (val: any) => {
+    if (val === undefined || val === null || val === '') return null;
+    if (typeof val === 'number') return val;
+    const cleaned = String(val).replace(/[^0-9.-]+/g, '');
+    const parsed = parseFloat(cleaned);
+    return isNaN(parsed) ? null : parsed;
+  };
+
   const industries = industriesData || [];
 
   const insertPayloads = data.map((row: any) => {
@@ -55,6 +63,10 @@ const importAccounts = catchAsync(async ({ request }: { request: NextRequest }) 
     if (cleanedRow.owner_id && !uuidRegex.test(cleanedRow.owner_id)) {
       cleanedRow.owner_id = user.id;
     }
+
+    // 4. Sanitize Numbers
+    if (cleanedRow.annual_revenue !== undefined) cleanedRow.annual_revenue = sanitizeNumber(cleanedRow.annual_revenue);
+    if (cleanedRow.employee_count !== undefined) cleanedRow.employee_count = sanitizeNumber(cleanedRow.employee_count);
 
     return {
       workspace_id: workspaceId,

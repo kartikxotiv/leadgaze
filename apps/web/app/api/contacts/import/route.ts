@@ -27,6 +27,13 @@ const importContacts = catchAsync(async ({ request }: { request: NextRequest }) 
     .eq('module_key', 'contacts')
     .single();
 
+  const sanitizeBoolean = (val: any) => {
+    if (val === undefined || val === null || val === '') return false;
+    if (typeof val === 'boolean') return val;
+    const str = String(val).trim().toLowerCase();
+    return str === 'true' || str === 'yes' || str === '1' || str === 'y' || str === 't';
+  };
+
   // 2. Pre-fetch dictionaries for mapping
   const [{ data: statusesData }, { data: accountsData }] = await Promise.all([
     module 
@@ -74,6 +81,12 @@ const importContacts = catchAsync(async ({ request }: { request: NextRequest }) 
     if (cleanedRow.owner_id && !uuidRegex.test(cleanedRow.owner_id)) {
       cleanedRow.owner_id = user.id;
     }
+
+    // 6. Sanitize Booleans
+    if (cleanedRow.is_primary !== undefined) cleanedRow.is_primary = sanitizeBoolean(cleanedRow.is_primary);
+    if (cleanedRow.do_not_call !== undefined) cleanedRow.do_not_call = sanitizeBoolean(cleanedRow.do_not_call);
+    if (cleanedRow.do_not_email !== undefined) cleanedRow.do_not_email = sanitizeBoolean(cleanedRow.do_not_email);
+    if (cleanedRow.email_bounced !== undefined) cleanedRow.email_bounced = sanitizeBoolean(cleanedRow.email_bounced);
 
     return {
       workspace_id: workspaceId,

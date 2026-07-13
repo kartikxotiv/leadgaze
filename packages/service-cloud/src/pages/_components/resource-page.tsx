@@ -650,7 +650,7 @@ export function ServiceCloudResourcePage({
                   ))}
                   {canEdit || canDelete ? (
                     onColumnAddClick ? (
-                      <TableHead className="sticky-right-header bg-background z-10 w-12 px-1 text-center">
+                      <TableHead className="sticky-right-header z-10 w-12 px-1 text-center">
                         <Button
                           type="button"
                           variant="outline"

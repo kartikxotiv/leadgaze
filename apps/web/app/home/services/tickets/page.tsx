@@ -64,11 +64,9 @@ export default function ServiceCloudTicketsRoute() {
 
       return res.json();
     },
-    onSuccess: (data, variables) => {
-      toast.success(`Imported ${variables.length} tickets successfully`);
-      // Invalidating all queries as a fallback, and then reloading the page
-      queryClient.invalidateQueries();
-      window.location.reload();
+    onSuccess: (data) => {
+      toast.success(`Imported ${data.count || 0} tickets successfully`);
+      queryClient.invalidateQueries({ queryKey: ['tickets'] });
     },
     onError: (error: any) => {
       toast.error(error.message || 'An error occurred during import');

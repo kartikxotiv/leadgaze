@@ -27,6 +27,14 @@ const importLeads = catchAsync(async ({ request }: { request: NextRequest }) => 
     .eq('module_key', 'leads')
     .single();
 
+  const sanitizeNumber = (val: any) => {
+    if (val === undefined || val === null || val === '') return null;
+    if (typeof val === 'number') return val;
+    const cleaned = String(val).replace(/[^0-9.-]+/g, '');
+    const parsed = parseFloat(cleaned);
+    return isNaN(parsed) ? null : parsed;
+  };
+
   // 2. Fetch all lead statuses for this workspace
   let statuses: any[] = [];
   if (module) {
@@ -95,11 +103,14 @@ const importLeads = catchAsync(async ({ request }: { request: NextRequest }) => 
     }
 
     // 7. Owner ID Mapping
-    // If the user typed a name instead of a UUID, we discard it and fallback to the uploader
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
     if (cleanedRow.owner_id && !uuidRegex.test(cleanedRow.owner_id)) {
       cleanedRow.owner_id = user.id;
     }
+
+    // 8. Sanitize Numbers
+    if (cleanedRow.annual_revenue !== undefined) cleanedRow.annual_revenue = sanitizeNumber(cleanedRow.annual_revenue);
+    if (cleanedRow.lead_score !== undefined) cleanedRow.lead_score = sanitizeNumber(cleanedRow.lead_score);
 
     return {
       workspace_id: workspaceId,
