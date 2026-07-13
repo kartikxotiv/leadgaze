@@ -1327,41 +1327,36 @@ export function HomeMenuNavigation() {
                               key={prod.id}
                               type="button"
                               onClick={handleClick}
-                              className={cn(
-                                'group flex w-full cursor-pointer flex-col rounded-lg border p-4 text-left transition-all',
-                                'border-zinc-200 bg-zinc-50 hover:border-blue-400 hover:bg-blue-50/50 dark:border-zinc-800 dark:bg-zinc-900/50 dark:hover:bg-blue-950/20',
-                                isLocked && 'opacity-75',
-                              )}
+                              className="group flex w-full cursor-pointer flex-col rounded-lg border border-amber-500/50 bg-amber-50/50 p-4 text-left transition-all hover:border-amber-400 hover:bg-amber-50/50 dark:border-zinc-800 dark:bg-zinc-900/50 dark:hover:border-amber-500/50 dark:hover:bg-amber-950/20"
                             >
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
                                   <div
-                                    className="flex h-7 w-7 items-center justify-center rounded-md"
+                                    className="flex h-7 w-7 items-center justify-center rounded-md transition-colors group-hover:bg-amber-100 dark:group-hover:bg-amber-900/30"
                                     style={{
                                       backgroundColor: `${meta.color}20`,
-                                      color: isLocked ? '#9ca3af' : meta.color,
+                                      color: '#9ca3af',
                                     }}
                                   >
                                     {meta.icon}
                                   </div>
-                                  <span
-                                    className={`font-bold transition-colors ${
-                                      isLocked
-                                        ? 'text-zinc-500 dark:text-zinc-400'
-                                        : 'text-zinc-900 group-hover:text-blue-600 dark:text-white'
-                                    }`}
-                                  >
+                                  <span className="font-bold text-amber-700 transition-colors group-hover:text-amber-700 dark:text-zinc-400 dark:group-hover:text-amber-400">
                                     {displayName}
                                   </span>
                                 </div>
-                                <Sparkles className="h-4 w-4 text-zinc-400" />
+                                <Sparkles className="h-4 w-4 text-zinc-400 transition-colors group-hover:text-amber-500" />
                               </div>
                               <span className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
                                 {meta.description}
                               </span>
-                              <span className="mt-1 inline-flex w-fit items-center rounded-full bg-yellow-100 px-2 py-0.5 text-[10px] font-medium text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">
-                                Coming Soon
-                              </span>
+                              <div className="mt-2 flex items-center justify-between">
+                                <span className="inline-flex w-fit items-center rounded-full bg-yellow-100 px-2 py-0.5 text-[10px] font-medium text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">
+                                  Coming Soon
+                                </span>
+                                <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400">
+                                  Notify Me →
+                                </span>
+                              </div>
                             </button>
                           );
                         })}
