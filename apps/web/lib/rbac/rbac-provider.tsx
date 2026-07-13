@@ -50,6 +50,7 @@ interface Workspace {
   currentRole: WorkspaceRole;
   currentProductKey?: string | null;
   company_logo_url?: string | null;
+  billing_country?: string | null;
 }
 
 interface RBACContextType {
@@ -111,7 +112,8 @@ export function RBACProvider({ children }: { children: ReactNode }) {
             owner_id,
             company_id,
             companies (
-              logo_url
+              logo_url,
+              billing_country
             )
           ),
           role_id(
@@ -170,7 +172,7 @@ export function RBACProvider({ children }: { children: ReactNode }) {
         // If productKey is null/blank, it applies globally to all known products.
         const targetProductKeys = productKey 
           ? [productKey] 
-          : ['sales', 'hrms', 'inventory', 'service_cloud', 'funds'];
+          : ['sales', 'inventory', 'service_cloud', 'funds'];
 
         for (const pKey of targetProductKeys) {
           if (!workspacesMap.has(workspaceId)) {
@@ -199,6 +201,7 @@ export function RBACProvider({ children }: { children: ReactNode }) {
               currentRole: roles[pKey],
               currentProductKey: currentProductKey || pKey,
               company_logo_url: workspace.companies?.logo_url || null,
+              billing_country: workspace.companies?.billing_country || null,
             });
           } else {
             // Add additional role for this workspace

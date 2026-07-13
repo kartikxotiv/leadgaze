@@ -7,18 +7,21 @@ export interface WorkspaceMemberForAssignment {
   full_name?: string;
   avatar_url?: string;
   role_id: string;
+  product_key?: string | null;
 }
 
 /**
  * Get all active workspace members for assignment
  * @param workspaceId - The workspace UUID
+ * @param productKey - Optional module/product key to filter by
  * @returns Array of workspace members
  */
 const getWorkspaceMembersService = asyncHandlerClient(
-  async (workspaceId: string): Promise<WorkspaceMemberForAssignment[]> => {
-    const response = await ApiClient.get(
-      `/team-members?workspaceId=${workspaceId}`,
-    );
+  async (workspaceId: string, productKey?: string): Promise<WorkspaceMemberForAssignment[]> => {
+    const url = productKey
+      ? `/team-members?workspaceId=${workspaceId}&productKey=${productKey}`
+      : `/team-members?workspaceId=${workspaceId}`;
+    const response = await ApiClient.get(url);
 
     // Map the response to include the fields we need for assignment
     return (response.data?.data || []).map((member: any) => ({

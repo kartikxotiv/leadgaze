@@ -34,7 +34,9 @@ export const getWorkspaceSeats = catchAsync(
         display_name,
         monthly_price_per_seat,
         yearly_price_per_seat,
-        currency
+        currency,
+        india_monthly_price_per_seat,
+        india_yearly_price_per_seat
       )
     `,
       )
