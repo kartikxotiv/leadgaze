@@ -18,14 +18,18 @@ import {
   Grip,
   Headphones,
   Loader2,
+  Lock,
   Menu,
   NotebookPen,
   Package,
   Plus,
   Settings,
   ShoppingCart,
+  Sparkles,
   Users as UsersIcon,
 } from 'lucide-react';
+
+import { toast } from 'sonner';
 
 import { getWorkspaceSubscriptionService } from '@kit/core/services';
 import {
@@ -44,6 +48,16 @@ import {
 import { getServiceCloudResourceService } from '@kit/service-cloud';
 import { useUser } from '@kit/supabase/hooks/use-user';
 import { useSupabase } from '@kit/supabase/hooks/use-supabase';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@kit/ui/alert-dialog';
 import {
   Dialog,
   DialogContent,
@@ -72,6 +86,7 @@ import { getLeadsService } from '~/services/leads.service';
 import { getOpportunitiesService } from '~/services/opportunities.service';
 import {
   getSeatAssignmentsService,
+  getSubscriptionProductsService,
   getWorkspaceEntitlementsService,
 } from '~/services/subscription.service';
 import { getTeamsService } from '~/services/teams.service';
@@ -564,8 +579,15 @@ function getModuleDisplayName(originalName: string): string {
 export function HomeMenuNavigation() {
   const { canAccess, currentWorkspace } = useRBAC();
   const { data: authUser } = useUser();
+  const router = useRouter();
   const pathname = usePathname() || '';
   const [isLauncherOpen, setIsLauncherOpen] = useState(false);
+  const [interestModalOpen, setInterestModalOpen] = useState(false);
+  const [selectedComingSoonModule, setSelectedComingSoonModule] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+  const [isSubmittingInterest, setIsSubmittingInterest] = useState(false);
   const [windowWidth, setWindowWidth] = useState(1200);
   const supabase = useSupabase();
 
@@ -633,6 +655,13 @@ export function HomeMenuNavigation() {
     enabled: !!currentWorkspace?.id,
   });
 
+  // Fetch ALL subscription products (including inactive ones = coming soon)
+  const { data: allProductsData, isLoading: isProductsLoading } = useQuery({
+    queryKey: ['subscription-products-all'],
+    queryFn: () => getSubscriptionProductsService(),
+    staleTime: 1000 * 60 * 5,
+  });
+
   const userAssignedProductIds = useMemo(() => {
     const assignments = (assignmentsData?.data ?? []) as Array<{
       is_active: boolean;
@@ -665,15 +694,45 @@ export function HomeMenuNavigation() {
     );
   }, [entitlementsData]);
 
-  const launcherModules = useMemo(() => {
-    const allEnabled = subscriptionStatus?.enabled_modules ?? [];
-    // Show modules where user has seat assignment OR workspace has entitlement
-    return allEnabled.filter(
-      (mod) =>
-        userAssignedProductIds.has(mod.module_id) ||
-        entitledProductIds.has(mod.module_id),
+  // Product IDs that have active subscription seats for this workspace
+  const enabledProductIds = useMemo(() => {
+    return new Set(
+      (subscriptionStatus?.enabled_modules ?? []).map((m) => m.module_id),
     );
-  }, [subscriptionStatus, userAssignedProductIds, entitledProductIds]);
+  }, [subscriptionStatus]);
+
+  // All products from DB, used to populate the launcher
+  const allLauncherProducts = useMemo(() => {
+    return (allProductsData?.data ?? []) as Array<{
+      id: string;
+      product_key: string;
+      display_name: string;
+      is_active: boolean;
+    }>;
+  }, [allProductsData]);
+
+  const activeProducts = useMemo(() => {
+    return allLauncherProducts
+      .filter((p) => p.is_active)
+      .sort((a, b) => {
+        const hasAccessA =
+          (enabledProductIds.has(a.id) || entitledProductIds.has(a.id)) &&
+          (userAssignedProductIds.has(a.id) || entitledProductIds.has(a.id));
+        const hasAccessB =
+          (enabledProductIds.has(b.id) || entitledProductIds.has(b.id)) &&
+          (userAssignedProductIds.has(b.id) || entitledProductIds.has(b.id));
+
+        if (hasAccessA && !hasAccessB) return -1;
+        if (!hasAccessA && hasAccessB) return 1;
+        return 0;
+      });
+  }, [
+    allLauncherProducts,
+    enabledProductIds,
+    entitledProductIds,
+    userAssignedProductIds,
+  ]);
+  const comingSoonProducts = useMemo(() => allLauncherProducts.filter((p) => !p.is_active), [allLauncherProducts]);
 
   // Use permission-based navigation
   const permissionNavConfig = usePermissionBasedNavigationConfig();
@@ -1133,68 +1192,184 @@ export function HomeMenuNavigation() {
                 </button>
               </DialogTrigger>
 
-              <DialogContent className="flex max-h-[90vh] max-w-2xl flex-col rounded-lg border border-zinc-200 bg-white p-0 p-6 shadow-2xl dark:border-zinc-800 dark:bg-zinc-950">
-                <DialogHeader className="mb-0 border-b p-6 pt-0 pb-4">
+              <DialogContent className="flex max-h-[90vh] max-w-4xl flex-col overflow-hidden rounded-lg border border-zinc-200 bg-white p-0 shadow-2xl dark:border-zinc-800 dark:bg-zinc-950">
+                <DialogHeader className="shrink-0 border-b p-6 pb-4">
                   <DialogTitle className="flex items-center gap-2 text-xl font-bold text-zinc-900 dark:text-white">
                     <Grip className="h-5 w-5 text-blue-600" />
                     App Launcher
                   </DialogTitle>
                 </DialogHeader>
 
-                {launcherModules.length === 0 ? (
-                  <div className="py-8 text-center">
-                    <Loader2 className="mx-auto h-5 w-5 animate-spin text-zinc-400" />
-                    <p className="mt-2 text-sm text-zinc-500">
-                      Loading modules...
-                    </p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    {launcherModules.map((mod) => {
-                      const meta = getLauncherMeta(mod.module_key);
-                      const displayName = getModuleDisplayName(mod.module_name);
+                <div className="overflow-y-auto p-6">
+                  {isProductsLoading ? (
+                    <div className="py-8 text-center">
+                      <Loader2 className="mx-auto h-5 w-5 animate-spin text-zinc-400" />
+                      <p className="mt-2 text-sm text-zinc-500">
+                        Loading modules...
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-6">
+                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+                      {activeProducts.map((prod) => {
+                        const meta = getLauncherMeta(prod.product_key);
+                        const displayName = getModuleDisplayName(prod.display_name);
 
-                      return (
-                        <Link
-                          key={mod.module_id}
-                          href={meta.route}
-                          onClick={() => {
-                            localStorage.setItem(
-                              'selected_module',
-                              mod.module_key,
+                        // A product is "accessible" if:
+                        //   - the workspace has a seat or entitlement for it AND
+                        //   - the user is assigned to it (or has an entitlement)
+                        const hasWorkspaceAccess =
+                          enabledProductIds.has(prod.id) ||
+                          entitledProductIds.has(prod.id);
+                        const hasUserAccess =
+                          userAssignedProductIds.has(prod.id) ||
+                          entitledProductIds.has(prod.id);
+                        const hasAccess = hasWorkspaceAccess && hasUserAccess;
+
+                        const isLocked = !hasAccess;
+
+                        // Active subscribed module on the workspace seat data
+                        const activeMod = subscriptionStatus?.enabled_modules?.find(
+                          (m) => m.module_id === prod.id,
+                        );
+
+                        const handleClick = (e: React.MouseEvent) => {
+                          if (!hasAccess) {
+                            e.preventDefault();
+                            toast.warning(
+                              "You don't have permission to access this feature. Please subscribe to get access",
                             );
-                            setIsLauncherOpen(false);
-                          }}
-                          className="group flex flex-col rounded-lg border border-zinc-200 bg-zinc-50 p-4 transition-all hover:border-blue-400 hover:bg-blue-50/50 dark:border-zinc-800 dark:bg-zinc-900/50 dark:hover:bg-blue-950/20"
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <div
-                                className="flex h-7 w-7 items-center justify-center rounded-md"
-                                style={{
-                                  backgroundColor: `${meta.color}20`,
-                                  color: meta.color,
-                                }}
-                              >
-                                {meta.icon}
+                            return;
+                          }
+                          localStorage.setItem('selected_module', prod.product_key);
+                          setIsLauncherOpen(false);
+                          router.push(meta.route);
+                        };
+
+                        return (
+                          <button
+                            key={prod.id}
+                            type="button"
+                            onClick={handleClick}
+                            className={cn(
+                              'group flex w-full cursor-pointer flex-col rounded-lg border p-4 text-left transition-all',
+                              'border-zinc-200 bg-zinc-50 hover:border-blue-400 hover:bg-blue-50/50 dark:border-zinc-800 dark:bg-zinc-900/50 dark:hover:bg-blue-950/20',
+                              isLocked && 'opacity-75',
+                            )}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <div
+                                  className="flex h-7 w-7 items-center justify-center rounded-md"
+                                  style={{
+                                    backgroundColor: `${meta.color}20`,
+                                    color: isLocked ? '#9ca3af' : meta.color,
+                                  }}
+                                >
+                                  {meta.icon}
+                                </div>
+                                <span
+                                  className={`font-bold transition-colors ${
+                                    isLocked
+                                      ? 'text-zinc-500 dark:text-zinc-400'
+                                      : 'text-zinc-900 group-hover:text-blue-600 dark:text-white'
+                                  }`}
+                                >
+                                  {displayName}
+                                </span>
                               </div>
-                              <span className="font-bold text-zinc-900 transition-colors group-hover:text-blue-600 dark:text-white">
-                                {displayName}
-                              </span>
+                              {isLocked ? (
+                                <Lock className="h-3.5 w-3.5 text-zinc-400" />
+                              ) : (
+                                <ArrowUpRight className="h-3.5 w-3.5 text-zinc-400 opacity-0 transition-opacity group-hover:opacity-100" />
+                              )}
                             </div>
-                            <ArrowUpRight className="h-3.5 w-3.5 text-zinc-400 opacity-0 transition-opacity group-hover:opacity-100" />
-                          </div>
-                          <span className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
-                            {meta.description}
-                          </span>
-                          <span className="mt-1 text-[10px] text-zinc-400 dark:text-zinc-500">
-                            {mod.used_seats} / {mod.purchased_seats} seats used
-                          </span>
-                        </Link>
-                      );
-                    })}
+                            <span className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
+                              {meta.description}
+                            </span>
+                            {activeMod ? (
+                              <span className="mt-1 text-[10px] text-zinc-400 dark:text-zinc-500">
+                                {activeMod.used_seats} / {activeMod.purchased_seats} seats used
+                              </span>
+                            ) : null}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Separator */}
+                    {comingSoonProducts.length > 0 && (
+                      <div className="relative flex items-center">
+                        <div className="flex-grow border-t border-zinc-200 dark:border-zinc-800"></div>
+                        <span className="mx-4 shrink-0 text-xs font-medium text-zinc-400">
+                          Coming Soon
+                        </span>
+                        <div className="flex-grow border-t border-zinc-200 dark:border-zinc-800"></div>
+                      </div>
+                    )}
+
+                    {/* Coming Soon Products Grid */}
+                    {comingSoonProducts.length > 0 && (
+                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+                        {comingSoonProducts.map((prod) => {
+                          const meta = getLauncherMeta(prod.product_key);
+                          const displayName = getModuleDisplayName(prod.display_name);
+                          const isLocked = true;
+
+                          const handleClick = (e: React.MouseEvent) => {
+                            e.preventDefault();
+                            setSelectedComingSoonModule({ id: prod.id, name: displayName });
+                            setInterestModalOpen(true);
+                          };
+
+                          return (
+                            <button
+                              key={prod.id}
+                              type="button"
+                              onClick={handleClick}
+                              className={cn(
+                                'group flex w-full cursor-pointer flex-col rounded-lg border p-4 text-left transition-all',
+                                'border-zinc-200 bg-zinc-50 hover:border-blue-400 hover:bg-blue-50/50 dark:border-zinc-800 dark:bg-zinc-900/50 dark:hover:bg-blue-950/20',
+                                isLocked && 'opacity-75',
+                              )}
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <div
+                                    className="flex h-7 w-7 items-center justify-center rounded-md"
+                                    style={{
+                                      backgroundColor: `${meta.color}20`,
+                                      color: isLocked ? '#9ca3af' : meta.color,
+                                    }}
+                                  >
+                                    {meta.icon}
+                                  </div>
+                                  <span
+                                    className={`font-bold transition-colors ${
+                                      isLocked
+                                        ? 'text-zinc-500 dark:text-zinc-400'
+                                        : 'text-zinc-900 group-hover:text-blue-600 dark:text-white'
+                                    }`}
+                                  >
+                                    {displayName}
+                                  </span>
+                                </div>
+                                <Sparkles className="h-4 w-4 text-zinc-400" />
+                              </div>
+                              <span className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
+                                {meta.description}
+                              </span>
+                              <span className="mt-1 inline-flex w-fit items-center rounded-full bg-yellow-100 px-2 py-0.5 text-[10px] font-medium text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">
+                                Coming Soon
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 )}
+                </div>
               </DialogContent>
             </Dialog>
           )}
@@ -1416,6 +1591,48 @@ export function HomeMenuNavigation() {
           <ProfileAccountDropdownContainer showProfileName={false} />
         </div>
       </div>
+
+      {/* Interest Dialog */}
+      <AlertDialog open={interestModalOpen} onOpenChange={setInterestModalOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you interested in this module?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {selectedComingSoonModule?.name} is coming soon! Let us know if you're interested and we'll notify you when it's ready.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isSubmittingInterest}>No</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={isSubmittingInterest}
+              onClick={async (e) => {
+                e.preventDefault();
+                if (!selectedComingSoonModule) return;
+                setIsSubmittingInterest(true);
+                try {
+                  const res = await fetch('/api/user-interests', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ moduleId: selectedComingSoonModule.id }),
+                  });
+                  if (!res.ok) throw new Error('Failed to record interest');
+                  toast.success('We have got your response. Thank you!');
+                  setInterestModalOpen(false);
+                } catch (error) {
+                  toast.error('Failed to submit response. Please try again.');
+                } finally {
+                  setIsSubmittingInterest(false);
+                }
+              }}
+            >
+              {isSubmittingInterest ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : null}
+              Yes, I'm interested
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

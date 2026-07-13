@@ -16,7 +16,16 @@ export const getProducts = catchAsync(
       .from('subscription_products')
       .select(
         `
-      *,
+      id,
+      product_key,
+      display_name,
+      description,
+      is_active,
+      is_public,
+      min_seats,
+      monthly_price_per_seat,
+      yearly_price_per_seat,
+      currency,
       product_module_map (
         crm_module_id,
         access_mode,
@@ -27,7 +36,7 @@ export const getProducts = catchAsync(
       )
     `,
       )
-      .eq('is_active', true)
+      .eq('is_public', true)
       .order('display_name');
 
     if (error) {
