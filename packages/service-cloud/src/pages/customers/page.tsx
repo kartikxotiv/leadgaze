@@ -9,7 +9,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { Loader2, Plus, Ticket, TicketIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { formatDate } from '@kit/shared/utils';
+import { useLocalization } from '@kit/shared/localization';
 import { Button } from '@kit/ui/button';
 import {
   Dialog,
@@ -38,6 +38,8 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@kit/ui/tabs';
 import { Textarea } from '@kit/ui/textarea';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@kit/ui/tooltip';
+import { useColumnResize } from '@kit/ui/use-column-resize';
+import { useDateRangeFilter } from '@kit/ui/use-date-range-filter';
 
 import {
   type ServiceCloudRecord,
@@ -58,9 +60,52 @@ import {
 
 export function ServiceCloudCustomersPage({
   workspaceId,
+  isAdmin = false,
+  onColumnAddClick,
+  onColumnEditClick,
+  customCustomerColumns = [],
+  customOrganizationColumns = [],
+  systemCustomerFields = [],
+  systemOrganizationFields = [],
+  canViewCustomerColumn,
+  canViewOrganizationColumn,
+  canViewCustomerField,
+  canViewOrganizationField,
+  canEditCustomerField,
+  canEditOrganizationField,
+  canViewTicketColumn,
+  currentUserId,
+  teamMembers = [],
 }: {
   workspaceId: string;
+  isAdmin?: boolean;
+  onColumnAddClick?: (type: 'customers' | 'organizations') => void;
+  onColumnEditClick?: (
+    columnKey: string,
+    type: 'customers' | 'organizations',
+  ) => void;
+  customCustomerColumns?: any[];
+  customOrganizationColumns?: any[];
+  systemCustomerFields?: any[];
+  systemOrganizationFields?: any[];
+  /** Optional FLS function for customer columns. Columns returning false are hidden. */
+  canViewCustomerColumn?: (columnKey: string) => boolean;
+  /** Optional FLS function for organization columns. Columns returning false are hidden. */
+  canViewOrganizationColumn?: (columnKey: string) => boolean;
+  /** Optional FLS function for customer details dialog. Fields returning false are hidden. */
+  canViewCustomerField?: (fieldKey: string) => boolean;
+  /** Optional FLS function for organization details dialog. Fields returning false are hidden. */
+  canViewOrganizationField?: (fieldKey: string) => boolean;
+  /** Optional FLS function for customer create/edit modal. Fields returning false are hidden. */
+  canEditCustomerField?: (fieldKey: string) => boolean;
+  /** Optional FLS function for organization create/edit modal. Fields returning false are hidden. */
+  canEditOrganizationField?: (fieldKey: string) => boolean;
+  /** Optional FLS function to hide columns in the customer tickets modal */
+  canViewTicketColumn?: (columnKey: string) => boolean;
+  currentUserId?: string;
+  teamMembers?: any[];
 }) {
+  const { formatDate } = useLocalization();
   const { canAccess, isLoading } = useServiceCloudPermissions(workspaceId);
   const canView = canAccess(
     SERVICE_CLOUD_MODULE_KEYS.customers,
@@ -83,6 +128,91 @@ export function ServiceCloudCustomersPage({
     SERVICE_CLOUD_FEATURE_KEYS.create,
   );
 
+  const [selectedCreatedByIds, setSelectedCreatedByIds] = useState<string[]>([]);
+
+  const {
+    dateRange: createdOnRange,
+    setDateRange: setCreatedOnRange,
+    computedDates: computedCreatedOnDates,
+    clearDateRange: clearCreatedOnRange,
+  } = useDateRangeFilter();
+  const {
+    dateRange: updatedOnRange,
+    setDateRange: setUpdatedOnRange,
+    computedDates: computedUpdatedOnDates,
+    clearDateRange: clearUpdatedOnRange,
+  } = useDateRangeFilter();
+
+  const activeFilterCount =
+    (selectedCreatedByIds.length > 0 ? 1 : 0) +
+    (createdOnRange ? 1 : 0) +
+    (updatedOnRange ? 1 : 0);
+
+  const filterGroups = [
+    {
+      key: 'created_by',
+      label: 'Created By',
+      selectedValues: selectedCreatedByIds,
+      selectedLabel:
+        selectedCreatedByIds.length === 0
+          ? 'All members'
+          : selectedCreatedByIds.length === 1
+            ? ((
+                (Array.isArray(teamMembers) ? teamMembers : []).find(
+                  (m: any) => m?.user_id === selectedCreatedByIds[0],
+                ) as any
+              )?.user?.user_metadata?.full_name ?? '1 selected')
+            : `${selectedCreatedByIds.length} selected`,
+      options: (Array.isArray(teamMembers) ? teamMembers : [])
+        .filter((m: any) => m?.user_id)
+        .reduce((acc: any[], m: any) => {
+          if (!acc.some((x) => x.value === m.user_id)) {
+            acc.push({
+              value: m.user_id,
+              label:
+                m.user?.user_metadata?.full_name ||
+                m.user?.email ||
+                m.user_id,
+            });
+          }
+          return acc;
+        }, []),
+      onSelectValues: setSelectedCreatedByIds,
+    },
+    {
+      key: 'created_on',
+      label: 'Created On',
+      type: 'date',
+      dateValue: createdOnRange,
+      onDateChange: setCreatedOnRange,
+    },
+    {
+      key: 'updated_on',
+      label: 'Updated On',
+      type: 'date',
+      dateValue: updatedOnRange,
+      onDateChange: setUpdatedOnRange,
+    },
+  ];
+
+  const queryParams = {
+    ...(selectedCreatedByIds.length > 0
+      ? { createdByIds: selectedCreatedByIds.join(',') }
+      : {}),
+    ...(computedCreatedOnDates?.from
+      ? { createdAtFrom: computedCreatedOnDates.from }
+      : {}),
+    ...(computedCreatedOnDates?.to
+      ? { createdAtTo: computedCreatedOnDates.to }
+      : {}),
+    ...(computedUpdatedOnDates?.from
+      ? { updatedAtFrom: computedUpdatedOnDates.from }
+      : {}),
+    ...(computedUpdatedOnDates?.to
+      ? { updatedAtTo: computedUpdatedOnDates.to }
+      : {}),
+  };
+
   // --- Create Ticket from Customer state ---
   const [createOpen, setCreateOpen] = useState(false);
   const [selectedCustomerId, setSelectedCustomerId] = useState('');
@@ -95,6 +225,10 @@ export function ServiceCloudCustomersPage({
   // --- Customer Tickets Modal state & query ---
   const [ticketsModalCustomer, setTicketsModalCustomer] =
     useState<ServiceCloudRecord | null>(null);
+
+  const { getHeaderProps, getResizeHandleProps } = useColumnResize(
+    'sc-customer-tickets-modal',
+  );
 
   const { data: customerTickets = [], isLoading: isLoadingTickets } = useQuery<
     ServiceCloudRecord[]
@@ -125,15 +259,30 @@ export function ServiceCloudCustomersPage({
       (createOpen || Boolean(ticketsModalCustomer)) && Boolean(workspaceId),
   });
 
-  const statuses: any[] = lookups?.statuses ?? [];
-  const priorities: any[] = lookups?.priorities ?? [];
-  const categories: any[] = lookups?.categories ?? [];
+  const allStatuses: any[] = lookups?.statuses ?? [];
+  const allPriorities: any[] = lookups?.priorities ?? [];
+  const allCategories: any[] = lookups?.categories ?? [];
+
+  // Filter out private statuses/priorities that the current user cannot access
+  const statuses = allStatuses.filter((s: any) => {
+    if (s.access_type === 'public') return true;
+    if (s.access_type === 'private') return false;
+    return true;
+  });
+
+  const priorities = allPriorities.filter((p: any) => {
+    if (p.access_type === 'public') return true;
+    if (p.access_type === 'private') return false;
+    return true;
+  });
+
+  const categories = allCategories;
 
   const statusById = new Map<string, any>(
-    statuses.map((status: any) => [status.id, status]),
+    allStatuses.map((status: any) => [status.id, status]),
   );
   const priorityById = new Map<string, any>(
-    priorities.map((priority: any) => [priority.id, priority]),
+    allPriorities.map((priority: any) => [priority.id, priority]),
   );
 
   const statusOptions = statuses.map((s: any) => ({
@@ -210,6 +359,11 @@ export function ServiceCloudCustomersPage({
     createTicketMutation.mutate();
   };
 
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const tab = searchParams.get('tab') || 'customers';
+
   if (isLoading)
     return (
       <div className="text-muted-foreground p-6 text-sm">
@@ -236,10 +390,13 @@ export function ServiceCloudCustomersPage({
     </Tooltip>
   ) : null;
 
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const tab = searchParams.get('tab') || 'customers';
+  const getCustomerLabel = (key: string, fallback: string) =>
+    systemCustomerFields.find((f: any) => f.field_key === key)?.field_label ??
+    fallback;
+
+  const getOrganizationLabel = (key: string, fallback: string) =>
+    systemOrganizationFields.find((f: any) => f.field_key === key)
+      ?.field_label ?? fallback;
 
   return (
     <>
@@ -262,17 +419,50 @@ export function ServiceCloudCustomersPage({
             canCreate={canCreate}
             canEdit={canEdit}
             canDelete={canDelete}
+            isAdmin={isAdmin}
+            onColumnAddClick={
+              onColumnAddClick ? () => onColumnAddClick('customers') : undefined
+            }
+            onColumnEditClick={
+              onColumnEditClick
+                ? (key) => onColumnEditClick(key, 'customers')
+                : undefined
+            }
+            canViewColumn={canViewCustomerColumn}
+            canViewField={canViewCustomerField}
+            canEditField={canEditCustomerField}
+            currentUserId={currentUserId}
+            systemFields={systemCustomerFields}
+            queryParams={queryParams}
+            filterGroups={filterGroups}
+            activeFilterCount={activeFilterCount}
+            onClearFilters={() => {
+              setSelectedCreatedByIds([]);
+              clearCreatedOnRange();
+              clearUpdatedOnRange();
+            }}
             toolbar={newTicketToolbar}
             fields={[
-              { key: 'name', label: 'Name', required: true },
-              { key: 'email', label: 'Email', type: 'email' },
-              { key: 'phone', label: 'Phone' },
-              { key: 'job_title', label: 'Job Title' },
+              {
+                key: 'name',
+                label: getCustomerLabel('name', 'Name'),
+                required: true,
+              },
+              {
+                key: 'email',
+                label: getCustomerLabel('email', 'Email'),
+                type: 'email',
+              },
+              { key: 'phone', label: getCustomerLabel('phone', 'Phone') },
+              {
+                key: 'job_title',
+                label: getCustomerLabel('job_title', 'Job Title'),
+              },
             ]}
             columns={[
               {
                 key: 'name',
-                label: 'Name',
+                label: getCustomerLabel('name', 'Name'),
                 render: (customer) => (
                   <button
                     type="button"
@@ -283,9 +473,13 @@ export function ServiceCloudCustomersPage({
                   </button>
                 ),
               },
-              { key: 'email', label: 'Email' },
-              { key: 'phone', label: 'Phone' },
-              { key: 'job_title', label: 'Job Title' },
+              { key: 'email', label: getCustomerLabel('email', 'Email') },
+              { key: 'phone', label: getCustomerLabel('phone', 'Phone') },
+              {
+                key: 'job_title',
+                label: getCustomerLabel('job_title', 'Job Title'),
+              },
+              ...customCustomerColumns,
             ]}
           />
         </TabsContent>
@@ -299,19 +493,64 @@ export function ServiceCloudCustomersPage({
             canCreate={canCreate}
             canEdit={canEdit}
             canDelete={canDelete}
+            isAdmin={isAdmin}
+            onColumnAddClick={
+              onColumnAddClick
+                ? () => onColumnAddClick('organizations')
+                : undefined
+            }
+            onColumnEditClick={
+              onColumnEditClick
+                ? (key) => onColumnEditClick(key, 'organizations')
+                : undefined
+            }
+            canViewColumn={canViewOrganizationColumn}
+            canViewField={canViewOrganizationField}
+            canEditField={canEditOrganizationField}
+            currentUserId={currentUserId}
+            systemFields={systemOrganizationFields}
+            queryParams={queryParams}
+            filterGroups={filterGroups}
+            activeFilterCount={activeFilterCount}
+            onClearFilters={() => {
+              setSelectedCreatedByIds([]);
+              clearCreatedOnRange();
+              clearUpdatedOnRange();
+            }}
             fields={[
-              { key: 'name', label: 'Name', required: true },
-              { key: 'website', label: 'Website' },
-              { key: 'industry', label: 'Industry' },
-              { key: 'email', label: 'Email', type: 'email' },
-              { key: 'phone', label: 'Phone' },
+              {
+                key: 'name',
+                label: getOrganizationLabel('name', 'Name'),
+                required: true,
+              },
+              {
+                key: 'website',
+                label: getOrganizationLabel('website', 'Website'),
+              },
+              {
+                key: 'industry',
+                label: getOrganizationLabel('industry', 'Industry'),
+              },
+              {
+                key: 'email',
+                label: getOrganizationLabel('email', 'Email'),
+                type: 'email',
+              },
+              { key: 'phone', label: getOrganizationLabel('phone', 'Phone') },
             ]}
             columns={[
-              { key: 'name', label: 'Name' },
-              { key: 'website', label: 'Website' },
-              { key: 'industry', label: 'Industry' },
-              { key: 'email', label: 'Email' },
-              { key: 'phone', label: 'Phone' },
+              { key: 'name', label: getOrganizationLabel('name', 'Name') },
+              {
+                key: 'website',
+                label: getOrganizationLabel('website', 'Website'),
+              },
+              {
+                key: 'industry',
+                label: getOrganizationLabel('industry', 'Industry'),
+              },
+              { key: 'email', label: getOrganizationLabel('email', 'Email') },
+              { key: 'phone', label: getOrganizationLabel('phone', 'Phone') },
+              ...customOrganizationColumns,
             ]}
           />
         </TabsContent>
@@ -518,55 +757,120 @@ export function ServiceCloudCustomersPage({
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Ticket #</TableHead>
-                      <TableHead>Subject</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Priority</TableHead>
-                      <TableHead>Created</TableHead>
+                      {(!canViewTicketColumn || canViewTicketColumn('ticket_number')) && (
+                        <TableHead
+                          className="relative"
+                          {...getHeaderProps('ticket_number')}
+                        >
+                          Ticket #
+                          <span
+                            className="col-resize-handle"
+                            {...getResizeHandleProps('ticket_number')}
+                          />
+                        </TableHead>
+                      )}
+                      {(!canViewTicketColumn || canViewTicketColumn('subject')) && (
+                        <TableHead
+                          className="relative"
+                          {...getHeaderProps('subject')}
+                        >
+                          Subject
+                          <span
+                            className="col-resize-handle"
+                            {...getResizeHandleProps('subject')}
+                          />
+                        </TableHead>
+                      )}
+                      {(!canViewTicketColumn || canViewTicketColumn('status_id')) && (
+                        <TableHead
+                          className="relative"
+                          {...getHeaderProps('status')}
+                        >
+                          Status
+                          <span
+                            className="col-resize-handle"
+                            {...getResizeHandleProps('status')}
+                          />
+                        </TableHead>
+                      )}
+                      {(!canViewTicketColumn || canViewTicketColumn('priority_id')) && (
+                        <TableHead
+                          className="relative"
+                          {...getHeaderProps('priority')}
+                        >
+                          Priority
+                          <span
+                            className="col-resize-handle"
+                            {...getResizeHandleProps('priority')}
+                          />
+                        </TableHead>
+                      )}
+                      {(!canViewTicketColumn || canViewTicketColumn('created_at')) && (
+                        <TableHead
+                          className="relative"
+                          {...getHeaderProps('created')}
+                        >
+                          Created
+                          <span
+                            className="col-resize-handle"
+                            {...getResizeHandleProps('created')}
+                          />
+                        </TableHead>
+                      )}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {customerTickets.map((ticket) => (
                       <TableRow key={ticket.id}>
-                        <TableCell className="font-mono text-sm">
-                          #{ticket.ticket_number}
-                        </TableCell>
-                        <TableCell>
-                          <Link
-                            href={`/home/services/tickets/${ticket.id}`}
-                            className="text-primary text-leadgaze-primary block max-w-[200px] truncate font-medium hover:underline sm:max-w-[400px] lg:max-w-[550px]"
-                            title={ticket.subject}
-                          >
-                            {ticket.subject}
-                          </Link>
-                        </TableCell>
-                        <TableCell>
-                          <StatusBadge
-                            value={
-                              statusById.get(ticket.status_id)?.name as string
-                            }
-                            color={
-                              statusById.get(ticket.status_id)?.color as string
-                            }
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <StatusBadge
-                            value={
-                              priorityById.get(ticket.priority_id)
-                                ?.name as string
-                            }
-                            color={
-                              priorityById.get(ticket.priority_id)
-                                ?.color as string
-                            }
-                          />
-                        </TableCell>
-                        <TableCell className="text-muted-foreground text-sm">
-                          {ticket.created_at
-                            ? formatDate(ticket.created_at)
-                            : '-'}
-                        </TableCell>
+                        {(!canViewTicketColumn || canViewTicketColumn('ticket_number')) && (
+                          <TableCell className="font-mono text-sm">
+                            #{ticket.ticket_number}
+                          </TableCell>
+                        )}
+                        {(!canViewTicketColumn || canViewTicketColumn('subject')) && (
+                          <TableCell>
+                            <Link
+                              href={`/home/services/tickets/${ticket.id}`}
+                              className="text-primary text-leadgaze-primary block max-w-[200px] truncate font-medium hover:underline sm:max-w-[400px] lg:max-w-[550px]"
+                              title={ticket.subject}
+                            >
+                              {ticket.subject}
+                            </Link>
+                          </TableCell>
+                        )}
+                        {(!canViewTicketColumn || canViewTicketColumn('status_id')) && (
+                          <TableCell>
+                            <StatusBadge
+                              value={
+                                statusById.get(ticket.status_id)?.name as string
+                              }
+                              color={
+                                statusById.get(ticket.status_id)?.color as string
+                              }
+                            />
+                          </TableCell>
+                        )}
+                        {(!canViewTicketColumn || canViewTicketColumn('priority_id')) && (
+                          <TableCell>
+                            <StatusBadge
+                              value={
+                                priorityById.get(ticket.priority_id)
+                                  ?.name as string
+                              }
+                              color={
+                                priorityById.get(ticket.priority_id)
+                                  ?.color as string
+                              }
+                            />
+                          </TableCell>
+                        )}
+                        {(!canViewTicketColumn || canViewTicketColumn('created_at')) && (
+                          <TableCell className="text-muted-foreground text-sm">
+                            {ticket.created_at
+                              ? formatDate(ticket.created_at)
+                              : '-'}
+                          </TableCell>
+                        )}
                       </TableRow>
                     ))}
                   </TableBody>

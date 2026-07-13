@@ -30,19 +30,18 @@ export async function getRbacSnapshot(params: {
 }) {
   const supabase = getSupabaseServerClient();
 
-  const { data: member, error: memberError } = await supabase
+  const { data: members, error: memberError } = await supabase
     .from('workspace_members')
-    .select('role_id, workspace_roles(role_key)')
+    .select('role_id, product_key, workspace_roles(role_key)')
     .eq('workspace_id', params.organizationId)
     .eq('user_id', params.accountId)
-    .eq('status', 'accepted')
-    .maybeSingle();
+    .eq('status', 'accepted');
 
   if (memberError) {
     throw memberError;
   }
 
-  if (!member?.role_id) {
+  if (!members || members.length === 0) {
     return {
       organizationId: params.organizationId,
       employeeId: null,
@@ -51,6 +50,10 @@ export async function getRbacSnapshot(params: {
       permissions: [],
     };
   }
+
+  const member = members.find((m: any) => m.product_key === null)
+    || members.find((m: any) => m.product_key === 'sales')
+    || members[0];
 
   const { data: permissions, error: permissionsError } = await supabase
     .from('role_permissions')
@@ -149,4 +152,29 @@ export async function requirePermission(params: {
       accessLevel: permission.access_level,
     },
   };
+}
+
+export async function getWorkspaceMember(
+  supabase: any,
+  workspaceId: string,
+  userId: string,
+  productKey?: string | null,
+) {
+  const { data: members, error } = await supabase
+    .from('workspace_members')
+    .select('id, workspace_id, user_id, role_id, status, product_key')
+    .eq('workspace_id', workspaceId)
+    .eq('user_id', userId)
+    .eq('status', 'accepted');
+
+  if (error || !members || members.length === 0) {
+    return { data: null, error: error || new Error('Member not found') };
+  }
+
+  // Find membership matching the active product or fallback
+  const member = members.find((m: any) => m.product_key === productKey)
+    || members.find((m: any) => m.product_key === null)
+    || members[0];
+
+  return { data: member, error: null };
 }

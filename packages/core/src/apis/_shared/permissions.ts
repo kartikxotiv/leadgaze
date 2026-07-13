@@ -26,13 +26,16 @@ export async function hasCoreWorkspaceFeaturePermission(
     return true;
   }
 
-  const { data: member } = await supabase
+  const { data: members } = await supabase
     .from('workspace_members')
-    .select('role_id')
+    .select('role_id, product_key')
     .eq('workspace_id', workspaceId)
     .eq('user_id', userId)
-    .eq('status', 'accepted')
-    .maybeSingle();
+    .eq('status', 'accepted');
+
+  const member = members?.find((m: any) => m.product_key === 'sales')
+    || members?.find((m: any) => m.product_key === null)
+    || members?.[0];
 
   if (!member?.role_id) {
     return false;

@@ -18,22 +18,26 @@ export async function getWorkspaceMemberContext(
     return null;
   }
 
-  const { data: membership, error: membershipError } = await supabase
+  const { data: memberships, error: membershipError } = await supabase
     .from('workspace_members')
     .select(
       `
         user_id,
+        product_key,
         role:workspace_roles!workspace_members_role_id_fkey(role_key)
       `,
     )
     .eq('workspace_id', workspaceId)
     .eq('user_id', user.id)
-    .eq('status', 'accepted')
-    .single();
+    .eq('status', 'accepted');
 
-  if (membershipError || !membership) {
+  if (membershipError || !memberships || memberships.length === 0) {
     return null;
   }
+
+  const membership = memberships.find((m: any) => m.product_key === 'service_cloud')
+    || memberships.find((m: any) => m.product_key === null)
+    || memberships[0];
 
   const role = Array.isArray((membership as any).role)
     ? (membership as any).role[0]

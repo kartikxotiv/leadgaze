@@ -58,6 +58,10 @@ import {
   TableRow,
 } from '@kit/ui/table';
 
+import { useLocalization } from '~/lib/localization/localization-provider';
+import { convertFromUSD, findLatestRateToUsd } from '@kit/shared/currency';
+import type { ExchangeRateRecord } from '@kit/shared/currency';
+import { useSupabase } from '@kit/supabase/hooks/use-supabase';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import {
   DashboardMetrics,
@@ -74,6 +78,8 @@ import { Skeleton } from '@kit/ui/skeleton';
 
 export default function DashboardDemo() {
   const { currentWorkspace } = useRBAC();
+  const { formatCurrency } = useLocalization();
+  const supabase = useSupabase();
   const workspaceId = currentWorkspace?.id;
 
   const {
@@ -85,6 +91,45 @@ export default function DashboardDemo() {
     queryFn: () => getDashboardMetricsService(workspaceId!),
     enabled: !!workspaceId,
   });
+
+  // Fetch workspace currencies
+  const { data: currenciesData } = useQuery({
+    queryKey: ['workspace-currencies', workspaceId],
+    queryFn: async () => {
+      if (!workspaceId) return [];
+      const { data, error } = await supabase
+        .schema('core')
+        .from('workspace_currencies')
+        .select('id, currency_code, is_default')
+        .eq('workspace_id', workspaceId)
+        .eq('is_active', true)
+        .order('is_default', { ascending: false });
+      if (error) return [];
+      return data;
+    },
+    enabled: !!workspaceId,
+  });
+
+  // Fetch exchange rates
+  const { data: exchangeRates = [] } = useQuery({
+    queryKey: ['exchange-rates'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .schema('core')
+        .from('currency_exchange_rates')
+        .select('*')
+        .eq('base_currency', 'USD');
+      if (error) return [];
+      return data;
+    },
+    staleTime: 24 * 60 * 60 * 1000,
+  });
+
+  // Convert pipeline value from USD to workspace currency
+  const workspaceCurrency = currenciesData?.find((c) => c.is_default)?.currency_code || 'USD';
+  const pipelineValueUsd = metrics?.opportunities?.totalAmount ?? 0;
+  const rate = findLatestRateToUsd(exchangeRates as ExchangeRateRecord[], workspaceCurrency)?.exchange_rate || 1;
+  const pipelineValue = convertFromUSD(pipelineValueUsd, rate);
 
   const queryClient = useQueryClient();
   const [isCreateLeadOpen, setIsCreateLeadOpen] = useState(false);
@@ -199,11 +244,7 @@ export default function DashboardDemo() {
                 className="hover:underline"
               >
                 <Figure>
-                  {new Intl.NumberFormat('en-US', {
-                    style: 'currency',
-                    currency: 'USD',
-                    maximumFractionDigits: 0,
-                  }).format(metrics.opportunities.totalAmount)}
+                  {formatCurrency(pipelineValue, workspaceCurrency)}
                 </Figure>
               </Link>
             </div>
@@ -357,7 +398,7 @@ function PipelineOverview({ metrics }: { metrics: DashboardMetrics }) {
   const maxValue = Math.max(...stages.map((s) => s.value), 1);
 
   return (
-    <div className="max-h-[400px] space-y-6 p-6 xl:max-h-[300px] xl:space-y-4 xl:p-4 2xl:max-h-[400px] 2xl:space-y-6 2xl:p-6">
+    <div className="max-h-[400px] space-y-6 p-6 xl:max-h-[430px] xl:space-y-4 xl:p-4 2xl:max-h-[440px] 2xl:space-y-6 2xl:p-6 overflow-auto">
       {stages.map((stage, index) => (
         <div key={stage.label} className="flex flex-col gap-1.5">
           <div className="flex justify-between items-center">
@@ -381,6 +422,8 @@ function PipelineOverview({ metrics }: { metrics: DashboardMetrics }) {
 }
 
 function UpcomingTasks({ tasks }: { tasks: DashboardTask[] }) {
+  const { formatDate } = useLocalization();
+
   const formatDueDateShort = (dateString: string) => {
     const date = new Date(dateString);
     const today = new Date();
@@ -400,7 +443,7 @@ function UpcomingTasks({ tasks }: { tasks: DashboardTask[] }) {
     if (dayDiff > 1) return `In ${dayDiff} days`;
     if (dayDiff === -1) return 'Yesterday';
     if (dayDiff < -1) return 'Overdue';
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    return formatDate(dateString);
   };
 
   const getTaskPriority = (task: DashboardTask) => {
@@ -414,7 +457,7 @@ function UpcomingTasks({ tasks }: { tasks: DashboardTask[] }) {
   const latestTasks = useMemo(() => tasks.slice(0, 3), [tasks]);
 
   return (
-    <div className="max-h-[500px] overflow-y-auto xl:max-h-[350px] 2xl:max-h-[500px]">
+    <div className="max-h-[400px] overflow-y-auto xl:max-h-[430px] 2xl:max-h-[440px] overflow-auto">
       {latestTasks.length === 0 ? (
             <div className="flex h-40 flex-col items-center justify-center text-slate-400">
               <FileText className="mb-2 h-8 w-8 opacity-20" />

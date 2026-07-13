@@ -4,6 +4,11 @@ import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client'
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
 import { Database } from '~/lib/database.types';
+import {
+  filterLeadForRead,
+  loadFieldPermissionContext,
+  validateLeadWritePayload,
+} from '~/lib/field-permission';
 import { catchAsync, successDataResponse } from '~/utils/response-handler';
 
 type Lead = Database['public']['Tables']['crm_leads']['Row'];
@@ -76,6 +81,7 @@ const getLeadById = catchAsync(
           source:lead_sources(id, source_name, source_key, color, icon),
           owner:accounts!crm_leads_owner_id_fkey(id, email, name),
           created_by_account:accounts!crm_leads_created_by_fkey(id, email, name),
+          updated_by_account:accounts!crm_leads_updated_by_fkey(id, email, name),
           industry:crm_industries(id, industry_name)
         `,
       )
@@ -170,9 +176,17 @@ const getLeadById = catchAsync(
       is_converted_to_account: Boolean(account?.length),
     } as LeadWithRelations;
 
+    const fieldCtx = await loadFieldPermissionContext(supabase, {
+      workspaceId: lead.workspace_id,
+      entityType: 'leads',
+      productKey: 'sales',
+      userId: user.id,
+      moduleKey: 'leads',
+    });
+
     return successDataResponse(
       'Lead retrieved successfully',
-      leadWithConversion,
+      filterLeadForRead(leadWithConversion, fieldCtx),
     );
   },
 );
@@ -211,51 +225,6 @@ const updateLead = catchAsync(
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
-    // Update lead - support partial updates
-    const updateData: Database['public']['Tables']['crm_leads']['Update'] = {};
-
-    // Only include fields that are provided
-    if (body.first_name !== undefined) updateData.first_name = body.first_name;
-    if (body.last_name !== undefined)
-      updateData.last_name = body.last_name || null;
-    if (body.email !== undefined) updateData.email = body.email || null;
-    if (body.alt_email !== undefined)
-      updateData.alt_email = body.alt_email || null;
-    if (body.phone_number !== undefined)
-      updateData.phone_number = body.phone_number || null;
-    if (body.mobile_number !== undefined)
-      updateData.mobile_number = body.mobile_number || null;
-    if (body.linkedin_url !== undefined)
-      updateData.linkedin_url = body.linkedin_url || null;
-    if (body.company_name !== undefined)
-      updateData.company_name = body.company_name || null;
-    if (body.company_website !== undefined)
-      updateData.company_website = body.company_website || null;
-    if (body.company_linkedin_url !== undefined)
-      updateData.company_linkedin_url = body.company_linkedin_url || null;
-    if (body.job_title !== undefined)
-      updateData.job_title = body.job_title || null;
-    if (body.department !== undefined)
-      updateData.department = body.department || null;
-    if (body.industry_id !== undefined)
-      updateData.industry_id = body.industry_id || null;
-    if (body.company_size !== undefined)
-      updateData.company_size = body.company_size || null;
-    if (body.annual_revenue !== undefined)
-      updateData.annual_revenue = body.annual_revenue || null;
-    if (body.location !== undefined)
-      updateData.location = body.location || null;
-    if (body.timezone !== undefined)
-      updateData.timezone = body.timezone || null;
-    if (body.status_id !== undefined) updateData.status_id = body.status_id;
-    if (body.source_id !== undefined)
-      updateData.source_id = body.source_id || null;
-    if (body.trigger !== undefined) updateData.trigger = body.trigger || null;
-    if (body.lead_score !== undefined) updateData.lead_score = body.lead_score;
-    if (body.owner_id !== undefined)
-      updateData.owner_id = body.owner_id || null;
-    if (body.notes !== undefined) updateData.notes = body.notes || null;
-
     // Get the lead to check permissions
     const { data: existingLead } = await supabase
       .from('crm_leads')
@@ -265,6 +234,91 @@ const updateLead = catchAsync(
 
     if (!existingLead) {
       return NextResponse.json({ message: 'Lead not found' }, { status: 404 });
+    }
+
+    const fieldCtx = await loadFieldPermissionContext(supabase, {
+      workspaceId: existingLead.workspace_id,
+      entityType: 'leads',
+      productKey: 'sales',
+      userId: user.id,
+      moduleKey: 'leads',
+    });
+
+    const { sanitized, rejected } = validateLeadWritePayload(body, fieldCtx);
+
+    if (rejected.length > 0) {
+      return NextResponse.json(
+        {
+          message: 'You do not have permission to update some fields',
+          rejectedFields: rejected,
+        },
+        { status: 403 },
+      );
+    }
+
+    // Update lead - support partial updates from sanitized payload
+    const updateData: Database['public']['Tables']['crm_leads']['Update'] = {};
+
+    if (sanitized.first_name !== undefined) updateData.first_name = sanitized.first_name as string;
+    if (sanitized.last_name !== undefined)
+      updateData.last_name = (sanitized.last_name as string) || null;
+    if (sanitized.email !== undefined) updateData.email = (sanitized.email as string) || null;
+    if (sanitized.alt_email !== undefined)
+      updateData.alt_email = (sanitized.alt_email as string) || null;
+    if (sanitized.phone_number !== undefined)
+      updateData.phone_number = (sanitized.phone_number as string) || null;
+    if (sanitized.mobile_number !== undefined)
+      updateData.mobile_number = (sanitized.mobile_number as string) || null;
+    if (sanitized.linkedin_url !== undefined)
+      updateData.linkedin_url = (sanitized.linkedin_url as string) || null;
+    if (sanitized.company_name !== undefined)
+      updateData.company_name = (sanitized.company_name as string) || null;
+    if (sanitized.company_website !== undefined)
+      updateData.company_website = (sanitized.company_website as string) || null;
+    if (sanitized.company_linkedin_url !== undefined)
+      updateData.company_linkedin_url = (sanitized.company_linkedin_url as string) || null;
+    if (sanitized.job_title !== undefined)
+      updateData.job_title = (sanitized.job_title as string) || null;
+    if (sanitized.department !== undefined)
+      updateData.department = (sanitized.department as string) || null;
+    if (sanitized.industry_id !== undefined)
+      updateData.industry_id = (sanitized.industry_id as string) || null;
+    if (sanitized.company_size !== undefined)
+      updateData.company_size = (sanitized.company_size as Database['public']['Tables']['crm_leads']['Update']['company_size']) || null;
+    if (sanitized.annual_revenue !== undefined)
+      updateData.annual_revenue = (sanitized.annual_revenue as number) || null;
+    if (sanitized.location !== undefined)
+      updateData.location = (sanitized.location as string) || null;
+    if (sanitized.timezone !== undefined)
+      updateData.timezone = (sanitized.timezone as string) || null;
+    if (sanitized.status_id !== undefined) updateData.status_id = sanitized.status_id as string;
+    if (sanitized.source_id !== undefined)
+      updateData.source_id = (sanitized.source_id as string) || null;
+    if (sanitized.trigger !== undefined) updateData.trigger = (sanitized.trigger as string) || null;
+    if (sanitized.lead_score !== undefined) updateData.lead_score = sanitized.lead_score as number;
+    if (sanitized.owner_id !== undefined)
+      updateData.owner_id = (sanitized.owner_id as string) || null;
+    if (sanitized.notes !== undefined) updateData.notes = (sanitized.notes as string) || null;
+    if (sanitized.tags !== undefined) updateData.tags = sanitized.tags as string[];
+    if (sanitized.custom_fields !== undefined) {
+      const { data: currentLead } = await supabase
+        .from('crm_leads')
+        .select('custom_fields')
+        .eq('id', leadId)
+        .single();
+      const existingCustom =
+        (currentLead?.custom_fields as Record<string, unknown>) ?? {};
+      updateData.custom_fields = {
+        ...existingCustom,
+        ...(sanitized.custom_fields as Record<string, unknown>),
+      } as Database['public']['Tables']['crm_leads']['Update']['custom_fields'];
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      return NextResponse.json(
+        { message: 'No valid fields to update' },
+        { status: 400 },
+      );
     }
 
     // Get workspace to check if user is owner
@@ -282,12 +336,15 @@ const updateLead = catchAsync(
     let hasEditPermission = isWorkspaceOwner || isOwner || isCreator;
 
     if (!hasEditPermission) {
-      const { data: member } = await supabase
+      const { data: members } = await supabase
         .from('workspace_members')
-        .select('role_id')
+        .select('role_id, product_key')
         .eq('user_id', user.id)
-        .eq('workspace_id', existingLead.workspace_id)
-        .single();
+        .eq('workspace_id', existingLead.workspace_id);
+
+      const member = members?.find((m: any) => m.product_key === 'sales')
+        || members?.find((m: any) => m.product_key === null)
+        || members?.[0];
 
       if (member?.role_id) {
         const { data: permission } = await supabase
@@ -338,6 +395,7 @@ const updateLead = catchAsync(
         source:lead_sources(id, source_name, source_key, color, icon),
         owner:accounts!crm_leads_owner_id_fkey(id, email, name),
         created_by_account:accounts!crm_leads_created_by_fkey(id, email, name),
+        updated_by_account:accounts!crm_leads_updated_by_fkey(id, email, name),
         industry:crm_industries(id, industry_name)
       `,
       )
@@ -351,7 +409,7 @@ const updateLead = catchAsync(
     return NextResponse.json(
       {
         message: 'Lead updated successfully',
-        data: lead,
+        data: filterLeadForRead(lead, fieldCtx),
       },
       { status: 200 },
     );
@@ -415,12 +473,15 @@ const deleteLead = catchAsync(
 
     // If not owner, check RBAC permissions
     if (!hasPermission) {
-      const { data: member } = await supabase
+      const { data: members } = await supabase
         .from('workspace_members')
-        .select('role_id')
+        .select('role_id, product_key')
         .eq('user_id', user.id)
-        .eq('workspace_id', existingLead.workspace_id)
-        .single();
+        .eq('workspace_id', existingLead.workspace_id);
+
+      const member = members?.find((m: any) => m.product_key === 'sales')
+        || members?.find((m: any) => m.product_key === null)
+        || members?.[0];
 
       if (member?.role_id) {
         const { data: permission } = await supabase

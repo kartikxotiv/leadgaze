@@ -31,6 +31,9 @@ import {
   TableRow,
 } from '@kit/ui/table';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
+import { useColumnResize } from '@kit/ui/use-column-resize';
+import { useTableSort } from '@kit/ui/use-table-sort';
+import { SortableTableHead } from '@kit/ui/sortable-table-head';
 
 import { useDebounce } from '~/lib/hooks/use-debounce';
 import { ModuleGuard } from '~/lib/rbac/module-guard';
@@ -42,7 +45,6 @@ import {
   getRolesService,
   reorderRolesService,
 } from '~/services/roles.service';
-
 import { CreateRoleDialog } from './components/create-role-dialog';
 import { EditRoleDialog } from './components/edit-role-dialog';
 
@@ -59,7 +61,8 @@ export default function RolesPage() {
   const [orderedRoles, setOrderedRoles] = useState<Role[]>([]);
   const [draggedRoleIndex, setDraggedRoleIndex] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [typeFilter, setTypeFilter] = useState<string>('all');
+  const [typeFilter, setTypeFilter] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<string>('');
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
   const columns = useMemo(
@@ -82,55 +85,86 @@ export default function RolesPage() {
       status: true,
     });
 
+  const { getHeaderProps, getResizeHandleProps } = useColumnResize('roles');
+
+
+  const { sortColumn, sortDirection, toggleSort, sortState } = useTableSort<Role>(
+    'roles',
+    [],
+    { mode: 'server' }
+  );
+
   // Fetch roles filtered by current product/module
   const {
     data: roles = EMPTY_ROLES,
     isLoading,
     error,
   } = useQuery({
-    queryKey: ['workspaceRoles', currentWorkspace?.id, productKey],
+    queryKey: ['workspaceRoles', currentWorkspace?.id, productKey, sortState, typeFilter, statusFilter, debouncedSearchTerm],
     queryFn: async () => {
-      const res = await getRolesService(currentWorkspace?.id || '', productKey);
+      const res = await getRolesService(
+        currentWorkspace?.id || '',
+        productKey,
+        sortColumn || undefined,
+        sortDirection || undefined,
+        {
+          type: typeFilter && typeFilter !== 'all' ? typeFilter : undefined,
+          status:
+            statusFilter && statusFilter !== 'all' ? statusFilter : undefined,
+          searchTerm: debouncedSearchTerm || undefined,
+        }
+      );
       return res?.data || [];
     },
     enabled: !!currentWorkspace?.id,
   });
 
-  // Type filter items for StatusFilterDropdown
-  const typeFilterItems = useMemo(
-    () => [
-      { id: 'system', status_name: 'System Roles', color: '#3b82f6' },
-      { id: 'custom', status_name: 'Custom Roles', color: '#eab308' },
-    ],
-    [],
-  );
-
-  const typeBreakdown = useMemo(
-    () => ({
-      system: { count: roles.filter((r: Role) => r.is_system).length },
-      custom: { count: roles.filter((r: Role) => !r.is_system).length },
-    }),
-    [roles],
-  );
+  const filterGroups = useMemo(() => {
+    return [
+      {
+        key: 'type',
+        label: 'Type',
+        selectedValue: typeFilter || undefined,
+        selectedLabel:
+          typeFilter === 'system'
+            ? 'System'
+            : typeFilter === 'custom'
+              ? 'Custom'
+              : undefined,
+        options: [
+          { value: 'system', label: 'System' },
+          { value: 'custom', label: 'Custom' },
+        ],
+        onSelect: (val: string) => setTypeFilter(val),
+      },
+      {
+        key: 'status',
+        label: 'Status',
+        selectedValue: statusFilter || undefined,
+        selectedLabel:
+          statusFilter === 'active'
+            ? 'Active'
+            : statusFilter === 'inactive'
+              ? 'Inactive'
+              : undefined,
+        options: [
+          { value: 'active', label: 'Active' },
+          { value: 'inactive', label: 'Inactive' },
+        ],
+        onSelect: (val: string) => setStatusFilter(val),
+      },
+    ];
+  }, [typeFilter, statusFilter]);
 
   // Filtered roles based on type filter and search term
   const filteredRoles = useMemo(() => {
-    let result = orderedRoles;
-    if (typeFilter === 'system') {
-      result = result.filter((r: Role) => r.is_system);
-    } else if (typeFilter === 'custom') {
-      result = result.filter((r: Role) => !r.is_system);
-    }
-    if (debouncedSearchTerm) {
-      const term = debouncedSearchTerm.toLowerCase();
-      result = result.filter(
-        (r: Role) =>
-          r.role_name.toLowerCase().includes(term) ||
-          r.role_key.toLowerCase().includes(term),
-      );
-    }
-    return result;
-  }, [orderedRoles, typeFilter, debouncedSearchTerm]);
+    return orderedRoles;
+  }, [orderedRoles]);
+
+  const isDragDisabled =
+    (sortColumn !== null && sortColumn !== 'hierarchy_level') ||
+    (typeFilter !== 'all' && typeFilter !== '') ||
+    !!debouncedSearchTerm;
 
   // Reorder mutation
   const reorderRolesMutation = useMutation({
@@ -153,12 +187,7 @@ export default function RolesPage() {
   // Sync state when data fetches
   useEffect(() => {
     if (Array.isArray(roles)) {
-      setOrderedRoles(
-        [...roles].sort(
-          (a: Role, b: Role) =>
-            (b.hierarchy_level || 0) - (a.hierarchy_level || 0),
-        ),
-      );
+      setOrderedRoles(roles);
     }
   }, [roles]);
 
@@ -245,6 +274,18 @@ export default function RolesPage() {
     return `Level ${role.hierarchy_level || 0}`;
   };
 
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (typeFilter && typeFilter !== 'all') count++;
+    if (statusFilter && statusFilter !== 'all') count++;
+    return count;
+  }, [typeFilter, statusFilter]);
+
+  const handleClearFilters = () => {
+    setTypeFilter('');
+    setStatusFilter('');
+  };
+
   return (
     <ModuleGuard module="roles">
       <div className="flex shrink-0 flex-col gap-2 overflow-hidden">
@@ -257,16 +298,11 @@ export default function RolesPage() {
       {/* Toolbar with search, type filter, actions */}
       <div className="w-full max-w-full min-w-0 shrink-0 border-b pb-2">
         <ListToolBar
-          statusSlot={
-            <StatusFilterDropdown
-              statuses={typeFilterItems}
-              selectedStatus={typeFilter}
-              onStatusChange={setTypeFilter}
-              statusBreakdown={typeBreakdown}
-              totalCount={roles.length}
-              allLabel="All Roles"
-            />
-          }
+          filterGroups={filterGroups}
+          showFilter
+          filterLabel="Show Filters"
+          activeFilterCount={activeFilterCount}
+          onClearFilters={handleClearFilters}
           showSearch
           searchPlaceholder="Search roles..."
           searchValue={searchTerm}
@@ -320,16 +356,10 @@ export default function RolesPage() {
                   <TableBody>
                     {[...Array(8)].map((_, i) => (
                       <TableRow key={i}>
-                        <TableCell
-                          className="h-[52px] px-4 py-2"
-                          colSpan={
-                            visibility
-                              ? Object.values(visibility).filter(
-                                  (v) => v !== false,
-                                ).length + 1
-                              : 6
-                          }
-                        >
+                         <TableCell
+                           className="h-[52px] px-4 py-2"
+                           colSpan={6}
+                         >
                           <Skeleton className="h-7 w-full" />
                         </TableCell>
                       </TableRow>
@@ -350,13 +380,74 @@ export default function RolesPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    {isVisible('role_name') && <TableHead>Role Name</TableHead>}
-                    {isVisible('role_key') && <TableHead>Role Key</TableHead>}
+                    {isVisible('role_name') && (
+  <SortableTableHead
+    label="Role Name"
+    columnId="role_name"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('role_name')}
+  >
+    <span className="col-resize-handle" {...getResizeHandleProps('role_name')} />
+  </SortableTableHead>
+)}
+                    {isVisible('role_key') && (
+  <SortableTableHead
+    label="Role Key"
+    columnId="role_key"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('role_key')}
+  >
+    <span className="col-resize-handle" {...getResizeHandleProps('role_key')} />
+  </SortableTableHead>
+)}
                     {isVisible('hierarchy') && (
-                      <TableHead>Access Level</TableHead>
-                    )}
-                    {isVisible('type') && <TableHead>Type</TableHead>}
-                    {isVisible('status') && <TableHead>Status</TableHead>}
+  <SortableTableHead
+    label="Access Level"
+    columnId="hierarchy"
+    sortKey="hierarchy_level"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('hierarchy')}
+  >
+    <span className="col-resize-handle" {...getResizeHandleProps('hierarchy')} />
+  </SortableTableHead>
+)}
+                    {isVisible('type') && (
+  <SortableTableHead
+    label="Type"
+    columnId="type"
+    sortKey="is_system"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('type')}
+  >
+    <span className="col-resize-handle" {...getResizeHandleProps('type')} />
+  </SortableTableHead>
+)}
+                    {isVisible('status') && (
+  <SortableTableHead
+    label="Status"
+    columnId="status"
+    sortKey="is_active"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('status')}
+  >
+    <span className="col-resize-handle" {...getResizeHandleProps('status')} />
+  </SortableTableHead>
+)}
                     <TableHead className="sticky-right-header text-right">
                       Actions
                     </TableHead>
@@ -367,7 +458,7 @@ export default function RolesPage() {
                     <TableRow
                       key={role.id}
                       className={draggedRoleIndex === index ? 'opacity-50' : ''}
-                      draggable={canAccess('roles', 'edit')}
+                      draggable={!isDragDisabled && canAccess('roles', 'edit')}
                       onDragStart={(e) => handleDragStart(e, index)}
                       onDragOver={(e) => handleDragOver(e, index)}
                       onDrop={(e) => handleDrop(e)}

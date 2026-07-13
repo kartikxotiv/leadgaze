@@ -63,7 +63,7 @@ export function PasswordSignUpForm({
           name={'fullName'}
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-xs font-semibold text-slate-800">
+              <FormLabel className="text-xs font-semibold text-slate-800 dark:text-slate-800">
                 <Trans i18nKey={'Full Name'} />
               </FormLabel>
 
@@ -90,7 +90,7 @@ export function PasswordSignUpForm({
           name={'email'}
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-xs font-semibold text-slate-800">
+              <FormLabel className="text-xs font-semibold text-slate-800 dark:text-slate-800">
                 Work email
               </FormLabel>
 
@@ -119,7 +119,7 @@ export function PasswordSignUpForm({
           name={'password'}
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-xs font-semibold text-slate-800">
+              <FormLabel className="text-xs font-semibold text-slate-800 dark:text-slate-800">
                 <Trans i18nKey={'common:password'} />
               </FormLabel>
 
@@ -147,7 +147,7 @@ export function PasswordSignUpForm({
           name={'repeatPassword'}
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-xs font-semibold text-slate-800">
+              <FormLabel className="text-xs font-semibold text-slate-800 dark:text-slate-800">
                 Confirm password
               </FormLabel>
 
@@ -167,7 +167,7 @@ export function PasswordSignUpForm({
 
               <FormMessage />
 
-              <FormDescription className={'text-xs text-slate-400'}>
+              <FormDescription className={'text-xs text-slate-400 dark:text-slate-800'}>
                 <Trans i18nKey={'auth:repeatPasswordHint'} />
               </FormDescription>
             </FormItem>

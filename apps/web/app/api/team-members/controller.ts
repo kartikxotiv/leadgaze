@@ -41,6 +41,7 @@ const getMembers = catchAsync(
     const supabase = getSupabaseServerClient();
     const url = new URL(request.url);
     const workspaceId = url.searchParams.get('workspaceId');
+    const productKey = url.searchParams.get('productKey');
 
     if (!workspaceId) {
       return NextResponse.json(
@@ -49,17 +50,32 @@ const getMembers = catchAsync(
       );
     }
 
-    // Get members with related role data via join
-    const { data: members, error } = await (
-      supabase.from('workspace_members').select(
-        `
-        *,
-        role:workspace_roles(id, role_name, role_key, hierarchy_level, color)
+    // Build query with optional product_key filter
+    let query = supabase.from('workspace_members').select(
+      `
+        id,
+        workspace_id,
+        user_id,
+        role_id,
+        status,
+        product_key,
+        created_at,
+        role:workspace_roles(id, role_name, role_key, hierarchy_level, color, product_key)
       `,
-      ) as any
-    )
-      .eq('workspace_id', workspaceId)
-      .order('created_at', { ascending: false });
+    );
+
+    query = query.eq('workspace_id', workspaceId);
+    
+    // Filter out removed/deleted members
+    query = query.neq('status', 'removed');
+
+    if (productKey) {
+      query = query.eq('product_key', productKey);
+    }
+
+    query = query.order('created_at', { ascending: false });
+
+    const { data: members, error } = await (query as any);
 
     if (error) {
       console.error('Get members error:', error);
@@ -305,9 +321,21 @@ const inviteMember = catchAsync(
     // Fetch workspace details for email
     const { data: workspace } = await supabase
       .from('workspaces')
-      .select('id, name')
+      .select('id, name, company_id')
       .eq('id', workspaceId)
       .single();
+
+    let billingCountry = 'US';
+    if (workspace?.company_id) {
+      const { data: company } = await supabase
+        .from('companies')
+        .select('billing_country')
+        .eq('id', workspace.company_id)
+        .single();
+      if (company?.billing_country) {
+        billingCountry = company.billing_country;
+      }
+    }
 
     // Send invitation email
     const inviteUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/invite?token=${token}`;
@@ -334,6 +362,7 @@ const inviteMember = catchAsync(
           inviterName,
           productName: process.env.NEXT_PUBLIC_PRODUCT_NAME || 'Leadgaze',
           appUrl: process.env.NEXT_PUBLIC_APP_URL,
+          billingCountry,
         }),
       });
     } catch (error) {
@@ -786,9 +815,21 @@ const resendInvitationEmail = catchAsync(
     // Fetch workspace details for email
     const { data: workspace } = await supabase
       .from('workspaces')
-      .select('id, name')
+      .select('id, name, company_id')
       .eq('id', invitation.workspace_id)
       .single();
+
+    let billingCountry = 'US';
+    if (workspace?.company_id) {
+      const { data: company } = await supabase
+        .from('companies')
+        .select('billing_country')
+        .eq('id', workspace.company_id)
+        .single();
+      if (company?.billing_country) {
+        billingCountry = company.billing_country;
+      }
+    }
 
     // Get inviter info
     const { data: { user } = {} } = await supabase.auth.getUser();
@@ -817,6 +858,7 @@ const resendInvitationEmail = catchAsync(
           inviterName,
           productName: process.env.NEXT_PUBLIC_PRODUCT_NAME || 'Leadgaze',
           appUrl: process.env.NEXT_PUBLIC_APP_URL,
+          billingCountry,
         }),
       });
     } catch (error) {

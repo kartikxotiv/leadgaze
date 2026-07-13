@@ -1,21 +1,25 @@
 'use client';
 
 import { useState } from 'react';
-import type React from 'react';
+import React from 'react';
 
 import Link from 'next/link';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
+  Activity,
   ArrowLeft,
   Building2,
   CalendarDays,
+  Clock,
   Clock3,
+  FileText,
   Flag,
   Inbox,
   Mail,
   Paperclip,
   Pencil,
+  Settings,
   Tag,
   Timer,
   Trash2,
@@ -23,14 +27,21 @@ import {
   UserRound,
 } from 'lucide-react';
 import { toast } from 'sonner';
-
+import { DateTimePicker } from '@kit/ui/datetime-picker';
+import { format } from 'date-fns';
 import {
   CoreEmailComposeDialog,
   CoreEmailReplyDialog,
   CoreEntityPanel,
 } from '@kit/core/pages';
 import { getCoreEmailAccountsService } from '@kit/core/services';
-import { formatDate, formatDateOnly, formatDateTime } from '@kit/shared/utils';
+import { useLocalization } from '@kit/shared/localization';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@kit/ui/accordion';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -81,6 +92,8 @@ import {
 } from '@kit/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@kit/ui/tabs';
 import { Textarea } from '@kit/ui/textarea';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@kit/ui/tooltip';
+import { useColumnResize } from '@kit/ui/use-column-resize';
 import { cn } from '@kit/ui/utils';
 
 import {
@@ -90,6 +103,7 @@ import {
   logServiceCloudTicketTimeService,
   updateServiceCloudResourceService,
 } from '../../services';
+import { LeadCustomFieldInputs } from '~/components/leads/lead-custom-field-inputs';
 import {
   SERVICE_CLOUD_FEATURE_KEYS,
   SERVICE_CLOUD_MODULE_KEYS,
@@ -143,6 +157,79 @@ function actorLabel(activity: any) {
   return activity?.actor?.name || activity?.actor?.email || 'System';
 }
 
+function TicketCustomFieldsSection({
+  fields,
+  ticket,
+  canEditField,
+  canViewField,
+  onSave,
+  isSaving,
+}: {
+  fields: any[];
+  ticket: any;
+  canEditField?: (fieldKey: string) => boolean;
+  canViewField?: (fieldKey: string) => boolean;
+  onSave: (val: Record<string, unknown>) => void;
+  isSaving?: boolean;
+}) {
+  const initialValues = React.useMemo(() => {
+    return (ticket.custom_fields as Record<string, unknown>) || {};
+  }, [ticket.custom_fields]);
+
+  const [values, setValues] = useState<Record<string, unknown>>(initialValues);
+
+  // Sync state if ticket custom_fields values changes externally
+  React.useEffect(() => {
+    setValues(initialValues);
+  }, [initialValues]);
+
+  const isChanged = React.useMemo(() => {
+    return JSON.stringify(values) !== JSON.stringify(initialValues);
+  }, [values, initialValues]);
+
+  return (
+    <AccordionItem
+      value="custom-fields"
+      className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
+    >
+      <AccordionTrigger className="px-4 py-3 hover:no-underline">
+        <span className="primary-heading text-leadgaze-dark flex items-center gap-2 dark:text-white">
+          <Settings className="text-leadgaze-dark h-5 w-5 dark:text-white" />
+          Additional Data
+        </span>
+      </AccordionTrigger>
+      <AccordionContent className="px-4 pb-4">
+        <div className="space-y-4 pt-2">
+          <LeadCustomFieldInputs
+            fields={fields}
+            values={values}
+            onChange={(key, value) => {
+              setValues((prev) => ({
+                ...prev,
+                [key]: value,
+              }));
+            }}
+            canEdit={canEditField || (() => true)}
+            canView={canViewField || (() => true)}
+          />
+
+          {isChanged && (
+            <div className="flex justify-end pt-2">
+              <Button
+                size="sm"
+                disabled={isSaving}
+                onClick={() => onSave(values)}
+              >
+                Save Changes
+              </Button>
+            </div>
+          )}
+        </div>
+      </AccordionContent>
+    </AccordionItem>
+  );
+}
+
 function eventLabel(eventType?: string | null) {
   return String(eventType || 'activity')
     .split('_')
@@ -153,10 +240,19 @@ function eventLabel(eventType?: string | null) {
 export function ServiceCloudTicketDetailPage({
   workspaceId,
   ticketId,
+  canViewField,
+  canEditField,
+  customFieldsList,
 }: {
   workspaceId: string;
   ticketId: string;
+  /** Optional FLS: fields returning false are hidden from the detail view. */
+  canViewField?: (fieldKey: string) => boolean;
+  /** Optional FLS: fields returning false are shown as read-only in the sidebar. */
+  canEditField?: (fieldKey: string) => boolean;
+  customFieldsList?: any[];
 }) {
+  const { formatDate, formatDateOnly, formatDateTime } = useLocalization();
   const queryClient = useQueryClient();
   const { canAccess, isLoading: permissionsLoading } =
     useServiceCloudPermissions(workspaceId);
@@ -183,6 +279,13 @@ export function ServiceCloudTicketDetailPage({
   });
   const [replyEmail, setReplyEmail] = useState<any | null>(null);
   const [isComposeOpen, setIsComposeOpen] = useState(false);
+  const [openAccordion, setOpenAccordion] = useState<string | undefined>(
+    'ticket-properties',
+  );
+
+  const { getHeaderProps, getResizeHandleProps } = useColumnResize(
+    'sc-ticket-details-time-entries',
+  );
 
   const { data, isLoading } = useQuery({
     queryKey,
@@ -335,8 +438,22 @@ export function ServiceCloudTicketDetailPage({
   const timeEntries = data.timeEntries ?? [];
   const assignees = data.assignees ?? [];
   const lookups = data.lookups ?? {};
-  const statuses = lookups.statuses ?? [];
-  const priorities = lookups.priorities ?? [];
+  const allStatuses = lookups.statuses ?? [];
+  const allPriorities = lookups.priorities ?? [];
+
+  // Filter out private statuses/priorities that the current user cannot access
+  const statuses = allStatuses.filter((s: any) => {
+    if (s.access_type === 'public') return true;
+    if (s.access_type === 'private') return false;
+    return true;
+  });
+
+  const priorities = allPriorities.filter((p: any) => {
+    if (p.access_type === 'public') return true;
+    if (p.access_type === 'private') return false;
+    return true;
+  });
+
   const categories = lookups.categories ?? [];
   const members = lookups.members ?? [];
   const assignedAgent = members.find(
@@ -377,17 +494,17 @@ export function ServiceCloudTicketDetailPage({
     ticket.due_at ??
     (ticket.created_at && ticket.priority?.resolution_due_minutes
       ? new Date(
-          new Date(ticket.created_at).getTime() +
-            ticket.priority.resolution_due_minutes * 60 * 1000,
-        ).toISOString()
+        new Date(ticket.created_at).getTime() +
+        ticket.priority.resolution_due_minutes * 60 * 1000,
+      ).toISOString()
       : null);
   const responseDueAt =
     ticket.response_due_at ||
     (ticket.created_at && ticket.priority?.response_due_minutes
       ? new Date(
-          new Date(ticket.created_at).getTime() +
-            ticket.priority.response_due_minutes * 60 * 1000,
-        ).toISOString()
+        new Date(ticket.created_at).getTime() +
+        ticket.priority.response_due_minutes * 60 * 1000,
+      ).toISOString()
       : null);
 
   const updateTicket = (payload: Record<string, unknown>) =>
@@ -420,10 +537,10 @@ export function ServiceCloudTicketDetailPage({
                   style={
                     ticket.status?.color
                       ? {
-                          backgroundColor: `${ticket.status.color}20`,
-                          borderColor: `${ticket.status.color}40`,
-                          color: ticket.status.color,
-                        }
+                        backgroundColor: `${ticket.status.color}20`,
+                        borderColor: `${ticket.status.color}40`,
+                        color: ticket.status.color,
+                      }
                       : undefined
                   }
                 >
@@ -441,10 +558,10 @@ export function ServiceCloudTicketDetailPage({
                     style={
                       ticket.priority?.color
                         ? {
-                            backgroundColor: `${ticket.priority.color}20`,
-                            borderColor: `${ticket.priority.color}40`,
-                            color: ticket.priority.color,
-                          }
+                          backgroundColor: `${ticket.priority.color}20`,
+                          borderColor: `${ticket.priority.color}40`,
+                          color: ticket.priority.color,
+                        }
                         : undefined
                     }
                   >
@@ -458,8 +575,15 @@ export function ServiceCloudTicketDetailPage({
                   </Badge>
                 ) : null}
                 <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs text-white/75">
-                  Created {formatDateTime(ticket.created_at)}
+                  Created by {ticket.created_by_account?.name || 'Unknown'} on{' '}
+                  {formatDate(ticket.created_at)}
                 </span>
+                {ticket.updated_by && (
+                  <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs text-white/75">
+                    Updated by {ticket.updated_by_account?.name || 'Unknown'} on{' '}
+                    {formatDate(ticket.updated_at)}
+                  </span>
+                )}
                 {ticket.priority?.resolution_due_minutes ? (
                   <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs text-white/75">
                     SLA: {ticket.priority.resolution_due_minutes} mins
@@ -475,17 +599,23 @@ export function ServiceCloudTicketDetailPage({
           </div>
 
           <div className="grid gap-3 rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur md:min-w-[360px]">
-            <Metric
-              label="Customer"
-              value={ticket.customer?.name ?? '-'}
-              muted
-            />
-            <Metric
-              label="Primary owner"
-              value={optionLabel(assignedAgent)}
-              muted
-            />
-            <Metric label="Due date" value={formatDate(dueValue)} muted />
+            {(!canViewField || canViewField('customer')) && (
+              <Metric
+                label="Customer"
+                value={ticket.customer?.name ?? '-'}
+                muted
+              />
+            )}
+            {(!canViewField || canViewField('assigned_agent_id')) && (
+              <Metric
+                label="Primary owner"
+                value={optionLabel(assignedAgent)}
+                muted
+              />
+            )}
+            {(!canViewField || canViewField('due_at')) && (
+              <Metric label="Due date" value={formatDate(dueValue)} muted />
+            )}
             <Metric
               label="Logged"
               value={formatDuration(totalLoggedSeconds)}
@@ -531,18 +661,44 @@ export function ServiceCloudTicketDetailPage({
                 defaultValue={canManageInbox ? 'conversation' : 'work'}
                 className="space-y-5"
               >
-                <TabsList
-                  className={`grid h-auto grid-cols-2 rounded-2xl bg-slate-100 p-1 md:w-fit ${
-                    canManageInbox ? 'md:grid-cols-5' : 'md:grid-cols-4'
-                  } dark:bg-slate-900`}
-                >
+                <TabsList className="mb-2 h-auto w-full justify-start gap-3 overflow-x-auto rounded-none border-b bg-transparent p-0 [-ms-overflow-style:none] [scrollbar-width:none] sm:gap-6 [&::-webkit-scrollbar]:hidden">
                   {canManageInbox ? (
-                    <TabsTrigger value="conversation">Conversation</TabsTrigger>
+                    <TabsTrigger
+                      value="conversation"
+                      className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
+                    >
+                      <Mail className="mr-2 h-4 w-4" />
+                      Conversation
+                    </TabsTrigger>
                   ) : null}
-                  <TabsTrigger value="work">Time Log</TabsTrigger>
-                  <TabsTrigger value="notes">Notes</TabsTrigger>
-                  <TabsTrigger value="documents">Documents</TabsTrigger>
-                  <TabsTrigger value="activity">Activity</TabsTrigger>
+                  <TabsTrigger
+                    value="work"
+                    className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
+                  >
+                    <Clock3 className="mr-2 h-4 w-4" />
+                    Time Log
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="notes"
+                    className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
+                  >
+                    <FileText className="mr-2 h-4 w-4" />
+                    Notes
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="documents"
+                    className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
+                  >
+                    <Paperclip className="mr-2 h-4 w-4" />
+                    Documents
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="activity"
+                    className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
+                  >
+                    <Activity className="mr-2 h-4 w-4" />
+                    Activity
+                  </TabsTrigger>
                 </TabsList>
 
                 {canManageInbox ? (
@@ -573,7 +729,7 @@ export function ServiceCloudTicketDetailPage({
                                         : `To ${emailRecipientText(email)}`}
                                     </div>
                                     {Array.isArray(email?.cc_emails) &&
-                                    email.cc_emails.length > 0 ? (
+                                      email.cc_emails.length > 0 ? (
                                       <div className="text-muted-foreground mt-1 text-xs">
                                         Cc {email.cc_emails.join(', ')}
                                       </div>
@@ -593,8 +749,8 @@ export function ServiceCloudTicketDetailPage({
                                     <span className="text-muted-foreground text-xs">
                                       {formatDateTime(
                                         email?.received_at ||
-                                          email?.sent_at ||
-                                          email?.created_at,
+                                        email?.sent_at ||
+                                        email?.created_at,
                                       )}
                                     </span>
                                   </div>
@@ -635,47 +791,25 @@ export function ServiceCloudTicketDetailPage({
                     >
                       <div className="space-y-4 px-6 pb-4">
                         <Field label="Date">
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <Button
-                                variant="outline"
-                                className={cn(
-                                  'w-full justify-start text-left font-normal',
-                                  !timeForm.logged_date &&
-                                    'text-muted-foreground',
-                                )}
-                              >
-                                <CalendarDays className="mr-2 h-4 w-4" />
-                                {timeForm.logged_date
-                                  ? formatDateOnly(timeForm.logged_date)
-                                  : 'Pick a date'}
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent
-                              className="w-auto p-0"
-                              align="start"
-                            >
-                              <Calendar
-                                mode="single"
-                                selected={
-                                  timeForm.logged_date
-                                    ? new Date(
-                                        timeForm.logged_date + 'T00:00:00',
-                                      )
-                                    : undefined
-                                }
-                                onSelect={(date) =>
-                                  setTimeForm((prev) => ({
-                                    ...prev,
-                                    logged_date: date
-                                      ? toLocalDateString(date)
-                                      : prev.logged_date,
-                                  }))
-                                }
-                                captionLayout="dropdown"
-                              />
-                            </PopoverContent>
-                          </Popover>
+                          <DateTimePicker
+                            mode="date"
+                            placeholder="Pick a date"
+                            value={
+                              timeForm.logged_date
+                                ? new Date(
+                                  timeForm.logged_date + 'T00:00:00',
+                                )
+                                : undefined
+                            }
+                            onChange={(date) =>
+                              setTimeForm((prev) => ({
+                                ...prev,
+                                logged_date: date
+                                  ? toLocalDateString(date)
+                                  : prev.logged_date,
+                              }))
+                            }
+                          />
                         </Field>
                         <div className="grid grid-cols-2 gap-3">
                           <Field label="Hours">
@@ -760,20 +894,61 @@ export function ServiceCloudTicketDetailPage({
                                   <Table>
                                     <TableHeader>
                                       <TableRow>
-                                        <TableHead className="w-[80px]">
+                                        <TableHead
+                                          className="relative w-[80px]"
+                                          {...getHeaderProps('s_no')}
+                                        >
                                           S. No.
+                                          <span
+                                            className="col-resize-handle"
+                                            {...getResizeHandleProps('s_no')}
+                                          />
                                         </TableHead>
-                                        <TableHead className="max-w-[150px]">
+                                        <TableHead
+                                          className="relative max-w-[150px]"
+                                          {...getHeaderProps('activities')}
+                                        >
                                           Activities
+                                          <span
+                                            className="col-resize-handle"
+                                            {...getResizeHandleProps(
+                                              'activities',
+                                            )}
+                                          />
                                         </TableHead>
-                                        <TableHead className="max-w-[200px]">
+                                        <TableHead
+                                          className="relative max-w-[200px]"
+                                          {...getHeaderProps('description')}
+                                        >
                                           Description
+                                          <span
+                                            className="col-resize-handle"
+                                            {...getResizeHandleProps(
+                                              'description',
+                                            )}
+                                          />
                                         </TableHead>
-                                        <TableHead className="w-[150px]">
+                                        <TableHead
+                                          className="relative w-[150px]"
+                                          {...getHeaderProps('author')}
+                                        >
                                           Author
+                                          <span
+                                            className="col-resize-handle"
+                                            {...getResizeHandleProps('author')}
+                                          />
                                         </TableHead>
-                                        <TableHead className="w-[180px]">
+                                        <TableHead
+                                          className="relative w-[180px]"
+                                          {...getHeaderProps('date_time')}
+                                        >
                                           Date &amp; Time Log
+                                          <span
+                                            className="col-resize-handle"
+                                            {...getResizeHandleProps(
+                                              'date_time',
+                                            )}
+                                          />
                                         </TableHead>
                                         <TableHead className="w-[100px] text-center"></TableHead>
                                       </TableRow>
@@ -906,7 +1081,7 @@ export function ServiceCloudTicketDetailPage({
                     description="Status, priority, assignment, email, and time-log history for this ticket."
                     hideHeaderBorder={true}
                   >
-                    <div className="scrollbar-thin max-h-[calc(100vh-450px)] min-h-[300px] space-y-3 overflow-y-auto px-6 pb-4 pr-2">
+                    <div className="scrollbar-thin max-h-[400px] min-h-[300px] space-y-3 overflow-y-auto px-6 pb-4 pr-2">
                       {(data.activities ?? []).length === 0 ? (
                         <EmptyState
                           title="No activity yet"
@@ -934,7 +1109,7 @@ export function ServiceCloudTicketDetailPage({
                                     eventLabel(activity.event_type)}
                                 </div>
                                 {activity.from_value?.label ||
-                                activity.to_value?.label ? (
+                                  activity.to_value?.label ? (
                                   <div className="text-muted-foreground text-xs">
                                     {activity.from_value?.label ?? 'None'} -&gt;{' '}
                                     {activity.to_value?.label ?? 'None'}
@@ -956,157 +1131,305 @@ export function ServiceCloudTicketDetailPage({
           </CardWidgetContainer>
         </div>
 
-        <div className="w-full space-y-4 lg:w-[35%]">
-          <CardWidgetContainer
-            title="Ticket Properties"
-            description="Operational fields agents update while working the case."
-            hideHeaderBorder={true}
+        <div className="w-full space-y-4 lg:w-[35%] lg:overflow-y-auto">
+          <Accordion
+            type="single"
+            collapsible
+            className="space-y-2"
+            value={openAccordion}
+            onValueChange={setOpenAccordion}
           >
-            <div className="space-y-4 px-6 py-4">
-              <EditableSelect
-                icon={<Flag className="h-4 w-4" />}
-                label="Status"
-                value={ticket.status_id}
-                options={statuses}
-                disabled={isUpdating}
-                onChange={(value) => updateTicket({ status_id: value })}
-              />
-              <EditableSelect
-                icon={<Flag className="h-4 w-4" />}
-                label="Priority"
-                value={ticket.priority_id}
-                options={priorities}
-                disabled={isUpdating}
-                allowNone
-                onChange={(value) => updateTicket({ priority_id: value })}
-              />
-              <EditableSelect
-                icon={<Tag className="h-4 w-4" />}
-                label="Category"
-                value={ticket.category_id}
-                options={categories}
-                disabled={isUpdating}
-                allowNone
-                onChange={(value) => updateTicket({ category_id: value })}
-              />
-              <EditableSelect
-                icon={<UserCheck className="h-4 w-4" />}
-                label="Primary owner"
-                value={ticket.assigned_agent_id}
-                options={members}
-                disabled={isUpdating}
-                allowNone
-                onChange={(value) => updateTicket({ assigned_agent_id: value })}
-              />
-              <Field label="Due date">
-                <div className="flex items-center gap-2">
-                  <CalendarDays className="text-muted-foreground h-4 w-4" />
-                  <Input
-                    type="date"
-                    value={formatDateInput(dueValue)}
-                    disabled={isUpdating}
-                    onChange={(event) =>
-                      updateTicket({ due_date: event.target.value || null })
-                    }
-                  />
+            <AccordionItem
+              value="ticket-properties"
+              className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
+            >
+              <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                <div className="flex flex-col items-start gap-1">
+                  <span className="primary-heading text-leadgaze-dark flex items-center gap-2 dark:text-white">
+                    <Settings className="text-leadgaze-dark h-5 w-5 dark:text-white" />
+                    Ticket Properties
+                  </span>
+                  <span className="text-muted-foreground text-xs font-normal">
+                    Operational fields agents update while working the case.
+                  </span>
                 </div>
-              </Field>
-              <Separator />
-              <TicketAssignees
-                members={members}
-                assignees={assignees}
-                disabled={assigneeMutation.isPending}
-                onToggle={(member, assignee) =>
-                  assigneeMutation.mutate({
-                    accountId: member.id,
-                    assigneeId: assignee?.id,
-                    action: assignee ? 'remove' : 'add',
-                  })
-                }
-              />
-            </div>
-          </CardWidgetContainer>
+              </AccordionTrigger>
+              <AccordionContent className="px-4 pb-4">
+                <div className="space-y-4 pt-2">
+                  {(!canViewField || canViewField('status_id')) && (
+                    <EditableSelect
+                      icon={<Flag className="h-4 w-4" />}
+                      label="Status"
+                      value={ticket.status_id}
+                      options={statuses}
+                      allOptions={allStatuses}
+                      disabled={
+                        isUpdating ||
+                        (canEditField ? !canEditField('status_id') : false)
+                      }
+                      onChange={(value) => updateTicket({ status_id: value })}
+                    />
+                  )}
+                  {(!canViewField || canViewField('priority_id')) && (
+                    <EditableSelect
+                      icon={<Flag className="h-4 w-4" />}
+                      label="Priority"
+                      value={ticket.priority_id}
+                      options={priorities}
+                      allOptions={allPriorities}
+                      disabled={
+                        isUpdating ||
+                        (canEditField ? !canEditField('priority_id') : false)
+                      }
+                      allowNone
+                      onChange={(value) => updateTicket({ priority_id: value })}
+                    />
+                  )}
+                  {(!canViewField || canViewField('category_id')) && (
+                    <EditableSelect
+                      icon={<Tag className="h-4 w-4" />}
+                      label="Category"
+                      value={ticket.category_id}
+                      options={categories}
+                      disabled={
+                        isUpdating ||
+                        (canEditField ? !canEditField('category_id') : false)
+                      }
+                      allowNone
+                      onChange={(value) => updateTicket({ category_id: value })}
+                    />
+                  )}
+                  {(!canViewField || canViewField('assigned_agent_id')) && (
+                    <EditableSelect
+                      icon={<UserCheck className="h-4 w-4" />}
+                      label="Primary owner"
+                      value={ticket.assigned_agent_id}
+                      options={members}
+                      disabled={
+                        isUpdating ||
+                        (canEditField ? !canEditField('assigned_agent_id') : false)
+                      }
+                      allowNone
+                      onChange={(value) =>
+                        updateTicket({ assigned_agent_id: value })
+                      }
+                    />
+                  )}
+                  {(!canViewField || canViewField('due_at')) && (
+                    <Field label="Due date">
+                      <div className="flex items-center gap-2">
+                        <CalendarDays className="text-muted-foreground h-4 w-4" />
+                        <DateTimePicker
+                          mode="date"
+                          placeholder="Select date"
+                          value={dueValue ? new Date(dueValue) : undefined}
+                          disabled={
+                            isUpdating ||
+                            (canEditField ? !canEditField('due_at') : false)
+                          }
+                          onChange={(date) =>
+                            updateTicket({
+                              due_date: date ? format(date, 'yyyy-MM-dd') : null,
+                            })
+                          }
+                        />
+                      </div>
+                    </Field>
+                  )}
+                  {(!canViewField || canViewField('assignees')) && (
+                    <>
+                      <Separator />
+                      <TicketAssignees
+                        members={members}
+                        assignees={assignees}
+                        disabled={
+                          assigneeMutation.isPending ||
+                          (canEditField ? !canEditField('assignees') : false)
+                        }
+                        onToggle={(member, assignee) =>
+                          assigneeMutation.mutate({
+                            accountId: member.id,
+                            assigneeId: assignee?.id,
+                            action: assignee ? 'remove' : 'add',
+                          })
+                        }
+                      />
+                    </>
+                  )}
+                </div>
+              </AccordionContent>
+            </AccordionItem>
 
-          <CardWidgetContainer
-            title="SLA Snapshot"
-            hideHeaderBorder={true}
-            style={
-              ticket.priority?.color
-                ? {
+            <AccordionItem
+              value="sla-snapshot"
+              className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
+              style={
+                ticket.priority?.color
+                  ? {
                     backgroundColor: `${ticket.priority.color}15`,
                     borderColor: `${ticket.priority.color}50`,
-                    color: ticket.priority.color,
                   }
-                : undefined
-            }
-          >
-            <div className="space-y-3 px-6 py-4 text-sm">
-              <Metric
-                label="Priority"
-                value={ticket.priority?.name ?? 'Not set'}
-              />
-              <Metric
-                label="Response due"
-                value={formatDateTime(responseDueAt)}
-              />
-              <Metric label="Resolution due" value={formatDateOnly(dueValue)} />
-            </div>
-          </CardWidgetContainer>
+                  : undefined
+              }
+            >
+              <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                <div className="flex w-full items-center justify-between gap-4 pr-4">
+                  <span className="primary-heading text-leadgaze-dark flex items-center gap-2 dark:text-white">
+                    <Timer className="text-leadgaze-dark h-5 w-5 dark:text-white" />
+                    SLA Snapshot
+                  </span>
+                  {ticket.priority?.name ? (
+                    <div className="text-muted-foreground flex items-center gap-2 text-sm">
+                      <span>Priority:</span>
+                      <Badge
+                        className="flex items-center gap-1.5 font-medium"
+                        style={
+                          ticket.priority?.color
+                            ? {
+                              backgroundColor: `${ticket.priority.color}20`,
+                              borderColor: `${ticket.priority.color}40`,
+                              color: ticket.priority.color,
+                            }
+                            : undefined
+                        }
+                      >
+                        {ticket.priority?.color ? (
+                          <span
+                            className="h-2 w-2 shrink-0 rounded-full"
+                            style={{ backgroundColor: ticket.priority.color }}
+                          />
+                        ) : null}
+                        {ticket.priority.name}
+                      </Badge>
+                    </div>
+                  ) : null}
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="px-4 pb-4">
+                <div className="space-y-3 pt-2 text-sm">
+                  {(!canViewField || canViewField('priority_id')) && (
+                    <Metric
+                      label="Priority"
+                      value={ticket.priority?.name ?? 'Not set'}
+                    />
+                  )}
+                  {(!canViewField || canViewField('due_at')) && (
+                    <>
+                      <Metric
+                        label="Response due"
+                        value={formatDateTime(responseDueAt)}
+                      />
+                      <Metric
+                        label="Resolution due"
+                        value={formatDateOnly(dueValue)}
+                      />
+                    </>
+                  )}
+                </div>
+              </AccordionContent>
+            </AccordionItem>
 
-          <CardWidgetContainer
-            title="Customer Details"
-            icon={<UserRound className="h-4 w-4" />}
-            hideHeaderBorder={true}
-          >
-            <div className="space-y-3 px-6 py-4 text-sm">
-              <Metric label="Name" value={ticket.customer?.name ?? '-'} />
-              <Metric label="Email" value={ticket.customer?.email ?? '-'} />
-              <Metric label="Phone" value={ticket.customer?.phone ?? '-'} />
-              <Separator />
-              <Metric
-                label="Company"
-                value={ticket.organization?.name ?? '-'}
-              />
-              <Metric
-                label="Industry"
-                value={ticket.organization?.industry ?? '-'}
-              />
-              <Metric
-                label="Website"
-                value={ticket.organization?.website ?? '-'}
-              />
-            </div>
-          </CardWidgetContainer>
+            <AccordionItem
+              value="customer-details"
+              className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
+            >
+              <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                <span className="primary-heading text-leadgaze-dark flex items-center gap-2 dark:text-white">
+                  <UserRound className="text-leadgaze-dark h-5 w-5 dark:text-white" />
+                  Customer Details
+                </span>
+              </AccordionTrigger>
+              <AccordionContent className="px-4 pb-4">
+                <div className="space-y-3 pt-2 text-sm">
+                  {(!canViewField || canViewField('customer')) && (
+                    <>
+                      <Metric
+                        label="Name"
+                        value={ticket.customer?.name ?? '-'}
+                      />
+                      <Metric
+                        label="Email"
+                        value={ticket.customer?.email ?? '-'}
+                      />
+                      <Metric
+                        label="Phone"
+                        value={ticket.customer?.phone ?? '-'}
+                      />
+                    </>
+                  )}
+                  {(!canViewField || canViewField('organization')) && (
+                    <>
+                      <Separator />
+                      <Metric
+                        label="Company"
+                        value={ticket.organization?.name ?? '-'}
+                      />
+                      <Metric
+                        label="Industry"
+                        value={ticket.organization?.industry ?? '-'}
+                      />
+                      <Metric
+                        label="Website"
+                        value={ticket.organization?.website ?? '-'}
+                      />
+                    </>
+                  )}
+                </div>
+              </AccordionContent>
+            </AccordionItem>
 
-          <CardWidgetContainer
-            title="Record Details"
-            icon={<Building2 className="h-4 w-4" />}
-            hideHeaderBorder={true}
-          >
-            <div className="space-y-3 px-6 py-4 text-sm">
-              <Metric label="Source" value={ticket.source ?? '-'} />
-              <Metric
-                label="Last response"
-                value={
-                  ticket.last_agent_response_at
-                    ? formatDateTime(ticket.last_agent_response_at)
-                    : 'No response yet'
-                }
+            <AccordionItem
+              value="record-details"
+              className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
+            >
+              <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                <span className="primary-heading text-leadgaze-dark flex items-center gap-2 dark:text-white">
+                  <Building2 className="text-leadgaze-dark h-5 w-5 dark:text-white" />
+                  Record Details
+                </span>
+              </AccordionTrigger>
+              <AccordionContent className="px-4 pb-4">
+                <div className="space-y-3 pt-2 text-sm">
+                  <Metric label="Source" value={ticket.source ?? '-'} />
+                  <Metric
+                    label="Last response"
+                    value={
+                      ticket.last_agent_response_at
+                        ? formatDateTime(ticket.last_agent_response_at)
+                        : 'No response yet'
+                    }
+                  />
+                  <Metric
+                    label="Last customer reply"
+                    value={
+                      ticket.last_customer_response_at
+                        ? formatDateTime(ticket.last_customer_response_at)
+                        : 'Customer has not responded yet'
+                    }
+                  />
+                  <Metric
+                    label="Updated"
+                    value={formatDateTime(ticket.updated_at)}
+                  />
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+
+            {customFieldsList && customFieldsList.length > 0 && (
+              <TicketCustomFieldsSection
+                fields={customFieldsList}
+                ticket={ticket}
+                canEditField={canEditField}
+                canViewField={canViewField}
+                onSave={(updatedFields) => {
+                  updateTicket({
+                    custom_fields: updatedFields,
+                  });
+                }}
+                isSaving={isUpdating}
               />
-              <Metric
-                label="Last customer reply"
-                value={
-                  ticket.last_customer_response_at
-                    ? formatDateTime(ticket.last_customer_response_at)
-                    : 'Customer has not responded yet'
-                }
-              />
-              <Metric
-                label="Updated"
-                value={formatDateTime(ticket.updated_at)}
-              />
-            </div>
-          </CardWidgetContainer>
+            )}
+          </Accordion>
         </div>
       </div>
 
@@ -1309,6 +1632,7 @@ function EditableSelect({
   disabled,
   allowNone = false,
   onChange,
+  allOptions,
 }: {
   icon: React.ReactNode;
   label: string;
@@ -1317,8 +1641,12 @@ function EditableSelect({
   disabled?: boolean;
   allowNone?: boolean;
   onChange: (value: string | null) => void;
+  /** All available options (including restricted ones) for looking up current value */
+  allOptions?: LookupOption[];
 }) {
-  const selectedOption = options.find((opt) => opt.id === value);
+  // Use allOptions for lookup if provided, otherwise use options
+  const allOptsForLookup = allOptions || options;
+  const selectedOption = allOptsForLookup.find((opt) => opt.id === value);
   const selectedColor = selectedOption?.color;
 
   return (

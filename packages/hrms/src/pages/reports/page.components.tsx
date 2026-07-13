@@ -33,6 +33,9 @@ import {
   TableRow,
 } from '@kit/ui/table';
 import { cn } from '@kit/ui/utils';
+import { useColumnResize } from '@kit/ui/use-column-resize';
+import { useTableSort } from '@kit/ui/use-table-sort';
+import { SortableTableHead } from '@kit/ui/sortable-table-head';
 
 type MetricItem = {
   hint: string;
@@ -181,6 +184,14 @@ export function ReportTableCard(props: {
   rows: Array<Record<string, TableRowValue>>;
   title: string;
 }) {
+  const tableKey = 'hrms-report-' + props.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  const { getHeaderProps, getResizeHandleProps } = useColumnResize(tableKey);
+
+  const { sortColumn, sortDirection, toggleSort, sortedData } = useTableSort<any>(
+    tableKey,
+    props.rows
+  );
+
   return (
     <div className="flex min-h-0 flex-col gap-2">
       <div className="px-1">
@@ -197,18 +208,24 @@ export function ReportTableCard(props: {
           <TableHeader>
             <TableRow>
               {props.columns.map((column) => (
-                <TableHead
+                <SortableTableHead
                   key={column.key}
-                  className={cn(column.align === 'right' ? 'text-right' : '')}
+                  label={column.label}
+                  columnId={column.key}
+                  sortColumn={sortColumn}
+                  sortDirection={sortDirection}
+                  onSort={toggleSort}
+                  className={cn("relative", column.align === 'right' ? 'text-right' : '')}
+                  {...getHeaderProps(column.key)}
                 >
-                  {column.label}
-                </TableHead>
+                  <span className="col-resize-handle" {...getResizeHandleProps(column.key)} />
+                </SortableTableHead>
               ))}
             </TableRow>
           </TableHeader>
           <TableBody>
-            {props.rows.length > 0 ? (
-              props.rows.map((row, index) => (
+            {sortedData.length > 0 ? (
+              sortedData.map((row, index) => (
                 <TableRow
                   key={`${props.title}-${index}`}
                   className="hover:bg-muted/50"

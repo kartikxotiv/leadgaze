@@ -23,7 +23,7 @@ import {
 import { CardWidgetContainer } from '@kit/ui/card-widget-container';
 import { CardWidgetList, CardWidgetListItem } from '@kit/ui/card-widget-list';
 import { Skeleton } from '@kit/ui/skeleton';
-import { formatDate } from '@kit/shared/utils';
+import { useLocalization } from '@kit/shared/localization';
 
 import { getServiceCloudDashboardService } from '../../services';
 import {
@@ -50,6 +50,7 @@ export function ServiceCloudDashboardPage({
 }: {
   workspaceId: string;
 }) {
+  const { formatDate } = useLocalization();
   const { canAccess, isLoading: isPermissionLoading } =
     useServiceCloudPermissions(workspaceId);
   const canView = canAccess(
@@ -203,7 +204,7 @@ export function ServiceCloudDashboardPage({
             title="Status Workload"
             description="Where the current support queue is concentrated."
           >
-            <div className="space-y-4 px-6 py-4">
+            <div className="space-y-4 px-6 py-4 max-h-[460px] overflow-auto">
               {statusBreakdown.length === 0 ? (
                 <EmptyState label="No ticket statuses found." />
               ) : (
@@ -237,7 +238,7 @@ export function ServiceCloudDashboardPage({
             title="Recent Tickets"
             description="Newest customer issues entering the queue."
           >
-            <div className="px-6 py-4">
+            <div className="px-6 py-4 max-h-[280px] overflow-auto">
               {(data?.recentTickets ?? []).length === 0 ? (
                 <EmptyState label="No tickets yet." />
               ) : (
@@ -276,7 +277,7 @@ export function ServiceCloudDashboardPage({
             description="Open work by severity."
             hideHeaderBorder={true}
           >
-            <div className="px-6 py-4">
+            <div className="px-6 py-4 max-h-[280px] overflow-auto">
               {priorityBreakdown.length === 0 ? (
                 <EmptyState label="No priority data yet." />
               ) : (
@@ -301,7 +302,7 @@ export function ServiceCloudDashboardPage({
             description="Customers with the most open service work."
             hideHeaderBorder={true}
           >
-            <div className="px-6 py-4">
+            <div className="px-6 py-4 max-h-[280px] overflow-auto">
               {customerBreakdown.length === 0 ? (
                 <EmptyState label="No customer ticket data." />
               ) : (
@@ -339,7 +340,7 @@ export function ServiceCloudDashboardPage({
             description="Tickets most likely to need attention."
             hideHeaderBorder={true}
           >
-            <div className="px-6 py-4">
+            <div className="px-6 py-4 max-h-[280px] overflow-auto">
               {openTicketAging.length === 0 ? (
                 <EmptyState label="No open tickets." />
               ) : (

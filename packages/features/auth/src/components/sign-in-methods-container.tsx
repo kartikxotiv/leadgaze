@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 
 import type { Provider } from '@supabase/supabase-js';
 
@@ -24,15 +24,22 @@ export function SignInMethodsContainer(props: {
     oAuth: Provider[];
   };
 }) {
-  const router = useRouter();
-  const nextPath = useSearchParams().get('next') ?? props.paths.home;
+  const searchParams = useSearchParams();
+  const nextParam = searchParams.get('next');
 
   const redirectUrl = isBrowser()
     ? new URL(props.paths.callback, window?.location.origin).toString()
     : '';
 
   const onSignIn = () => {
-    router.replace(nextPath);
+    // Route through the auth callback so that the server-side workspace
+    // check can redirect directly to the correct destination
+    // (workspace-setup vs home) without the /org/home flash.
+    const callbackUrl = new URL(props.paths.callback, window.location.origin);
+    if (nextParam) {
+      callbackUrl.searchParams.set('next', nextParam);
+    }
+    window.location.assign(callbackUrl.toString());
   };
 
   return (
@@ -48,7 +55,7 @@ export function SignInMethodsContainer(props: {
         />
       </If>
 
-      {/* <If condition={props.providers.oAuth.length}>
+      <If condition={props.providers.oAuth.length}>
         <Separator />
 
         <OauthProviders
@@ -59,7 +66,7 @@ export function SignInMethodsContainer(props: {
             returnPath: props.paths.home,
           }}
         />
-      </If> */}
+      </If>
     </>
   );
 }

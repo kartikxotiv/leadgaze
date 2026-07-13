@@ -9,6 +9,8 @@ import { useTheme } from 'next-themes';
 
 import { cn } from '@kit/ui/utils';
 
+import { useRBAC } from '~/lib/rbac/rbac-provider';
+
 function LogoImage({
   className,
   width = 105,
@@ -27,6 +29,16 @@ function LogoImage({
     setMounted(true);
   }, []);
 
+  let rbac = null;
+  try {
+    // eslint-disable-next-line react-hooks-rules-of-hooks
+    rbac = useRBAC();
+  } catch {
+    // outside RBACProvider (e.g. login or marketing screens)
+  }
+
+  const companyLogoUrl = rbac?.currentWorkspace?.company_logo_url;
+
   if (collapsed) {
     return (
       <Image
@@ -35,6 +47,19 @@ function LogoImage({
         width={24}
         alt="leadgaze"
         className={cn('mx-auto rounded-md', className)}
+      />
+    );
+  }
+
+  if (mounted && companyLogoUrl) {
+    return (
+      <Image
+        src={companyLogoUrl}
+        height={32}
+        width={180}
+        alt="company logo"
+        className={cn('h-8 w-auto object-contain max-w-[160px]', className)}
+        priority
       />
     );
   }

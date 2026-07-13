@@ -83,19 +83,22 @@ export function useServiceCloudPermissions(workspaceId?: string) {
   const supabase = useSupabase();
   const { data: user } = useUser();
 
-  const { data: permissions = [], isLoading } = useQuery<
-    ServiceCloudPermission[]
-  >({
+  const { data: permissionsResponse, isLoading } = useQuery<{
+    roleKey: string;
+    permissions: ServiceCloudPermission[];
+  }>({
     queryKey: ['service-cloud', 'permissions', workspaceId, user?.id],
     queryFn: async () => {
-      if (!workspaceId || !user?.id) return [];
+      if (!workspaceId || !user?.id) return { roleKey: '', permissions: [] };
 
       // Single combined join query
-      const { data: member, error } = await supabase
+      const { data: members, error } = await supabase
         .from('workspace_members')
         .select(
           `
+          product_key,
           role_id(
+            role_key,
             role_permissions(
               can_access,
               crm_module_features!module_feature_id (
@@ -110,36 +113,48 @@ export function useServiceCloudPermissions(workspaceId?: string) {
         )
         .eq('workspace_id', workspaceId)
         .eq('user_id', user.id)
-        .eq('status', 'accepted')
-        .maybeSingle();
+        .eq('status', 'accepted');
 
       if (error) throw error;
+      if (!members || members.length === 0) return { roleKey: '', permissions: [] };
+
+      const member = members.find((m: any) => m.product_key === 'service_cloud')
+        || members.find((m: any) => m.product_key === null)
+        || members[0];
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const role = member?.role_id as any;
       const permissionsData = role?.role_permissions || [];
+      const roleKey = role?.role_key || '';
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return permissionsData.map((permission: any) => ({
+      const permissions = permissionsData.map((permission: any) => ({
         module: permission.crm_module_features?.crm_modules?.module_key ?? '',
         feature: permission.crm_module_features?.feature_key ?? '',
         can_access: Boolean(permission.can_access),
       }));
+
+      return { roleKey, permissions };
     },
     enabled: Boolean(workspaceId && user?.id),
     staleTime: 30_000,
   });
 
+  const permissions = permissionsResponse?.permissions || [];
+  const roleKey = permissionsResponse?.roleKey || '';
+
   const canAccess = useMemo<ServiceCloudCanAccess>(
     () =>
-      (moduleKey: string, featureKey = SERVICE_CLOUD_FEATURE_KEYS.view) =>
-        permissions.some(
-          (permission) =>
-            permission.module === moduleKey &&
-            permission.feature === featureKey &&
-            permission.can_access,
-        ),
-    [permissions],
+      (moduleKey: string, featureKey = SERVICE_CLOUD_FEATURE_KEYS.view) => {
+        if (roleKey === 'admin') return true;
+        return permissions.some(
+          (p) =>
+            p.module === moduleKey &&
+            p.feature === featureKey &&
+            p.can_access,
+        );
+      },
+    [permissions, roleKey],
   );
 
   return { permissions, canAccess, isLoading };

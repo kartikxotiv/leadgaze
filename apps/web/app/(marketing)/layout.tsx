@@ -1,29 +1,60 @@
 import { redirect } from 'next/navigation';
 
-// import { getSupabaseServerClient } from '@kit/supabase/server-client';
+import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
-// import { SiteFooter } from '~/(marketing)/_components/site-footer';
-// import { SiteHeader } from '~/(marketing)/_components/site-header';
-// import { withI18n } from '~/lib/i18n/with-i18n';
+import pathsConfig from '~/config/paths.config';
 
-// async function SiteLayout(props: React.PropsWithChildren) {
-//   const client = getSupabaseServerClient();
+export default async function MarketingLayout({
+  children: _children,
+}: React.PropsWithChildren) {
+  const supabase = getSupabaseServerClient();
 
-//   const { data } = await client.auth.getClaims();
+  // Check if the user is authenticated
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-//   return (
-//     <div className={'flex min-h-[100vh] flex-col'}>
-//       <SiteHeader user={data?.claims} />
+  if (user) {
+    // Authenticated user — resolve the correct destination server-side
+    // so they skip the /org/home flash entirely.
+    try {
+      const { count, error } = await supabase
+        .from('workspace_members')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('status', 'accepted');
 
-//       {props.children}
+      if (!error && (count ?? 0) > 0) {
+        redirect(pathsConfig.app.home);
+      }
 
-//       <SiteFooter />
-//     </div>
-//   );
-// }
+      // Check for pending invitations
+      if (user.email) {
+        const { data: invitation } = await supabase
+          .from('workspace_invitations')
+          .select('id, token, email, status, token_expires_at')
+          .eq('email', user.email.toLowerCase())
+          .eq('status', 'pending')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
 
-// export default withI18n(SiteLayout);
+        if (
+          invitation &&
+          (!invitation.token_expires_at ||
+            new Date(invitation.token_expires_at) >= new Date())
+        ) {
+          redirect(`/invite?token=${invitation.token}`);
+        }
+      }
 
-export default function SalesPage() {
-  redirect('/auth/sign-in');
+      redirect(pathsConfig.app.workspaceSetup);
+    } catch {
+      // If any check fails, fall through to sign-in
+      redirect(pathsConfig.auth.signIn);
+    }
+  }
+
+  // Unauthenticated user — redirect to sign-in
+  redirect(pathsConfig.auth.signIn);
 }

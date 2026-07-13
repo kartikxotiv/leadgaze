@@ -1,15 +1,17 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
 import { Button } from '@kit/ui/button';
 import { Checkbox } from '@kit/ui/checkbox';
+import { DateTimePicker } from '@kit/ui/datetime-picker';
+import { format } from 'date-fns';
 import {
   Dialog,
   DialogContent,
@@ -38,10 +40,16 @@ import {
 import { Textarea } from '@kit/ui/textarea';
 
 import { useRBAC } from '~/lib/rbac/rbac-provider';
+import { useFieldPermissions } from '~/lib/hooks/use-field-permissions';
+import { useDynamicColumns } from '~/lib/hooks/use-dynamic-columns';
+import { useUser } from '@kit/supabase/hooks/use-user';
+import { LeadCustomFieldInputs } from '~/components/leads/lead-custom-field-inputs';
 import {
   Opportunity,
   updateOpportunityService,
 } from '~/services/opportunities.service';
+import { getWorkspaceCurrenciesService, type WorkspaceCurrency } from '~/services/workspace-currencies.service';
+import { useLocalization } from '~/lib/localization/localization-provider';
 
 const formSchema = z.object({
   opportunity_name: z.string().min(1, 'Opportunity Name is required'),
@@ -65,6 +73,20 @@ interface EditOpportunityDialogProps {
   opportunity: Opportunity;
 }
 
+/** Renders children (a form field) only when the user has edit permission for the given FLS field_key. */
+function FieldGuard({
+  fieldKey,
+  canEdit,
+  children,
+}: {
+  fieldKey: string;
+  canEdit: (key: string) => boolean;
+  children: React.ReactNode;
+}) {
+  if (!canEdit(fieldKey)) return null;
+  return <>{children}</>;
+}
+
 export function EditOpportunityDialog({
   isOpen,
   onOpenChange,
@@ -72,6 +94,30 @@ export function EditOpportunityDialog({
 }: EditOpportunityDialogProps) {
   const { currentWorkspace: workspace } = useRBAC();
   const queryClient = useQueryClient();
+  const { formatCurrency } = useLocalization();
+  const { data: user } = useUser();
+  const { canEdit, canView, isLoading: permissionsLoading } = useFieldPermissions({
+    entityType: 'opportunities',
+    workspaceId: workspace?.id,
+    enabled: isOpen && !!workspace?.id,
+  });
+
+  const { fields = [] } = useDynamicColumns({
+    entityType: 'opportunities',
+    workspaceId: workspace?.id,
+    userId: user?.id,
+    enabled: isOpen && !!workspace?.id,
+  });
+
+  const visibleCustomFields = fields.filter((f) => !f.is_system);
+  const [customFields, setCustomFields] = useState<Record<string, unknown>>({});
+
+  // Fetch workspace currencies for the currency dropdown
+  const { data: workspaceCurrencies = [] } = useQuery({
+    queryKey: ['workspace-currencies', workspace?.id],
+    queryFn: () => getWorkspaceCurrenciesService(workspace!.id),
+    enabled: !!workspace?.id && isOpen,
+  });
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -115,11 +161,12 @@ export function EditOpportunityDialog({
         is_won: opportunity.is_won || false,
         close_reason: opportunity.close_reason || '',
       });
+      setCustomFields((opportunity.custom_fields as Record<string, unknown>) || {});
     }
   }, [opportunity, form, isOpen]);
 
   const updateMutation = useMutation({
-    mutationFn: (values: z.infer<typeof formSchema>) => {
+    mutationFn: (values: z.infer<typeof formSchema> & { custom_fields?: any }) => {
       const payload: any = {
         ...values,
         amount: values.amount ? parseFloat(values.amount) : null,
@@ -140,8 +187,24 @@ export function EditOpportunityDialog({
   });
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    updateMutation.mutate(values);
+    // Filter out fields user cannot edit
+    const payload: any = { ...values };
+    const filteredPayload: any = {};
+    for (const [key, val] of Object.entries(payload)) {
+      if (canEdit(key)) {
+        filteredPayload[key] = val;
+      }
+    }
+    filteredPayload.custom_fields = {};
+    for (const [key, val] of Object.entries(customFields)) {
+      if (canEdit(key)) {
+        filteredPayload.custom_fields[key] = val;
+      }
+    }
+    updateMutation.mutate(filteredPayload as any);
   }
+
+  if (permissionsLoading) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -154,232 +217,284 @@ export function EditOpportunityDialog({
         </DialogHeader>
         <Form {...form}>
           <form id="dialog-form" onSubmit={form.handleSubmit(onSubmit)} className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
-            <FormField
-              control={form.control}
-              name="opportunity_name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Opportunity Name</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <FieldGuard fieldKey="opportunity_name" canEdit={canEdit}>
+              <FormField
+                control={form.control}
+                name="opportunity_name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Opportunity Name</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </FieldGuard>
 
             <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="amount"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Amount</FormLabel>
-                    <FormControl>
-                      <Input {...field} type="number" step="0.01" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="currency"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Currency</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="USD" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="probability"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Probability (%)</FormLabel>
-                    <FormControl>
-                      <Input {...field} type="number" min="0" max="100" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="expected_close_date"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Expected Close Date</FormLabel>
-                    <FormControl>
-                      <Input {...field} type="date" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="opportunity_type"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Type</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                      value={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select type" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="New Business">
-                          New Business
-                        </SelectItem>
-                        <SelectItem value="Existing Business">
-                          Existing Business
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="priority"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Priority</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                      value={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select priority" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="High">High</SelectItem>
-                        <SelectItem value="Medium">Medium</SelectItem>
-                        <SelectItem value="Low">Low</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <FormField
-              control={form.control}
-              name="lead_source"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Lead Source</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Description</FormLabel>
-                  <FormControl>
-                    <Textarea {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="competitor"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Competitor</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <div className="space-y-3 border-t pt-4">
-              <h4 className="text-sm font-medium">Outcome</h4>
-              <div className="grid grid-cols-2 gap-4">
+              <FieldGuard fieldKey="amount" canEdit={canEdit}>
                 <FormField
                   control={form.control}
-                  name="is_closed"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-center space-y-0 space-x-3">
-                      <FormControl>
-                        <Checkbox
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                      <FormLabel>Is Closed</FormLabel>
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="is_won"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-center space-y-0 space-x-3">
-                      <FormControl>
-                        <Checkbox
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                      <FormLabel>Is Won</FormLabel>
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              {form.watch('is_closed') && (
-                <FormField
-                  control={form.control}
-                  name="close_reason"
+                  name="amount"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Close Reason</FormLabel>
+                      <FormLabel>Amount</FormLabel>
                       <FormControl>
-                        <Textarea
-                          {...field}
-                          placeholder="Why was this won or lost?"
-                        />
+                        <Input {...field} type="number" step="0.01" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
+              </FieldGuard>
+              <FieldGuard fieldKey="currency" canEdit={canEdit}>
+                <FormField
+                  control={form.control}
+                  name="currency"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Currency</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select currency" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {workspaceCurrencies.map((cur: WorkspaceCurrency) => (
+                            <SelectItem key={cur.currency_code} value={cur.currency_code}>
+                              {cur.currency_symbol} {cur.currency_code}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </FieldGuard>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <FieldGuard fieldKey="probability" canEdit={canEdit}>
+                <FormField
+                  control={form.control}
+                  name="probability"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Probability (%)</FormLabel>
+                      <FormControl>
+                        <Input {...field} type="number" min="0" max="100" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </FieldGuard>
+              <FieldGuard fieldKey="expected_close_date" canEdit={canEdit}>
+                <FormField
+                  control={form.control}
+                  name="expected_close_date"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Expected Close Date</FormLabel>
+                      <FormControl>
+                        <DateTimePicker mode="date" placeholder="Select date" value={field.value ? new Date(field.value) : undefined} onChange={(date) => field.onChange(date ? format(date, 'yyyy-MM-dd') : '')} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </FieldGuard>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <FieldGuard fieldKey="opportunity_type" canEdit={canEdit}>
+                <FormField
+                  control={form.control}
+                  name="opportunity_type"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Type</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select type" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="New Business">
+                            New Business
+                          </SelectItem>
+                          <SelectItem value="Existing Business">
+                            Existing Business
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </FieldGuard>
+              <FieldGuard fieldKey="priority" canEdit={canEdit}>
+                <FormField
+                  control={form.control}
+                  name="priority"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Priority</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select priority" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="High">High</SelectItem>
+                          <SelectItem value="Medium">Medium</SelectItem>
+                          <SelectItem value="Low">Low</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </FieldGuard>
+            </div>
+
+            <FieldGuard fieldKey="lead_source" canEdit={canEdit}>
+              <FormField
+                control={form.control}
+                name="lead_source"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Lead Source</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </FieldGuard>
+
+            <FieldGuard fieldKey="description" canEdit={canEdit}>
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description</FormLabel>
+                    <FormControl>
+                      <Textarea {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </FieldGuard>
+
+            <FieldGuard fieldKey="competitor" canEdit={canEdit}>
+              <FormField
+                control={form.control}
+                name="competitor"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Competitor</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </FieldGuard>
+
+            <div className="space-y-3 border-t pt-4">
+              <h4 className="text-sm font-medium">Outcome</h4>
+              <div className="grid grid-cols-2 gap-4">
+                <FieldGuard fieldKey="is_closed" canEdit={canEdit}>
+                  <FormField
+                    control={form.control}
+                    name="is_closed"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center space-y-0 space-x-3">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <FormLabel>Is Closed</FormLabel>
+                      </FormItem>
+                    )}
+                  />
+                </FieldGuard>
+                <FieldGuard fieldKey="is_won" canEdit={canEdit}>
+                  <FormField
+                    control={form.control}
+                    name="is_won"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center space-y-0 space-x-3">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <FormLabel>Is Won</FormLabel>
+                      </FormItem>
+                    )}
+                  />
+                </FieldGuard>
+              </div>
+
+              {form.watch('is_closed') && (
+                <FieldGuard fieldKey="close_reason" canEdit={canEdit}>
+                  <FormField
+                    control={form.control}
+                    name="close_reason"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Close Reason</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            {...field}
+                            placeholder="Why was this won or lost?"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </FieldGuard>
               )}
 
+            </div>
+
+            <div className="border-t pt-4">
+              <LeadCustomFieldInputs
+                fields={visibleCustomFields}
+                values={customFields}
+                onChange={(key, val) =>
+                  setCustomFields((prev) => ({ ...prev, [key]: val }))
+                }
+                canEdit={canEdit}
+                canView={canView}
+              />
             </div>
 
             

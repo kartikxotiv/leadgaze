@@ -29,10 +29,14 @@ export interface StatusBreakdown {
 export interface StatusFilterDropdownProps {
   /** List of status options (excluding "All") */
   statuses: StatusFilterItem[];
-  /** Currently selected status id. Use `'all'` for the "All" option. */
-  selectedStatus: string;
-  /** Called when the user picks a status. Receives the status id (or `'all'`). */
-  onStatusChange: (statusId: string) => void;
+  /** Currently selected status id. Use `'all'` for the "All" option. (single-select mode) */
+  selectedStatus?: string;
+  /** Called when the user picks a status. Receives the status id (or `'all'`). (single-select mode) */
+  onStatusChange?: (statusId: string) => void;
+  /** Currently selected status ids. (multi-select mode) */
+  selectedStatuses?: string[];
+  /** Called when the selection changes in multi-select mode. */
+  onStatusesChange?: (statusIds: string[]) => void;
   /** Map of statusId → { count } returned by the server query */
   statusBreakdown: StatusBreakdown;
   /** Total count shown on the "All" option */
@@ -57,15 +61,30 @@ export const StatusFilterDropdown: React.FC<StatusFilterDropdownProps> = ({
   statuses,
   selectedStatus,
   onStatusChange,
+  selectedStatuses,
+  onStatusesChange,
   statusBreakdown,
   totalCount,
   allLabel = 'All',
 }) => {
   const [isOpen, setIsOpen] = React.useState(false);
+  const isMulti = !!selectedStatuses;
 
   const handleSelect = (id: string) => {
-    onStatusChange(id);
-    setIsOpen(false);
+    if (isMulti && onStatusesChange) {
+      if (id === 'all') {
+        onStatusesChange([]);
+      } else {
+        const next = selectedStatuses!.includes(id)
+          ? selectedStatuses!.filter((s) => s !== id)
+          : [...selectedStatuses!, id];
+        onStatusesChange(next);
+      }
+      // Keep dropdown open in multi-select mode
+    } else {
+      onStatusChange?.(id);
+      setIsOpen(false);
+    }
   };
 
   return (
@@ -91,7 +110,11 @@ export const StatusFilterDropdown: React.FC<StatusFilterDropdownProps> = ({
             id="all"
             statusName={allLabel}
             count={totalCount}
-            isSelected={selectedStatus === 'all'}
+            isSelected={
+              isMulti
+                ? selectedStatuses!.length === 0
+                : selectedStatus === 'all'
+            }
             onClick={() => handleSelect('all')}
             cardClassName="w-full"
             cardContentClassName="px-3 py-2"
@@ -101,13 +124,17 @@ export const StatusFilterDropdown: React.FC<StatusFilterDropdownProps> = ({
         {/* Individual statuses */}
         {statuses.map((status) => {
           const stats = statusBreakdown[status.id] || { count: 0 };
-          const isSelected = selectedStatus === status.id;
-          const displayCount =
-            selectedStatus === 'all'
+          const isSelected = isMulti
+            ? selectedStatuses!.includes(status.id)
+            : selectedStatus === status.id;
+          const allSelected = isMulti
+            ? selectedStatuses!.length === 0
+            : selectedStatus === 'all';
+          const displayCount = allSelected
+            ? stats.count
+            : isSelected
               ? stats.count
-              : isSelected
-                ? stats.count
-                : 0;
+              : 0;
 
           return (
             <DropdownMenuItem

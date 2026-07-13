@@ -51,7 +51,7 @@ export function PasswordSignInForm({
           name={'email'}
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-xs font-semibold text-slate-800">
+              <FormLabel className="text-xs font-semibold text-slate-800 dark:text-slate-800">
                 <Trans i18nKey={'common:emailAddress'} />
               </FormLabel>
 
@@ -80,7 +80,7 @@ export function PasswordSignInForm({
           render={({ field }) => (
             <FormItem>
               <div className="flex items-center justify-between gap-3">
-                <FormLabel className="text-xs font-semibold text-slate-800">
+                <FormLabel className="text-xs font-semibold text-slate-800 dark:text-slate-800">
                   <Trans i18nKey={'common:password'} />
                 </FormLabel>
 
