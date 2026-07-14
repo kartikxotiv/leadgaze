@@ -59,13 +59,21 @@ interface PendingInvitation {
   } | null;
 }
 
-const getMembersService = asyncHandlerClient(async (workspaceId: string, productKey?: string) => {
-  const url = productKey 
-    ? `/team-members?workspaceId=${workspaceId}&productKey=${productKey}`
-    : `/team-members?workspaceId=${workspaceId}`;
-  const response = await ApiClient.get(url);
-  return response.data;
-});
+const getMembersService = asyncHandlerClient(
+  async (
+    workspaceId: string,
+    productKey?: string,
+    status?: string,
+    search?: string,
+  ) => {
+    let url = `/team-members?workspaceId=${workspaceId}`;
+    if (productKey) url += `&productKey=${productKey}`;
+    if (status) url += `&status=${status}`;
+    if (search) url += `&search=${encodeURIComponent(search)}`;
+    const response = await ApiClient.get(url);
+    return response.data;
+  },
+);
 
 const getMemberByIdService = asyncHandlerClient(async (memberId: string) => {
   const response = await ApiClient.get(`/team-members/${memberId}`);
@@ -130,10 +138,10 @@ const getInvitationsByEmailService = asyncHandlerClient(
 );
 
 const getPendingInvitationsService = asyncHandlerClient(
-  async (workspaceId: string) => {
-    const response = await ApiClient.get(
-      `/team-members/invitations?workspaceId=${workspaceId}`,
-    );
+  async (workspaceId: string, search?: string) => {
+    let url = `/team-members/invitations?workspaceId=${workspaceId}`;
+    if (search) url += `&search=${encodeURIComponent(search)}`;
+    const response = await ApiClient.get(url);
     return response.data;
   },
 );
