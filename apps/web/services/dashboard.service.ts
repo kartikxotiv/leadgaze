@@ -38,10 +38,15 @@ export interface DashboardMetrics {
 }
 
 const getDashboardMetricsService = asyncHandlerClient(
-  async (workspaceId: string) => {
-    const response = await ApiClient.get(
-      `/dashboard?workspaceId=${workspaceId}`,
-    );
+  async (
+    workspaceId: string,
+    dateFilter?: { from: string | null; to: string | null } | null,
+  ) => {
+    let url = `/dashboard?workspaceId=${workspaceId}`;
+    if (dateFilter?.from) url += `&from=${dateFilter.from}`;
+    if (dateFilter?.to) url += `&to=${dateFilter.to}`;
+
+    const response = await ApiClient.get(url);
     return (response.data?.data as DashboardMetrics) || null;
   },
 );
