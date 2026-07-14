@@ -19,6 +19,7 @@ import {
 } from '@kit/ui/alert-dialog';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
+import { ColumnHeader } from '@kit/ui/column-header';
 import CustomTableContainer from '@kit/ui/custom-table-container';
 import {
   Dialog,
@@ -48,6 +49,8 @@ import {
   TableRow,
 } from '@kit/ui/table';
 import { TablePagination } from '@kit/ui/table-pagination';
+import { useColumnResize } from '@kit/ui/use-column-resize';
+import { useTableSort } from '@kit/ui/use-table-sort';
 import { cn } from '@kit/ui/utils';
 
 import {
@@ -85,6 +88,16 @@ export type ResourceColumn = {
   key: string;
   label: string;
   render?: (record: ServiceCloudRecord) => React.ReactNode;
+  /**
+   * Optional sort key when the sort field differs from the column key.
+   * e.g. key='status_id' but sortKey='status.name'
+   */
+  sortKey?: string;
+  /**
+   * When true, a lock icon is displayed next to the column label in the header
+   * to indicate field-level security (access is restricted to certain members).
+   */
+  accessRestricted?: boolean;
 };
 
 export type ResourceUniqueField = {
@@ -107,9 +120,47 @@ type ResourcePageProps = {
   emptyLabel?: string;
   queryParams?: Record<string, string>;
   toolbar?: React.ReactNode;
+  filterGroups?: any[];
+  activeFilterCount?: number;
+  onClearFilters?: () => void;
   createLabel?: string;
   /** Label shown in the pagination bar, e.g. "tickets", "customers". Defaults to the resource name. */
   entityLabel?: string;
+  /**
+   * When true, a pencil edit button appears on column header hover (same as leads page).
+   * Requires `onColumnEditClick` to handle the edit action.
+   */
+  isAdmin?: boolean;
+  /**
+   * Called when the admin pencil icon is clicked on a column header.
+   * Receives the column key so the parent can open an edit modal.
+   */
+  onColumnEditClick?: (columnKey: string) => void;
+  /**
+   * Called when the admin '+' add column button is clicked.
+   */
+  onColumnAddClick?: () => void;
+  /**
+   * Optional field-level security (FLS) function.
+   * When provided, columns for which this returns false are hidden entirely
+   * in both the table header and all data rows.
+   */
+  canViewColumn?: (columnKey: string) => boolean;
+  /** Full entity field definitions for displaying column header lock icons and configuration */
+  systemFields?: any[];
+  /**
+   * Optional FLS function for the edit dialog.
+   * When provided, fields for which this returns false are hidden from the modal entirely.
+   * Fields for which this returns true but canEditField returns false are shown as disabled (read-only).
+   */
+  canViewField?: (fieldKey: string) => boolean;
+  /**
+   * Optional FLS function for create/edit dialogs.
+   * When provided, form fields for which this returns false are shown as read-only (disabled).
+   */
+  canEditField?: (fieldKey: string) => boolean;
+  /** Logged in user's ID to restrict dynamic fields edits to their creators */
+  currentUserId?: string;
 };
 
 function getInitialForm(
@@ -137,13 +188,33 @@ export function ServiceCloudResourcePage({
   emptyLabel = 'No records found.',
   queryParams = {},
   toolbar,
+  filterGroups,
+  activeFilterCount,
+  onClearFilters,
   createLabel,
   entityLabel,
+  isAdmin = false,
+  onColumnEditClick,
+  onColumnAddClick,
+  canViewColumn,
+  systemFields = [],
+  canViewField,
+  canEditField,
+  currentUserId,
 }: ResourcePageProps) {
+  // Apply FLS: filter out columns the current user cannot view
+  const visibleColumns = useMemo(
+    () =>
+      canViewColumn ? columns.filter((col) => canViewColumn(col.key)) : columns,
+    [columns, canViewColumn],
+  );
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(15);
+  const { getHeaderProps, getResizeHandleProps } = useColumnResize(
+    `sc-${resource}`,
+  );
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearchTerm(searchTerm), 300);
@@ -181,35 +252,63 @@ export function ServiceCloudResourcePage({
     }
   };
 
+  const { sortColumn, sortDirection, toggleSort, sortState } =
+    useTableSort<ServiceCloudRecord>(`sc-${resource}`, [], {
+      mode: 'server',
+      onSortChange: () => setCurrentPage(1),
+    });
+
+  const queryParamsWithSort = useMemo(
+    () => ({
+      ...queryParams,
+      search: debouncedSearchTerm || undefined,
+      ...(sortColumn ? { sortColumn } : {}),
+      ...(sortDirection ? { sortDirection } : {}),
+    }),
+    [queryParams, debouncedSearchTerm, sortColumn, sortDirection],
+  );
+
   const {
     data = [],
     isLoading,
     refetch,
   } = useQuery<ServiceCloudRecord[]>({
-    queryKey: ['service-cloud', resource, workspaceId, queryParams],
+    queryKey: [
+      'service-cloud',
+      resource,
+      workspaceId,
+      queryParamsWithSort,
+      sortState,
+    ],
     queryFn: () =>
-      getServiceCloudResourceService(resource, workspaceId, queryParams),
+      getServiceCloudResourceService(
+        resource,
+        workspaceId,
+        queryParamsWithSort,
+      ),
     enabled: Boolean(workspaceId),
   });
 
   const filteredData = useMemo(() => {
-    if (!debouncedSearchTerm) return data;
-    const term = debouncedSearchTerm.toLowerCase();
-    return data.filter((record: ServiceCloudRecord) =>
-      columns.some((col) => {
-        const val = record[col.key];
-        return val != null && String(val).toLowerCase().includes(term);
-      }),
-    );
-  }, [data, debouncedSearchTerm, columns]);
+    return data;
+  }, [data]);
 
   // Pagination derived values
   const totalCount = filteredData.length;
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+
+  // When mode='server', we don't need useTableSort to actually sort. We just use its state.
+  // We'll rename filteredData to sortedData for consistency with the rest of the component
+  const sortedData = filteredData;
+
+  // Columns that should not be sortable (by column key)
+  // These are fields where sorting doesn't make sense (e.g., multi-value, large text)
+  const nonSortableColumnKeys = ['assignees', 'subject', 'status_id', 'priority_id', 'phone', 'website'];
+
   const paginatedData = useMemo(
     () =>
-      filteredData.slice((currentPage - 1) * pageSize, currentPage * pageSize),
-    [filteredData, currentPage, pageSize],
+      sortedData.slice((currentPage - 1) * pageSize, currentPage * pageSize),
+    [sortedData, currentPage, pageSize],
   );
 
   const openCreate = () => {
@@ -288,6 +387,10 @@ export function ServiceCloudResourcePage({
           searchPlaceholder={`Search ${title.toLowerCase()}...`}
           searchValue={searchTerm}
           onSearchChange={setSearchTerm}
+          showFilter={!!filterGroups && filterGroups.length > 0}
+          filterGroups={filterGroups}
+          activeFilterCount={activeFilterCount}
+          onClearFilters={onClearFilters}
           statusSlot={toolbar}
           actions={
             canCreate
@@ -325,11 +428,58 @@ export function ServiceCloudResourcePage({
             <Table>
               <TableHeader>
                 <TableRow>
-                  {columns.map((column) => (
-                    <TableHead key={column.key}>{column.label}</TableHead>
+                  {visibleColumns.map((column) => (
+                    <ColumnHeader
+                      key={column.key}
+                      label={column.label}
+                      columnId={column.key}
+                      sortKey={column.sortKey}
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      sortable={!nonSortableColumnKeys.includes(column.key)}
+                      onSort={toggleSort}
+                      className="relative"
+                      isAdmin={isAdmin}
+                      onEditClick={
+                        onColumnEditClick &&
+                        (isAdmin || (() => {
+                          const fieldObj = systemFields.find((f) => f.field_key === column.key);
+                          return fieldObj && !fieldObj.is_system && fieldObj.created_by === currentUserId;
+                        })())
+                          ? () => onColumnEditClick(column.key)
+                          : undefined
+                      }
+                      field={
+                        systemFields.find((f) => f.field_key === column.key) ||
+                        null
+                      }
+                      {...getHeaderProps(column.key)}
+                    >
+                      <span
+                        className="col-resize-handle"
+                        {...getResizeHandleProps(column.key)}
+                      />
+                    </ColumnHeader>
                   ))}
                   {canEdit || canDelete ? (
-                    <TableHead className="text-right">Actions</TableHead>
+                    onColumnAddClick ? (
+                      <TableHead className="sticky-right-header bg-background z-10 w-12 px-1 text-center">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          className="h-8 w-8 mx-auto flex items-center justify-center border-dashed"
+                          onClick={onColumnAddClick}
+                          title="Add Column"
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </TableHead>
+                    ) : (
+                      <TableHead className="sticky-right-header text-right">
+                        Actions
+                      </TableHead>
+                    )
                   ) : null}
                 </TableRow>
               </TableHeader>
@@ -338,7 +488,7 @@ export function ServiceCloudResourcePage({
                   [...Array(5)].map((_, i) => (
                     <TableRow key={`skeleton-${i}`}>
                       <TableCell
-                        colSpan={columns.length}
+                        colSpan={visibleColumns.length}
                         className="h-[52px] px-4 py-2"
                       >
                         <Skeleton className="h-7 w-full" />
@@ -353,7 +503,7 @@ export function ServiceCloudResourcePage({
                 ) : filteredData.length === 0 ? (
                   <TableRow>
                     <TableCell
-                      colSpan={columns.length + 1}
+                      colSpan={visibleColumns.length + 1}
                       className="text-muted-foreground py-8 text-center"
                     >
                       {emptyLabel}
@@ -362,7 +512,7 @@ export function ServiceCloudResourcePage({
                 ) : (
                   paginatedData.map((record: ServiceCloudRecord) => (
                     <TableRow key={record.id}>
-                      {columns.map((column) => (
+                      {visibleColumns.map((column) => (
                         <TableCell
                           key={column.key}
                           className={cn(
@@ -451,118 +601,142 @@ export function ServiceCloudResourcePage({
               </DialogHeader>
               <div className="flex-1 space-y-4 overflow-y-auto p-6 pb-8">
                 <div className="grid gap-4">
-                  {fields.map((field) => (
-                    <div key={field.key} className="space-y-2">
-                      <Label>{field.label}</Label>
-                      {field.type === 'select' ? (
-                        <Select
-                          value={String(form[field.key] ?? '')}
-                          onValueChange={(value) =>
-                            setForm((prev: ServiceCloudRecord) => ({
-                              ...prev,
-                              [field.key]: value,
-                            }))
-                          }
-                        >
-                          <SelectTrigger>
-                            <SelectValue
-                              placeholder={`Select ${field.label}`}
-                            />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {(field.options ?? []).map((option) => (
-                              <SelectItem
-                                key={option.value}
-                                value={option.value}
-                              >
-                                <div className="flex items-center gap-2">
-                                  {option.color ? (
-                                    <span
-                                      className="h-2 w-2 shrink-0 rounded-full border border-black/10 dark:border-white/10"
-                                      style={{ backgroundColor: option.color }}
-                                    />
-                                  ) : null}
-                                  <span>{option.label}</span>
-                                </div>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      ) : field.type === 'color' ? (
-                        <div className="space-y-3">
-                          <div className="flex flex-wrap gap-2">
-                            {PRESET_COLORS.map((color) => (
-                              <button
-                                key={color}
-                                type="button"
-                                className={cn(
-                                  'focus:ring-ring h-8 w-8 rounded-full border-2 transition-all hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2 active:scale-95',
-                                  form[field.key] === color
-                                    ? 'border-primary ring-primary scale-105 shadow-md ring-2'
-                                    : 'border-zinc-300 dark:border-zinc-700',
-                                )}
-                                style={{ backgroundColor: color }}
-                                onClick={() =>
-                                  setForm((prev: ServiceCloudRecord) => ({
-                                    ...prev,
-                                    [field.key]: color,
-                                  }))
-                                }
-                                title={color}
-                              />
-                            ))}
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <div className="border-input focus-within:ring-ring relative h-9 w-9 overflow-hidden rounded-md border focus-within:ring-2 focus-within:ring-offset-2">
-                              <input
-                                type="color"
-                                className="absolute -left-2 -top-2 h-14 w-14 cursor-pointer border-0 p-0"
-                                value={String(form[field.key] || '#64748b')}
-                                onChange={(event) =>
-                                  setForm((prev: ServiceCloudRecord) => ({
-                                    ...prev,
-                                    [field.key]: event.target.value,
-                                  }))
-                                }
-                              />
-                            </div>
-                            <Input
-                              type="text"
-                              placeholder="#000000"
+                  {fields
+                    // Hide field if canViewField is provided AND returns false
+                    .filter((field) => !canViewField || canViewField(field.key))
+                    .map((field) => {
+                      // Field is editable only if no canEditField guard, or it returns true
+                      const isEditable = !canEditField || canEditField(field.key);
+                      return (
+                        <div key={field.key} className="space-y-2">
+                          <Label className="flex items-center gap-1.5">
+                            {field.label}
+                            {!isEditable && (
+                              <span className="text-muted-foreground text-xs font-normal">(view only)</span>
+                            )}
+                          </Label>
+                          {field.type === 'select' ? (
+                            <Select
                               value={String(form[field.key] ?? '')}
-                              onChange={(event) =>
+                              onValueChange={(value) =>
+                                isEditable &&
                                 setForm((prev: ServiceCloudRecord) => ({
                                   ...prev,
-                                  [field.key]: event.target.value,
+                                  [field.key]: value,
                                 }))
                               }
-                              className="w-32 font-mono text-sm uppercase"
-                            />
-                          </div>
-                        </div>
-                      ) : (
-                        <Input
-                          type={
-                            field.type === 'number'
-                              ? 'number'
-                              : field.type === 'email'
-                                ? 'email'
-                                : 'text'
-                          }
-                          value={String(form[field.key] ?? '')}
-                          onChange={(event) =>
-                            setForm((prev: ServiceCloudRecord) => ({
-                              ...prev,
-                              [field.key]:
+                              disabled={!isEditable}
+                            >
+                              <SelectTrigger disabled={!isEditable}>
+                                <SelectValue
+                                  placeholder={`Select ${field.label}`}
+                                />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {(field.options ?? []).map((option) => (
+                                  <SelectItem
+                                    key={option.value}
+                                    value={option.value}
+                                  >
+                                    <div className="flex items-center gap-2">
+                                      {option.color ? (
+                                        <span
+                                          className="h-2 w-2 shrink-0 rounded-full border border-black/10 dark:border-white/10"
+                                          style={{
+                                            backgroundColor: option.color,
+                                          }}
+                                        />
+                                      ) : null}
+                                      <span>{option.label}</span>
+                                    </div>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          ) : field.type === 'color' ? (
+                            <div className={cn('space-y-3', !isEditable && 'pointer-events-none opacity-60')}>
+                              <div className="flex flex-wrap gap-2">
+                                {PRESET_COLORS.map((color) => (
+                                  <button
+                                    key={color}
+                                    type="button"
+                                    disabled={!isEditable}
+                                    className={cn(
+                                      'focus:ring-ring h-8 w-8 rounded-full border-2 transition-all hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2 active:scale-95',
+                                      form[field.key] === color
+                                        ? 'border-primary ring-primary scale-105 shadow-md ring-2'
+                                        : 'border-zinc-300 dark:border-zinc-700',
+                                    )}
+                                    style={{ backgroundColor: color }}
+                                    onClick={() =>
+                                      isEditable &&
+                                      setForm((prev: ServiceCloudRecord) => ({
+                                        ...prev,
+                                        [field.key]: color,
+                                      }))
+                                    }
+                                    title={color}
+                                  />
+                                ))}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <div className="border-input focus-within:ring-ring relative h-9 w-9 overflow-hidden rounded-md border focus-within:ring-2 focus-within:ring-offset-2">
+                                  <input
+                                    type="color"
+                                    disabled={!isEditable}
+                                    className="absolute -left-2 -top-2 h-14 w-14 cursor-pointer border-0 p-0"
+                                    value={String(form[field.key] || '#64748b')}
+                                    onChange={(event) =>
+                                      isEditable &&
+                                      setForm((prev: ServiceCloudRecord) => ({
+                                        ...prev,
+                                        [field.key]: event.target.value,
+                                      }))
+                                    }
+                                  />
+                                </div>
+                                <Input
+                                  type="text"
+                                  placeholder="#000000"
+                                  disabled={!isEditable}
+                                  value={String(form[field.key] ?? '')}
+                                  onChange={(event) =>
+                                    isEditable &&
+                                    setForm((prev: ServiceCloudRecord) => ({
+                                      ...prev,
+                                      [field.key]: event.target.value,
+                                    }))
+                                  }
+                                  className="w-32 font-mono text-sm uppercase"
+                                />
+                              </div>
+                            </div>
+                          ) : (
+                            <Input
+                              type={
                                 field.type === 'number'
-                                  ? Number(event.target.value)
-                                  : event.target.value,
-                            }))
-                          }
-                        />
-                      )}
-                    </div>
-                  ))}
+                                  ? 'number'
+                                  : field.type === 'email'
+                                    ? 'email'
+                                    : 'text'
+                              }
+                              disabled={!isEditable}
+                              value={String(form[field.key] ?? '')}
+                              onChange={(event) =>
+                                isEditable &&
+                                setForm((prev: ServiceCloudRecord) => ({
+                                  ...prev,
+                                  [field.key]:
+                                    field.type === 'number'
+                                      ? Number(event.target.value)
+                                      : event.target.value,
+                                }))
+                              }
+                            />
+                          )}
+                        </div>
+                      );
+                    })}
                 </div>
               </div>
               <div className="border-t border-gray-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">

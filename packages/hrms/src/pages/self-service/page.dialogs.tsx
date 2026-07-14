@@ -47,6 +47,9 @@ import {
   formatPayslipPeriod,
 } from './page.data';
 import { StatTile } from './page.shared';
+import { useColumnResize } from '@kit/ui/use-column-resize';
+import { useTableSort } from '@kit/ui/use-table-sort';
+import { SortableTableHead } from '@kit/ui/sortable-table-head';
 
 export function UpdateProfileDialog(props: {
   employee: SelfServiceEmployeeProfile;
@@ -380,9 +383,16 @@ export function SelfServicePayslipDetailsDialog(props: {
     queryKey: ['self-service-payslip', props.payslipId],
   });
 
+  const { getHeaderProps, getResizeHandleProps } = useColumnResize('hrms-self-service-payslip-details');
+
   const detail = detailsQuery.data?.data as
     | SelfServicePayslipDetail
     | undefined;
+
+  const { sortColumn, sortDirection, toggleSort, sortedData } = useTableSort<any>(
+    'hrms-self-service-payslip-details',
+    detail?.components || []
+  );
 
   return (
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
@@ -429,14 +439,56 @@ export function SelfServicePayslipDetailsDialog(props: {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Component</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Source</TableHead>
-                    <TableHead className="text-right">Amount</TableHead>
+                    <SortableTableHead
+                      label="Component"
+                      columnId="component"
+                      sortKey="salary_component.name"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={toggleSort}
+                      className="relative"
+                      {...getHeaderProps('component')}
+                    >
+                      <span className="col-resize-handle" {...getResizeHandleProps('component')} />
+                    </SortableTableHead>
+                    <SortableTableHead
+                      label="Type"
+                      columnId="type"
+                      sortKey="salary_component.type"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={toggleSort}
+                      className="relative"
+                      {...getHeaderProps('type')}
+                    >
+                      <span className="col-resize-handle" {...getResizeHandleProps('type')} />
+                    </SortableTableHead>
+                    <SortableTableHead
+                      label="Source"
+                      columnId="source"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={toggleSort}
+                      className="relative"
+                      {...getHeaderProps('source')}
+                    >
+                      <span className="col-resize-handle" {...getResizeHandleProps('source')} />
+                    </SortableTableHead>
+                    <SortableTableHead
+                      label="Amount"
+                      columnId="amount"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={toggleSort}
+                      className="relative text-right"
+                      {...getHeaderProps('amount')}
+                    >
+                      <span className="col-resize-handle" {...getResizeHandleProps('amount')} />
+                    </SortableTableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {detail.components.map((component) => (
+                  {sortedData.map((component: any) => (
                     <TableRow key={component.id}>
                       <TableCell className="font-medium">
                         {component.salary_component?.name ?? 'Component'}

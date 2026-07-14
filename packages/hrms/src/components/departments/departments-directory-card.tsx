@@ -24,6 +24,9 @@ import {
 import type { Department } from '../../types/department.type';
 import { useRbac } from '../rbac/rbac-context';
 import { formatDate } from '@kit/shared/utils';
+import { useColumnResize } from '@kit/ui/use-column-resize';
+import { useTableSort } from '@kit/ui/use-table-sort';
+import { SortableTableHead } from '@kit/ui/sortable-table-head';
 
 export function DepartmentsDirectoryCard(props: {
   departments: Array<Department>;
@@ -42,25 +45,128 @@ export function DepartmentsDirectoryCard(props: {
     Object.values(props.visibility).filter((value) => value !== false).length +
     1;
 
+  const { getHeaderProps, getResizeHandleProps } = useColumnResize('hrms-departments');
+  const { sortColumn, sortDirection, toggleSort, sortedData } = useTableSort<Department>(
+    'hrms-departments',
+    props.filteredDepartments
+  );
+
   return (
     <CustomTableContainer>
       <Table>
         <TableHeader>
           <TableRow>
             {props.isColumnVisible('sno') && (
-              <TableHead className="w-12 whitespace-nowrap">S. No.</TableHead>
+              <SortableTableHead
+                label="S. No."
+                columnId="sno"
+                sortColumn={sortColumn}
+                sortDirection={sortDirection}
+                onSort={toggleSort}
+                sortable={false}
+                className="relative w-12 whitespace-nowrap"
+                {...getHeaderProps('sno')}
+              >
+                <span className="col-resize-handle" {...getResizeHandleProps('sno')} />
+              </SortableTableHead>
             )}
             {props.isColumnVisible('department') && (
-              <TableHead>Department</TableHead>
+              <SortableTableHead
+                label="Department"
+                columnId="department"
+                sortKey="name"
+                sortColumn={sortColumn}
+                sortDirection={sortDirection}
+                onSort={toggleSort}
+                className="relative"
+                {...getHeaderProps('department')}
+              >
+                <span className="col-resize-handle" {...getResizeHandleProps('department')} />
+              </SortableTableHead>
             )}
-            {props.isColumnVisible('code') && <TableHead>Code</TableHead>}
-            {props.isColumnVisible('parent') && <TableHead>Parent</TableHead>}
-            {props.isColumnVisible('head') && <TableHead>Head</TableHead>}
+            {props.isColumnVisible('code') && (
+              <SortableTableHead
+                label="Code"
+                columnId="code"
+                sortColumn={sortColumn}
+                sortDirection={sortDirection}
+                onSort={toggleSort}
+                className="relative"
+                {...getHeaderProps('code')}
+              >
+                <span className="col-resize-handle" {...getResizeHandleProps('code')} />
+              </SortableTableHead>
+            )}
+            {props.isColumnVisible('parent') && (
+              <SortableTableHead
+                label="Parent"
+                columnId="parent"
+                sortKey="parent_department.name"
+                sortColumn={sortColumn}
+                sortDirection={sortDirection}
+                onSort={toggleSort}
+                className="relative"
+                {...getHeaderProps('parent')}
+              >
+                <span className="col-resize-handle" {...getResizeHandleProps('parent')} />
+              </SortableTableHead>
+            )}
+            {props.isColumnVisible('head') && (
+              <SortableTableHead
+                label="Head"
+                columnId="head"
+                sortKey="head_account.name"
+                sortColumn={sortColumn}
+                sortDirection={sortDirection}
+                onSort={toggleSort}
+                className="relative"
+                {...getHeaderProps('head')}
+              >
+                <span className="col-resize-handle" {...getResizeHandleProps('head')} />
+              </SortableTableHead>
+            )}
             {props.isColumnVisible('cost_center') && (
-              <TableHead>Cost Center</TableHead>
+              <SortableTableHead
+                label="Cost Center"
+                columnId="cost_center"
+                sortKey="cost_center_code"
+                sortColumn={sortColumn}
+                sortDirection={sortDirection}
+                onSort={toggleSort}
+                className="relative"
+                {...getHeaderProps('cost_center')}
+              >
+                <span className="col-resize-handle" {...getResizeHandleProps('cost_center')} />
+              </SortableTableHead>
             )}
-            {props.isColumnVisible('status') && <TableHead>Status</TableHead>}
-            {props.isColumnVisible('updated') && <TableHead>Updated</TableHead>}
+            {props.isColumnVisible('status') && (
+              <SortableTableHead
+                label="Status"
+                columnId="status"
+                sortKey="is_active"
+                sortColumn={sortColumn}
+                sortDirection={sortDirection}
+                onSort={toggleSort}
+                className="relative"
+                {...getHeaderProps('status')}
+              >
+                <span className="col-resize-handle" {...getResizeHandleProps('status')} />
+              </SortableTableHead>
+            )}
+            {props.isColumnVisible('updated') && (
+              <SortableTableHead
+                label="Updated"
+                columnId="updated"
+                sortKey="updated_at"
+                sortColumn={sortColumn}
+                sortDirection={sortDirection}
+                onSort={toggleSort}
+                className="relative"
+                {...getHeaderProps('updated')}
+              >
+                <span className="col-resize-handle" {...getResizeHandleProps('updated')} />
+              </SortableTableHead>
+            )}
             <TableHead className="sticky right-0 px-4 text-right">
               Actions
             </TableHead>
@@ -98,7 +204,7 @@ export function DepartmentsDirectoryCard(props: {
             </TableRow>
           ) : null}
 
-          {props.filteredDepartments.map((department, index) => (
+          {sortedData.map((department, index) => (
             <TableRow key={department.id} className="hover:bg-muted/50">
               {props.isColumnVisible('sno') && (
                 <TableCell className="text-muted-foreground w-12">

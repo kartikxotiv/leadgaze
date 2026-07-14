@@ -29,7 +29,7 @@ export function SignUpMethodsContainer(props: {
   const redirectUrl = getCallbackUrl(props);
   const defaultValues = getDefaultValues(props.email, props.inviteToken);
 
-  // Use 'next' parameter for redirect after signup if present, 
+  // Use 'next' parameter for redirect after signup if present,
   // otherwise fallback to default appHome
   const appHome = getAppHome(props.paths.appHome);
 
@@ -53,8 +53,8 @@ export function SignUpMethodsContainer(props: {
         />
       </If>
 
-      {/* <If condition={props.providers.oAuth.length}>
-        <Separator />
+      <If condition={props.providers.oAuth.length}>
+        <Separator/>
 
         <OauthProviders
           enabledProviders={props.providers.oAuth}
@@ -64,7 +64,7 @@ export function SignUpMethodsContainer(props: {
             returnPath: props.paths.appHome,
           }}
         />
-      </If> */}
+      </If>
     </>
   );
 }

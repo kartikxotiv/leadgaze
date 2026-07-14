@@ -70,13 +70,14 @@ export const getDashboardMetrics = catchAsync(
     const isOwner =
       workspace?.owner_id === actorAccountId || workspace?.owner_id === user.id;
 
-    const { data: membership } = await adminClient
+    const { data: memberships } = await adminClient
       .from('workspace_members')
       .select('id')
       .eq('workspace_id', workspaceId)
       .eq('user_id', actorAccountId)
-      .eq('status', 'accepted')
-      .maybeSingle();
+      .eq('status', 'accepted');
+
+    const membership = memberships && memberships.length > 0 ? memberships[0] : null;
 
     if (!isOwner && !membership) {
       return NextResponse.json(

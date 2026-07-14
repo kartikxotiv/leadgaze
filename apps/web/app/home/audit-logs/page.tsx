@@ -4,7 +4,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 
 import { useQuery } from '@tanstack/react-query';
 import { usePathname } from 'next/navigation';
-import { format } from 'date-fns';
 import { Eye } from 'lucide-react';
 
 import { Badge } from '@kit/ui/badge';
@@ -32,15 +31,21 @@ import {
   TableHeader,
   TableRow,
 } from '@kit/ui/table';
-import { useColumnVisibility } from '@kit/ui/use-column-visibility';
+import { useColumnResize } from '@kit/ui/use-column-resize';
+import { useTableSort } from '@kit/ui/use-table-sort';
+import { SortableTableHead } from '@kit/ui/sortable-table-head';
 
 import { useDebounce } from '~/lib/hooks/use-debounce';
+import { useLocalization } from '~/lib/localization/localization-provider';
 import { ModuleGuard } from '~/lib/rbac/module-guard';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { getAuditLogsService } from '~/services/audit-logs.service';
+import { useColumnVisibility } from '@kit/ui/use-column-visibility';
+import { useDateRangeFilter } from '@kit/ui/use-date-range-filter';
 
 export default function AuditLogsPage() {
   const { currentWorkspace: workspace } = useRBAC();
+  const { formatDate, formatDateTime } = useLocalization();
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(15);
   const [selectedModule, setSelectedModule] = useState<string>('all');
@@ -54,8 +59,18 @@ export default function AuditLogsPage() {
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
   const itemsPerPage = pageSize;
 
+  const {
+    dateRange: createdOnRange,
+    setDateRange: setCreatedOnRange,
+    computedDates: computedCreatedOnDates,
+    clearDateRange: clearCreatedOnRange,
+  } = useDateRangeFilter();
+
   const activeFilterCount =
-    (selectedModule !== 'all' ? 1 : 0) + (selectedAction !== 'all' ? 1 : 0) + (selectedProduct !== 'all' && !contextProductKey ? 1 : 0);
+    (selectedModule !== 'all' ? 1 : 0) +
+    (selectedAction !== 'all' ? 1 : 0) +
+    (selectedProduct !== 'all' && !contextProductKey ? 1 : 0) +
+    (createdOnRange ? 1 : 0);
 
   const columns = useMemo(
     () => [
@@ -77,6 +92,8 @@ export default function AuditLogsPage() {
       entity: true,
     });
 
+  const { getHeaderProps, getResizeHandleProps } = useColumnResize('audit-logs');
+
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: [
       'audit-logs',
@@ -86,6 +103,7 @@ export default function AuditLogsPage() {
       selectedAction,
       selectedProduct,
       itemsPerPage,
+      computedCreatedOnDates,
     ],
     queryFn: () => {
       if (!workspace?.id) return null;
@@ -96,6 +114,8 @@ export default function AuditLogsPage() {
         module: selectedModule === 'all' ? undefined : selectedModule,
         action: selectedAction === 'all' ? undefined : selectedAction,
         productKey: selectedProduct === 'all' ? undefined : selectedProduct,
+        createdAtFrom: computedCreatedOnDates?.from ?? undefined,
+        createdAtTo: computedCreatedOnDates?.to ?? undefined,
       });
     },
     enabled: !!workspace?.id,
@@ -113,6 +133,11 @@ export default function AuditLogsPage() {
       (log.entity_name || '').toLowerCase().includes(term),
     );
   }, [data?.logs, debouncedSearchTerm]);
+
+  const { sortColumn, sortDirection, toggleSort, sortedData } = useTableSort<any>(
+    'audit-logs',
+    logs,
+  );
   const count = data?.count || 0;
   const totalPages = Math.ceil(count / itemsPerPage);
 
@@ -138,7 +163,7 @@ export default function AuditLogsPage() {
   // Reset to first page when search or filters change
   useEffect(() => {
     setPage(1);
-  }, [debouncedSearchTerm, selectedModule, selectedAction, selectedProduct]);
+  }, [debouncedSearchTerm, selectedModule, selectedAction, selectedProduct, createdOnRange]);
 
   const filterGroups = useMemo(() => {
     const groups = [
@@ -183,8 +208,18 @@ export default function AuditLogsPage() {
         onSelect: (val: string) => setSelectedProduct(val || 'all'),
       });
     }
+    groups.push({
+      key: 'created_on',
+      label: 'Created On',
+      type: 'date',
+      dateValue: createdOnRange,
+      onDateChange: (val) => {
+        setCreatedOnRange(val);
+        setPage(1);
+      },
+    } as any);
     return groups;
-  }, [selectedModule, selectedAction, selectedProduct, contextProductKey]);
+  }, [selectedModule, selectedAction, selectedProduct, contextProductKey, createdOnRange]);
 
   return (
     <ModuleGuard module="audit_logs">
@@ -209,6 +244,7 @@ export default function AuditLogsPage() {
             setSelectedModule('all');
             setSelectedAction('all');
             if (!contextProductKey) setSelectedProduct('all');
+            clearCreatedOnRange();
           }}
           columnVisibilitySlot={
             <ColumnVisibilitySelector
@@ -241,29 +277,76 @@ export default function AuditLogsPage() {
                     <TableHeader>
                       <TableRow className="border-b bg-muted/50 hover:bg-muted/50">
                         {isVisible('date_time') && (
-                          <TableHead className="w-[160px] h-11 text-xs uppercase tracking-wider font-semibold whitespace-nowrap">
-                            Date & Time
-                          </TableHead>
+                          <SortableTableHead
+                            label="Date & Time"
+                            columnId="date_time"
+                            sortKey="created_at"
+                            sortColumn={sortColumn}
+                            sortDirection={sortDirection}
+                            onSort={toggleSort}
+                            className="relative w-[160px] h-11 text-xs uppercase tracking-wider font-semibold whitespace-nowrap"
+                            {...getHeaderProps('date_time')}
+                          >
+                            <span className="col-resize-handle" {...getResizeHandleProps('date_time')} />
+                          </SortableTableHead>
                         )}
                         {isVisible('actor') && (
-                          <TableHead className="w-[200px] h-11 text-xs uppercase tracking-wider font-semibold whitespace-nowrap">
-                            Actor
-                          </TableHead>
+                          <SortableTableHead
+                            label="Actor"
+                            columnId="actor"
+                            sortKey="actor.name"
+                            sortColumn={sortColumn}
+                            sortDirection={sortDirection}
+                            onSort={toggleSort}
+                            sortable={false}
+                            className="relative w-[200px] h-11 text-xs uppercase tracking-wider font-semibold whitespace-nowrap"
+                            {...getHeaderProps('actor')}
+                          >
+                            <span className="col-resize-handle" {...getResizeHandleProps('actor')} />
+                          </SortableTableHead>
                         )}
                         {isVisible('module') && (
-                          <TableHead className="w-[140px] h-11 text-xs uppercase tracking-wider font-semibold whitespace-nowrap">
-                            Module
-                          </TableHead>
+                          <SortableTableHead
+                            label="Module"
+                            columnId="module"
+                            sortColumn={sortColumn}
+                            sortDirection={sortDirection}
+                            onSort={toggleSort}
+                            sortable={false}
+                            className="relative w-[140px] h-11 text-xs uppercase tracking-wider font-semibold whitespace-nowrap"
+                            {...getHeaderProps('module')}
+                          >
+                            <span className="col-resize-handle" {...getResizeHandleProps('module')} />
+                          </SortableTableHead>
                         )}
                         {isVisible('action') && (
-                          <TableHead className="w-[120px] h-11 text-xs uppercase tracking-wider font-semibold whitespace-nowrap">
-                            Action
-                          </TableHead>
+                          <SortableTableHead
+                            label="Action"
+                            columnId="action"
+                            sortColumn={sortColumn}
+                            sortDirection={sortDirection}
+                            onSort={toggleSort}
+                            sortable={false}
+                            className="relative w-[120px] h-11 text-xs uppercase tracking-wider font-semibold whitespace-nowrap"
+                            {...getHeaderProps('action')}
+                          >
+                            <span className="col-resize-handle" {...getResizeHandleProps('action')} />
+                          </SortableTableHead>
                         )}
                         {isVisible('entity') && (
-                          <TableHead className="w-full h-11 text-xs uppercase tracking-wider font-semibold whitespace-nowrap">
-                            Entity
-                          </TableHead>
+                          <SortableTableHead
+                            label="Entity"
+                            columnId="entity"
+                            sortKey="entity_name"
+                            sortColumn={sortColumn}
+                            sortDirection={sortDirection}
+                            onSort={toggleSort}
+                            sortable={false}
+                            className="relative w-full h-11 text-xs uppercase tracking-wider font-semibold whitespace-nowrap"
+                            {...getHeaderProps('entity')}
+                          >
+                            <span className="col-resize-handle" {...getResizeHandleProps('entity')} />
+                          </SortableTableHead>
                         )}
                         <TableHead className="sticky-right-header w-[80px] h-11 text-xs uppercase tracking-wider font-semibold text-right whitespace-nowrap">
                           Details
@@ -308,31 +391,30 @@ export default function AuditLogsPage() {
                           </TableCell>
                         </TableRow>
                       ) : (
-                        logs.map((log: any) => (
+                        sortedData.map((log: any) => (
                           <TableRow
                             key={log.id}
                             className="group hover:bg-muted/30 transition-colors border-b last:border-0"
                           >
                             {isVisible('date_time') && (
-                              <TableCell className="py-3 align-middle">
+                              <TableCell className="py-2 align-middle">
                                 <div className="flex flex-col gap-0.5">
                                   <span className="text-sm font-medium">
-                                    {format(
-                                      new Date(log.created_at),
-                                      'MMM d, yyyy',
-                                    )}
+                                    {formatDate(log.created_at)}
                                   </span>
                                   <span className="text-muted-foreground text-xs font-normal">
-                                    {format(
-                                      new Date(log.created_at),
-                                      'hh:mm:ss a',
-                                    )}
+                                    {new Intl.DateTimeFormat(undefined, {
+                                      hour: '2-digit',
+                                      minute: '2-digit',
+                                      second: '2-digit',
+                                      hour12: true,
+                                    }).format(new Date(log.created_at))}
                                   </span>
                                 </div>
                               </TableCell>
                             )}
                             {isVisible('actor') && (
-                              <TableCell className="py-3 align-middle">
+                              <TableCell className="py-2 align-middle">
                                 <div className="flex items-center gap-3">
                                   <div className="bg-primary/10 text-primary flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold ring-1 ring-primary/20">
                                     {log.actor?.name?.[0] ||
@@ -351,7 +433,7 @@ export default function AuditLogsPage() {
                               </TableCell>
                             )}
                             {isVisible('module') && (
-                              <TableCell className="py-3 align-middle">
+                              <TableCell className="py-2 align-middle">
                                 <div className="flex items-center gap-2">
                                   <div className="h-1.5 w-1.5 rounded-full bg-slate-400 dark:bg-slate-600"></div>
                                   <span className="text-sm font-medium text-foreground/80">
@@ -361,7 +443,7 @@ export default function AuditLogsPage() {
                               </TableCell>
                             )}
                             {isVisible('action') && (
-                              <TableCell className="py-3 align-middle">
+                              <TableCell className="py-2 align-middle">
                                 {(() => {
                                   const styles = getActionStyles(log.action);
                                   return (
@@ -376,7 +458,7 @@ export default function AuditLogsPage() {
                               </TableCell>
                             )}
                             {isVisible('entity') && (
-                              <TableCell className="py-3 align-middle w-full max-w-[200px] sm:max-w-auto">
+                              <TableCell className="py-2 align-middle w-full max-w-[200px] sm:max-w-auto">
                                 <div className="flex flex-col gap-0.5">
                                   <span className="truncate text-sm font-medium">
                                     {log.entity_name || '-'}
@@ -387,7 +469,7 @@ export default function AuditLogsPage() {
                                 </div>
                               </TableCell>
                             )}
-                            <TableCell className="bg-card sticky right-0 py-3 text-right align-middle">
+                            <TableCell className="bg-card sticky right-0 py-2 text-right align-middle">
                               <Button
                                 variant="ghost"
                                 size="sm"

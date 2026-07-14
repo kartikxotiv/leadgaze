@@ -9,6 +9,43 @@ import {
   successDataResponse,
 } from '../../../utils/response-handler';
 
+import {
+  buildOpportunityCurrencyFields,
+} from '@kit/shared/currency';
+// Direct columns: sorted at DB level
+const OPPORTUNITY_DIRECT_SORT_COLUMNS: Record<string, string> = {
+  opportunity_name:     'opportunity_name',
+  amount:               'amount',
+  currency:             'currency',
+  probability:          'probability',
+  expected_close_date:  'expected_close_date',
+  priority:             'priority',
+  opportunity_type:     'opportunity_type',
+  lead_source:          'lead_source',
+  competitor:           'competitor',
+  is_closed:            'is_closed',
+  is_won:               'is_won',
+  created_at:           'created_at',
+};
+
+// Relational columns: sorted in Node.js after fetch.
+// Supabase's foreignTable in .order() only sorts nested children, NOT parent rows.
+const OPPORTUNITY_RELATIONAL_SORT_COLUMNS: Record<string, string> = {
+  'account.account_name':        'account.account_name',
+  'stage.status_name':           'stage.status_name',
+  'owner.name':                  'owner.name',
+  'created_by_account.name':     'created_by_account.name',
+  'updated_by_account.name':     'updated_by_account.name',
+};
+
+const getNestedValue = (obj: Record<string, unknown>, path: string): string => {
+  const value = path.split('.').reduce<unknown>((acc, key) => {
+    if (acc && typeof acc === 'object') return (acc as Record<string, unknown>)[key];
+    return undefined;
+  }, obj);
+  return typeof value === 'string' ? value.toLowerCase() : '';
+};
+
 /**
  * GET /api/opportunities
  * Fetch all opportunities for a workspace
@@ -31,6 +68,12 @@ export const getOpportunities = catchAsync(
     const limit = parseInt(url.searchParams.get('limit') || '20', 10);
     const searchTerm = url.searchParams.get('searchTerm') || '';
     const stageId = url.searchParams.get('stageId') || '';
+    const sortColumn = url.searchParams.get('sortColumn') || '';
+    const sortDirection = url.searchParams.get('sortDirection') || '';
+    const createdAtFrom = url.searchParams.get('createdAtFrom') || '';
+    const createdAtTo = url.searchParams.get('createdAtTo') || '';
+    const updatedAtFrom = url.searchParams.get('updatedAtFrom') || '';
+    const updatedAtTo = url.searchParams.get('updatedAtTo') || '';
 
     if (!workspaceId) {
       return NextResponse.json(
@@ -156,6 +199,11 @@ export const getOpportunities = catchAsync(
         .eq('is_deleted', false),
     );
 
+    if (createdAtFrom) mainQuery = mainQuery.gte('created_at', `${createdAtFrom}T00:00:00.000Z`);
+    if (createdAtTo) mainQuery = mainQuery.lte('created_at', `${createdAtTo}T23:59:59.999Z`);
+    if (updatedAtFrom) mainQuery = mainQuery.gte('updated_at', `${updatedAtFrom}T00:00:00.000Z`);
+    if (updatedAtTo) mainQuery = mainQuery.lte('updated_at', `${updatedAtTo}T23:59:59.999Z`);
+
     if (accountId) {
       mainQuery = mainQuery.eq('account_id', accountId);
     }
@@ -190,12 +238,30 @@ export const getOpportunities = catchAsync(
     }
 
     // Run main + breakdown queries in parallel
+    const isRelationalSort = !!OPPORTUNITY_RELATIONAL_SORT_COLUMNS[sortColumn];
+    const isDirectSort = !!OPPORTUNITY_DIRECT_SORT_COLUMNS[sortColumn];
+
+    let finalMainQuery;
+    if (isDirectSort) {
+      finalMainQuery = mainQuery
+        .order(OPPORTUNITY_DIRECT_SORT_COLUMNS[sortColumn]!, {
+          ascending: sortDirection === 'asc',
+          nullsFirst: false,
+        })
+        .range(from, to);
+    } else if (isRelationalSort) {
+      // Fetch all rows so we can sort in Node.js, then slice
+      finalMainQuery = mainQuery.order('created_at', { ascending: false });
+    } else {
+      finalMainQuery = mainQuery.order('created_at', { ascending: false }).range(from, to);
+    }
+
     const [mainResult, breakdownResult] = await Promise.all([
-      mainQuery.order('created_at', { ascending: false }).range(from, to),
+      finalMainQuery,
       breakdownQuery,
     ]);
 
-    const { data: opportunities, error, count } = mainResult;
+    const { data: opportunitiesRaw, error, count } = mainResult;
     if (error) {
       console.error('Get opportunities error:', error);
       throw error;
@@ -206,6 +272,22 @@ export const getOpportunities = catchAsync(
       console.error('Get stage breakdown error:', breakdownError);
       throw breakdownError;
     }
+
+    /* eslint-disable @typescript-eslint/no-explicit-any */
+    let sortedOpportunities: any[] = opportunitiesRaw || [];
+    if (isRelationalSort && OPPORTUNITY_RELATIONAL_SORT_COLUMNS[sortColumn]) {
+      const accessor = OPPORTUNITY_RELATIONAL_SORT_COLUMNS[sortColumn]!;
+      const ascending = sortDirection === 'asc';
+      sortedOpportunities = [...sortedOpportunities].sort((a, b) => {
+        const aVal = getNestedValue(a, accessor);
+        const bVal = getNestedValue(b, accessor);
+        if (aVal < bVal) return ascending ? -1 : 1;
+        if (aVal > bVal) return ascending ? 1 : -1;
+        return 0;
+      });
+      sortedOpportunities = sortedOpportunities.slice(from, to + 1);
+    }
+    /* eslint-enable @typescript-eslint/no-explicit-any */
 
     const stageBreakdownMap: Record<
       string,
@@ -229,7 +311,7 @@ export const getOpportunities = catchAsync(
 
     return NextResponse.json({
       message: 'Opportunities retrieved successfully',
-      data: opportunities || [],
+      data: sortedOpportunities,
       count: count || 0,
       totalAmount,
       stageBreakdown: stageBreakdownMap,
@@ -306,6 +388,7 @@ export const createOpportunity = catchAsync(
       stage_id,
       workspace_id,
       amount,
+      currency: currency_original,
       expected_close_date,
       probability,
       priority,
@@ -322,6 +405,41 @@ export const createOpportunity = catchAsync(
       );
     }
 
+    // =====================================================
+    // MULTI-CURRENCY: Resolve base_amount_usd
+    // =====================================================
+    let currencyFields = {};
+    const oppCurrency = currency_original || 'USD';
+    const oppAmount = amount || 0;
+
+    if (oppAmount && oppCurrency) {
+      try {
+        // Fetch latest exchange rate for USD -> oppCurrency
+        const adminClient = getSupabaseServerAdminClient();
+        const { data: rates } = await adminClient
+        .schema('core')
+          .from('currency_exchange_rates')
+          .select('*')
+          .eq('base_currency', 'USD')
+          .eq('target_currency', oppCurrency.toUpperCase())
+          .order('fetched_at', { ascending: false })
+          .limit(1);
+
+        if (rates && rates.length > 0) {
+          const rate = rates[0];
+          currencyFields = buildOpportunityCurrencyFields({
+            amount: oppAmount,
+            currency: oppCurrency,
+            exchangeRateToUsd: rate.exchange_rate,
+            rateDate: rate.fetched_at.split('T')[0],
+          });
+        }
+      } catch (rateError) {
+        console.error('Failed to fetch exchange rate:', rateError);
+        // Proceed without base_amount_usd if rate fetch fails
+      }
+    }
+
     const { data: opportunity, error } = await supabase
       .from('crm_opportunities')
       .insert({
@@ -329,7 +447,8 @@ export const createOpportunity = catchAsync(
         account_id,
         stage_id,
         opportunity_name,
-        amount: amount || 0,
+        amount: oppAmount,
+        currency: oppCurrency,
         expected_close_date: expected_close_date || null,
         probability: probability || null,
         priority: priority || null,
@@ -339,6 +458,7 @@ export const createOpportunity = catchAsync(
         competitor: competitor || null,
         owner_id: user.id,
         created_by: user.id,
+        ...currencyFields,
       })
       .select()
       .single();

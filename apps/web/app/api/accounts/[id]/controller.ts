@@ -34,6 +34,7 @@ export const getAccountById = catchAsync(
           status:entity_statuses!crm_accounts_status_id_fkey(id, status_name, status_key, color, icon),
           industry:crm_industries(id, industry_name),
           owner:accounts!crm_accounts_owner_id_fkey(id, email, name),
+          created_by_account:accounts!crm_accounts_created_by_fkey(id, email, name),
           updated_by_account:accounts!crm_accounts_updated_by_fkey(id, email, name),
           account_type_relation:entity_statuses!entity_statuses_account_type_fkey(id, status_name, status_key, color, icon)
         `,
@@ -115,12 +116,15 @@ export const updateAccount = catchAsync(
     let hasEditPermission = isWorkspaceOwner || isOwner || isCreator;
 
     if (!hasEditPermission) {
-      const { data: member } = await supabase
+      const { data: members } = await supabase
         .from('workspace_members')
-        .select('role_id')
+        .select('role_id, product_key')
         .eq('user_id', user.id)
-        .eq('workspace_id', existingAccount.workspace_id)
-        .single();
+        .eq('workspace_id', existingAccount.workspace_id);
+
+      const member = members?.find((m: any) => m.product_key === 'sales')
+        || members?.find((m: any) => m.product_key === null)
+        || members?.[0];
 
       if (member?.role_id) {
         const { data: permission } = await supabase
@@ -178,6 +182,7 @@ export const updateAccount = catchAsync(
           status:entity_statuses!crm_accounts_status_id_fkey(id, status_name, status_key, color, icon),
           industry:crm_industries(id, industry_name),
           owner:accounts!crm_accounts_owner_id_fkey(id, email, name),
+          created_by_account:accounts!crm_accounts_created_by_fkey(id, email, name),
           updated_by_account:accounts!crm_accounts_updated_by_fkey(id, email, name),
           account_type_relation:entity_statuses!entity_statuses_account_type_fkey(id, status_name, status_key, color, icon)
         `,
@@ -253,12 +258,15 @@ export const deleteAccount = catchAsync(
 
     // If not owner, check RBAC permissions
     if (!hasPermission) {
-      const { data: member } = await supabase
+      const { data: members } = await supabase
         .from('workspace_members')
-        .select('role_id')
+        .select('role_id, product_key')
         .eq('user_id', user.id)
-        .eq('workspace_id', existingAccount.workspace_id)
-        .single();
+        .eq('workspace_id', existingAccount.workspace_id);
+
+      const member = members?.find((m: any) => m.product_key === 'sales')
+        || members?.find((m: any) => m.product_key === null)
+        || members?.[0];
 
       if (member?.role_id) {
         const { data: permission } = await supabase

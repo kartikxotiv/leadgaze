@@ -1,5 +1,6 @@
 import { UpdatePasswordForm } from '@kit/auth/password-reset';
 import { AuthLayoutShell } from '@kit/auth/shared';
+import { Footer } from '~/_components/footer';
 
 import { AppLogo } from '~/components/app-logo';
 import pathsConfig from '~/config/paths.config';
@@ -30,9 +31,12 @@ async function UpdatePasswordPage(props: UpdatePasswordPageProps) {
   const redirectTo = callback ?? pathsConfig.app.home;
 
   return (
-    <AuthLayoutShell Logo={Logo}>
-      <UpdatePasswordForm redirectTo={redirectTo} />
-    </AuthLayoutShell>
+    <>
+      <AuthLayoutShell Logo={Logo}>
+        <UpdatePasswordForm redirectTo={redirectTo} />
+      </AuthLayoutShell>
+      <Footer />
+    </>
   );
 }
 

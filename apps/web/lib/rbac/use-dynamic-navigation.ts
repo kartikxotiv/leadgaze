@@ -61,6 +61,12 @@ const SALES_MODULES: NavItem[] = [
   //   feature: 'manage_email',
   //   module: 'emails',
   // },
+];
+
+// Team Module Features
+// Module key: 'team_members', 'roles'
+// Feature key: 'view'
+const TEAM_MODULES: NavItem[] = [
   {
     label: 'Teams',
     path: pathsConfig.app.teams,
@@ -68,12 +74,6 @@ const SALES_MODULES: NavItem[] = [
     feature: 'view',
     module: 'team_members',
   },
-];
-
-// Team Module Features
-// Module key: 'team_members', 'roles'
-// Feature key: 'view'
-const TEAM_MODULES: NavItem[] = [
   {
     label: 'Members',
     path: pathsConfig.app.teamMembers,

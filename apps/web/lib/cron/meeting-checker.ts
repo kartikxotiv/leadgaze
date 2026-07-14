@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
 import { NotificationService } from './notification-service';
@@ -5,10 +6,63 @@ import { MEETING_REMINDER_INTERVALS } from './reminder-config';
 
 /**
  * Service to check for upcoming meetings and send reminder notifications
- * Uses batch processing for better performance
+ * Supports both:
+ *   - Legacy: crm_meetings + meeting_notifications_sent tables
+ *   - New: core.meetings + core.meeting_reminders tables
  */
 export class MeetingChecker {
   private static readonly BATCH_SIZE = 10;
+
+  /**
+   * Auto-complete meetings that have passed
+   */
+  static async autocompletePassedMeetings(supabase: any): Promise<number> {
+    try {
+      const now = new Date().toISOString();
+      
+      // Select candidate meeting IDs first
+      const { data: meetingsToComplete, error: selectError } = await supabase
+        .schema('core')
+        .from('meetings')
+        .select('id')
+        .in('status', ['scheduled', 'in_progress'])
+        .eq('is_deleted', false)
+        .or(`scheduled_end.lte.${now},and(scheduled_end.is.null,scheduled_start.lte.${now})`);
+
+      if (selectError) {
+        console.error('[MeetingChecker] Error selecting passed meetings:', selectError);
+        return 0;
+      }
+
+      if (!meetingsToComplete || meetingsToComplete.length === 0) {
+        return 0;
+      }
+
+      const ids = meetingsToComplete.map((m: any) => m.id);
+
+      // Update their status to completed
+      const { data, error } = await supabase
+        .schema('core')
+        .from('meetings')
+        .update({ status: 'completed', updated_at: now })
+        .in('id', ids)
+        .select('id');
+
+      if (error) {
+        console.error('[MeetingChecker] Error autocompleting passed meetings:', error);
+        return 0;
+      }
+
+      const count = data?.length ?? 0;
+      if (count > 0) {
+        console.log(`[MeetingChecker] Automatically marked ${count} passed meetings as completed.`);
+      }
+      return count;
+    } catch (error) {
+      console.error('[MeetingChecker] Error in autocompletePassedMeetings:', error);
+      return 0;
+    }
+  }
 
   /**
    * Check for upcoming meetings and send reminder notifications
@@ -21,34 +75,250 @@ export class MeetingChecker {
     try {
       console.log('[MeetingChecker] Starting meeting check...');
 
-      const now = new Date();
+      // Auto-complete passed meetings first
+      await MeetingChecker.autocompletePassedMeetings(supabase);
 
-      // Process each reminder interval
-      for (const interval of MEETING_REMINDER_INTERVALS) {
-        try {
-          const sent = await this.checkIntervalAndNotify(
-            supabase,
-            interval.minutes,
-            interval.label,
-            now,
-          );
-          notificationCount += sent;
-        } catch (error) {
-          console.error(
-            `[MeetingChecker] Error checking ${interval.minutes}min interval:`,
-            error,
-          );
-        }
-      }
+      // Run legacy check and new core reminders check in parallel
+      // const [legacyCount, coreRemindersCount] = await Promise.all([
+      //   MeetingChecker.checkLegacyMeetings(supabase),
+      //   MeetingChecker.checkCoreMeetingReminders(supabase),
+      // ]);
+
+      const coreRemindersCount = await MeetingChecker.checkCoreMeetingReminders(supabase);
+      notificationCount = coreRemindersCount;
 
       console.log(
-        `[MeetingChecker] Sent ${notificationCount} meeting notifications`,
+        `[MeetingChecker] Sent ${notificationCount} meeting notifications (legacy: commented out, core: ${coreRemindersCount})`,
       );
       return notificationCount;
     } catch (error) {
       console.error('[MeetingChecker] Fatal error in checkAndNotify:', error);
       return notificationCount;
     }
+  }
+
+  // ===========================================================================
+  // CORE MEETING REMINDERS (new meetings platform)
+  // ===========================================================================
+
+  /**
+   * Check core.meeting_reminders for pending reminders and send emails
+   * This handles the new meetings platform where reminders are stored with
+   * exact scheduled_at timestamps
+   */
+  private static async checkCoreMeetingReminders(
+    supabase: any,
+  ): Promise<number> {
+    let sent = 0;
+
+    try {
+      const now = new Date();
+
+      // Find pending reminders that are due (scheduled_at <= now)
+      const { data: reminders, error: remindersError } = await supabase
+        .schema('core')
+        .from('meeting_reminders')
+        .select('*, meeting:meetings(*)')
+        .eq('status', 'pending')
+        .lte('scheduled_at', now.toISOString())
+        .order('scheduled_at', { ascending: true })
+        .limit(50);
+
+      if (remindersError) {
+        console.error(
+          '[MeetingChecker] Error fetching core reminders:',
+          remindersError,
+        );
+        return 0;
+      }
+
+      if (!reminders || reminders.length === 0) {
+        return 0;
+      }
+
+      console.log(
+        `[MeetingChecker] Found ${reminders.length} pending core reminders`,
+      );
+
+      for (const reminder of reminders) {
+        try {
+          const meeting = (reminder as any).meeting;
+          if (!meeting) {
+            // Mark orphaned reminder as failed
+            await supabase
+              .schema('core')
+              .from('meeting_reminders')
+              .update({ status: 'failed' })
+              .eq('id', reminder.id);
+            continue;
+          }
+
+          // Skip cancelled meetings
+          if (meeting.status === 'cancelled' || meeting.is_deleted) {
+            await supabase
+              .schema('core')
+              .from('meeting_reminders')
+              .update({ status: 'cancelled' })
+              .eq('id', reminder.id);
+            continue;
+          }
+
+          // Get meeting participants
+          const { data: participants } = await supabase
+            .schema('core')
+            .from('meeting_participants')
+            .select('external_email, internal_user_id, participant_type')
+            .eq('meeting_id', meeting.id);
+
+          // Get workspace default timezone
+          const { data: pref } = await supabase
+            .schema('core')
+            .from('workspace_preferences')
+            .select('timezone')
+            .eq('workspace_id', meeting.workspace_id)
+            .maybeSingle();
+          const workspaceTz = pref?.timezone || 'UTC';
+
+          // Build list of recipients with their resolved timezones
+          const recipientsToNotify: Array<{ email: string; timezone: string }> = [];
+
+          // Add internal participant emails and resolve their timezones from accounts table
+          if (participants && participants.length > 0) {
+            for (const p of participants) {
+              if (p.participant_type === 'INTERNAL' && p.internal_user_id) {
+                // Fetch email and timezone from accounts table
+                const { data: acc } = await supabase
+                  .from('accounts')
+                  .select('email, timezone')
+                  .eq('id', p.internal_user_id)
+                  .maybeSingle();
+
+                const userEmail = acc?.email || await NotificationService.getUserEmail(
+                  p.internal_user_id,
+                );
+                const userTz = acc?.timezone || workspaceTz;
+
+                if (userEmail && !recipientsToNotify.some((r) => r.email === userEmail)) {
+                  recipientsToNotify.push({ email: userEmail, timezone: userTz });
+                }
+              }
+            }
+          }
+
+          // Also notify the meeting host
+          if (meeting.host_user_id) {
+            const { data: hostAcc } = await supabase
+              .from('accounts')
+              .select('email, timezone')
+              .eq('id', meeting.host_user_id)
+              .maybeSingle();
+
+            const hostEmail = hostAcc?.email || await NotificationService.getUserEmail(
+              meeting.host_user_id,
+            );
+            const hostTz = hostAcc?.timezone || workspaceTz;
+
+            if (hostEmail && !recipientsToNotify.some((r) => r.email === hostEmail)) {
+              recipientsToNotify.push({ email: hostEmail, timezone: hostTz });
+            }
+          }
+
+          // Compute a human-readable interval label
+          const offsetMinutes = reminder.offset_minutes;
+          let intervalLabel = `${offsetMinutes} minutes before`;
+          if (offsetMinutes >= 60) {
+            const hours = Math.floor(offsetMinutes / 60);
+            intervalLabel =
+              hours === 1 ? '1 hour before' : `${hours} hours before`;
+          }
+          if (offsetMinutes >= 1440) {
+            const days = Math.floor(offsetMinutes / 1440);
+            intervalLabel = days === 1 ? '1 day before' : `${days} days before`;
+          }
+
+          // Send emails to all recipients
+          const sendResults = await Promise.allSettled(
+            recipientsToNotify.map((recipient) =>
+              NotificationService.sendMeetingEmail({
+                to: recipient.email,
+                meetingTitle: meeting.title,
+                meetingDescription: meeting.description,
+                startTime: meeting.scheduled_start,
+                endTime: meeting.scheduled_end,
+                location: meeting.location,
+                meetingLink: meeting.meeting_url,
+                intervalLabel,
+                workspaceId: meeting.workspace_id,
+                recipientTz: recipient.timezone,
+              }),
+            ),
+          );
+
+          const allSucceeded = sendResults.every(
+            (r) => r.status === 'fulfilled' && r.value === true,
+          );
+
+          // Update reminder status
+          await supabase
+            .schema('core')
+            .from('meeting_reminders')
+            .update({
+              status: allSucceeded ? 'sent' : 'pending',
+              sent_at: allSucceeded ? new Date().toISOString() : null,
+            })
+            .eq('id', reminder.id);
+
+          if (allSucceeded) {
+            sent++;
+            console.log(
+              `[MeetingChecker] Sent core reminder for "${meeting.title}" (${intervalLabel}) to ${recipientsToNotify.length} recipients`,
+            );
+          }
+        } catch (error) {
+          console.error(
+            `[MeetingChecker] Error processing core reminder ${reminder.id}:`,
+            error,
+          );
+        }
+      }
+    } catch (error) {
+      console.error(
+        '[MeetingChecker] Error in checkCoreMeetingReminders:',
+        error,
+      );
+    }
+
+    return sent;
+  }
+
+  // ===========================================================================
+  // LEGACY MEETING CHECK (crm_meetings table)
+  // ===========================================================================
+
+  private static async checkLegacyMeetings(supabase: any): Promise<number> {
+    let notificationCount = 0;
+
+    const now = new Date();
+
+    // Process each reminder interval
+    for (const interval of MEETING_REMINDER_INTERVALS) {
+      try {
+        const sent = await MeetingChecker.checkIntervalAndNotify(
+          supabase,
+          interval.minutes,
+          interval.label,
+          now,
+        );
+        notificationCount += sent;
+      } catch (error) {
+        console.error(
+          `[MeetingChecker] Error checking ${interval.minutes}min interval:`,
+          error,
+        );
+      }
+    }
+
+    return notificationCount;
   }
 
   /**
@@ -176,6 +446,7 @@ export class MeetingChecker {
         location: meeting.location,
         meetingLink: meeting.meeting_link,
         intervalLabel: intervalLabel,
+        workspaceId: meeting.workspace_id,
       });
 
       if (emailSent) {

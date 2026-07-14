@@ -1,4 +1,4 @@
-import { use } from 'react';
+import { Suspense, use } from 'react';
 
 import { cookies } from 'next/headers';
 
@@ -17,6 +17,8 @@ import { requireUserInServerComponent } from '~/lib/server/require-user-in-serve
 
 import { TooltipProvider } from '@kit/ui/tooltip';
 
+import { WelcomeModal } from './_components/welcome-modal';
+
 // home imports
 import { HomeMenuNavigation } from './_components/home-menu-navigation';
 import { HomeMobileNavigation } from './_components/home-mobile-navigation';
@@ -27,6 +29,9 @@ function HomeLayout({ children }: React.PropsWithChildren) {
 
   return (
     <TooltipProvider>
+      <Suspense fallback={null}>
+        <WelcomeModal />
+      </Suspense>
       {style === 'sidebar' ? (
         <SidebarLayout>{children}</SidebarLayout>
       ) : (

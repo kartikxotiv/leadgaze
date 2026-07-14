@@ -9,6 +9,37 @@ import {
   successDataResponse,
 } from '../../../utils/response-handler';
 
+// Direct columns: sorted at DB level
+const ACCOUNT_DIRECT_SORT_COLUMNS: Record<string, string> = {
+  account_name:         'account_name',
+  website:              'website',
+  phone_number:         'phone_number',
+  company_size:         'company_size',
+  billing_street:       'billing_street',
+  billing_city:         'billing_city',
+  billing_state:        'billing_state',
+  billing_postal_code:  'billing_postal_code',
+  billing_country:      'billing_country',
+  created_at:           'created_at',
+};
+
+// Relational columns: sorted in Node.js after fetch.
+// Supabase's foreignTable in .order() only sorts nested children, NOT parent rows.
+const ACCOUNT_RELATIONAL_SORT_COLUMNS: Record<string, string> = {
+  'industry.industry_name':      'industry.industry_name',
+  'owner.name':                  'owner.name',
+  'created_by_account.name':     'created_by_account.name',
+  'updated_by_account.name':     'updated_by_account.name',
+};
+
+const getNestedValue = (obj: Record<string, unknown>, path: string): string => {
+  const value = path.split('.').reduce<unknown>((acc, key) => {
+    if (acc && typeof acc === 'object') return (acc as Record<string, unknown>)[key];
+    return undefined;
+  }, obj);
+  return typeof value === 'string' ? value.toLowerCase() : '';
+};
+
 /**
  * GET /api/accounts
  * Fetch all accounts for a workspace
@@ -28,6 +59,13 @@ export const getAccounts = catchAsync(
     const page = parseInt(url.searchParams.get('page') || '1', 10);
     const limit = parseInt(url.searchParams.get('limit') || '20', 10);
     const searchTerm = url.searchParams.get('searchTerm') || '';
+    const sortColumn = url.searchParams.get('sortColumn') || '';
+    const sortDirection = url.searchParams.get('sortDirection') || '';
+    const createdAtFrom = url.searchParams.get('createdAtFrom') || '';
+    const createdAtTo = url.searchParams.get('createdAtTo') || '';
+    const updatedAtFrom = url.searchParams.get('updatedAtFrom') || '';
+    const updatedAtTo = url.searchParams.get('updatedAtTo') || '';
+    const createdByIds = url.searchParams.get('createdByIds') || '';
 
     if (!workspaceId) {
       return NextResponse.json(
@@ -89,6 +127,7 @@ export const getAccounts = catchAsync(
           status:entity_statuses!crm_accounts_status_id_fkey(id, status_name, status_key, color, icon),
           owner:accounts!crm_accounts_owner_id_fkey(id, email, name),
           created_by_account:accounts!crm_accounts_created_by_fkey(id, email, name),
+          updated_by_account:accounts!crm_accounts_updated_by_fkey(id, email, name),
           industry:crm_industries(id, industry_name),
           account_type_relation:entity_statuses!entity_statuses_account_type_fkey(id, status_name, status_key, color, icon)
         `,
@@ -96,6 +135,20 @@ export const getAccounts = catchAsync(
       )
       .eq('workspace_id', workspaceId)
       .eq('is_deleted', false);
+
+    if (createdAtFrom) query = query.gte('created_at', `${createdAtFrom}T00:00:00.000Z`);
+    if (createdAtTo) query = query.lte('created_at', `${createdAtTo}T23:59:59.999Z`);
+    if (updatedAtFrom) query = query.gte('updated_at', `${updatedAtFrom}T00:00:00.000Z`);
+    if (updatedAtTo) query = query.lte('updated_at', `${updatedAtTo}T23:59:59.999Z`);
+
+    if (createdByIds && createdByIds !== 'all') {
+      const ids = createdByIds.split(',').map((id) => id.trim()).filter(Boolean);
+      if (ids.length === 1) {
+        query = query.eq('created_by', ids[0]);
+      } else if (ids.length > 1) {
+        query = query.in('created_by', ids);
+      }
+    }
 
     // Apply hierarchy-based visibility filtering
     if (
@@ -132,24 +185,50 @@ export const getAccounts = catchAsync(
     const from = (page - 1) * limit;
     const to = from + limit - 1;
 
-    const {
-      data: accounts,
-      error,
-      count,
-    } = await query
-      .order('created_at', {
-        ascending: false,
-      })
-      .range(from, to);
+    const isRelationalSort = !!ACCOUNT_RELATIONAL_SORT_COLUMNS[sortColumn];
+    const isDirectSort = !!ACCOUNT_DIRECT_SORT_COLUMNS[sortColumn];
+
+    let finalQuery;
+    if (isDirectSort) {
+      finalQuery = query
+        .order(ACCOUNT_DIRECT_SORT_COLUMNS[sortColumn]!, {
+          ascending: sortDirection === 'asc',
+          nullsFirst: false,
+        })
+        .range(from, to);
+    } else if (isRelationalSort) {
+      // Fetch all rows so we can sort in Node.js, then slice
+      finalQuery = query.order('created_at', { ascending: false });
+    } else {
+      finalQuery = query.order('created_at', { ascending: false }).range(from, to);
+    }
+
+    const { data: accountsRaw, error, count } = await finalQuery;
 
     if (error) {
       console.error('Get accounts error:', error);
       throw error;
     }
 
+    /* eslint-disable @typescript-eslint/no-explicit-any */
+    let sortedAccounts: any[] = accountsRaw || [];
+    if (isRelationalSort && ACCOUNT_RELATIONAL_SORT_COLUMNS[sortColumn]) {
+      const accessor = ACCOUNT_RELATIONAL_SORT_COLUMNS[sortColumn]!;
+      const ascending = sortDirection === 'asc';
+      sortedAccounts = [...sortedAccounts].sort((a, b) => {
+        const aVal = getNestedValue(a, accessor);
+        const bVal = getNestedValue(b, accessor);
+        if (aVal < bVal) return ascending ? -1 : 1;
+        if (aVal > bVal) return ascending ? 1 : -1;
+        return 0;
+      });
+      sortedAccounts = sortedAccounts.slice(from, to + 1);
+    }
+    /* eslint-enable @typescript-eslint/no-explicit-any */
+
     return NextResponse.json({
       message: 'Accounts retrieved successfully',
-      data: accounts || [],
+      data: sortedAccounts,
       count: count || 0,
     });
   },

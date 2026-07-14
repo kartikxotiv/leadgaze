@@ -136,7 +136,13 @@ const getLeadsService = asyncHandlerClient(
     page?: number;
     limit?: number;
     searchTerm?: string;
-    statusId?: string;
+    statusId?: string | string[];
+    sortColumn?: string;
+    sortDirection?: 'asc' | 'desc' | null;
+    createdAtFrom?: string;
+    createdAtTo?: string;
+    updatedAtFrom?: string;
+    updatedAtTo?: string;
   }) => {
     const {
       workspaceId,
@@ -144,9 +150,16 @@ const getLeadsService = asyncHandlerClient(
       limit = 20,
       searchTerm = '',
       statusId = '',
+      sortColumn = '',
+      sortDirection = '',
+      createdAtFrom = '',
+      createdAtTo = '',
+      updatedAtFrom = '',
+      updatedAtTo = '',
     } = params;
+    const statusParam = Array.isArray(statusId) ? statusId.join(',') : statusId;
     const response = await ApiClient.get(
-      `/leads?workspaceId=${workspaceId}&page=${page}&limit=${limit}&searchTerm=${searchTerm}&statusId=${statusId}`,
+      `/leads?workspaceId=${workspaceId}&page=${page}&limit=${limit}&searchTerm=${searchTerm}&statusId=${statusParam}&sortColumn=${sortColumn}&sortDirection=${sortDirection || ''}&createdAtFrom=${createdAtFrom}&createdAtTo=${createdAtTo}&updatedAtFrom=${updatedAtFrom}&updatedAtTo=${updatedAtTo}`,
     );
     // response.data = { message, data: [...], count }
     return {

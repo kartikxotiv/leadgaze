@@ -38,16 +38,19 @@ const checkPermission = catchAsync(
     }
 
     // Get user's role in workspace
-    const { data: member, error: memberError } = await supabase
+    const { data: members, error: memberError } = await supabase
       .from('workspace_members')
-      .select('role_id')
+      .select('role_id, product_key')
       .eq('workspace_id', workspaceId)
-      .eq('user_id', user.id)
-      .single();
+      .eq('user_id', user.id);
 
-    if (memberError || !member) {
+    if (memberError || !members || members.length === 0) {
       return successDataResponse({ canAccess: false });
     }
+
+    const member = members.find((m: any) => m.product_key === moduleKey)
+      || members.find((m: any) => m.product_key === null)
+      || members[0];
 
     // Get the feature
     const { data: module, error: moduleError } = await supabase

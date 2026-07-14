@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 
 import { usePathname, useRouter } from 'next/navigation';
 
-import { Building2, CreditCard, Mail, Settings2 } from 'lucide-react';
+import { Building2, CreditCard, Globe, Mail, Settings2, Video } from 'lucide-react';
 
 import { CoreEmailSettingsPage } from '@kit/core/pages';
 import { getSupabaseBrowserClient } from '@kit/supabase/browser-client';
@@ -22,6 +22,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@kit/ui/tabs';
 
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import OrgSubscriptionPage from '~/org/subscription/page';
+
+import { WorkspaceLocalizationSettings } from './_components/localization-settings';
+import { MeetingAccountsSettings } from './_components/meeting-accounts-settings';
+import { WorkspaceGeneralSettings } from './_components/general-settings';
 
 type WorkspaceSummary = {
   id: string;
@@ -152,27 +156,42 @@ export default function WorkspaceSettingsPage() {
     isLoading: isRbacLoading,
   } = useRBAC();
   const canViewSettings = canAccess('settings', 'view');
+  const isAdmin =
+    workspace?.currentRole?.role_key === 'admin' ||
+    (workspace?.currentRole?.hierarchy_level ?? 0) >= 100;
+  const canViewGeneralSettings = canViewSettings && isAdmin;
+
   const canViewSubscription = canAccess('subscription', 'view');
   const canManageSubscription = canAccess('subscription', 'manage');
   const canManageEmail = canAccess('emails', 'manage_email');
+  const canManageMeetings = 1 == 1 || canAccess('meetings', 'manage');
 
   const pathname = usePathname();
-  const defaultTab = canViewSettings
+  const defaultTab = canViewGeneralSettings
     ? 'general'
-    : canViewSubscription
-      ? 'billing'
-      : 'emails';
+    : canViewSettings
+      ? 'localization'
+      : canViewSubscription
+        ? 'billing'
+        : canManageMeetings
+          ? 'meetings'
+          : 'emails';
 
   if (isRbacLoading) {
     return null;
   }
 
-  if (!canViewSettings && !canViewSubscription && !canManageEmail) {
+  if (
+    !canViewSettings &&
+    !canViewSubscription &&
+    !canManageEmail &&
+    !canManageMeetings
+  ) {
     return (
       <>
         <PageHeader
           title="Workspace"
-          description="Manage your workspace configuration, email accounts, and templates."
+          description="Manage your workspace configuration, email accounts, meeting accounts, and templates."
         />
         <PageBody className="flex min-w-0 flex-1 shrink-0 flex-col">
           <Card>
@@ -189,18 +208,27 @@ export default function WorkspaceSettingsPage() {
     <>
       <PageHeader
         title="Workspace"
-        description="Manage your workspace configuration, email accounts, and templates."
+        description="Manage your workspace configuration, email accounts, meeting accounts, and templates."
       />
       <PageBody className="sticky flex min-w-0 flex-1 shrink-0 flex-col overflow-hidden">
         <Tabs defaultValue={defaultTab} className="space-y-6 overflow-auto">
           <TabsList className="mb-1 h-auto w-full justify-start gap-8 rounded-none border-b bg-transparent p-0">
-            {canViewSettings && (
+            {canViewGeneralSettings && (
               <TabsTrigger
                 value="general"
                 className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
               >
                 <Settings2 className="mr-2 h-4 w-4" />
                 General
+              </TabsTrigger>
+            )}
+            {canViewSettings && (
+              <TabsTrigger
+                value="localization"
+                className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
+              >
+                <Globe className="mr-2 h-4 w-4" />
+                Localization
               </TabsTrigger>
             )}
             {canViewSubscription && (
@@ -221,11 +249,27 @@ export default function WorkspaceSettingsPage() {
                 Email Accounts
               </TabsTrigger>
             )}
+            {canManageMeetings && (
+              <TabsTrigger
+                value="meetings"
+                className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
+              >
+                <Video className="mr-2 h-4 w-4" />
+                Meeting Accounts
+              </TabsTrigger>
+            )}
           </TabsList>
 
-          {canViewSettings && (
+          {canViewGeneralSettings && workspace?.id && (
             <TabsContent value="general">
-              <WorkspaceManagement currentWorkspace={workspace} />
+              {/* <WorkspaceManagement currentWorkspace={workspace} /> */}
+              <WorkspaceGeneralSettings workspaceId={workspace.id} />
+            </TabsContent>
+          )}
+
+          {canViewSettings && workspace?.id && (
+            <TabsContent value="localization">
+              <WorkspaceLocalizationSettings workspaceId={workspace.id} />
             </TabsContent>
           )}
 
@@ -254,6 +298,12 @@ export default function WorkspaceSettingsPage() {
                 }}
               />
               {/* )} */}
+            </TabsContent>
+          )}
+
+          {canManageMeetings && (
+            <TabsContent value="meetings">
+              <MeetingAccountsSettings workspace={workspace} />
             </TabsContent>
           )}
         </Tabs>

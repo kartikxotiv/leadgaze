@@ -32,6 +32,7 @@ import {
 
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { type WorkspaceMember, getMembersService } from '~/services/team-members.service';
+import { getSeatAssignmentsService } from '~/services/subscription.service';
 import {
   type Team,
   type TeamMember,
@@ -62,8 +63,26 @@ export function ManageTeamMembersDialog({
     enabled: !!currentWorkspace?.id && open,
   });
 
+  // Fetch sales module seat assignments to filter only sales users
+  const { data: seatAssignmentsData = [] } = useQuery({
+    queryKey: ['sales-seat-assignments', currentWorkspace?.id],
+    queryFn: () => getSeatAssignmentsService(currentWorkspace?.id || '', 'sales'),
+    enabled: !!currentWorkspace?.id && open,
+  });
+
   const allWorkspaceMembers = (workspaceMembersData?.data || []).filter(
     (m: WorkspaceMember) => m.status === 'accepted'
+  );
+
+  // Filter to only include users with active sales module seats
+  const salesSeatUserIds = new Set(
+    (seatAssignmentsData?.data || [])
+      .filter((a: { is_active?: boolean }) => a.is_active)
+      .map((a: { user_id: string }) => a.user_id)
+  );
+
+  const salesWorkspaceMembers = allWorkspaceMembers.filter(
+    (m: WorkspaceMember) => salesSeatUserIds.has(m.user_id)
   );
 
   // Fetch team members
@@ -110,7 +129,7 @@ export function ManageTeamMembersDialog({
   };
 
   // Filter out users who are already in the team
-  const availableMembers = allWorkspaceMembers.filter(
+  const availableMembers = salesWorkspaceMembers.filter(
     (wm: WorkspaceMember) => !teamMembers.some((tm: TeamMember) => tm.user_id === wm.user_id)
   );
 
@@ -184,7 +203,7 @@ export function ManageTeamMembersDialog({
                   </TableRow>
                 ) : (
                   teamMembers.map((member: TeamMember) => {
-                    const wsMember = allWorkspaceMembers.find(
+                    const wsMember = salesWorkspaceMembers.find(
                       (wm) => wm.user_id === member.user_id
                     );
                     

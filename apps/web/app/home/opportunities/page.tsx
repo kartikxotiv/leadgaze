@@ -1,18 +1,26 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
+
 import { useRouter } from 'next/navigation';
 
 import { useQuery } from '@tanstack/react-query';
 import { Plus } from 'lucide-react';
 
+import { convertFromUSD, findLatestRateToUsd } from '@kit/shared/currency';
+import type { ExchangeRateRecord } from '@kit/shared/currency';
+import { useSupabase } from '@kit/supabase/hooks/use-supabase';
+import { AddColumnModal } from '@kit/ui/add-column-modal';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { Card, CardContent } from '@kit/ui/card';
+import { ColumnEditModal } from '@kit/ui/column-edit-modal';
+import type { ColumnEditFieldShape } from '@kit/ui/column-edit-modal';
+import { ColumnHeader } from '@kit/ui/column-header';
 import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
-import { formatDate } from '@kit/shared/utils';
+import CustomTableContainer from '@kit/ui/custom-table-container';
+import { ListToolBar } from '@kit/ui/list-toolbar';
 import { PageBody, PageHeader } from '@kit/ui/page';
-
 import { Skeleton } from '@kit/ui/skeleton';
 import {
   Table,
@@ -22,24 +30,39 @@ import {
   TableHeader,
   TableRow,
 } from '@kit/ui/table';
+import { TablePagination } from '@kit/ui/table-pagination';
+import { useColumnResize } from '@kit/ui/use-column-resize';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
-import { ListToolBar } from '@kit/ui/list-toolbar';
-import CustomTableContainer from '@kit/ui/custom-table-container';
+import { useDateRangeFilter } from '@kit/ui/use-date-range-filter';
+import { useTableSort } from '@kit/ui/use-table-sort';
+import { cn } from '@kit/ui/utils';
 
 import { useDebounce } from '~/lib/hooks/use-debounce';
+import {
+  useCreateField,
+  useDynamicColumns,
+  useUpdateField,
+} from '~/lib/hooks/use-dynamic-columns';
+import type { AccessType, EntityField } from '~/lib/hooks/use-dynamic-columns';
+import { useFieldPermissions } from '~/lib/hooks/use-field-permissions';
+import {
+  useLeadsColumnPreferences,
+  useSyncColumnVisibilityToDb,
+} from '~/lib/hooks/use-leads-column-preferences';
+import { usePackageMembers } from '~/lib/hooks/use-package-members';
+import { useTeamMembers } from '~/lib/hooks/use-team-members';
+import { useLocalization } from '~/lib/localization/localization-provider';
 import { ModuleGuard } from '~/lib/rbac/module-guard';
-import { useRBAC } from '~/lib/rbac/rbac-provider';
+import { useModuleRoles, useRBAC } from '~/lib/rbac/rbac-provider';
 import {
   Opportunity,
   getOpportunitiesService,
   getOpportunityStatusesService,
 } from '~/services/opportunities.service';
-import { getMembersService } from '~/services/team-members.service';
 
 import { DeleteEntityDialog } from '../_components/delete-entity-dialog';
 import { EntityActionsDropdown } from '../_components/entity-actions-dropdown';
 import { OpportunityDialog } from './components/opportunity-dialog';
-import { TablePagination } from '@kit/ui/table-pagination';
 
 function PriorityBadge({ priority }: { priority: string | null | undefined }) {
   switch (priority?.toLowerCase()) {
@@ -99,14 +122,18 @@ function OpportunitiesPageSkeleton() {
                 <Table className="w-max min-w-full border-separate border-spacing-0 text-sm">
                   <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
                     <TableRow>
-                      <TableHead className="w-12 whitespace-nowrap">S. No.</TableHead>
+                      <TableHead className="w-12 whitespace-nowrap">
+                        S. No.
+                      </TableHead>
                       <TableHead>Name</TableHead>
                       <TableHead>Account</TableHead>
                       <TableHead>Stage</TableHead>
                       <TableHead>Amount</TableHead>
                       <TableHead>Close Date</TableHead>
                       <TableHead>Owner</TableHead>
-                      <TableHead className="sticky right-0 text-right">Actions</TableHead>
+                      <TableHead className="sticky right-0 text-right">
+                        Actions
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -130,7 +157,9 @@ function OpportunitiesPageSkeleton() {
 
 export default function OpportunitiesPage() {
   const router = useRouter();
-  const { currentWorkspace: workspace, canAccess } = useRBAC();
+  const { currentWorkspace: workspace, user, canAccess } = useRBAC();
+  const { formatDate, formatCurrency } = useLocalization();
+  const supabase = useSupabase();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStage, setSelectedStage] = useState<string>('all');
   const [selectedCreatedId, setSelectedCreatedId] = useState<string>('all');
@@ -138,36 +167,95 @@ export default function OpportunitiesPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [opportunityToDelete, setOpportunityToDelete] =
     useState<Opportunity | null>(null);
+  const [editingField, setEditingField] = useState<EntityField | null>(null);
+  const [addColumnModalOpen, setAddColumnModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(15);
   const itemsPerPage = pageSize;
+  const {
+    dateRange: createdOnRange,
+    setDateRange: setCreatedOnRange,
+    computedDates: computedCreatedOnDates,
+    clearDateRange: clearCreatedOnRange,
+  } = useDateRangeFilter();
+  const {
+    dateRange: updatedOnRange,
+    setDateRange: setUpdatedOnRange,
+    computedDates: computedUpdatedOnDates,
+    clearDateRange: clearUpdatedOnRange,
+  } = useDateRangeFilter();
 
-  const columns = useMemo(
+  const SYSTEM_FIELDS = useMemo(
     () => [
-      { id: 'sno', label: 'S. No.' },
-      { id: 'name', label: 'Name' },
-      { id: 'account', label: 'Account' },
-      { id: 'stage', label: 'Stage' },
-      { id: 'amount', label: 'Amount' },
-      { id: 'currency', label: 'Currency' },
-      { id: 'probability', label: 'Probability' },
-      { id: 'close_date', label: 'Close Date' },
-      { id: 'priority', label: 'Priority' },
-      { id: 'type', label: 'Type' },
-      { id: 'source', label: 'Source' },
-      { id: 'competitor', label: 'Competitor' },
-      { id: 'is_closed', label: 'Closed' },
-      { id: 'is_won', label: 'Won' },
-      { id: 'owner', label: 'Owner' },
-      { id: 'created_by', label: 'Created By' },
-      { id: 'created_at', label: 'Created On' },
-      { id: 'updated_by', label: 'Last Updated By' },
+      {
+        id: 'sno',
+        key: 'sno',
+        label: 'S. No.',
+        sortable: false,
+        width: 'w-12',
+      },
+      { id: 'name', key: 'name', label: 'Name', sortKey: 'opportunity_name' },
+      {
+        id: 'account',
+        key: 'account',
+        label: 'Account',
+        sortKey: 'account.account_name',
+      },
+      {
+        id: 'stage',
+        key: 'stage',
+        label: 'Stage',
+        sortKey: 'stage.status_name',
+      },
+      { id: 'amount', key: 'amount', label: 'Amount' },
+      { id: 'currency', key: 'currency', label: 'Currency' },
+      { id: 'probability', key: 'probability', label: 'Probability' },
+      {
+        id: 'close_date',
+        key: 'close_date',
+        label: 'Close Date',
+        sortKey: 'expected_close_date',
+      },
+      { id: 'priority', key: 'priority', label: 'Priority' },
+      { id: 'type', key: 'type', label: 'Type', sortKey: 'opportunity_type' },
+      { id: 'source', key: 'source', label: 'Source', sortKey: 'lead_source' },
+      { id: 'competitor', key: 'competitor', label: 'Competitor' },
+      { id: 'is_closed', key: 'is_closed', label: 'Closed' },
+      { id: 'is_won', key: 'is_won', label: 'Won' },
+      { id: 'owner', key: 'owner', label: 'Owner', sortKey: 'owner.name' },
+      {
+        id: 'created_by',
+        key: 'created_by',
+        label: 'Created By',
+        sortKey: 'created_by_account.name',
+      },
+      { id: 'created_at', key: 'created_at', label: 'Created On' },
+      {
+        id: 'updated_by',
+        key: 'updated_by',
+        label: 'Last Updated By',
+        sortKey: 'updated_by_account.name',
+      },
     ],
     [],
   );
 
-  const { visibility, toggleVisibility, isVisible, reset } =
-    useColumnVisibility('opportunities', {
+  const {
+    canViewColumn,
+    visibleCustomFields,
+    ctx: _fieldPermissionCtx,
+    isLoading: _fieldPermissionsLoading,
+  } = useFieldPermissions({
+    entityType: 'opportunities',
+    workspaceId: workspace?.id,
+    enabled: !!workspace?.id && !!user?.id,
+  });
+
+  const { mergedDefaults, persistVisibility } = useLeadsColumnPreferences({
+    entityType: 'opportunities',
+    workspaceId: workspace?.id,
+    userId: user?.id,
+    defaultVisibility: {
       sno: true,
       name: true,
       account: true,
@@ -186,9 +274,212 @@ export default function OpportunitiesPage() {
       created_by: false,
       created_at: false,
       updated_by: false,
-    });
+    },
+    enabled: !!workspace?.id && !!user?.id,
+  });
+
+  const {
+    fields: allEntityFields = [],
+    isLoading: _fieldsLoading,
+    updateFieldAccess,
+    deleteField,
+    refetch: refetchEntityFields,
+  } = useDynamicColumns({
+    entityType: 'opportunities',
+    workspaceId: workspace?.id,
+    userId: user?.id,
+    productKey: 'sales',
+    enabled: !!workspace?.id && !!user?.id,
+  });
+  const createField = useCreateField();
+  const updateField = useUpdateField();
+
+  const customFields = visibleCustomFields;
+
+  const getEntityFieldByKey = (key: string): EntityField | null =>
+    allEntityFields.find((f) => f.field_key === key) ?? null;
+
+  const systemColumns = SYSTEM_FIELDS.map((field) => {
+    const entityField = allEntityFields.find((f) => f.field_key === field.key);
+    return {
+      id: field.id,
+      label: entityField?.field_label ?? field.label,
+      required: true,
+    };
+  });
+
+  const columns = [
+    ...systemColumns,
+    ...customFields.map((field) => ({
+      id: field.field_key,
+      label: field.field_label,
+      required: false,
+    })),
+  ];
+
+  const { visibility, toggleVisibility, isVisible, reset, mergeNewColumns } =
+    useColumnVisibility('opportunities', mergedDefaults);
+
+  useSyncColumnVisibilityToDb(
+    visibility,
+    persistVisibility,
+    !!workspace?.id && !!user?.id,
+  );
+
+  React.useEffect(() => {
+    mergeNewColumns(
+      Object.fromEntries(customFields.map((cf) => [cf.field_key, true])),
+    );
+  }, [customFields, mergeNewColumns]);
+
+  const showColumn = useMemo(
+    () => (columnId: string) => isVisible(columnId) && canViewColumn(columnId),
+    [isVisible, canViewColumn],
+  );
+
+  const openColumnEdit = (fieldKey: string) => {
+    const existing = getEntityFieldByKey(fieldKey);
+    if (existing) {
+      setEditingField(existing);
+      return;
+    }
+
+    const systemField = SYSTEM_FIELDS.find((field) => field.key === fieldKey);
+    if (!workspace?.id || !systemField) return;
+
+    setEditingField({
+      id: '',
+      workspace_id: workspace.id,
+      entity_type: 'opportunities',
+      field_key: fieldKey,
+      field_label: systemField.label,
+      field_type: 'text',
+      description: null,
+      is_system: true,
+      is_required: false,
+      is_active: true,
+      display_order: 0,
+      settings: {},
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    } as EntityField);
+  };
+
+  const renderCustomFieldValue = (value: unknown) => {
+    if (value === undefined || value === null) {
+      return '-';
+    }
+    if (typeof value === 'object') {
+      try {
+        return JSON.stringify(value);
+      } catch {
+        return '-';
+      }
+    }
+    return String(value);
+  };
+
+  const canAddColumn = useMemo(() => {
+    if (!workspace?.id || !user?.id) return false;
+    const isOwner = workspace.owner_id === user.id;
+    return (
+      isOwner ||
+      canAccess('opportunities', 'admin') ||
+      canAccess('opportunities', 'update') ||
+      canAccess('opportunities', 'create')
+    );
+  }, [workspace, user?.id, canAccess]);
+
+  const handleUpdateField = async (
+    fieldId: string,
+    updates: {
+      field_label?: string;
+      access_type?: AccessType;
+      access_members?: {
+        member_type: 'role' | 'user';
+        member_id: string;
+        can_view: boolean;
+        can_edit: boolean;
+      }[];
+    },
+  ) => {
+    try {
+      console.debug('handleUpdateField called', { fieldId, updates });
+      if (!fieldId && editingField) {
+        await createField.mutateAsync({
+          workspace_id: workspace?.id || '',
+          entity_type: 'opportunities',
+          product_key: 'sales',
+          field_key: editingField.field_key,
+          field_label:
+            updates.field_label !== undefined
+              ? updates.field_label
+              : editingField.field_label,
+          field_type: editingField.field_type || 'text',
+          description: editingField.description ?? '',
+          is_required: editingField.is_required,
+          is_system: true,
+          settings: editingField.settings || {},
+          access_type: updates.access_type || 'public',
+          access_members: updates.access_members,
+        });
+        console.debug('created field via createField for system field');
+        setEditingField(null);
+        refetchEntityFields();
+        refetch();
+        return;
+      }
+
+      if (updates.field_label !== undefined) {
+        const res = await updateField.mutateAsync({
+          fieldId,
+          updates: {
+            field_label: updates.field_label,
+          },
+        });
+        console.debug('updateField result', res);
+      }
+
+      await updateFieldAccess.mutateAsync({
+        fieldId,
+        accessType: updates.access_type || 'public',
+        members: updates.access_members,
+      });
+      setEditingField(null);
+      refetchEntityFields();
+      refetch();
+    } catch (error) {
+      console.error('Error updating field:', error);
+    }
+  };
+
+  const handleDeleteField = async (fieldId: string) => {
+    try {
+      await deleteField.mutateAsync({ fieldId });
+    } catch (error) {
+      console.error('Error deleting field:', error);
+    }
+  };
+
+  const { getHeaderProps, getResizeHandleProps } =
+    useColumnResize('opportunities');
 
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
+
+  const { sortColumn, sortDirection, toggleSort, sortState } =
+    useTableSort<Opportunity>('opportunities', [], {
+      mode: 'server',
+      onSortChange: () => setCurrentPage(1),
+    });
+
+  // Fetch roles and team members for ColumnEditModal (FLS configuration)
+  const { data: moduleRoles = [] } = useModuleRoles('sales');
+  const { data: teamMembersData } = useTeamMembers({
+    workspaceId: workspace?.id,
+    productKey: 'sales',
+    enabled: !!workspace?.id,
+  });
+  const teamMembersForModal = teamMembersData?.data ?? [];
 
   const {
     data: opportunitiesData = {
@@ -209,6 +500,9 @@ export default function OpportunitiesPage() {
       selectedStage,
       selectedCreatedId,
       pageSize,
+      sortState,
+      computedCreatedOnDates,
+      computedUpdatedOnDates,
     ],
     queryFn: () =>
       getOpportunitiesService({
@@ -217,29 +511,112 @@ export default function OpportunitiesPage() {
         limit: itemsPerPage,
         searchTerm: debouncedSearchTerm,
         stageId: selectedStage,
+        sortColumn: sortColumn ?? undefined,
+        sortDirection: sortDirection ?? undefined,
+        createdAtFrom: computedCreatedOnDates?.from ?? undefined,
+        createdAtTo: computedCreatedOnDates?.to ?? undefined,
+        updatedAtFrom: computedUpdatedOnDates?.from ?? undefined,
+        updatedAtTo: computedUpdatedOnDates?.to ?? undefined,
       }),
     enabled: !!workspace?.id,
   });
 
-  const { data: stages = [] } = useQuery({
+  const { data: stages = [] } = useQuery<
+    Array<{ id: string; status_name: string; color?: string }>
+  >({
     queryKey: ['opportunity-stages', workspace?.id],
     queryFn: () => getOpportunityStatusesService(workspace?.id || ''),
     enabled: !!workspace?.id,
   });
 
-  const { data: membersData } = useQuery({
-    queryKey: ['team-members', workspace?.id],
-    queryFn: () => getMembersService(workspace?.id || ''),
+  // Fetch workspace currencies for currency conversion
+  const { data: currenciesData } = useQuery({
+    queryKey: ['workspace-currencies', workspace?.id],
+    queryFn: async () => {
+      if (!workspace?.id) return [];
+      const { data, error } = await supabase
+        .schema('core')
+        .from('workspace_currencies')
+        .select('id, currency_code, currency_symbol, is_default')
+        .eq('workspace_id', workspace.id)
+        .eq('is_active', true)
+        .order('is_default', { ascending: false })
+        .order('currency_code', { ascending: true });
+      if (error) {
+        console.error('Failed to fetch workspace currencies:', error);
+        return [];
+      }
+      return data;
+    },
     enabled: !!workspace?.id,
   });
-  const members = (membersData?.data || []) as any[];
+
+  // Fetch exchange rates for currency conversion
+  const { data: exchangeRates = [] } = useQuery({
+    queryKey: ['exchange-rates'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .schema('core')
+        .from('currency_exchange_rates')
+        .select('*')
+        .eq('base_currency', 'USD');
+      if (error) {
+        console.error('Failed to fetch exchange rates:', error);
+        return [];
+      }
+      return data;
+    },
+    staleTime: 24 * 60 * 60 * 1000, // 24 hours
+  });
+
+  // Fetch team members filtered by package access (for Created By filter)
+  const { members } = usePackageMembers();
+
+  // Get workspace default currency
+  const defaultCurrency =
+    currenciesData?.find((c) => c.is_default)?.currency_code || 'USD';
+
+  // Format opportunity amount using workspace currency
+  const formatOpportunityAmount = (opportunity: Opportunity): string => {
+    // Type cast to access currency fields that may not be in the type definition
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const opp = opportunity as any;
+
+    // If opportunity has base_amount_usd, use that with workspace currency
+    if (opp.base_amount_usd !== null && opp.base_amount_usd !== undefined) {
+      const rate =
+        findLatestRateToUsd(
+          exchangeRates as ExchangeRateRecord[],
+          defaultCurrency,
+        )?.exchange_rate || 1;
+      const convertedAmount = convertFromUSD(opp.base_amount_usd, rate || 1);
+      return formatCurrency(convertedAmount, defaultCurrency);
+    }
+
+    // Fallback: use original amount with original currency (for backwards compatibility)
+    if (opp.amount_original !== null && opp.amount_original !== undefined) {
+      const currency =
+        opp.currency_original || opportunity.currency || defaultCurrency;
+      return formatCurrency(opp.amount_original, currency);
+    }
+
+    // Last fallback: use amount with default currency
+    return formatCurrency(opportunity.amount || 0, defaultCurrency);
+  };
 
   const totalCount = opportunitiesData.count;
 
   // Reset to first page when search or filters change
   React.useEffect(() => {
     setCurrentPage(1);
-  }, [debouncedSearchTerm, selectedStage, selectedCreatedId, pageSize]);
+  }, [
+    debouncedSearchTerm,
+    selectedStage,
+    selectedCreatedId,
+    pageSize,
+    createdOnRange,
+    updatedOnRange,
+  ]);
 
   // Client-side filtering for Created By if not supported by API
   const filteredOpportunities = useMemo(() => {
@@ -256,15 +633,29 @@ export default function OpportunitiesPage() {
 
   // Filter groups for ListToolBar
   const filterGroups = useMemo(() => {
-    const stageOptions = stages.map((stage: any) => ({
+    const stageOptions: Array<{
+      value: string;
+      label: string;
+      color?: string;
+    }> = stages.map((stage) => ({
       value: stage.id,
       label: stage.status_name,
       color: stage.color,
     }));
 
-    const memberOptions = members
-      .filter((m: any) => m.user_id)
-      .map((member: any) => ({
+    const memberOptions: Array<{ value: string; label: string }> = members
+      .filter(
+        (
+          m,
+        ): m is {
+          user_id: string;
+          user?: {
+            user_metadata?: { full_name?: string } | null;
+            email?: string | null;
+          };
+        } => Boolean(m.user_id),
+      )
+      .map((member) => ({
         value: member.user_id,
         label:
           member.user?.user_metadata?.full_name ||
@@ -277,9 +668,10 @@ export default function OpportunitiesPage() {
         key: 'stage',
         label: 'Stage',
         selectedValue: selectedStage === 'all' ? '' : selectedStage,
-        selectedLabel: selectedStage === 'all'
-          ? 'All stages'
-          : stages.find((s: any) => s.id === selectedStage)?.status_name,
+        selectedLabel:
+          selectedStage === 'all'
+            ? 'All stages'
+            : stages.find((s) => s.id === selectedStage)?.status_name,
         options: stageOptions,
         onSelect: (val: string) => setSelectedStage(val || 'all'),
       },
@@ -287,32 +679,66 @@ export default function OpportunitiesPage() {
         key: 'created_by',
         label: 'Created By',
         selectedValue: selectedCreatedId === 'all' ? '' : selectedCreatedId,
-        selectedLabel: selectedCreatedId === 'all'
-          ? 'All members'
-          : (() => {
-              const member = members.find((m) => m.user_id === selectedCreatedId);
-              return (
-                member?.user?.user_metadata?.full_name ||
-                member?.user?.email ||
-                selectedCreatedId
-              );
-            })(),
+        selectedLabel:
+          selectedCreatedId === 'all'
+            ? 'All members'
+            : (() => {
+                const member = members.find(
+                  (m) => m.user_id === selectedCreatedId,
+                );
+                return (
+                  member?.user?.user_metadata?.full_name ||
+                  member?.user?.email ||
+                  selectedCreatedId
+                );
+              })(),
         options: memberOptions,
         onSelect: (val: string) => setSelectedCreatedId(val || 'all'),
       },
+      {
+        key: 'created_on',
+        label: 'Created On',
+        type: 'date',
+        dateValue: createdOnRange,
+        onDateChange: (val) => {
+          setCreatedOnRange(val);
+          setCurrentPage(1);
+        },
+      },
+      {
+        key: 'updated_on',
+        label: 'Updated On',
+        type: 'date',
+        dateValue: updatedOnRange,
+        onDateChange: (val) => {
+          setUpdatedOnRange(val);
+          setCurrentPage(1);
+        },
+      },
     ];
-  }, [stages, selectedStage, members, selectedCreatedId]);
+  }, [
+    stages,
+    selectedStage,
+    members,
+    selectedCreatedId,
+    createdOnRange,
+    updatedOnRange,
+  ]);
 
   const activeFilterCount = useMemo(() => {
     let count = 0;
     if (selectedStage !== 'all') count++;
     if (selectedCreatedId !== 'all') count++;
+    if (createdOnRange) count++;
+    if (updatedOnRange) count++;
     return count;
-  }, [selectedStage, selectedCreatedId]);
+  }, [selectedStage, selectedCreatedId, createdOnRange, updatedOnRange]);
 
   const handleClearFilters = () => {
     setSelectedStage('all');
     setSelectedCreatedId('all');
+    clearCreatedOnRange();
+    clearUpdatedOnRange();
   };
 
   // Pagination Logic
@@ -406,31 +832,85 @@ export default function OpportunitiesPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  {isVisible('sno') && (
-                    <TableHead className="w-12 whitespace-nowrap">
-                      S. No.
+                  {SYSTEM_FIELDS.map((field) => {
+                    if (!showColumn(field.id)) return null;
+                    const entityField = getEntityFieldByKey(field.key);
+                    return (
+                      <ColumnHeader
+                        key={field.id}
+                        label={entityField?.field_label ?? field.label}
+                        columnId={field.id}
+                        sortKey={field.sortKey ?? null}
+                        sortColumn={sortColumn}
+                        sortDirection={sortDirection}
+                        onSort={toggleSort}
+                        sortable={field.sortable !== false}
+                        className={cn('relative', field.width)}
+                        isAdmin={canAddColumn}
+                        field={entityField}
+                        onEditClick={
+                          canAddColumn
+                            ? () => openColumnEdit(field.key)
+                            : undefined
+                        }
+                        {...getHeaderProps(field.id)}
+                      >
+                        <span
+                          className="col-resize-handle"
+                          {...getResizeHandleProps(field.id)}
+                        />
+                      </ColumnHeader>
+                    );
+                  })}
+
+                  {customFields.map((field) => {
+                    if (!showColumn(field.field_key)) return null;
+                    return (
+                      <ColumnHeader
+                        key={field.id}
+                        columnId={field.field_key}
+                        label={field.field_label}
+                        field={field}
+                        sortColumn={sortColumn}
+                        sortDirection={sortDirection}
+                        onSort={toggleSort}
+                        sortable={true}
+                        isAdmin={canAddColumn}
+                        onEditClick={
+                          canAddColumn
+                            ? () => openColumnEdit(field.field_key)
+                            : undefined
+                        }
+                        onDeleteField={
+                          canAddColumn && !field.is_system
+                            ? handleDeleteField
+                            : undefined
+                        }
+                        {...getHeaderProps(field.field_key)}
+                      >
+                        <span
+                          className="col-resize-handle"
+                          {...getResizeHandleProps(field.field_key)}
+                        />
+                      </ColumnHeader>
+                    );
+                  })}
+
+                  {canAddColumn ? (
+                    <TableHead className="sticky-right-header bg-background z-10 w-12 px-1 text-center">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="mx-auto flex h-8 w-8 items-center justify-center border-dashed"
+                        onClick={() => setAddColumnModalOpen(true)}
+                        title="Add Column"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
                     </TableHead>
+                  ) : (
+                    <TableHead className="sticky-right-header bg-background z-10 w-12" />
                   )}
-                  {isVisible('name') && <TableHead>Name</TableHead>}
-                  {isVisible('account') && <TableHead>Account</TableHead>}
-                  {isVisible('stage') && <TableHead>Stage</TableHead>}
-                  {isVisible('amount') && <TableHead>Amount</TableHead>}
-                  {isVisible('currency') && <TableHead>Currency</TableHead>}
-                  {isVisible('probability') && <TableHead>Probability</TableHead>}
-                  {isVisible('close_date') && <TableHead>Close Date</TableHead>}
-                  {isVisible('priority') && <TableHead>Priority</TableHead>}
-                  {isVisible('type') && <TableHead>Type</TableHead>}
-                  {isVisible('source') && <TableHead>Source</TableHead>}
-                  {isVisible('competitor') && <TableHead>Competitor</TableHead>}
-                  {isVisible('is_closed') && <TableHead>Closed</TableHead>}
-                  {isVisible('is_won') && <TableHead>Won</TableHead>}
-                  {isVisible('owner') && <TableHead>Owner</TableHead>}
-                  {isVisible('created_by') && <TableHead>Created By</TableHead>}
-                  {isVisible('created_at') && <TableHead>Created On</TableHead>}
-                  {isVisible('updated_by') && <TableHead>Last Updated By</TableHead>}
-                  <TableHead className="sticky-right-header">
-                    Actions
-                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -458,9 +938,8 @@ export default function OpportunitiesPage() {
                     <TableCell
                       colSpan={
                         visibility
-                          ? Object.values(visibility).filter(
-                              (v) => v !== false,
-                            ).length + 1
+                          ? Object.values(visibility).filter((v) => v !== false)
+                              .length + 1
                           : 7
                       }
                       className="h-24 text-center"
@@ -477,29 +956,29 @@ export default function OpportunitiesPage() {
                     (opportunity: Opportunity, index: number) => (
                       <TableRow
                         key={opportunity.id}
-                        className="hover:bg-muted/50 cursor-pointer"
+                        className="hover:bg-muted/50 group cursor-pointer"
                         onClick={() =>
                           router.push(
                             `/home/sales/opportunities/${opportunity.id}`,
                           )
                         }
                       >
-                        {isVisible('sno') && (
+                        {showColumn('sno') && (
                           <TableCell className="text-muted-foreground w-12">
                             {(currentPage - 1) * itemsPerPage + index + 1}
                           </TableCell>
                         )}
-                        {isVisible('name') && (
+                        {showColumn('name') && (
                           <TableCell className="primary-text-medium text-leadgaze-primary dark:text-leadgaze-primary">
                             <span>{opportunity.opportunity_name}</span>
                           </TableCell>
                         )}
-                        {isVisible('account') && (
+                        {showColumn('account') && (
                           <TableCell className="text-muted-foreground">
                             {opportunity.account?.account_name || '-'}
                           </TableCell>
                         )}
-                        {isVisible('stage') && (
+                        {showColumn('stage') && (
                           <TableCell>
                             <Badge
                               variant="outline"
@@ -513,105 +992,108 @@ export default function OpportunitiesPage() {
                             </Badge>
                           </TableCell>
                         )}
-                        {isVisible('amount') && (
+                        {showColumn('amount') && (
                           <TableCell className="text-muted-foreground">
-                            {new Intl.NumberFormat('en-US', {
-                              style: 'currency',
-                              currency: opportunity.currency || 'USD',
-                              maximumFractionDigits: 0,
-                            }).format(opportunity.amount || 0)}
+                            {formatOpportunityAmount(opportunity)}
                           </TableCell>
                         )}
-                        {isVisible('currency') && (
+                        {showColumn('currency') && (
                           <TableCell className="text-muted-foreground">
                             {opportunity.currency || '-'}
                           </TableCell>
                         )}
-                        {isVisible('probability') && (
+                        {showColumn('probability') && (
                           <TableCell className="text-muted-foreground">
                             {opportunity.probability
                               ? `${opportunity.probability}%`
                               : '-'}
                           </TableCell>
                         )}
-                        {isVisible('close_date') && (
+                        {showColumn('close_date') && (
                           <TableCell className="text-muted-foreground">
                             {opportunity.expected_close_date
                               ? formatDate(opportunity.expected_close_date)
                               : '-'}
                           </TableCell>
                         )}
-                        {isVisible('priority') && (
+                        {showColumn('priority') && (
                           <TableCell className="text-muted-foreground">
-                            <PriorityBadge
-                              priority={opportunity.priority}
-                            />
+                            <PriorityBadge priority={opportunity.priority} />
                           </TableCell>
                         )}
-                        {isVisible('type') && (
+                        {showColumn('type') && (
                           <TableCell className="text-muted-foreground capitalize">
-                            {opportunity.opportunity_type?.replace(
-                              '_',
-                              ' ',
-                            ) || '-'}
-                          </TableCell>
-                        )}
-                        {isVisible('source') && (
-                          <TableCell className="text-muted-foreground capitalize">
-                            {opportunity.lead_source?.replace('_', ' ') ||
+                            {opportunity.opportunity_type?.replace('_', ' ') ||
                               '-'}
                           </TableCell>
                         )}
-                        {isVisible('competitor') && (
+                        {showColumn('source') && (
+                          <TableCell className="text-muted-foreground capitalize">
+                            {opportunity.lead_source?.replace('_', ' ') || '-'}
+                          </TableCell>
+                        )}
+                        {showColumn('competitor') && (
                           <TableCell className="text-muted-foreground">
                             {opportunity.competitor || '-'}
                           </TableCell>
                         )}
-                        {isVisible('is_closed') && (
+                        {showColumn('is_closed') && (
                           <TableCell className="text-muted-foreground text-center">
                             {opportunity.is_closed ? 'Yes' : 'No'}
                           </TableCell>
                         )}
-                        {isVisible('is_won') && (
+                        {showColumn('is_won') && (
                           <TableCell className="text-muted-foreground text-center">
                             {opportunity.is_won ? 'Yes' : 'No'}
                           </TableCell>
                         )}
-                        {isVisible('owner') && (
+                        {showColumn('owner') && (
                           <TableCell className="text-muted-foreground">
                             {opportunity.owner?.name || '-'}
                           </TableCell>
                         )}
-                        {isVisible('created_by') && (
+                        {showColumn('created_by') && (
                           <TableCell className="text-muted-foreground">
                             {opportunity.created_by_account?.name ||
                               opportunity.created_by ||
                               '-'}
                           </TableCell>
                         )}
-                        {isVisible('created_at') && (
+                        {showColumn('created_at') && (
                           <TableCell className="text-muted-foreground">
                             {opportunity.created_at
                               ? formatDate(opportunity.created_at)
                               : '-'}
                           </TableCell>
                         )}
-                        {isVisible('updated_by') && (
+                        {showColumn('updated_by') && (
                           <TableCell className="text-muted-foreground">
                             {opportunity.updated_by_account?.name ||
                               opportunity.updated_by ||
                               '-'}
                           </TableCell>
                         )}
-                        <TableCell className="bg-card sticky right-0 px-4 text-right">
+
+                        {customFields.map((field) =>
+                          showColumn(field.field_key) ? (
+                            <TableCell key={field.id}>
+                              {renderCustomFieldValue(
+                                (
+                                  opportunity as {
+                                    custom_fields?: Record<string, unknown>;
+                                  }
+                                ).custom_fields?.[field.field_key],
+                              )}
+                            </TableCell>
+                          ) : null,
+                        )}
+
+                        <TableCell className="bg-card group sticky right-0 px-4 text-right">
                           <div className="flex items-center justify-end gap-2">
                             <EntityActionsDropdown
                               id={opportunity.id}
                               viewPath={`/home/sales/opportunities/${opportunity.id}`}
-                              canDelete={canAccess(
-                                'opportunities',
-                                'delete',
-                              )}
+                              canDelete={canAccess('opportunities', 'delete')}
                               onDelete={() => {
                                 setOpportunityToDelete(opportunity);
                                 setDeleteDialogOpen(true);
@@ -631,6 +1113,53 @@ export default function OpportunitiesPage() {
         <OpportunityDialog
           isOpen={isCreateDialogOpen}
           onOpenChange={setIsCreateDialogOpen}
+        />
+
+        <AddColumnModal
+          open={addColumnModalOpen}
+          onOpenChange={setAddColumnModalOpen}
+          entityType="opportunities"
+          roles={moduleRoles}
+          teamMembers={teamMembersForModal}
+          isAdmin={canAddColumn}
+          isSubmitting={createField.isPending}
+          onSubmit={async (payload) => {
+            await createField.mutateAsync({
+              ...payload,
+              workspace_id: workspace?.id || '',
+              product_key: 'sales',
+              entity_type: 'opportunities',
+            });
+            refetchEntityFields();
+            refetch();
+          }}
+        />
+
+        <ColumnEditModal
+          open={Boolean(editingField)}
+          onOpenChange={(open) => {
+            if (!open) setEditingField(null);
+          }}
+          field={
+            (editingField ??
+              ({
+                id: '',
+                field_key: '',
+                field_label: '',
+                is_system: false,
+                workspace_id: workspace?.id || '',
+              } as EntityField)) as ColumnEditFieldShape
+          }
+          roles={moduleRoles}
+          teamMembers={teamMembersForModal}
+          onSave={(updates, accessType, members) =>
+            handleUpdateField(editingField?.id || '', {
+              ...updates,
+              access_type: accessType,
+              access_members: members,
+            })
+          }
+          onDelete={handleDeleteField}
         />
 
         <DeleteEntityDialog

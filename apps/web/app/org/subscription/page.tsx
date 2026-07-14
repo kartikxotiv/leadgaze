@@ -30,7 +30,6 @@ import {
   type WorkspaceSubscriptionStatus,
   getWorkspaceSubscriptionService,
 } from '@kit/core/services';
-import { formatDate } from '@kit/shared/utils';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@kit/ui/card';
@@ -66,6 +65,7 @@ import {
   getWorkspaceSeatsService,
   updateSeatsViaStripeService,
 } from '~/services/subscription.service';
+import { useLocalization } from '@kit/shared/localization';
 
 // ─── Constants ───────────────────────────────────────────────────
 
@@ -157,6 +157,28 @@ function getProductStyle(key: string) {
 
 // ─── Main Page ───────────────────────────────────────────────────
 
+function getPriceAndCurrency(
+  product: {
+    monthly_price_per_seat?: number | null;
+    yearly_price_per_seat?: number | null;
+    india_monthly_price_per_seat?: number | null;
+    india_yearly_price_per_seat?: number | null;
+  } | null | undefined,
+  billingCountry: string | null | undefined,
+  billingCycle: 'monthly' | 'yearly',
+) {
+  if (!product) return { price: 0, currencySymbol: '$' };
+  const isIndia = billingCountry === 'IN' || billingCountry?.toLowerCase() === 'india';
+  const price = isIndia
+    ? billingCycle === 'yearly'
+      ? (product.india_yearly_price_per_seat ?? 0)
+      : (product.india_monthly_price_per_seat ?? 0)
+    : billingCycle === 'yearly'
+      ? (product.yearly_price_per_seat ?? 0)
+      : (product.monthly_price_per_seat ?? 0);
+  return { price, currencySymbol: isIndia ? '₹' : '$' };
+}
+
 export default function OrgSubscriptionPage({
   canManageSubscription: canManageSubscriptionProp,
 }: {
@@ -198,6 +220,7 @@ export default function OrgSubscriptionPage({
     currentSeats: 0,
     newSeats: 0,
   });
+  const [isDirectUpdating, setIsDirectUpdating] = useState(false);
 
   useEffect(() => {
     const checkout = searchParams.get('checkout');
@@ -226,6 +249,7 @@ export default function OrgSubscriptionPage({
       window.history.replaceState({}, '', '/org/subscription');
     }
   }, [searchParams, workspaceId, queryClient]);
+  const { formatDate } = useLocalization();
 
   const { data: subscriptionStatus } = useQuery<WorkspaceSubscriptionStatus>({
     queryKey: ['workspace-subscription', workspaceId],
@@ -243,6 +267,9 @@ export default function OrgSubscriptionPage({
     queryFn: () => getWorkspaceSeatsService(workspaceId),
     enabled: !!workspaceId,
   });
+
+  const billingCountry = currentWorkspace?.billing_country;
+  const currencySymbol = billingCountry === 'IN' || billingCountry?.toLowerCase() === 'india' ? '₹' : '$';
 
   // Fetch workspace entitlements (free access grants)
   const { data: entitlementsData } = useQuery({
@@ -357,10 +384,7 @@ export default function OrgSubscriptionPage({
         const pending = pendingChanges[seat.product_id] ?? seat.seats_purchased;
         const product = seat.subscription_products;
         if (product) {
-          const price =
-            billingCycle === 'yearly'
-              ? (product.yearly_price_per_seat ?? 0)
-              : (product.monthly_price_per_seat ?? 0);
+          const { price } = getPriceAndCurrency(product, billingCountry, billingCycle);
           monthly += price * pending;
           seatsTotal += pending;
           if (pending !== seat.seats_purchased) {
@@ -375,10 +399,7 @@ export default function OrgSubscriptionPage({
       )) {
         const product = products.find((p) => p.product_key === productKey);
         if (product) {
-          const price =
-            billingCycle === 'yearly'
-              ? (product.yearly_price_per_seat ?? 0)
-              : (product.monthly_price_per_seat ?? 0);
+          const { price } = getPriceAndCurrency(product, billingCountry, billingCycle);
           monthly += price * seatCount;
           seatsTotal += seatCount;
           newItems.push({ productKey, seats: seatCount });
@@ -658,6 +679,7 @@ export default function OrgSubscriptionPage({
               <TableBody>
                 {seats.map((seat) => (
                   <ActiveModuleRow
+                    billingCountry={billingCountry}
                     key={seat.id}
                     seat={seat}
                     workspaceId={workspaceId}
@@ -691,10 +713,7 @@ export default function OrgSubscriptionPage({
             {/* Pricing breakdown rows */}
             {seats.map((seat) => {
               const product = seat.subscription_products;
-              const pricePerSeat =
-                billingCycle === 'yearly'
-                  ? product?.yearly_price_per_seat
-                  : product?.monthly_price_per_seat;
+              const { price: pricePerSeat, currencySymbol } = getPriceAndCurrency(product, billingCountry, billingCycle);
               const pending =
                 pendingChanges[seat.product_id] ?? seat.seats_purchased;
               const displaySeats = isPaid ? seat.seats_purchased : pending;
@@ -703,8 +722,7 @@ export default function OrgSubscriptionPage({
               if (!pricePerSeat) return null;
 
               return (
-                <PricingBreakdownRow
-                  key={`breakdown-${seat.id}`}
+                <PricingBreakdownRow currencySymbol={currencySymbol} key={`breakdown-${seat.id}`}
                   seat={seat}
                   workspaceId={workspaceId}
                   pricePerSeat={Number(pricePerSeat)}
@@ -836,8 +854,7 @@ export default function OrgSubscriptionPage({
           ) : (
             <div className="grid gap-4 px-1 sm:grid-cols-2 lg:grid-cols-3">
               {availableProducts.map((product) => (
-                <AvailableModuleCard
-                  key={product.id}
+                <AvailableModuleCard billingCountry={billingCountry} key={product.id}
                   product={product}
                   billingCycle={billingCycle}
                   canManageSubscription={canManageSubscription}
@@ -880,6 +897,7 @@ export default function OrgSubscriptionPage({
         (((!isPaid || isTrial) && seats.length > 0) ||
           selectedNewItems.length > 0) && (
           <CheckoutBar
+            currencySymbol={currencySymbol}
             totalMonthly={totalMonthly}
             totalSeats={totalSeats}
             billingCycle={billingCycle}
@@ -888,6 +906,7 @@ export default function OrgSubscriptionPage({
             isTrialExpired={isTrialExpired}
             isPending={checkoutMutation.isPending}
             onCheckout={() => checkoutMutation.mutate()}
+            isPaid={isPaid}
           />
         )}
 
@@ -997,23 +1016,28 @@ export default function OrgSubscriptionPage({
               Cancel
             </Button>
             <Button
-              disabled={!canManageSubscription}
+              disabled={!canManageSubscription || isDirectUpdating}
               onClick={async () => {
                 if (!canManageSubscription) return;
-
-                await handleDirectUpdate(
-                  seatUpdateDialog.seatId,
-                  seatUpdateDialog.newSeats,
-                );
-                setSeatUpdateDialog({
-                  open: false,
-                  seatId: '',
-                  displayName: '',
-                  currentSeats: 0,
-                  newSeats: 0,
-                });
+                setIsDirectUpdating(true);
+                try {
+                  await handleDirectUpdate(
+                    seatUpdateDialog.seatId,
+                    seatUpdateDialog.newSeats,
+                  );
+                } finally {
+                  setIsDirectUpdating(false);
+                  setSeatUpdateDialog({
+                    open: false,
+                    seatId: '',
+                    displayName: '',
+                    currentSeats: 0,
+                    newSeats: 0,
+                  });
+                }
               }}
             >
+              {isDirectUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Confirm Update
             </Button>
           </DialogFooter>
@@ -1246,6 +1270,7 @@ function ActiveModuleRow({
   onPendingChange,
   onDirectUpdate,
   onRemove,
+  billingCountry,
 }: {
   seat: WorkspaceSeat;
   workspaceId: string;
@@ -1257,6 +1282,7 @@ function ActiveModuleRow({
   onPendingChange: (count: number) => void;
   onDirectUpdate: (count: number) => void;
   onRemove: () => void;
+  billingCountry?: string | null;
 }) {
   const [updating, setUpdating] = useState(false);
   const product = seat.subscription_products;
@@ -1267,10 +1293,7 @@ function ActiveModuleRow({
 
   const displaySeats = isPaid ? seat.seats_purchased : pendingSeats;
 
-  const pricePerSeat =
-    billingCycle === 'yearly'
-      ? product?.yearly_price_per_seat
-      : product?.monthly_price_per_seat;
+  const { price: pricePerSeat, currencySymbol } = getPriceAndCurrency(product, billingCountry, billingCycle);
   const total = pricePerSeat ? Number(pricePerSeat) * displaySeats : 0;
 
   const handleIncrement = async () => {
@@ -1390,7 +1413,7 @@ function ActiveModuleRow({
       <TableCell className="text-foreground text-sm whitespace-nowrap">
         {pricePerSeat ? (
           <>
-            <span className="font-semibold">${pricePerSeat}</span>
+            <span className="font-semibold">{currencySymbol}{pricePerSeat}</span>
             <span className="text-muted-foreground text-xs">
               /{billingCycle === 'yearly' ? 'yr' : 'mo'}
             </span>
@@ -1406,7 +1429,7 @@ function ActiveModuleRow({
           <div className="text-foreground text-sm whitespace-nowrap">
             {pricePerSeat ? (
               <>
-                <span className="font-semibold">${total}</span>
+                <span className="font-semibold">{currencySymbol}{total}</span>
                 <span className="text-muted-foreground text-xs">
                   /{billingCycle === 'yearly' ? 'yr' : 'mo'}
                 </span>
@@ -1439,6 +1462,7 @@ function PricingBreakdownRow({
   displaySeats,
   billingCycle,
   accentColor,
+  currencySymbol,
 }: {
   seat: WorkspaceSeat;
   workspaceId: string;
@@ -1446,6 +1470,7 @@ function PricingBreakdownRow({
   displaySeats: number;
   billingCycle: 'monthly' | 'yearly';
   accentColor: string;
+  currencySymbol?: string;
 }) {
   const [expanded, setExpanded] = useState(false);
   const period = billingCycle === 'yearly' ? 'yr' : 'mo';
@@ -1458,11 +1483,11 @@ function PricingBreakdownRow({
             className="text-sm font-semibold"
             style={{ color: accentColor }}
           >
-            ${pricePerSeat}/seat/{period}
+            {currencySymbol}{pricePerSeat}/seat/{period}
           </span>
           <span className="text-muted-foreground text-xs">·</span>
           <span className="text-muted-foreground text-xs">
-            {displaySeats} seat{displaySeats !== 1 ? 's' : ''} × ${pricePerSeat}
+            {displaySeats} seat{displaySeats !== 1 ? 's' : ''} × {currencySymbol}{pricePerSeat}
           </span>
         </div>
         <Button
@@ -1504,6 +1529,7 @@ function AvailableModuleCard({
   onSelect,
   onDeselect,
   onSeatsChange,
+  billingCountry,
 }: {
   product: SubscriptionProduct;
   billingCycle: 'monthly' | 'yearly';
@@ -1513,16 +1539,18 @@ function AvailableModuleCard({
   onSelect: () => void;
   onDeselect: () => void;
   onSeatsChange: (seats: number) => void;
+  billingCountry?: string | null;
 }) {
   const style = getProductStyle(product.product_key);
   const icon = PRODUCT_ICONS[product.product_key] ?? (
     <Package className="h-5 w-5" />
   );
 
-  const pricePerSeat =
-    billingCycle === 'yearly'
-      ? product.yearly_price_per_seat
-      : product.monthly_price_per_seat;
+  const { price: pricePerSeat, currencySymbol } = getPriceAndCurrency(
+    product,
+    billingCountry,
+    billingCycle,
+  );
 
   const period = billingCycle === 'yearly' ? 'yr' : 'mo';
 
@@ -1572,7 +1600,7 @@ function AvailableModuleCard({
           {pricePerSeat ? (
             <div className="flex items-baseline gap-0.5">
               <span className="text-foreground text-2xl font-bold">
-                ${pricePerSeat}
+                {currencySymbol}{pricePerSeat}
               </span>
               <span className="text-muted-foreground text-sm">
                 /seat/{period}
@@ -1679,6 +1707,8 @@ function CheckoutBar({
   isTrialExpired,
   isPending,
   onCheckout,
+  currencySymbol,
+  isPaid,
 }: {
   totalMonthly: number;
   totalSeats: number;
@@ -1688,6 +1718,8 @@ function CheckoutBar({
   isTrialExpired: boolean;
   isPending: boolean;
   onCheckout: () => void;
+  currencySymbol?: string;
+  isPaid: boolean;
 }) {
   const ctaLabel = isTrialExpired
     ? 'Subscribe Now'
@@ -1696,6 +1728,9 @@ function CheckoutBar({
         ? 'Subscribe with Changes'
         : 'Subscribe Now'
       : 'Proceed to Payment';
+
+  const periodLabel = billingCycle === 'yearly' ? 'New Yearly Total' : 'New Monthly Total';
+  const normalPeriodLabel = billingCycle === 'yearly' ? 'Total Yearly' : 'Total Monthly';
 
   return (
     <Card className="sticky bottom-0 z-10 border-t shadow-lg">
@@ -1714,13 +1749,18 @@ function CheckoutBar({
         </div>
 
         <div className="flex items-center gap-6">
-          <div className="flex items-baseline gap-0.5">
-            <span className="text-foreground text-xl font-bold">
-              ${totalMonthly}
+          <div className="flex flex-col items-end mr-2">
+            <span className="text-muted-foreground text-[10px] uppercase tracking-wider font-bold">
+              {isPaid ? periodLabel : normalPeriodLabel}
             </span>
-            <span className="text-muted-foreground text-sm">
-              {billingCycle === 'yearly' ? '/yr' : '/mo'}
-            </span>
+            <div className="flex items-baseline gap-0.5">
+              <span className="text-foreground text-xl font-bold">
+                {currencySymbol}{totalMonthly}
+              </span>
+              <span className="text-muted-foreground text-sm">
+                {billingCycle === 'yearly' ? '/yr' : '/mo'}
+              </span>
+            </div>
           </div>
 
           {isPending ? (

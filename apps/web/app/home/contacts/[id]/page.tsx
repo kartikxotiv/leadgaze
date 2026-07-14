@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
@@ -25,12 +25,13 @@ import {
   Trash2,
   User,
   Users,
+  CheckSquare,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { CoreEmailComposeDialog } from '@kit/core/pages';
 import { getCoreEmailAccountsService } from '@kit/core/services';
-import { formatDate } from '@kit/shared/utils';
+import { useLocalization } from '~/lib/localization/localization-provider';
 import { useUser } from '@kit/supabase/hooks/use-user';
 import {
   Accordion,
@@ -59,6 +60,8 @@ import {
 } from '~/lib/permissions/use-permissions';
 import { ModuleGuard } from '~/lib/rbac/module-guard';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
+import { useFieldPermissions } from '~/lib/hooks/use-field-permissions';
+import { useDynamicColumns } from '~/lib/hooks/use-dynamic-columns';
 import {
   assignContactToUser,
   getContactAssignees,
@@ -74,10 +77,12 @@ import {
 import { EntityCalls } from '../../_components/entity-calls';
 import { EntityEmails } from '../../_components/entity-emails';
 import { EntityNotes } from '../../_components/entity-notes';
+import { EntityTasks } from '../../_components/entity-tasks';
 import { AssignUserModal } from '../../leads/components/assign-user-modal';
 import { LogCallDialog } from '../../leads/components/log-call-dialog';
 import { ContactAssignees } from '../components/contact-assignees';
 import { EditContactDialog } from '../components/edit-contact-dialog';
+import { CardWidgetContainer } from '@kit/ui/card-widget-container';
 
 function ContactDetailsSkeleton() {
   return (
@@ -147,6 +152,7 @@ export default function ContactDetailsPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const id = params?.id as string;
+  const { formatDate } = useLocalization();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isLogCallDialogOpen, setIsLogCallDialogOpen] = useState(false);
@@ -155,6 +161,43 @@ export default function ContactDetailsPage() {
 
   const { currentWorkspace: workspace, canAccess } = useRBAC();
   const canManageEmail = canAccess('emails', 'manage_email');
+  const { data: user } = useUser();
+
+  const {
+    data: contact,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ['contact', id],
+    queryFn: () => getContactByIdService(id),
+    enabled: !!id,
+  });
+
+  const { canView } = useFieldPermissions({
+    entityType: 'contacts',
+    workspaceId: workspace?.id,
+    enabled: !!workspace?.id,
+  });
+
+  const { fields = [] } = useDynamicColumns({
+    entityType: 'contacts',
+    workspaceId: workspace?.id,
+    userId: user?.id,
+    enabled: !!workspace?.id,
+  });
+
+  const customFieldsToShow = useMemo(() => {
+    if (!contact) return [];
+    const contactCustom = (contact.custom_fields as Record<string, unknown>) || {};
+    return fields.filter(
+      (f) =>
+        !f.is_system &&
+        canView(f.field_key) &&
+        contactCustom[f.field_key] !== undefined &&
+        contactCustom[f.field_key] !== null &&
+        contactCustom[f.field_key] !== '',
+    );
+  }, [fields, canView, contact]);
 
   // Page-level assign modal (works even when accordion is collapsed)
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
@@ -193,17 +236,6 @@ export default function ContactDetailsPage() {
     },
   });
 
-  const {
-    data: contact,
-    isLoading,
-    error,
-  } = useQuery({
-    queryKey: ['contact', id],
-    queryFn: () => getContactByIdService(id),
-    enabled: !!id,
-  });
-
-  const { data: user } = useUser();
   const editPermission = usePermissionDetail('contacts', 'edit');
   const canEdit = useCanAccessData(editPermission, contact?.owner_id, user?.id);
 
@@ -360,17 +392,20 @@ export default function ContactDetailsPage() {
                   <div className="flex items-center gap-1.5 text-xs text-gray-500">
                     <Clock className="h-3 w-3" />
                     <span>
-                      Created on{' '}
-                      {new Date(contact.created_at).toLocaleDateString(
-                        undefined,
-                        {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric',
-                        },
-                      )}
+                      Created by {contact.created_by_account?.name || 'Unknown'} on {formatDate(contact.created_at)}
                     </span>
                   </div>
+                  {contact.updated_by && (
+                    <>
+                      <div className="hidden h-1 w-1 rounded-full bg-gray-300 sm:block dark:bg-gray-600" />
+                      <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                        <Clock className="h-3 w-3" />
+                        <span>
+                          Updated by {contact.updated_by_account?.name || 'Unknown'} on {formatDate(contact.updated_at)}
+                        </span>
+                      </div>
+                    </>
+                  )}
                 </>
               }
               email={contact.email || undefined}
@@ -420,6 +455,13 @@ export default function ContactDetailsPage() {
                   Reminders
                 </TabsTrigger>
                 <TabsTrigger
+                  value="tasks"
+                  className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
+                >
+                  <CheckSquare className="mr-2 h-4 w-4" />
+                  Tasks
+                </TabsTrigger>
+                <TabsTrigger
                   value="documents"
                   className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
                 >
@@ -448,21 +490,21 @@ export default function ContactDetailsPage() {
                     recipientOptions={[
                       ...(contact.email
                         ? [
-                            {
-                              email: contact.email,
-                              name: fullName,
-                              label: 'Primary Email',
-                            },
-                          ]
+                          {
+                            email: contact.email,
+                            name: fullName,
+                            label: 'Primary Email',
+                          },
+                        ]
                         : []),
                       ...(contact.alt_email
                         ? [
-                            {
-                              email: contact.alt_email,
-                              name: fullName,
-                              label: 'Alt Email',
-                            },
-                          ]
+                          {
+                            email: contact.alt_email,
+                            name: fullName,
+                            label: 'Alt Email',
+                          },
+                        ]
                         : []),
                     ]}
                   />
@@ -504,9 +546,19 @@ export default function ContactDetailsPage() {
                 <EntityDocuments entityType="contact" entityId={id} />
               </TabsContent>
 
+              <TabsContent
+                value="tasks"
+                className="max-h-[500px] overflow-y-auto"
+              >
+                <EntityTasks entityType="contact" entityId={id} />
+              </TabsContent>
+
               <TabsContent value="activity">
-                <Card>
-                  <CardContent className="pt-6">
+                <CardWidgetContainer
+                  title="Activity"
+                  hideHeaderBorder={true}
+                  icon={<Clock className="text-leadgaze-dark h-5 w-5 dark:text-white" />}>
+                  <CardContent className="px-6 py-3">
                     <div className="space-y-2">
                       <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3 dark:bg-slate-900">
                         <div className="h-2 w-2 rounded-full bg-green-500" />
@@ -535,7 +587,7 @@ export default function ContactDetailsPage() {
                         )}
                     </div>
                   </CardContent>
-                </Card>
+                </CardWidgetContainer>
               </TabsContent>
             </Tabs>
 
@@ -603,122 +655,111 @@ export default function ContactDetailsPage() {
                 </AccordionTrigger>
                 <AccordionContent className="px-4 pb-4">
                   <DetailInfoList>
-                    {contact.email && (
-                      <DetailInfoRow
-                        icon={<Mail className="h-5 w-5" />}
-                        label="Email"
-                        value={
-                          <a
-                            href={`mailto:${contact.email}`}
-                            className="text-blue-600 hover:underline dark:text-blue-400"
-                          >
-                            {contact.email}
-                          </a>
-                        }
-                      />
-                    )}
-                    {contact.alt_email && (
-                      <DetailInfoRow
-                        icon={<Mail className="h-5 w-5" />}
-                        label="Alt Email"
-                        value={
-                          <a
-                            href={`mailto:${contact.alt_email}`}
-                            className="text-blue-600 hover:underline dark:text-blue-400"
-                          >
-                            {contact.alt_email}
-                          </a>
-                        }
-                      />
-                    )}
-                    {contact.phone_number && (
-                      <DetailInfoRow
-                        icon={<Phone className="h-5 w-5" />}
-                        label="Phone"
-                        value={
-                          <a
-                            href={`tel:${contact.phone_number}`}
-                            className="text-blue-600 hover:underline dark:text-blue-400"
-                          >
-                            {contact.phone_number}
-                          </a>
-                        }
-                      />
-                    )}
-                    {contact.mobile_number && (
-                      <DetailInfoRow
-                        icon={<Phone className="h-5 w-5" />}
-                        label="Mobile"
-                        value={
-                          <a
-                            href={`tel:${contact.mobile_number}`}
-                            className="text-blue-600 hover:underline dark:text-blue-400"
-                          >
-                            {contact.mobile_number}
-                          </a>
-                        }
-                      />
-                    )}
-                    {contact.alt_phone && (
-                      <DetailInfoRow
-                        icon={<Phone className="h-5 w-5" />}
-                        label="Alt Phone"
-                        value={
-                          <a
-                            href={`tel:${contact.alt_phone}`}
-                            className="text-blue-600 hover:underline dark:text-blue-400"
-                          >
-                            {contact.alt_phone}
-                          </a>
-                        }
-                      />
-                    )}
-                    {contact.language && (
-                      <DetailInfoRow
-                        icon={<Globe className="h-5 w-5" />}
-                        label="Language"
-                        value={contact.language}
-                      />
-                    )}
-                    {(contact.location || contact.timezone) && (
-                      <DetailInfoRow
-                        icon={<MapPin className="h-5 w-5" />}
-                        label="Location"
-                        value={[contact.location, contact.timezone]
-                          .filter(Boolean)
-                          .join(' • ')}
-                      />
-                    )}
-                    {contact.department && (
-                      <DetailInfoRow
-                        icon={<FileText className="h-5 w-5" />}
-                        label="Department"
-                        value={contact.department}
-                      />
-                    )}
-                    {contact.linkedin_url && (
-                      <DetailInfoRow
-                        icon={<Linkedin className="h-5 w-5" />}
-                        label="LinkedIn"
-                        value={
-                          <a
-                            href={contact.linkedin_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-600 hover:underline dark:text-blue-400"
-                          >
-                            {contact.linkedin_url}
-                          </a>
-                        }
-                      />
-                    )}
-                    {contact.notes && (
-                      <DetailInfoRow
-                        icon={<FileText className="h-5 w-5" />}
-                        label="Notes"
-                        value={contact.notes}
-                      />
-                    )}
+
+                    {canView('email') && <DetailInfoRow
+                      icon={<Mail className="h-5 w-5" />}
+                      label="Email"
+                      value={
+                        contact.email ? (<a
+                          href={`mailto:${contact.email}`}
+                          className="text-blue-600 hover:underline dark:text-blue-400"
+                        >
+                          {contact.email}
+                        </a>) : '-'
+                      }
+                    />}
+
+                    {canView('alt_email') && <DetailInfoRow
+                      icon={<Mail className="h-5 w-5" />}
+                      label="Alt Email"
+                      value={
+                        contact.alt_email ? (<a
+                          href={`mailto:${contact.alt_email}`}
+                          className="text-blue-600 hover:underline dark:text-blue-400"
+                        >
+                          {contact.alt_email}
+                        </a>) : '-'
+                      }
+                    />}
+
+                    {canView('phone') && <DetailInfoRow
+                      icon={<Phone className="h-5 w-5" />}
+                      label="Phone"
+                      value={
+                        contact.phone_number ? (<a
+                          href={`tel:${contact.phone_number}`}
+                          className="text-blue-600 hover:underline dark:text-blue-400"
+                        >
+                          {contact.phone_number}
+                        </a>) : '-'
+                      }
+                    />}
+
+                    {canView('mobile') && <DetailInfoRow
+                      icon={<Phone className="h-5 w-5" />}
+                      label="Mobile"
+                      value={
+                        contact.mobile_number ? (<a
+                          href={`tel:${contact.mobile_number}`}
+                          className="text-blue-600 hover:underline dark:text-blue-400"
+                        >
+                          {contact.mobile_number}
+                        </a>) : '-'
+                      }
+                    />}
+
+                    {canView('alt_phone') && <DetailInfoRow
+                      icon={<Phone className="h-5 w-5" />}
+                      label="Alt Phone"
+                      value={
+                        contact.alt_phone ? (<a
+                          href={`tel:${contact.alt_phone}`}
+                          className="text-blue-600 hover:underline dark:text-blue-400"
+                        >
+                          {contact.alt_phone}
+                        </a>) : '-'
+                      }
+                    />}
+
+                    {canView('language') && <DetailInfoRow
+                      icon={<Globe className="h-5 w-5" />}
+                      label="Language"
+                      value={contact.language || '-'}
+                    />}
+
+
+                    {(canView('location') || canView('timezone')) && <DetailInfoRow
+                      icon={<MapPin className="h-5 w-5" />}
+                      label="Location"
+                      value={(contact.location || contact.timezone) ? ([contact.location, contact.timezone]
+                        .filter(Boolean)
+                        .join(' • ')) : '-'}
+                    />}
+
+                    {canView('department') && <DetailInfoRow
+                      icon={<FileText className="h-5 w-5" />}
+                      label="Department"
+                      value={contact.department || '-'}
+                    />}
+                    {canView('linkedin') && <DetailInfoRow
+                      icon={<Linkedin className="h-5 w-5" />}
+                      label="LinkedIn"
+                      value={
+                        contact.linkedin_url ? (<a
+                          href={contact.linkedin_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline dark:text-blue-400"
+                        >
+                          {contact.linkedin_url}
+                        </a>) : '-'}
+                    />}
+
+                    {canView('notes') && <DetailInfoRow
+                      icon={<FileText className="h-5 w-5" />}
+                      label="Notes"
+                      value={contact.notes || '-'}
+                    />}
                   </DetailInfoList>
                 </AccordionContent>
               </AccordionItem>
@@ -741,14 +782,42 @@ export default function ContactDetailsPage() {
                         icon={<Building2 className="h-5 w-5" />}
                         label="Account"
                         value={
-                          <Link
+                          contact.account.account_name ? (<Link
                             href={`/home/sales/accounts/${contact.account.id}`}
                             className="text-blue-600 hover:underline dark:text-blue-400"
                           >
                             {contact.account.account_name}
-                          </Link>
-                        }
+                          </Link>) : '-'}
                       />
+                    </DetailInfoList>
+                  </AccordionContent>
+                </AccordionItem>
+              )}
+
+              {/* Additional Data (Custom Fields) */}
+              {customFieldsToShow.length > 0 && (
+                <AccordionItem
+                  value="additional"
+                  className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
+                >
+                  <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                    <span className="primary-heading text-leadgaze-dark flex items-center gap-2">
+                      <FileText className="text-leadgaze-dark h-4 w-4 dark:text-white" />
+                      Additional Data
+                    </span>
+                  </AccordionTrigger>
+                  <AccordionContent className="px-4 pb-4">
+                    <DetailInfoList>
+                      {customFieldsToShow.map((field) => {
+                        const val = (contact.custom_fields as Record<string, unknown>)?.[field.field_key];
+                        return (
+                          <DetailInfoRow
+                            key={field.id}
+                            label={field.field_label}
+                            value={val === true ? 'Yes' : val === false ? 'No' : String(val ?? '-')}
+                          />
+                        );
+                      })}
                     </DetailInfoList>
                   </AccordionContent>
                 </AccordionItem>
@@ -760,35 +829,25 @@ export default function ContactDetailsPage() {
                   value="assignees"
                   className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
                 >
-                  <AccordionTrigger
-                    hideChevron
-                    className="px-4 py-3 hover:no-underline"
-                  >
-                    <div className="flex w-full justify-between">
+                  <div className="flex items-center justify-between px-4 py-3">
+                    <AccordionTrigger className="hover:no-underline">
                       <span className="primary-heading text-leadgaze-dark flex items-center gap-2">
                         <Users className="text-leadgaze-dark h-5 w-5 dark:text-white" />
                         Assigned Members
                       </span>
-                      <Button
-                        size="sm"
-                        className="mr-3 ml-2 shrink-0 gap-2"
-                        onPointerDown={(e) => e.stopPropagation()}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setIsAssignModalOpen(true);
-                        }}
-                      >
-                        <Plus className="h-4 w-4" />
-                        Assign Member
-                      </Button>
-                    </div>
-                    <ChevronDown
-                      className={cn(
-                        'text-muted-foreground h-4 w-4 shrink-0 transition-transform duration-200',
-                        openAccordion === 'assignees' && 'rotate-180',
-                      )}
-                    />
-                  </AccordionTrigger>
+                    </AccordionTrigger>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsAssignModalOpen(true);
+                      }}
+                      className="focus-visible:ring-ring inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ring-offset-background bg-primary text-primary-foreground hover:bg-primary/90 h-8 px-3 py-1 gap-2 shrink-0"
+                    >
+                      <Plus className="h-4 w-4" />
+                      <span>Assign Member</span>
+                    </button>
+                  </div>
                   <AccordionContent className="px-4 pb-4">
                     <ContactAssignees
                       contactId={id}

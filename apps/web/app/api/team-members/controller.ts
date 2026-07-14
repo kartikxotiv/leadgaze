@@ -41,6 +41,9 @@ const getMembers = catchAsync(
     const supabase = getSupabaseServerClient();
     const url = new URL(request.url);
     const workspaceId = url.searchParams.get('workspaceId');
+    const productKey = url.searchParams.get('productKey');
+    const status = url.searchParams.get('status');
+    const search = url.searchParams.get('search');
 
     if (!workspaceId) {
       return NextResponse.json(
@@ -49,26 +52,75 @@ const getMembers = catchAsync(
       );
     }
 
-    // Get members with related role data via join
-    const { data: members, error } = await (
-      supabase.from('workspace_members').select(
-        `
-        *,
-        role:workspace_roles(id, role_name, role_key, hierarchy_level, color)
+    // Build query with optional product_key filter
+    let query = supabase.from('workspace_members').select(
+      `
+        id,
+        workspace_id,
+        user_id,
+        role_id,
+        status,
+        product_key,
+        created_at,
+        role:workspace_roles(id, role_name, role_key, hierarchy_level, color, product_key)
       `,
-      ) as any
-    )
-      .eq('workspace_id', workspaceId)
-      .order('created_at', { ascending: false });
+    );
+
+    query = query.eq('workspace_id', workspaceId);
+    
+    // Filter out removed/deleted members, or filter by specific status
+    if (status && status !== 'all') {
+      query = query.eq('status', status);
+    } else {
+      query = query.neq('status', 'removed');
+    }
+
+    if (productKey) {
+      query = query.eq('product_key', productKey);
+    }
+
+    query = query.order('created_at', { ascending: false });
+
+    const { data: members, error } = await (query as any);
 
     if (error) {
       console.error('Get members error:', error);
       throw error;
     }
 
+    let filteredMembers = members;
+
+    // Filter members by active seat assignment for the specified product, if provided
+    if (productKey) {
+      const adminClient = getSupabaseServerAdminClient() as any;
+      const { data: productRow } = await adminClient
+        .from('subscription_products')
+        .select('id')
+        .eq('product_key', productKey)
+        .maybeSingle();
+
+      if (productRow) {
+        const { data: activeAssignments } = await adminClient
+          .from('seat_assignments')
+          .select('user_id')
+          .eq('workspace_id', workspaceId)
+          .eq('product_id', productRow.id)
+          .eq('is_active', true);
+
+        const assignedUserIds = new Set(
+          activeAssignments?.map((a: any) => a.user_id) || []
+        );
+
+        // Pending members are always shown so admins can manage invites
+        filteredMembers = filteredMembers.filter(
+          (m: any) => m.status === 'pending' || (m.user_id && assignedUserIds.has(m.user_id))
+        );
+      }
+    }
+
     // Fetch account details for all members
-    if (members && members.length > 0) {
-      const userIds = members.map((m: any) => m.user_id).filter(Boolean);
+    if (filteredMembers && filteredMembers.length > 0) {
+      const userIds = filteredMembers.map((m: any) => m.user_id).filter(Boolean);
       if (userIds.length > 0) {
         const { data: accounts } = await supabase
           .from('accounts')
@@ -78,7 +130,7 @@ const getMembers = catchAsync(
         const accountMap = new Map(accounts?.map((a) => [a.id, a]) || []);
 
         // Map account data to members
-        const membersWithUsers = members.map((member: any) => ({
+        let membersWithUsers = filteredMembers.map((member: any) => ({
           ...member,
           user: accountMap.get(member.user_id)
             ? {
@@ -92,6 +144,17 @@ const getMembers = catchAsync(
             : null,
         })) as WorkspaceMemberWithData[];
 
+        if (search) {
+          const term = search.toLowerCase();
+          membersWithUsers = membersWithUsers.filter(
+            (m) =>
+              (m.user?.user_metadata?.full_name || '')
+                .toLowerCase()
+                .includes(term) ||
+              (m.user?.email || '').toLowerCase().includes(term),
+          );
+        }
+
         return successDataResponse(
           'Members retrieved successfully',
           membersWithUsers,
@@ -99,9 +162,24 @@ const getMembers = catchAsync(
       }
     }
 
+    let finalMembers = filteredMembers as WorkspaceMemberWithData[];
+    
+    // Fallback search if members didn't have user profiles (e.g. pending ones)
+    // Though usually pending members are in the invitations table.
+    if (search) {
+      const term = search.toLowerCase();
+      finalMembers = finalMembers.filter(
+        (m) =>
+          (m.user?.user_metadata?.full_name || '')
+            .toLowerCase()
+            .includes(term) ||
+          (m.user?.email || '').toLowerCase().includes(term),
+      );
+    }
+
     return successDataResponse(
       'Members retrieved successfully',
-      members as WorkspaceMemberWithData[],
+      finalMembers,
     );
   },
 );
@@ -305,9 +383,21 @@ const inviteMember = catchAsync(
     // Fetch workspace details for email
     const { data: workspace } = await supabase
       .from('workspaces')
-      .select('id, name')
+      .select('id, name, company_id')
       .eq('id', workspaceId)
       .single();
+
+    let billingCountry = 'US';
+    if (workspace?.company_id) {
+      const { data: company } = await supabase
+        .from('companies')
+        .select('billing_country')
+        .eq('id', workspace.company_id)
+        .single();
+      if (company?.billing_country) {
+        billingCountry = company.billing_country;
+      }
+    }
 
     // Send invitation email
     const inviteUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/invite?token=${token}`;
@@ -334,6 +424,7 @@ const inviteMember = catchAsync(
           inviterName,
           productName: process.env.NEXT_PUBLIC_PRODUCT_NAME || 'Leadgaze',
           appUrl: process.env.NEXT_PUBLIC_APP_URL,
+          billingCountry,
         }),
       });
     } catch (error) {
@@ -627,6 +718,7 @@ const getPendingInvitations = catchAsync(
     const supabase = getSupabaseServerClient();
     const url = new URL(request.url);
     const workspaceId = url.searchParams.get('workspaceId');
+    const search = url.searchParams.get('search');
 
     if (!workspaceId) {
       return NextResponse.json(
@@ -635,7 +727,7 @@ const getPendingInvitations = catchAsync(
       );
     }
 
-    const { data: invitations, error } = await supabase
+    let query = supabase
       .from('workspace_invitations')
       .select(
         `
@@ -649,8 +741,15 @@ const getPendingInvitations = catchAsync(
       `,
       )
       .eq('workspace_id', workspaceId)
-      .eq('status', 'pending')
-      .order('created_at', { ascending: false });
+      .eq('status', 'pending');
+
+    if (search) {
+      query = query.ilike('email', `%${search}%`);
+    }
+
+    query = query.order('created_at', { ascending: false });
+
+    const { data: invitations, error } = await query;
 
     if (error) {
       console.error('Get pending invitations error:', error);
@@ -786,9 +885,21 @@ const resendInvitationEmail = catchAsync(
     // Fetch workspace details for email
     const { data: workspace } = await supabase
       .from('workspaces')
-      .select('id, name')
+      .select('id, name, company_id')
       .eq('id', invitation.workspace_id)
       .single();
+
+    let billingCountry = 'US';
+    if (workspace?.company_id) {
+      const { data: company } = await supabase
+        .from('companies')
+        .select('billing_country')
+        .eq('id', workspace.company_id)
+        .single();
+      if (company?.billing_country) {
+        billingCountry = company.billing_country;
+      }
+    }
 
     // Get inviter info
     const { data: { user } = {} } = await supabase.auth.getUser();
@@ -817,6 +928,7 @@ const resendInvitationEmail = catchAsync(
           inviterName,
           productName: process.env.NEXT_PUBLIC_PRODUCT_NAME || 'Leadgaze',
           appUrl: process.env.NEXT_PUBLIC_APP_URL,
+          billingCountry,
         }),
       });
     } catch (error) {
