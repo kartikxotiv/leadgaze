@@ -608,6 +608,9 @@ export const getServiceCloudDashboardController = catchAsync(
     const workspaceId =
       url.searchParams.get('workspaceId') ??
       url.searchParams.get('workspace_id');
+    const from = url.searchParams.get('from');
+    const to = url.searchParams.get('to');
+
     if (!workspaceId)
       return NextResponse.json(
         { success: false, message: 'workspaceId is required' },
@@ -624,6 +627,8 @@ export const getServiceCloudDashboardController = catchAsync(
       supabase as any
     ).rpc('get_service_cloud_dashboard_stats' as any, {
       p_workspace_id: workspaceId,
+      p_date_from: from || null,
+      p_date_to: to || null,
     });
     /* eslint-enable @typescript-eslint/no-explicit-any */
 
