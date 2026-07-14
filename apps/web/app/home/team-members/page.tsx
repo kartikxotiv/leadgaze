@@ -37,7 +37,6 @@ import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { getModuleKeyFromPath } from '~/lib/rbac/route-module-map';
 import { getRolesService } from '~/services/roles.service';
 import {
-  type SeatAssignment,
   getSeatAssignmentsService,
   getWorkspaceSubscriptionService,
 } from '~/services/subscription.service';
@@ -54,6 +53,17 @@ import {
 
 import { InviteMemberDialog } from './components/invite-member-dialog';
 import { UpdateMemberDialog } from './components/update-member-dialog';
+
+type UnifiedMember = {
+  id: string;
+  _type: 'member' | 'invitation';
+  member_name: string;
+  email: string;
+  role_name: string;
+  status: string;
+  is_primary_contact: boolean;
+  originalData: WorkspaceMember | PendingInvitation;
+};
 
 function TeamMembersPageSkeleton() {
   return (
@@ -160,28 +170,26 @@ export default function TeamMembersPage() {
   const { getHeaderProps, getResizeHandleProps } =
     useColumnResize('team-members');
 
-  // Fetch members
-  const { data: membersData = [], isLoading } = useQuery({
-    queryKey: ['workspaceMembers', currentWorkspace?.id, productKey],
-    queryFn: () => getMembersService(currentWorkspace?.id || '', productKey),
-    enabled: !!currentWorkspace?.id,
-  });
-
-  // Fetch seat assignments for the current module to filter members
-  const { data: assignmentsData } = useQuery({
-    queryKey: ['module-seat-assignments', currentWorkspace?.id, productKey],
+  // Fetch members — server handles status filter and search
+  const { data: membersData, isLoading } = useQuery({
+    queryKey: ['workspaceMembers', currentWorkspace?.id, productKey, statusFilter, debouncedSearchTerm],
     queryFn: () =>
-      getSeatAssignmentsService(currentWorkspace?.id || '', productKey),
-    enabled: !!currentWorkspace?.id && !!productKey,
+      getMembersService(
+        currentWorkspace?.id || '',
+        productKey,
+        // When no filter is selected (''), default to fetching only 'accepted'
+        // When 'pending' is selected, skip fetching members (undefined here, skipped below)
+        statusFilter === '' ? 'accepted' : statusFilter === 'pending' ? undefined : statusFilter,
+        debouncedSearchTerm || undefined,
+      ),
+    // Skip members query when showing pending-only (invitations table handles it)
+    enabled: !!currentWorkspace?.id && statusFilter !== 'pending',
   });
 
-  // Build set of user_ids who have an active seat in this module
-  const moduleAssignedUserIds = useMemo(() => {
-    const assignments = (assignmentsData?.data ?? []) as SeatAssignment[];
-    return new Set(
-      assignments.filter((a) => a.is_active).map((a) => a.user_id),
-    );
-  }, [assignmentsData]);
+  const allMembers = useMemo(
+    () => (membersData?.data || []) as WorkspaceMember[],
+    [membersData],
+  );
 
   // Prefetch roles so they're available immediately when invite dialog opens
   useQuery({
@@ -193,58 +201,52 @@ export default function TeamMembersPage() {
     enabled: !!currentWorkspace?.id && !!productKey,
   });
 
-  // Only show members who have an active seat in the current module.
-  // Pending members (not yet accepted) are always shown so admins can manage invites.
-  const allMembers = (membersData?.data || [])
-    .filter((m: WorkspaceMember) => m.status !== 'removed')
-    .filter(
-      (m: WorkspaceMember) =>
-        m.status === 'pending' || moduleAssignedUserIds.has(m.user_id),
-    );
-  const activeMembers = allMembers.filter(
-    (m: WorkspaceMember) => m.status === 'accepted',
-  );
-  const pendingMembers = allMembers.filter(
-    (m: WorkspaceMember) => m.status === 'pending',
-  );
+  // ── Pending invitations from workspace_invitations table ──────────────────
+  // Server handles the search filter; query is skipped for 'accepted' or default empty filter
+  const { data: pendingInvitationsData, isLoading: isLoadingInvitations } =
+    useQuery({
+      queryKey: ['pendingInvitations', currentWorkspace?.id, debouncedSearchTerm, statusFilter],
+      queryFn: () =>
+        getPendingInvitationsService(
+          currentWorkspace?.id || '',
+          debouncedSearchTerm || undefined,
+        ),
+      enabled: !!currentWorkspace?.id && statusFilter !== 'accepted' && statusFilter !== '',
+    });
 
-  // Apply the active status filter to the member list shown in the table
-  const members = useMemo(() => {
-    let filtered: WorkspaceMember[];
-    switch (statusFilter) {
-      case 'accepted':
-        filtered = activeMembers;
-        break;
-      case 'pending':
-        filtered = pendingMembers;
-        break;
-      case 'all':
-        filtered = allMembers;
-        break;
-      default:
-        filtered = activeMembers;
-    }
-    if (debouncedSearchTerm) {
-      const term = debouncedSearchTerm.toLowerCase();
-      filtered = filtered.filter(
-        (m: WorkspaceMember) =>
-          (m.user?.user_metadata?.full_name || '')
-            .toLowerCase()
-            .includes(term) ||
-          (m.user?.email || '').toLowerCase().includes(term),
-      );
-    }
-    return filtered;
-  }, [
-    statusFilter,
-    allMembers,
-    activeMembers,
-    pendingMembers,
-    debouncedSearchTerm,
-  ]);
+  const pendingInvitations: PendingInvitation[] =
+    (pendingInvitationsData?.data as PendingInvitation[]) || [];
+
+  // Unified list: server already filtered both lists, just merge them
+  const unifiedList = useMemo(() => {
+    const unified: UnifiedMember[] = [
+      ...allMembers.map((m) => ({
+        id: m.id,
+        _type: 'member' as const,
+        member_name: m.user?.user_metadata?.full_name || 'Team Member',
+        email: m.user?.email || '',
+        role_name: m.role?.role_name || '',
+        status: m.status,
+        is_primary_contact: m.is_primary_contact,
+        originalData: m,
+      })),
+      ...pendingInvitations.map((i) => ({
+        id: `inv-${i.id}`,
+        _type: 'invitation' as const,
+        member_name: i.email,
+        email: i.email,
+        role_name: i.role?.role_name || '—',
+        status: 'pending',
+        is_primary_contact: false,
+        originalData: i,
+      })),
+    ];
+
+    return unified;
+  }, [allMembers, pendingInvitations]);
 
   const { sortColumn, sortDirection, toggleSort, sortedData } =
-    useTableSort<WorkspaceMember>('team-members', members);
+    useTableSort<UnifiedMember>('team-members', unifiedList);
 
   // Remove member mutation
   const removeMutation = useMutation({
@@ -274,27 +276,6 @@ export default function TeamMembersPage() {
     },
   });
 
-  // ── Pending invitations from workspace_invitations table ──────────────────
-  const { data: pendingInvitationsData, isLoading: isLoadingInvitations } =
-    useQuery({
-      queryKey: ['pendingInvitations', currentWorkspace?.id],
-      queryFn: () => getPendingInvitationsService(currentWorkspace?.id || ''),
-      enabled: !!currentWorkspace?.id && statusFilter === 'pending',
-    });
-
-  const pendingInvitations: PendingInvitation[] =
-    (pendingInvitationsData?.data as PendingInvitation[]) || [];
-
-  const {
-    sortColumn: pendingSortCol,
-    sortDirection: pendingSortDir,
-    toggleSort: togglePendingSort,
-    sortedData: sortedPending,
-  } = useTableSort<PendingInvitation>(
-    'pending-invitations',
-    pendingInvitations,
-  );
-
   // Status items - kept for potential future use with StatusFilterDropdown
   // Currently using filterGroups with ListToolBar instead
   const _memberStatusItems = useMemo(
@@ -305,13 +286,8 @@ export default function TeamMembersPage() {
     [],
   );
 
-  const _memberStatusBreakdown = useMemo(
-    () => ({
-      accepted: { count: activeMembers.length },
-      pending: { count: pendingInvitations.length || pendingMembers.length },
-    }),
-    [activeMembers.length, pendingInvitations.length, pendingMembers.length],
-  );
+
+
 
   const filterGroups = useMemo(() => {
     return [
@@ -424,7 +400,7 @@ export default function TeamMembersPage() {
     <ModuleGuard module="team_members">
       <div className="flex shrink-0 flex-col gap-2 overflow-hidden">
         <PageHeader
-          title={`Members (${statusFilter === 'pending' ? pendingInvitations.length : members.length})`}
+          title={`Members (${unifiedList.length})`}
           description={
             statusFilter === 'pending'
               ? 'Showing pending invitations only'
@@ -507,304 +483,96 @@ export default function TeamMembersPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  {statusFilter === 'pending' ? (
-                    <>
-                      <SortableTableHead
-                        label="Email"
-                        columnId="email"
-                        sortColumn={pendingSortCol}
-                        sortDirection={pendingSortDir}
-                        onSort={togglePendingSort}
-                        sortable={true}
-                        className="relative"
-                        {...getHeaderProps('email')}
-                      >
-                        <span
-                          className="col-resize-handle"
-                          {...getResizeHandleProps('email')}
-                        />
-                      </SortableTableHead>
-                      {isVisible('role') && (
-                        <SortableTableHead
-                          label="Role"
-                          columnId="role"
-                          sortKey="role.role_name"
-                          sortColumn={pendingSortCol}
-                          sortDirection={pendingSortDir}
-                          onSort={togglePendingSort}
-                          sortable={true}
-                          className="relative"
-                          {...getHeaderProps('role')}
-                        >
-                          <span
-                            className="col-resize-handle"
-                            {...getResizeHandleProps('role')}
-                          />
-                        </SortableTableHead>
-                      )}
-                      <SortableTableHead
-                        label="Sent On"
-                        columnId="invited_at"
-                        sortColumn={pendingSortCol}
-                        sortDirection={pendingSortDir}
-                        onSort={togglePendingSort}
-                        sortable={true}
-                        className="relative"
-                        {...getHeaderProps('invited_at')}
-                      >
-                        <span
-                          className="col-resize-handle"
-                          {...getResizeHandleProps('invited_at')}
-                        />
-                      </SortableTableHead>
-                      {isVisible('status') && (
-                        <SortableTableHead
-                          label="Status"
-                          columnId="status"
-                          sortColumn={pendingSortCol}
-                          sortDirection={pendingSortDir}
-                          onSort={togglePendingSort}
-                          sortable={false}
-                          className="relative"
-                          {...getHeaderProps('status')}
-                        >
-                          <span
-                            className="col-resize-handle"
-                            {...getResizeHandleProps('status')}
-                          />
-                        </SortableTableHead>
-                      )}
-                    </>
-                  ) : (
-                    <>
-                      {isVisible('member') && (
-                        <SortableTableHead
-                          label="Member"
-                          columnId="member"
-                          sortKey="user.user_metadata.full_name"
-                          sortColumn={sortColumn}
-                          sortDirection={sortDirection}
-                          onSort={toggleSort}
-                          className="relative"
-                          {...getHeaderProps('member')}
-                        >
-                          <span
-                            className="col-resize-handle"
-                            {...getResizeHandleProps('member')}
-                          />
-                        </SortableTableHead>
-                      )}
-                      {isVisible('email') && (
-                        <SortableTableHead
-                          label="Email"
-                          columnId="email"
-                          sortKey="user.email"
-                          sortColumn={sortColumn}
-                          sortDirection={sortDirection}
-                          onSort={toggleSort}
-                          className="relative"
-                          {...getHeaderProps('email')}
-                        >
-                          <span
-                            className="col-resize-handle"
-                            {...getResizeHandleProps('email')}
-                          />
-                        </SortableTableHead>
-                      )}
-                      {isVisible('role') && (
-                        <SortableTableHead
-                          label="Role"
-                          columnId="role"
-                          sortKey="role.role_name"
-                          sortColumn={sortColumn}
-                          sortDirection={sortDirection}
-                          onSort={toggleSort}
-                          className="relative"
-                          {...getHeaderProps('role')}
-                        >
-                          <span
-                            className="col-resize-handle"
-                            {...getResizeHandleProps('role')}
-                          />
-                        </SortableTableHead>
-                      )}
-                      {isVisible('status') && (
-                        <SortableTableHead
-                          label="Status"
-                          columnId="status"
-                          sortColumn={sortColumn}
-                          sortDirection={sortDirection}
-                          onSort={toggleSort}
-                          className="relative"
-                          {...getHeaderProps('status')}
-                        >
-                          <span
-                            className="col-resize-handle"
-                            {...getResizeHandleProps('status')}
-                          />
-                        </SortableTableHead>
-                      )}
-                      {isVisible('primary_contact') && (
-                        <SortableTableHead
-                          label="Primary Contact"
-                          columnId="primary_contact"
-                          sortKey="is_primary_contact"
-                          sortColumn={sortColumn}
-                          sortDirection={sortDirection}
-                          onSort={toggleSort}
-                          className="relative"
-                          {...getHeaderProps('primary_contact')}
-                        >
-                          <span
-                            className="col-resize-handle"
-                            {...getResizeHandleProps('primary_contact')}
-                          />
-                        </SortableTableHead>
-                      )}
-                    </>
+                  {isVisible('member') && (
+                    <SortableTableHead
+                      label="Member"
+                      columnId="member"
+                      sortKey="member_name"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={toggleSort}
+                      className="relative"
+                      {...getHeaderProps('member')}
+                    >
+                      <span
+                        className="col-resize-handle"
+                        {...getResizeHandleProps('member')}
+                      />
+                    </SortableTableHead>
+                  )}
+                  {isVisible('email') && (
+                    <SortableTableHead
+                      label="Email"
+                      columnId="email"
+                      sortKey="email"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={toggleSort}
+                      className="relative"
+                      {...getHeaderProps('email')}
+                    >
+                      <span
+                        className="col-resize-handle"
+                        {...getResizeHandleProps('email')}
+                      />
+                    </SortableTableHead>
+                  )}
+                  {isVisible('role') && (
+                    <SortableTableHead
+                      label="Role"
+                      columnId="role"
+                      sortKey="role_name"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={toggleSort}
+                      className="relative"
+                      {...getHeaderProps('role')}
+                    >
+                      <span
+                        className="col-resize-handle"
+                        {...getResizeHandleProps('role')}
+                      />
+                    </SortableTableHead>
+                  )}
+                  {isVisible('status') && (
+                    <SortableTableHead
+                      label="Status"
+                      columnId="status"
+                      sortKey="status"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={toggleSort}
+                      className="relative"
+                      {...getHeaderProps('status')}
+                    >
+                      <span
+                        className="col-resize-handle"
+                        {...getResizeHandleProps('status')}
+                      />
+                    </SortableTableHead>
+                  )}
+                  {isVisible('primary_contact') && (
+                    <SortableTableHead
+                      label="Primary Contact"
+                      columnId="primary_contact"
+                      sortKey="is_primary_contact"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={toggleSort}
+                      className="relative"
+                      {...getHeaderProps('primary_contact')}
+                    >
+                      <span
+                        className="col-resize-handle"
+                        {...getResizeHandleProps('primary_contact')}
+                      />
+                    </SortableTableHead>
                   )}
                   <TableHead className="sticky-right-header">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {statusFilter === 'pending' ? (
-                  // ── Pending Invitations Table ─────────────────────────────
-                  isLoadingInvitations ? (
-                    [...Array(5)].map((_, i) => (
-                      <TableRow key={i}>
-                        <TableCell className="h-[52px] px-4 py-2" colSpan={4}>
-                          <Skeleton className="h-7 w-full" />
-                        </TableCell>
-                        <TableCell className="bg-card right-0 px-4 text-right">
-                          <Skeleton className="ml-auto h-7 w-full" />
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  ) : sortedPending.length === 0 ? (
-                    <TableRow>
-                      <TableCell
-                        colSpan={5}
-                        className="text-muted-foreground h-32 text-center"
-                      >
-                        No pending invitations found
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    sortedPending.map((invitation: PendingInvitation) => (
-                      <TableRow
-                        key={invitation.id}
-                        className="hover:bg-muted/50"
-                      >
-                        <TableCell>
-                          <div className="flex items-center gap-3">
-                            <div className="bg-secondary flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold">
-                              {invitation.email.charAt(0).toUpperCase()}
-                            </div>
-                            <span className="primary-text-medium text-leadgaze-primary dark:text-leadgaze-primary">
-                              {invitation.email}
-                            </span>
-                          </div>
-                        </TableCell>
-                        {isVisible('role') && (
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <div
-                                className="h-2 w-2 rounded-full"
-                                style={{
-                                  backgroundColor: getRoleColor(
-                                    invitation.role,
-                                  ),
-                                }}
-                              />
-                              <span className="font-medium">
-                                {invitation.role?.role_name || '—'}
-                              </span>
-                            </div>
-                          </TableCell>
-                        )}
-                        <TableCell className="text-muted-foreground text-sm">
-                          {invitation.invited_at
-                            ? new Date(
-                                invitation.invited_at,
-                              ).toLocaleDateString('en-US', {
-                                year: 'numeric',
-                                month: 'short',
-                                day: 'numeric',
-                              })
-                            : invitation.created_at
-                              ? new Date(
-                                  invitation.created_at,
-                                ).toLocaleDateString('en-US', {
-                                  year: 'numeric',
-                                  month: 'short',
-                                  day: 'numeric',
-                                })
-                              : '—'}
-                        </TableCell>
-                        {isVisible('status') && (
-                          <TableCell>{getStatusBadge('pending')}</TableCell>
-                        )}
-                        <TableCell className="bg-card sticky right-0 px-4 text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() =>
-                                    resendInvitationEmailMutation.mutate(
-                                      invitation.id,
-                                    )
-                                  }
-                                  className="gap-2"
-                                  disabled={
-                                    resendInvitationEmailMutation.isPending
-                                  }
-                                >
-                                  <RotateCcw className="h-4 w-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent side="bottom">
-                                <p>Resend Invitation</p>
-                              </TooltipContent>
-                            </Tooltip>
-                            {canAccess('team_members', 'delete') && (
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => {
-                                      if (
-                                        confirm(
-                                          'Are you sure you want to delete this invitation?',
-                                        )
-                                      ) {
-                                        deleteInvitationMutation.mutate(
-                                          invitation.id,
-                                        );
-                                      }
-                                    }}
-                                    className="text-destructive hover:bg-destructive/10 hover:text-destructive gap-2"
-                                    disabled={
-                                      deleteInvitationMutation.isPending
-                                    }
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent side="bottom">
-                                  <p>Delete Invitation</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )
-                ) : // ── Members Table ──────────────────────────────────────────
-                isLoading ? (
+                {isLoading || isLoadingInvitations ? (
                   [...Array(8)].map((_, i) => (
                     <TableRow key={i}>
                       <TableCell className="h-[52px] px-4 py-2" colSpan={5}>
@@ -825,118 +593,223 @@ export default function TeamMembersPage() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  sortedData.map((member: WorkspaceMember) => (
-                    <TableRow key={member.id} className="hover:bg-muted/50">
-                      {isVisible('member') && (
-                        <TableCell>
-                          <div className="flex items-center gap-3">
-                            <div className="bg-secondary flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold">
-                              {(
-                                member.user?.email?.charAt(0) || 'M'
-                              ).toUpperCase()}
+                  sortedData.map((row: UnifiedMember) => {
+                    if (row._type === 'member') {
+                      const member = row.originalData as WorkspaceMember;
+                      return (
+                        <TableRow key={member.id} className="hover:bg-muted/50">
+                          {isVisible('member') && (
+                            <TableCell>
+                              <div className="flex items-center gap-3">
+                                <div className="bg-secondary flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold">
+                                  {(
+                                    member.user?.email?.charAt(0) || 'M'
+                                  ).toUpperCase()}
+                                </div>
+                                <span className="primary-text-medium text-leadgaze-primary dark:text-leadgaze-primary">
+                                  {row.member_name}
+                                </span>
+                              </div>
+                            </TableCell>
+                          )}
+                          {isVisible('email') && (
+                            <TableCell className="text-muted-foreground text-sm">
+                              {row.email}
+                            </TableCell>
+                          )}
+                          {isVisible('role') && (
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <div
+                                  className="h-2 w-2 rounded-full"
+                                  style={{
+                                    backgroundColor: getRoleColor(member.role),
+                                  }}
+                                />
+                                <span className="font-medium">
+                                  {row.role_name}
+                                </span>
+                              </div>
+                            </TableCell>
+                          )}
+                          {isVisible('status') && (
+                            <TableCell>{getStatusBadge(row.status)}</TableCell>
+                          )}
+                          {isVisible('primary_contact') && (
+                            <TableCell>
+                              {row.is_primary_contact ? (
+                                <Badge variant="secondary">Primary</Badge>
+                              ) : (
+                                <span className="text-muted-foreground/50 text-xs">
+                                  —
+                                </span>
+                              )}
+                            </TableCell>
+                          )}
+                          <TableCell className="bg-card sticky right-0 px-4 text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              {member.status === 'pending' && (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() =>
+                                        handleResendInvitation(member.id)
+                                      }
+                                      className="gap-2"
+                                      disabled={resendMutation.isPending}
+                                    >
+                                      <RotateCcw className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="bottom">
+                                    <p>Resend Invitation</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              )}
+                              {canAccess('team_members', 'edit') && (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleEditMember(member)}
+                                      className="gap-2"
+                                    >
+                                      <Edit2 className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="bottom">
+                                    <p>Edit Member</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              )}
+                              {canAccess('team_members', 'delete') && (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleRemoveMember(member.id)}
+                                      className="text-destructive hover:bg-destructive/10 hover:text-destructive gap-2"
+                                      disabled={removeMutation.isPending}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="bottom">
+                                    <p>Remove Member</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              )}
                             </div>
-                            <span className="primary-text-medium text-leadgaze-primary dark:text-leadgaze-primary">
-                              {member.user?.user_metadata?.full_name ||
-                                'Team Member'}
-                            </span>
-                          </div>
-                        </TableCell>
-                      )}
-                      {isVisible('email') && (
-                        <TableCell className="text-muted-foreground text-sm">
-                          {member.user?.email}
-                        </TableCell>
-                      )}
-                      {isVisible('role') && (
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <div
-                              className="h-2 w-2 rounded-full"
-                              style={{
-                                backgroundColor: getRoleColor(member.role),
-                              }}
-                            />
-                            <span className="font-medium">
-                              {member.role?.role_name}
-                            </span>
-                          </div>
-                        </TableCell>
-                      )}
-                      {isVisible('status') && (
-                        <TableCell>{getStatusBadge(member.status)}</TableCell>
-                      )}
-                      {isVisible('primary_contact') && (
-                        <TableCell>
-                          {member.is_primary_contact ? (
-                            <Badge variant="secondary">Primary</Badge>
-                          ) : (
-                            <span className="text-muted-foreground/50 text-xs">
-                              —
-                            </span>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    } else {
+                      const invitation = row.originalData as PendingInvitation;
+                      return (
+                        <TableRow
+                          key={`inv-${invitation.id}`}
+                          className="hover:bg-muted/50"
+                        >
+                          {isVisible('member') && (
+                            <TableCell>
+                              <div className="flex items-center gap-3">
+                                <div className="bg-secondary flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold">
+                                  {invitation.email.charAt(0).toUpperCase()}
+                                </div>
+                                <span className="primary-text-medium text-leadgaze-primary dark:text-leadgaze-primary">
+                                  {row.member_name}
+                                </span>
+                              </div>
+                            </TableCell>
                           )}
-                        </TableCell>
-                      )}
-                      <TableCell className="bg-card sticky right-0 px-4 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          {member.status === 'pending' && (
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() =>
-                                    handleResendInvitation(member.id)
-                                  }
-                                  className="gap-2"
-                                  disabled={resendMutation.isPending}
-                                >
-                                  <RotateCcw className="h-4 w-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent side="bottom">
-                                <p>Resend Invitation</p>
-                              </TooltipContent>
-                            </Tooltip>
+                          {isVisible('email') && (
+                            <TableCell className="text-muted-foreground text-sm">
+                              {row.email}
+                            </TableCell>
                           )}
-                          {canAccess('team_members', 'edit') && (
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleEditMember(member)}
-                                  className="gap-2"
-                                >
-                                  <Edit2 className="h-4 w-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent side="bottom">
-                                <p>Edit Member</p>
-                              </TooltipContent>
-                            </Tooltip>
+                          {isVisible('role') && (
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <div
+                                  className="h-2 w-2 rounded-full"
+                                  style={{
+                                    backgroundColor: getRoleColor(invitation.role),
+                                  }}
+                                />
+                                <span className="font-medium">
+                                  {row.role_name}
+                                </span>
+                              </div>
+                            </TableCell>
                           )}
-                          {canAccess('team_members', 'delete') && (
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleRemoveMember(member.id)}
-                                  className="text-destructive hover:bg-destructive/10 hover:text-destructive gap-2"
-                                  disabled={removeMutation.isPending}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent side="bottom">
-                                <p>Remove Member</p>
-                              </TooltipContent>
-                            </Tooltip>
+                          {isVisible('status') && (
+                            <TableCell>{getStatusBadge('pending')}</TableCell>
                           )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
+                          {isVisible('primary_contact') && (
+                            <TableCell>
+                              <span className="text-muted-foreground/50 text-xs">—</span>
+                            </TableCell>
+                          )}
+                          <TableCell className="bg-card sticky right-0 px-4 text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() =>
+                                      resendInvitationEmailMutation.mutate(
+                                        invitation.id,
+                                      )
+                                    }
+                                    className="gap-2"
+                                    disabled={resendInvitationEmailMutation.isPending}
+                                  >
+                                    <RotateCcw className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent side="bottom">
+                                  <p>Resend Invitation</p>
+                                </TooltipContent>
+                              </Tooltip>
+                              {canAccess('team_members', 'delete') && (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => {
+                                        if (
+                                          confirm(
+                                            'Are you sure you want to delete this invitation?',
+                                          )
+                                        ) {
+                                          deleteInvitationMutation.mutate(
+                                            invitation.id,
+                                          );
+                                        }
+                                      }}
+                                      className="text-destructive hover:bg-destructive/10 hover:text-destructive gap-2"
+                                      disabled={deleteInvitationMutation.isPending}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="bottom">
+                                    <p>Delete Invitation</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    }
+                  })
                 )}
               </TableBody>
             </Table>

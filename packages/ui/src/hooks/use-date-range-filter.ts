@@ -78,6 +78,11 @@ export function useDateRangeFilter() {
           const lastDay = new Date(today.getFullYear(), today.getMonth(), 0);
           return { from: formatISODate(lastMonth), to: formatISODate(lastDay) };
         }
+        case 'last_six_months': {
+          const firstDay = new Date(today.getFullYear(), today.getMonth() - 5, 1);
+          const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+          return { from: formatISODate(firstDay), to: formatISODate(lastDay) };
+        }
         case 'this_year': {
           const firstDay = new Date(today.getFullYear(), 0, 1);
           const lastDay = new Date(today.getFullYear(), 11, 31);

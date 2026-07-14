@@ -53,6 +53,7 @@ export interface DateRangeValue {
     | 'this_quarter'
     | 'last_quarter'
     | 'last_month'
+    | 'last_six_months'
     | 'this_year'
     | 'last_year'
     | 'custom'
@@ -311,6 +312,7 @@ export const ListToolBar: React.FC<ListToolBarProps> = ({
         this_quarter: 'This Quarter',
         last_quarter: 'Last Quarter',
         last_month: 'Last Month',
+        last_six_months: 'Last Six Months',
         this_year: 'This Year',
         last_year: 'Last Year',
       };
