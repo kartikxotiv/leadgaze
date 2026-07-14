@@ -192,7 +192,7 @@ export function CoreNotesPage({ workspaceId }: CoreNotesPageProps) {
           <DialogHeader>
             <DialogTitle>Add Core Note</DialogTitle>
           </DialogHeader>
-          <div className="grid gap-4">
+          <div className="grid gap-4 px-6">
             <p className="text-muted-foreground text-sm">
               Core notes attach to any feature through an entity type and entity
               id. For example, use `fundraising_deal` with a deal id.
@@ -259,7 +259,7 @@ export function CoreNotesPage({ workspaceId }: CoreNotesPageProps) {
           <DialogHeader>
             <DialogTitle>Edit Note</DialogTitle>
           </DialogHeader>
-          <div className="grid gap-4">
+          <div className="grid gap-4 px-6">
             <Field label="Note">
               <Textarea
                 value={editText}

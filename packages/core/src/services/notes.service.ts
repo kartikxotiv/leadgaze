@@ -2,8 +2,24 @@ import { CoreApiClient } from '../utils';
 import { asyncHandlerClient } from '../utils/async-handler';
 import { entityQuery } from './_entity-query';
 
-export const getNotesService = asyncHandlerClient(async (workspaceId: string, entityType?: string, entityId?: string) => {
-  const res = await CoreApiClient.get(`/notes?${entityQuery(workspaceId, entityType, entityId)}`);
+export const getNotesService = asyncHandlerClient(async (workspaceId: string, entityType?: string, entityId?: string, status?: string, dateRange?: { createdAtFrom?: string; createdAtTo?: string; updatedAtFrom?: string; updatedAtTo?: string }) => {
+  let url = `/notes?${entityQuery(workspaceId, entityType, entityId)}`;
+  if (status) {
+    url += `&status=${status}`;
+  }
+  if (dateRange?.createdAtFrom) {
+    url += `&createdAtFrom=${dateRange.createdAtFrom}`;
+  }
+  if (dateRange?.createdAtTo) {
+    url += `&createdAtTo=${dateRange.createdAtTo}`;
+  }
+  if (dateRange?.updatedAtFrom) {
+    url += `&updatedAtFrom=${dateRange.updatedAtFrom}`;
+  }
+  if (dateRange?.updatedAtTo) {
+    url += `&updatedAtTo=${dateRange.updatedAtTo}`;
+  }
+  const res = await CoreApiClient.get(url);
   return res?.data?.data ?? [];
 });
 

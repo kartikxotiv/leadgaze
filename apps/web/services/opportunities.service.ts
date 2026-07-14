@@ -59,6 +59,12 @@ const getOpportunitiesService = asyncHandlerClient(
     limit?: number;
     searchTerm?: string;
     stageId?: string;
+    sortColumn?: string;
+    sortDirection?: 'asc' | 'desc' | null;
+    createdAtFrom?: string;
+    createdAtTo?: string;
+    updatedAtFrom?: string;
+    updatedAtTo?: string;
   }) => {
     const {
       workspaceId,
@@ -67,8 +73,19 @@ const getOpportunitiesService = asyncHandlerClient(
       limit = 20,
       searchTerm = '',
       stageId = '',
+      sortColumn = '',
+      sortDirection = '',
+      createdAtFrom = '',
+      createdAtTo = '',
+      updatedAtFrom = '',
+      updatedAtTo = '',
     } = params;
-    let url = `/opportunities?workspaceId=${workspaceId}&page=${page}&limit=${limit}&searchTerm=${searchTerm}&stageId=${stageId}`;
+    let url = `/opportunities?workspaceId=${workspaceId}&page=${page}&limit=${limit}&searchTerm=${searchTerm}&stageId=${stageId}&sortColumn=${sortColumn}&sortDirection=${sortDirection || ''}`;
+    
+    if (createdAtFrom) url += `&createdAtFrom=${createdAtFrom}`;
+    if (createdAtTo) url += `&createdAtTo=${createdAtTo}`;
+    if (updatedAtFrom) url += `&updatedAtFrom=${updatedAtFrom}`;
+    if (updatedAtTo) url += `&updatedAtTo=${updatedAtTo}`;
     if (accountId) {
       url += `&accountId=${accountId}`;
     }
@@ -113,6 +130,42 @@ const getOpportunityStatusesService = asyncHandlerClient(
   },
 );
 
+const createOpportunityStageService = asyncHandlerClient(
+  async (payload: {
+    workspace_id: string;
+    status_name: string;
+    color?: string;
+    icon?: string;
+    is_closed?: boolean;
+  }) => {
+    const response = await ApiClient.post('/opportunities/statuses', payload);
+    return response.data?.data;
+  },
+);
+
+const updateOpportunityStageService = asyncHandlerClient(
+  async (
+    stageId: string,
+    payload: {
+      status_name?: string;
+      color?: string;
+      icon?: string;
+      is_closed?: boolean;
+      is_active?: boolean;
+    },
+  ) => {
+    const response = await ApiClient.patch(`/opportunities/statuses/${stageId}`, payload);
+    return response.data?.data;
+  },
+);
+
+const deleteOpportunityStageService = asyncHandlerClient(
+  async (stageId: string) => {
+    const response = await ApiClient.delete(`/opportunities/statuses/${stageId}`);
+    return response.data?.data;
+  },
+);
+
 const deleteOpportunityService = asyncHandlerClient(async (id: string) => {
   const response = await ApiClient.delete(`/opportunities/${id}`);
   return response.data?.data;
@@ -124,5 +177,8 @@ export {
   updateOpportunityService,
   createOpportunityService,
   getOpportunityStatusesService,
+  createOpportunityStageService,
+  updateOpportunityStageService,
+  deleteOpportunityStageService,
   deleteOpportunityService,
 };

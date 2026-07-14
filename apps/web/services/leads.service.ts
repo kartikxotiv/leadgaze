@@ -136,7 +136,13 @@ const getLeadsService = asyncHandlerClient(
     page?: number;
     limit?: number;
     searchTerm?: string;
-    statusId?: string;
+    statusId?: string | string[];
+    sortColumn?: string;
+    sortDirection?: 'asc' | 'desc' | null;
+    createdAtFrom?: string;
+    createdAtTo?: string;
+    updatedAtFrom?: string;
+    updatedAtTo?: string;
   }) => {
     const {
       workspaceId,
@@ -144,9 +150,16 @@ const getLeadsService = asyncHandlerClient(
       limit = 20,
       searchTerm = '',
       statusId = '',
+      sortColumn = '',
+      sortDirection = '',
+      createdAtFrom = '',
+      createdAtTo = '',
+      updatedAtFrom = '',
+      updatedAtTo = '',
     } = params;
+    const statusParam = Array.isArray(statusId) ? statusId.join(',') : statusId;
     const response = await ApiClient.get(
-      `/leads?workspaceId=${workspaceId}&page=${page}&limit=${limit}&searchTerm=${searchTerm}&statusId=${statusId}`,
+      `/leads?workspaceId=${workspaceId}&page=${page}&limit=${limit}&searchTerm=${searchTerm}&statusId=${statusParam}&sortColumn=${sortColumn}&sortDirection=${sortDirection || ''}&createdAtFrom=${createdAtFrom}&createdAtTo=${createdAtTo}&updatedAtFrom=${updatedAtFrom}&updatedAtTo=${updatedAtTo}`,
     );
     // response.data = { message, data: [...], count }
     return {
@@ -208,6 +221,42 @@ const getLeadStatusesService = asyncHandlerClient(
   },
 );
 
+const createLeadStatusService = asyncHandlerClient(
+  async (payload: {
+    workspace_id: string;
+    status_name: string;
+    color?: string;
+    icon?: string;
+    is_closed?: boolean;
+  }) => {
+    const response = await ApiClient.post('/leads/statuses', payload);
+    return response.data?.data;
+  },
+);
+
+const updateLeadStatusService = asyncHandlerClient(
+  async (
+    statusId: string,
+    payload: {
+      status_name?: string;
+      color?: string;
+      icon?: string;
+      is_closed?: boolean;
+      is_active?: boolean;
+    },
+  ) => {
+    const response = await ApiClient.patch(`/leads/statuses/${statusId}`, payload);
+    return response.data?.data;
+  },
+);
+
+const deleteLeadStatusService = asyncHandlerClient(
+  async (statusId: string) => {
+    const response = await ApiClient.delete(`/leads/statuses/${statusId}`);
+    return response.data?.data;
+  },
+);
+
 const updateLeadService = asyncHandlerClient(
   async (leadId: string, payload: UpdateLeadPayload) => {
     const response = await ApiClient.patch(`/leads/${leadId}`, payload);
@@ -259,6 +308,9 @@ export {
   getLeadSourcesService,
   createLeadSourceService,
   getLeadStatusesService,
+  createLeadStatusService,
+  updateLeadStatusService,
+  deleteLeadStatusService,
   updateLeadService,
   deleteLeadService,
   sendLeadEmailService,

@@ -36,7 +36,11 @@ export const getWorkspaceStatus = catchAsync(
         subscription_products (
           id,
           product_key,
-          display_name
+          display_name,
+          monthly_price_per_seat,
+          yearly_price_per_seat,
+          india_monthly_price_per_seat,
+          india_yearly_price_per_seat
         )
       `,
       )

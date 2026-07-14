@@ -3,7 +3,8 @@
 import React, { useState } from 'react';
 
 import { toast } from 'sonner';
-
+import { DateTimePicker } from '@kit/ui/datetime-picker';
+import { format } from 'date-fns';
 import { Button } from '@kit/ui/button';
 import {
   Dialog,
@@ -204,11 +205,10 @@ export function LogCallDialog({
           {/* Call Date/Time */}
           <div className="grid gap-2">
             <Label htmlFor="callDatetime">Date & Time</Label>
-            <Input
-              id="callDatetime"
-              type="datetime-local"
-              value={callDatetime}
-              onChange={(e) => setCallDatetime(e.target.value)}
+            <DateTimePicker
+              showTime
+              value={callDatetime ? new Date(callDatetime) : undefined}
+              onChange={(date) => setCallDatetime(date ? format(date, "yyyy-MM-dd'T'HH:mm") : '')}
             />
           </div>
 

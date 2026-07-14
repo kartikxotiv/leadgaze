@@ -30,7 +30,6 @@ import {
   type WorkspaceSubscriptionStatus,
   getWorkspaceSubscriptionService,
 } from '@kit/core/services';
-import { formatDate } from '@kit/shared/utils';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@kit/ui/card';
@@ -66,6 +65,7 @@ import {
   getWorkspaceSeatsService,
   updateSeatsViaStripeService,
 } from '~/services/subscription.service';
+import { useLocalization } from '@kit/shared/localization';
 
 // ─── Constants ───────────────────────────────────────────────────
 
@@ -157,9 +157,38 @@ function getProductStyle(key: string) {
 
 // ─── Main Page ───────────────────────────────────────────────────
 
-export default function OrgSubscriptionPage() {
-  const { currentWorkspace } = useRBAC();
+function getPriceAndCurrency(
+  product: {
+    monthly_price_per_seat?: number | null;
+    yearly_price_per_seat?: number | null;
+    india_monthly_price_per_seat?: number | null;
+    india_yearly_price_per_seat?: number | null;
+  } | null | undefined,
+  billingCountry: string | null | undefined,
+  billingCycle: 'monthly' | 'yearly',
+) {
+  if (!product) return { price: 0, currencySymbol: '$' };
+  const isIndia = billingCountry === 'IN' || billingCountry?.toLowerCase() === 'india';
+  const price = isIndia
+    ? billingCycle === 'yearly'
+      ? (product.india_yearly_price_per_seat ?? 0)
+      : (product.india_monthly_price_per_seat ?? 0)
+    : billingCycle === 'yearly'
+      ? (product.yearly_price_per_seat ?? 0)
+      : (product.monthly_price_per_seat ?? 0);
+  return { price, currencySymbol: isIndia ? '₹' : '$' };
+}
+
+export default function OrgSubscriptionPage({
+  canManageSubscription: canManageSubscriptionProp,
+}: {
+  canManageSubscription?: boolean;
+} = {}) {
+  const { currentWorkspace, canAccess, isLoading: isRbacLoading } = useRBAC();
   const workspaceId = currentWorkspace?.id ?? '';
+  const canViewSubscription = canAccess('subscription', 'view');
+  const canManageSubscription =
+    canManageSubscriptionProp ?? canAccess('subscription', 'manage');
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
 
@@ -191,6 +220,7 @@ export default function OrgSubscriptionPage() {
     currentSeats: 0,
     newSeats: 0,
   });
+  const [isDirectUpdating, setIsDirectUpdating] = useState(false);
 
   useEffect(() => {
     const checkout = searchParams.get('checkout');
@@ -219,6 +249,7 @@ export default function OrgSubscriptionPage() {
       window.history.replaceState({}, '', '/org/subscription');
     }
   }, [searchParams, workspaceId, queryClient]);
+  const { formatDate } = useLocalization();
 
   const { data: subscriptionStatus } = useQuery<WorkspaceSubscriptionStatus>({
     queryKey: ['workspace-subscription', workspaceId],
@@ -237,6 +268,9 @@ export default function OrgSubscriptionPage() {
     enabled: !!workspaceId,
   });
 
+  const billingCountry = currentWorkspace?.billing_country;
+  const currencySymbol = billingCountry === 'IN' || billingCountry?.toLowerCase() === 'india' ? '₹' : '$';
+
   // Fetch workspace entitlements (free access grants)
   const { data: entitlementsData } = useQuery({
     queryKey: ['workspace-entitlements', workspaceId],
@@ -244,7 +278,10 @@ export default function OrgSubscriptionPage() {
     enabled: !!workspaceId,
   });
 
-  const products: SubscriptionProduct[] = productsData?.data ?? [];
+  const products = useMemo<SubscriptionProduct[]>(
+    () => productsData?.data ?? [],
+    [productsData?.data],
+  );
   const seats: WorkspaceSeat[] = useMemo(
     () =>
       (seatsData?.data ?? []).filter(
@@ -347,10 +384,7 @@ export default function OrgSubscriptionPage() {
         const pending = pendingChanges[seat.product_id] ?? seat.seats_purchased;
         const product = seat.subscription_products;
         if (product) {
-          const price =
-            billingCycle === 'yearly'
-              ? (product.yearly_price_per_seat ?? 0)
-              : (product.monthly_price_per_seat ?? 0);
+          const { price } = getPriceAndCurrency(product, billingCountry, billingCycle);
           monthly += price * pending;
           seatsTotal += pending;
           if (pending !== seat.seats_purchased) {
@@ -365,10 +399,7 @@ export default function OrgSubscriptionPage() {
       )) {
         const product = products.find((p) => p.product_key === productKey);
         if (product) {
-          const price =
-            billingCycle === 'yearly'
-              ? (product.yearly_price_per_seat ?? 0)
-              : (product.monthly_price_per_seat ?? 0);
+          const { price } = getPriceAndCurrency(product, billingCountry, billingCycle);
           monthly += price * seatCount;
           seatsTotal += seatCount;
           newItems.push({ productKey, seats: seatCount });
@@ -388,6 +419,10 @@ export default function OrgSubscriptionPage() {
 
   const checkoutMutation = useMutation({
     mutationFn: () => {
+      if (!canManageSubscription) {
+        throw new Error('You do not have permission to manage subscriptions.');
+      }
+
       const existingItems = seats.map((s) => ({
         productKey: s.subscription_products?.product_key ?? '',
         seats: pendingChanges[s.product_id] ?? s.seats_purchased,
@@ -432,6 +467,11 @@ export default function OrgSubscriptionPage() {
   });
 
   const handleDirectUpdate = async (seatId: string, newQuantity: number) => {
+    if (!canManageSubscription) {
+      toast.error('You do not have permission to manage subscriptions.');
+      return;
+    }
+
     try {
       const result = await updateSeatsViaStripeService(seatId, newQuantity);
       toast.success(
@@ -459,6 +499,8 @@ export default function OrgSubscriptionPage() {
   };
 
   const requestSeatUpdate = (seat: WorkspaceSeat, newQuantity: number) => {
+    if (!canManageSubscription) return;
+
     setSeatUpdateDialog({
       open: true,
       seatId: seat.id,
@@ -469,13 +511,21 @@ export default function OrgSubscriptionPage() {
   };
 
   const updatePending = (productId: string, seats: number) => {
+    if (!canManageSubscription) return;
+
     setPendingChanges((prev) => ({ ...prev, [productId]: seats }));
   };
 
   const hasChanges = changedItems.length > 0 || selectedNewItems.length > 0;
 
   const cancelMutation = useMutation({
-    mutationFn: () => cancelSubscriptionService({ workspaceId }),
+    mutationFn: () => {
+      if (!canManageSubscription) {
+        throw new Error('You do not have permission to manage subscriptions.');
+      }
+
+      return cancelSubscriptionService({ workspaceId });
+    },
     onSuccess: (data) => {
       toast.success(data?.message ?? 'Subscription cancelled.');
       setCancelDialogOpen(false);
@@ -492,8 +542,13 @@ export default function OrgSubscriptionPage() {
   });
 
   const removeModuleMutation = useMutation({
-    mutationFn: (productKey: string) =>
-      cancelSubscriptionService({ workspaceId, productKey }),
+    mutationFn: (productKey: string) => {
+      if (!canManageSubscription) {
+        throw new Error('You do not have permission to manage subscriptions.');
+      }
+
+      return cancelSubscriptionService({ workspaceId, productKey });
+    },
     onSuccess: (data) => {
       toast.success(data?.message ?? 'Module removed from subscription.');
       setRemoveModuleDialog({ open: false, productKey: '', displayName: '' });
@@ -517,10 +572,24 @@ export default function OrgSubscriptionPage() {
     },
   });
 
+  if (isRbacLoading) {
+    return null;
+  }
+
+  if (!canViewSubscription) {
+    return (
+      <Card>
+        <CardContent className="text-muted-foreground p-6 text-sm">
+          You do not have permission to view billing.
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <div className="space-y-6 pb-8">
       {/* Billing cycle toggle — only for trial/new users, not existing subscribers */}
-      {!existingBillingCycle && (
+      {!existingBillingCycle && canManageSubscription && (
         <div className="flex items-center gap-4">
           <span className="text-muted-foreground text-sm font-medium">
             Billing Cycle
@@ -610,6 +679,7 @@ export default function OrgSubscriptionPage() {
               <TableBody>
                 {seats.map((seat) => (
                   <ActiveModuleRow
+                    billingCountry={billingCountry}
                     key={seat.id}
                     seat={seat}
                     workspaceId={workspaceId}
@@ -619,19 +689,22 @@ export default function OrgSubscriptionPage() {
                       pendingChanges[seat.product_id] ?? seat.seats_purchased
                     }
                     billingCycle={billingCycle}
+                    canManageSubscription={canManageSubscription}
                     onPendingChange={(count) =>
                       updatePending(seat.product_id, count)
                     }
                     onDirectUpdate={(count) => requestSeatUpdate(seat, count)}
-                    onRemove={() =>
+                    onRemove={() => {
+                      if (!canManageSubscription) return;
+
                       setRemoveModuleDialog({
                         open: true,
                         productKey:
                           seat.subscription_products?.product_key ?? '',
                         displayName:
                           seat.subscription_products?.display_name ?? 'Module',
-                      })
-                    }
+                      });
+                    }}
                   />
                 ))}
               </TableBody>
@@ -640,10 +713,7 @@ export default function OrgSubscriptionPage() {
             {/* Pricing breakdown rows */}
             {seats.map((seat) => {
               const product = seat.subscription_products;
-              const pricePerSeat =
-                billingCycle === 'yearly'
-                  ? product?.yearly_price_per_seat
-                  : product?.monthly_price_per_seat;
+              const { price: pricePerSeat, currencySymbol } = getPriceAndCurrency(product, billingCountry, billingCycle);
               const pending =
                 pendingChanges[seat.product_id] ?? seat.seats_purchased;
               const displaySeats = isPaid ? seat.seats_purchased : pending;
@@ -652,8 +722,7 @@ export default function OrgSubscriptionPage() {
               if (!pricePerSeat) return null;
 
               return (
-                <PricingBreakdownRow
-                  key={`breakdown-${seat.id}`}
+                <PricingBreakdownRow currencySymbol={currencySymbol} key={`breakdown-${seat.id}`}
                   seat={seat}
                   workspaceId={workspaceId}
                   pricePerSeat={Number(pricePerSeat)}
@@ -783,21 +852,25 @@ export default function OrgSubscriptionPage() {
               </p>
             </div>
           ) : (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 px-1">
+            <div className="grid gap-4 px-1 sm:grid-cols-2 lg:grid-cols-3">
               {availableProducts.map((product) => (
-                <AvailableModuleCard
-                  key={product.id}
+                <AvailableModuleCard billingCountry={billingCountry} key={product.id}
                   product={product}
                   billingCycle={billingCycle}
+                  canManageSubscription={canManageSubscription}
                   isSelected={product.product_key in availableSelections}
                   selectedSeats={availableSelections[product.product_key] ?? 1}
                   onSelect={() => {
+                    if (!canManageSubscription) return;
+
                     setAvailableSelections((prev) => ({
                       ...prev,
                       [product.product_key]: 1,
                     }));
                   }}
                   onDeselect={() => {
+                    if (!canManageSubscription) return;
+
                     setAvailableSelections((prev) => {
                       const next = { ...prev };
                       delete next[product.product_key];
@@ -805,6 +878,8 @@ export default function OrgSubscriptionPage() {
                     });
                   }}
                   onSeatsChange={(seats) => {
+                    if (!canManageSubscription) return;
+
                     setAvailableSelections((prev) => ({
                       ...prev,
                       [product.product_key]: seats,
@@ -818,35 +893,40 @@ export default function OrgSubscriptionPage() {
       )}
 
       {/* Checkout Bar */}
-      {(((!isPaid || isTrial) && seats.length > 0) ||
-        selectedNewItems.length > 0) && (
-        <CheckoutBar
-          totalMonthly={totalMonthly}
-          totalSeats={totalSeats}
-          billingCycle={billingCycle}
-          hasChanges={hasChanges}
-          isTrial={isTrial}
-          isTrialExpired={isTrialExpired}
-          isPending={checkoutMutation.isPending}
-          onCheckout={() => checkoutMutation.mutate()}
-        />
-      )}
+      {canManageSubscription &&
+        (((!isPaid || isTrial) && seats.length > 0) ||
+          selectedNewItems.length > 0) && (
+          <CheckoutBar
+            currencySymbol={currencySymbol}
+            totalMonthly={totalMonthly}
+            totalSeats={totalSeats}
+            billingCycle={billingCycle}
+            hasChanges={hasChanges}
+            isTrial={isTrial}
+            isTrialExpired={isTrialExpired}
+            isPending={checkoutMutation.isPending}
+            onCheckout={() => checkoutMutation.mutate()}
+            isPaid={isPaid}
+          />
+        )}
 
       {/* Cancel Subscription Section (only for paid subscriptions) */}
-      {isPaid && seats.length > 0 && (
+      {canManageSubscription && isPaid && seats.length > 0 && (
         <Card className="border-destructive/20">
-          <CardContent className="flex items-center gap-3 p-6">
-            <div className="bg-destructive/10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full">
-              <AlertTriangle className="text-destructive h-4 w-4" />
-            </div>
-            <div className="flex-1">
-              <h3 className="text-destructive font-semibold">
-                Cancel Subscription
-              </h3>
-              <p className="text-muted-foreground mt-1 text-sm">
-                Cancelling will revoke access to all modules at the end of your
-                current billing period. This action cannot be undone.
-              </p>
+          <CardContent className="flex flex-col md:flex-row items-center justify-between p-6">
+            <div className="flex items-start gap-3 mb-2">
+              <div className="bg-destructive/10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full">
+                <AlertTriangle className="text-destructive h-4 w-4" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-destructive font-semibold">
+                  Cancel Subscription
+                </h3>
+                <p className="text-muted-foreground mt-1 text-sm">
+                  Cancelling will revoke access to all modules at the end of your
+                  current billing period. This action cannot be undone.
+                </p>
+              </div>
             </div>
             <Button
               variant="destructive"
@@ -936,20 +1016,28 @@ export default function OrgSubscriptionPage() {
               Cancel
             </Button>
             <Button
+              disabled={!canManageSubscription || isDirectUpdating}
               onClick={async () => {
-                await handleDirectUpdate(
-                  seatUpdateDialog.seatId,
-                  seatUpdateDialog.newSeats,
-                );
-                setSeatUpdateDialog({
-                  open: false,
-                  seatId: '',
-                  displayName: '',
-                  currentSeats: 0,
-                  newSeats: 0,
-                });
+                if (!canManageSubscription) return;
+                setIsDirectUpdating(true);
+                try {
+                  await handleDirectUpdate(
+                    seatUpdateDialog.seatId,
+                    seatUpdateDialog.newSeats,
+                  );
+                } finally {
+                  setIsDirectUpdating(false);
+                  setSeatUpdateDialog({
+                    open: false,
+                    seatId: '',
+                    displayName: '',
+                    currentSeats: 0,
+                    newSeats: 0,
+                  });
+                }
               }}
             >
+              {isDirectUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Confirm Update
             </Button>
           </DialogFooter>
@@ -1013,7 +1101,7 @@ export default function OrgSubscriptionPage() {
             </Button>
             <Button
               variant="destructive"
-              disabled={cancelMutation.isPending}
+              disabled={cancelMutation.isPending || !canManageSubscription}
               onClick={() => cancelMutation.mutate()}
             >
               {cancelMutation.isPending ? (
@@ -1096,7 +1184,9 @@ export default function OrgSubscriptionPage() {
             </Button>
             <Button
               variant="destructive"
-              disabled={removeModuleMutation.isPending}
+              disabled={
+                removeModuleMutation.isPending || !canManageSubscription
+              }
               onClick={() =>
                 removeModuleMutation.mutate(removeModuleDialog.productKey)
               }
@@ -1176,9 +1266,11 @@ function ActiveModuleRow({
   isTrial,
   pendingSeats,
   billingCycle,
+  canManageSubscription,
   onPendingChange,
   onDirectUpdate,
   onRemove,
+  billingCountry,
 }: {
   seat: WorkspaceSeat;
   workspaceId: string;
@@ -1186,9 +1278,11 @@ function ActiveModuleRow({
   isTrial: boolean;
   pendingSeats: number;
   billingCycle: 'monthly' | 'yearly';
+  canManageSubscription: boolean;
   onPendingChange: (count: number) => void;
   onDirectUpdate: (count: number) => void;
   onRemove: () => void;
+  billingCountry?: string | null;
 }) {
   const [updating, setUpdating] = useState(false);
   const product = seat.subscription_products;
@@ -1199,13 +1293,12 @@ function ActiveModuleRow({
 
   const displaySeats = isPaid ? seat.seats_purchased : pendingSeats;
 
-  const pricePerSeat =
-    billingCycle === 'yearly'
-      ? product?.yearly_price_per_seat
-      : product?.monthly_price_per_seat;
+  const { price: pricePerSeat, currencySymbol } = getPriceAndCurrency(product, billingCountry, billingCycle);
   const total = pricePerSeat ? Number(pricePerSeat) * displaySeats : 0;
 
   const handleIncrement = async () => {
+    if (!canManageSubscription) return;
+
     const newCount = displaySeats + 1;
     if (isPaid && !isTrial) {
       setUpdating(true);
@@ -1220,6 +1313,8 @@ function ActiveModuleRow({
   };
 
   const handleDecrement = async () => {
+    if (!canManageSubscription) return;
+
     if (displaySeats <= 1) return;
     const newCount = displaySeats - 1;
     if (isPaid && !isTrial) {
@@ -1290,7 +1385,7 @@ function ActiveModuleRow({
             variant="outline"
             size="icon"
             className="h-7 w-7"
-            disabled={displaySeats <= 1 || updating}
+            disabled={!canManageSubscription || displaySeats <= 1 || updating}
             onClick={handleDecrement}
           >
             <Minus className="h-3 w-3" />
@@ -1303,7 +1398,7 @@ function ActiveModuleRow({
             variant="outline"
             size="icon"
             className="h-7 w-7"
-            disabled={updating}
+            disabled={!canManageSubscription || updating}
             onClick={handleIncrement}
           >
             <Plus className="h-3 w-3" />
@@ -1318,7 +1413,7 @@ function ActiveModuleRow({
       <TableCell className="text-foreground text-sm whitespace-nowrap">
         {pricePerSeat ? (
           <>
-            <span className="font-semibold">${pricePerSeat}</span>
+            <span className="font-semibold">{currencySymbol}{pricePerSeat}</span>
             <span className="text-muted-foreground text-xs">
               /{billingCycle === 'yearly' ? 'yr' : 'mo'}
             </span>
@@ -1334,14 +1429,14 @@ function ActiveModuleRow({
           <div className="text-foreground text-sm whitespace-nowrap">
             {pricePerSeat ? (
               <>
-                <span className="font-semibold">${total}</span>
+                <span className="font-semibold">{currencySymbol}{total}</span>
                 <span className="text-muted-foreground text-xs">
                   /{billingCycle === 'yearly' ? 'yr' : 'mo'}
                 </span>
               </>
             ) : null}
           </div>
-          {seat.seats_used <= 1 && (
+          {canManageSubscription && seat.seats_used <= 1 && (
             <Button
               type="button"
               variant="ghost"
@@ -1367,6 +1462,7 @@ function PricingBreakdownRow({
   displaySeats,
   billingCycle,
   accentColor,
+  currencySymbol,
 }: {
   seat: WorkspaceSeat;
   workspaceId: string;
@@ -1374,6 +1470,7 @@ function PricingBreakdownRow({
   displaySeats: number;
   billingCycle: 'monthly' | 'yearly';
   accentColor: string;
+  currencySymbol?: string;
 }) {
   const [expanded, setExpanded] = useState(false);
   const period = billingCycle === 'yearly' ? 'yr' : 'mo';
@@ -1386,11 +1483,11 @@ function PricingBreakdownRow({
             className="text-sm font-semibold"
             style={{ color: accentColor }}
           >
-            ${pricePerSeat}/seat/{period}
+            {currencySymbol}{pricePerSeat}/seat/{period}
           </span>
           <span className="text-muted-foreground text-xs">·</span>
           <span className="text-muted-foreground text-xs">
-            {displaySeats} seat{displaySeats !== 1 ? 's' : ''} × ${pricePerSeat}
+            {displaySeats} seat{displaySeats !== 1 ? 's' : ''} × {currencySymbol}{pricePerSeat}
           </span>
         </div>
         <Button
@@ -1426,29 +1523,34 @@ function PricingBreakdownRow({
 function AvailableModuleCard({
   product,
   billingCycle,
+  canManageSubscription,
   isSelected,
   selectedSeats,
   onSelect,
   onDeselect,
   onSeatsChange,
+  billingCountry,
 }: {
   product: SubscriptionProduct;
   billingCycle: 'monthly' | 'yearly';
+  canManageSubscription: boolean;
   isSelected: boolean;
   selectedSeats: number;
   onSelect: () => void;
   onDeselect: () => void;
   onSeatsChange: (seats: number) => void;
+  billingCountry?: string | null;
 }) {
   const style = getProductStyle(product.product_key);
   const icon = PRODUCT_ICONS[product.product_key] ?? (
     <Package className="h-5 w-5" />
   );
 
-  const pricePerSeat =
-    billingCycle === 'yearly'
-      ? product.yearly_price_per_seat
-      : product.monthly_price_per_seat;
+  const { price: pricePerSeat, currencySymbol } = getPriceAndCurrency(
+    product,
+    billingCountry,
+    billingCycle,
+  );
 
   const period = billingCycle === 'yearly' ? 'yr' : 'mo';
 
@@ -1498,7 +1600,7 @@ function AvailableModuleCard({
           {pricePerSeat ? (
             <div className="flex items-baseline gap-0.5">
               <span className="text-foreground text-2xl font-bold">
-                ${pricePerSeat}
+                {currencySymbol}{pricePerSeat}
               </span>
               <span className="text-muted-foreground text-sm">
                 /seat/{period}
@@ -1536,7 +1638,7 @@ function AvailableModuleCard({
                     variant="outline"
                     size="icon"
                     className="h-7 w-7"
-                    disabled={selectedSeats <= 1}
+                    disabled={!canManageSubscription || selectedSeats <= 1}
                     onClick={() =>
                       onSeatsChange(Math.max(1, selectedSeats - 1))
                     }
@@ -1551,6 +1653,7 @@ function AvailableModuleCard({
                     variant="outline"
                     size="icon"
                     className="h-7 w-7"
+                    disabled={!canManageSubscription}
                     onClick={() => onSeatsChange(selectedSeats + 1)}
                   >
                     <Plus className="h-3 w-3" />
@@ -1564,6 +1667,7 @@ function AvailableModuleCard({
                 type="button"
                 variant="destructive"
                 className="w-full gap-2"
+                disabled={!canManageSubscription}
                 onClick={onDeselect}
               >
                 <X className="h-4 w-4" />
@@ -1574,6 +1678,7 @@ function AvailableModuleCard({
                 type="button"
                 className="w-full gap-2"
                 style={{ backgroundColor: style.accentHex }}
+                disabled={!canManageSubscription}
                 onClick={onSelect}
               >
                 <Plus className="h-4 w-4" />
@@ -1602,6 +1707,8 @@ function CheckoutBar({
   isTrialExpired,
   isPending,
   onCheckout,
+  currencySymbol,
+  isPaid,
 }: {
   totalMonthly: number;
   totalSeats: number;
@@ -1611,6 +1718,8 @@ function CheckoutBar({
   isTrialExpired: boolean;
   isPending: boolean;
   onCheckout: () => void;
+  currencySymbol?: string;
+  isPaid: boolean;
 }) {
   const ctaLabel = isTrialExpired
     ? 'Subscribe Now'
@@ -1619,6 +1728,9 @@ function CheckoutBar({
         ? 'Subscribe with Changes'
         : 'Subscribe Now'
       : 'Proceed to Payment';
+
+  const periodLabel = billingCycle === 'yearly' ? 'New Yearly Total' : 'New Monthly Total';
+  const normalPeriodLabel = billingCycle === 'yearly' ? 'Total Yearly' : 'Total Monthly';
 
   return (
     <Card className="sticky bottom-0 z-10 border-t shadow-lg">
@@ -1637,13 +1749,18 @@ function CheckoutBar({
         </div>
 
         <div className="flex items-center gap-6">
-          <div className="flex items-baseline gap-0.5">
-            <span className="text-foreground text-xl font-bold">
-              ${totalMonthly}
+          <div className="flex flex-col items-end mr-2">
+            <span className="text-muted-foreground text-[10px] uppercase tracking-wider font-bold">
+              {isPaid ? periodLabel : normalPeriodLabel}
             </span>
-            <span className="text-muted-foreground text-sm">
-              {billingCycle === 'yearly' ? '/yr' : '/mo'}
-            </span>
+            <div className="flex items-baseline gap-0.5">
+              <span className="text-foreground text-xl font-bold">
+                {currencySymbol}{totalMonthly}
+              </span>
+              <span className="text-muted-foreground text-sm">
+                {billingCycle === 'yearly' ? '/yr' : '/mo'}
+              </span>
+            </div>
           </div>
 
           {isPending ? (

@@ -110,7 +110,7 @@ function PageWithHeader(props: PageProps) {
             parent growing and creating a second scrollbar.
           */}
           <div className={'flex flex-1 flex-col min-h-0 bg-graylight dark:dark-background-color'}>
-            <div className="flex flex-1 flex-col min-h-0 overflow-y-auto px-12 py-4">
+            <div className="flex flex-1 flex-col min-h-0 overflow-y-auto px-6 py-4">
               {Children}
             </div>
           </div>

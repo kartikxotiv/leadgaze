@@ -50,7 +50,10 @@ import {
 } from '../../services/email-templates.service';
 import { ListToolBar } from '@kit/ui/list-toolbar';
 import CustomTableContainer from '@kit/ui/custom-table-container';
-import { formatDate } from '@kit/shared/utils';
+import { useColumnResize } from '@kit/ui/use-column-resize';
+import { useTableSort } from '@kit/ui/use-table-sort';
+import { SortableTableHead } from '@kit/ui/sortable-table-head';
+import { useLocalization } from '@kit/shared/localization';
 
 
 export function CoreEmailTemplatesTab({
@@ -63,6 +66,9 @@ export function CoreEmailTemplatesTab({
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
 
+  const { getHeaderProps, getResizeHandleProps } = useColumnResize('core-email-templates-table');
+  const { formatDate } = useLocalization();
+
   const { data: templates = [], isLoading } = useQuery({
     queryKey: ['core-email-templates', workspaceId],
     queryFn: () => getCoreEmailTemplatesService(workspaceId),
@@ -73,6 +79,11 @@ export function CoreEmailTemplatesTab({
     (template: any) =>
       template.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       template.subject.toLowerCase().includes(searchTerm.toLowerCase()),
+  );
+
+  const { sortColumn, sortDirection, toggleSort, sortedData } = useTableSort<any>(
+    'core-email-templates-table',
+    filteredTemplates
   );
 
   const handleDelete = async (id: number) => {
@@ -114,9 +125,40 @@ export function CoreEmailTemplatesTab({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Subject</TableHead>
-                <TableHead>Updated</TableHead>
+                <SortableTableHead
+                  label="Name"
+                  columnId="name"
+                  sortColumn={sortColumn}
+                  sortDirection={sortDirection}
+                  onSort={toggleSort}
+                  className="relative"
+                  {...getHeaderProps('name')}
+                >
+                  <span className="col-resize-handle" {...getResizeHandleProps('name')} />
+                </SortableTableHead>
+                <SortableTableHead
+                  label="Subject"
+                  columnId="subject"
+                  sortColumn={sortColumn}
+                  sortDirection={sortDirection}
+                  onSort={toggleSort}
+                  sortable={false}
+                  className="relative"
+                  {...getHeaderProps('subject')}
+                >
+                  <span className="col-resize-handle" {...getResizeHandleProps('subject')} />
+                </SortableTableHead>
+                <SortableTableHead
+                  label="Updated"
+                  columnId="updated_at"
+                  sortColumn={sortColumn}
+                  sortDirection={sortDirection}
+                  onSort={toggleSort}
+                  className="relative"
+                  {...getHeaderProps('updated_at')}
+                >
+                  <span className="col-resize-handle" {...getResizeHandleProps('updated_at')} />
+                </SortableTableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -142,7 +184,7 @@ export function CoreEmailTemplatesTab({
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredTemplates.map((template: any) => (
+                sortedData.map((template: any) => (
                   <TableRow key={template.id}>
                     <TableCell className="font-medium">
                       {template.name}
@@ -270,7 +312,7 @@ function CoreTemplateDialog({
               {template ? 'Edit Template' : 'Create Template'}
             </DialogTitle>
           </DialogHeader>
-          <div className="flex-1 space-y-4 overflow-y-auto p-6 pb-8">
+          <div className="flex-1 space-y-4 overflow-y-auto px-6 pb-8">
           <div className="space-y-2">
             <Label>Template Name</Label>
             <Input

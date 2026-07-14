@@ -104,12 +104,42 @@
 }
 
 /* Auth pages input style overrides for dark mode compatibility */
-.auth-card input:not([type="checkbox"]):not([type="radio"]) {
+.auth-card
+  input:not([type='checkbox']):not([type='radio']):not([data-input-otp]) {
   background-color: #ffffff !important;
   color: #0f172a !important;
   border-color: #cbd5e1 !important;
 }
 
-.auth-card input:not([type="checkbox"]):not([type="radio"])::placeholder {
+.auth-card
+  input:not([type='checkbox']):not([type='radio']):not(
+    [data-input-otp]
+  )::placeholder {
   color: #94a3b8 !important;
 }
+
+/* ─── Column resize handle ───────────────────────────────────────────────── */
+/* Parent <th> must have `position: relative` (add className="relative" to  */
+/* each <TableHead> that uses this feature).                                 */
+.col-resize-handle {
+  position: absolute;
+  right: 0;
+  top: 0;
+  height: 100%;
+  width: 5px;
+  cursor: col-resize;
+  background: transparent;
+  transition: background-color 0.15s ease;
+  z-index: 2;
+  touch-action: none;
+  user-select: none;
+}
+
+.col-resize-handle:hover {
+  background-color: color-mix(in srgb, var(--primary) 35%, transparent);
+}
+
+.col-resize-handle:active {
+  background-color: color-mix(in srgb, var(--primary) 65%, transparent);
+}
+

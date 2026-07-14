@@ -34,12 +34,17 @@ import {
 } from '../../services/email-templates.service';
 import { ListToolBar } from '@kit/ui/list-toolbar';
 import CustomTableContainer from '@kit/ui/custom-table-container';
+import { useColumnResize } from '@kit/ui/use-column-resize';
+import { useTableSort } from '@kit/ui/use-table-sort';
+import { SortableTableHead } from '@kit/ui/sortable-table-head';
 
 export function CoreEmailVariablesTab({ workspaceId }: { workspaceId: string }) {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedVariable, setSelectedVariable] = useState<any>(null);
+
+  const { getHeaderProps, getResizeHandleProps } = useColumnResize('core-email-variables-table');
 
   const { data: variables = [], isLoading } = useQuery({
     queryKey: ['core-email-variables', workspaceId],
@@ -51,6 +56,11 @@ export function CoreEmailVariablesTab({ workspaceId }: { workspaceId: string }) 
     (variable: any) =>
       variable.key.toLowerCase().includes(searchTerm.toLowerCase()) ||
       variable.value.toLowerCase().includes(searchTerm.toLowerCase()),
+  );
+
+  const { sortColumn, sortDirection, toggleSort, sortedData } = useTableSort<any>(
+    'core-email-variables-table',
+    filteredVariables
   );
 
   const handleDelete = async (id: number) => {
@@ -92,8 +102,28 @@ export function CoreEmailVariablesTab({ workspaceId }: { workspaceId: string }) 
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Key</TableHead>
-                    <TableHead>Value</TableHead>
+                    <SortableTableHead
+                      label="Key"
+                      columnId="key"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={toggleSort}
+                      className="relative"
+                      {...getHeaderProps('key')}
+                    >
+                      <span className="col-resize-handle" {...getResizeHandleProps('key')} />
+                    </SortableTableHead>
+                    <SortableTableHead
+                      label="Value"
+                      columnId="value"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={toggleSort}
+                      className="relative"
+                      {...getHeaderProps('value')}
+                    >
+                      <span className="col-resize-handle" {...getResizeHandleProps('value')} />
+                    </SortableTableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -119,7 +149,7 @@ export function CoreEmailVariablesTab({ workspaceId }: { workspaceId: string }) 
                       </TableCell>
                     </TableRow>
                   ) : (
-                    filteredVariables.map((variable: any) => (
+                    sortedData.map((variable: any) => (
                       <TableRow key={variable.id}>
                         <TableCell>
                           <code className="bg-muted text-primary rounded px-1.5 py-0.5 text-xs">{`{{${variable.key}}}`}</code>

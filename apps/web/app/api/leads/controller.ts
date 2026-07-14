@@ -5,9 +5,50 @@ import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
 import { Database } from '../../../lib/database.types';
 import {
+  filterLeadForRead,
+  filterLeadsForRead,
+  loadFieldPermissionContext,
+  validateLeadWritePayload,
+} from '../../../lib/field-permission';
+import {
   catchAsync,
   successDataResponse,
 } from '../../../utils/response-handler';
+
+// Direct columns: sorted at DB level via .order()
+const LEAD_DIRECT_SORT_COLUMNS: Record<string, string> = {
+  first_name:   'first_name',
+  last_name:    'last_name',
+  email:        'email',
+  alt_email:    'alt_email',
+  company_name: 'company_name',
+  job_title:    'job_title',
+  department:   'department',
+  location:     'location',
+  trigger:      'trigger',
+  created_at:   'created_at',
+};
+
+// Relational columns: sorted in Node.js after fetch because Supabase's
+// foreignTable in .order() only sorts nested rows, NOT the parent rows.
+// The accessor is a dot-path into the fetched lead object.
+const LEAD_RELATIONAL_SORT_COLUMNS: Record<string, string> = {
+  'status.status_name':      'status.status_name',
+  'source.source_name':      'source.source_name',
+  'industry.industry_name':  'industry.industry_name',
+  'created_by_account.name': 'created_by_account.name',
+  'updated_by_account.name': 'updated_by_account.name',
+  'company_size': 'company_size',
+};
+
+// Helper to read a dot-path value from an object
+const getNestedValue = (obj: Record<string, unknown>, path: string): string => {
+  const value = path.split('.').reduce<unknown>((acc, key) => {
+    if (acc && typeof acc === 'object') return (acc as Record<string, unknown>)[key];
+    return undefined;
+  }, obj);
+  return typeof value === 'string' ? value.toLowerCase() : '';
+};
 
 /**
  * GET /api/leads
@@ -31,6 +72,12 @@ const getLeads = catchAsync(
     const searchTerm = url.searchParams.get('searchTerm') || '';
     const statusId = url.searchParams.get('statusId') || '';
     const debug = url.searchParams.get('debug') === '1';
+    const sortColumn = url.searchParams.get('sortColumn') || '';
+    const sortDirection = url.searchParams.get('sortDirection') || '';
+    const createdAtFrom = url.searchParams.get('createdAtFrom') || '';
+    const createdAtTo = url.searchParams.get('createdAtTo') || '';
+    const updatedAtFrom = url.searchParams.get('updatedAtFrom') || '';
+    const updatedAtTo = url.searchParams.get('updatedAtTo') || '';
 
     if (!workspaceId) {
       return NextResponse.json(
@@ -168,12 +215,22 @@ const getLeads = catchAsync(
     );
 
     if (statusId && statusId !== 'all') {
-      mainQuery = mainQuery.eq('status_id', statusId);
+      const statusIds = statusId.split(',').map((s) => s.trim()).filter(Boolean);
+      if (statusIds.length === 1) {
+        mainQuery = mainQuery.eq('status_id', statusIds[0]);
+      } else if (statusIds.length > 1) {
+        mainQuery = mainQuery.in('status_id', statusIds);
+      }
     }
 
     if (searchTerm) {
       mainQuery = mainQuery.or(buildSearchOrFilter());
     }
+
+    if (createdAtFrom) mainQuery = mainQuery.gte('created_at', `${createdAtFrom}T00:00:00.000Z`);
+    if (createdAtTo) mainQuery = mainQuery.lte('created_at', `${createdAtTo}T23:59:59.999Z`);
+    if (updatedAtFrom) mainQuery = mainQuery.gte('updated_at', `${updatedAtFrom}T00:00:00.000Z`);
+    if (updatedAtTo) mainQuery = mainQuery.lte('updated_at', `${updatedAtTo}T23:59:59.999Z`);
 
     // Pagination
     const from = (page - 1) * limit;
@@ -192,17 +249,47 @@ const getLeads = catchAsync(
       breakdownQuery = breakdownQuery.or(buildSearchOrFilter());
     }
 
+    if (createdAtFrom) breakdownQuery = breakdownQuery.gte('created_at', `${createdAtFrom}T00:00:00.000Z`);
+    if (createdAtTo) breakdownQuery = breakdownQuery.lte('created_at', `${createdAtTo}T23:59:59.999Z`);
+    if (updatedAtFrom) breakdownQuery = breakdownQuery.gte('updated_at', `${updatedAtFrom}T00:00:00.000Z`);
+    if (updatedAtTo) breakdownQuery = breakdownQuery.lte('updated_at', `${updatedAtTo}T23:59:59.999Z`);
+
     // Run main + breakdown queries in parallel
     console.log(
       `[LEADS API] Executing parallel queries for user ${user.id} in workspace ${workspaceId}`,
     );
 
+    const isRelationalSort = !!LEAD_RELATIONAL_SORT_COLUMNS[sortColumn];
+    const isDirectSort = !!LEAD_DIRECT_SORT_COLUMNS[sortColumn];
+
+    // For relational sorts: fetch ALL matching rows (no .range()), sort in Node.js,
+    // then slice. Supabase's foreignTable in .order() only sorts nested children
+    // — it does NOT sort the parent crm_leads rows.
+    // For direct sorts: apply .order() + .range() at DB level (efficient).
+    // For no sort: use default created_at DESC + .range().
+    let finalMainQuery;
+    if (isDirectSort) {
+      finalMainQuery = mainQuery
+        .order(LEAD_DIRECT_SORT_COLUMNS[sortColumn]!, {
+          ascending: sortDirection === 'asc',
+          nullsFirst: false,
+        })
+        .range(from, to);
+    } else if (isRelationalSort) {
+      // No .range() — we need all rows to sort correctly, then slice in Node
+      finalMainQuery = mainQuery.order('created_at', { ascending: false });
+    } else {
+      finalMainQuery = mainQuery
+        .order('created_at', { ascending: false })
+        .range(from, to);
+    }
+
     const [mainResult, breakdownResult] = await Promise.all([
-      mainQuery.order('created_at', { ascending: false }).range(from, to),
+      finalMainQuery,
       breakdownQuery,
     ]);
 
-    const { data: leads, error, count } = mainResult;
+    const { data: leadsRaw, error, count } = mainResult;
     if (error) {
       console.error('Get leads error:', error);
       throw error;
@@ -223,9 +310,36 @@ const getLeads = catchAsync(
       statusBreakdownMap[sid].count += 1;
     });
 
+    const fieldCtx = await loadFieldPermissionContext(supabase, {
+      workspaceId,
+      entityType: 'leads',
+      productKey: 'sales',
+      userId: user.id,
+      moduleKey: 'leads',
+    });
+
+    // For relational sorts: sort in Node.js and slice for current page
+    /* eslint-disable @typescript-eslint/no-explicit-any */
+    let sortedLeads: any[] = leadsRaw || [];
+    if (isRelationalSort && LEAD_RELATIONAL_SORT_COLUMNS[sortColumn]) {
+      const accessor = LEAD_RELATIONAL_SORT_COLUMNS[sortColumn]!;
+      const ascending = sortDirection === 'asc';
+      sortedLeads = [...sortedLeads].sort((a, b) => {
+        const aVal = getNestedValue(a, accessor);
+        const bVal = getNestedValue(b, accessor);
+        if (aVal < bVal) return ascending ? -1 : 1;
+        if (aVal > bVal) return ascending ? 1 : -1;
+        return 0;
+      });
+      sortedLeads = sortedLeads.slice(from, to + 1);
+    }
+    /* eslint-enable @typescript-eslint/no-explicit-any */
+
+    const filteredLeads = filterLeadsForRead(sortedLeads, fieldCtx);
+
     return NextResponse.json({
       message: 'Leads retrieved successfully',
-      data: leads || [],
+      data: filteredLeads,
       count: count || 0,
       statusBreakdown: statusBreakdownMap,
       ...(debug
@@ -305,36 +419,92 @@ const createLead = catchAsync(
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
+    const fieldCtx = await loadFieldPermissionContext(supabase, {
+      workspaceId: workspace_id,
+      entityType: 'leads',
+      productKey: 'sales',
+      userId: user.id,
+      moduleKey: 'leads',
+    });
+
+    const { sanitized, rejected } = validateLeadWritePayload(
+      {
+        first_name,
+        last_name,
+        email,
+        alt_email,
+        phone_number,
+        mobile_number,
+        linkedin_url,
+        company_name,
+        company_website,
+        company_linkedin_url,
+        job_title,
+        department,
+        industry_id,
+        company_size,
+        annual_revenue,
+        location,
+        timezone,
+        status_id,
+        source_id,
+        trigger,
+        lead_score,
+        owner_id,
+        notes,
+        tags,
+        custom_fields,
+      },
+      fieldCtx,
+    );
+
+    if (rejected.length > 0) {
+      return NextResponse.json(
+        {
+          message: 'You do not have permission to set some fields',
+          rejectedFields: rejected,
+        },
+        { status: 403 },
+      );
+    }
+
+    if (!sanitized.first_name || !sanitized.status_id) {
+      return NextResponse.json(
+        { message: 'first_name and status_id are required' },
+        { status: 400 },
+      );
+    }
+
     // Create lead
     const { data: lead, error } = await supabase
       .from('crm_leads')
       .insert({
         workspace_id,
-        first_name,
-        last_name: last_name || null,
-        email: email || null,
-        alt_email: alt_email || null,
-        phone_number: phone_number || null,
-        mobile_number: mobile_number || null,
-        linkedin_url: linkedin_url || null,
-        company_name: company_name || null,
-        company_website: company_website || null,
-        company_linkedin_url: company_linkedin_url || null,
-        job_title: job_title || null,
-        department: department || null,
-        industry_id: industry_id || null,
-        company_size: company_size || null,
-        annual_revenue: annual_revenue || null,
-        location: location || null,
-        timezone: timezone || null,
-        status_id,
-        source_id: source_id || null,
-        trigger: trigger || null,
-        lead_score: lead_score || 0,
-        owner_id: owner_id || null,
-        notes: notes || null,
-        tags: tags || [],
-        custom_fields: custom_fields || {},
+        first_name: sanitized.first_name as string,
+        last_name: (sanitized.last_name as string) || null,
+        email: (sanitized.email as string) || null,
+        alt_email: (sanitized.alt_email as string) || null,
+        phone_number: (sanitized.phone_number as string) || null,
+        mobile_number: (sanitized.mobile_number as string) || null,
+        linkedin_url: (sanitized.linkedin_url as string) || null,
+        company_name: (sanitized.company_name as string) || null,
+        company_website: (sanitized.company_website as string) || null,
+        company_linkedin_url: (sanitized.company_linkedin_url as string) || null,
+        job_title: (sanitized.job_title as string) || null,
+        department: (sanitized.department as string) || null,
+        industry_id: (sanitized.industry_id as string) || null,
+        company_size: (sanitized.company_size as Database['public']['Tables']['crm_leads']['Insert']['company_size']) || null,
+        annual_revenue: (sanitized.annual_revenue as number) || null,
+        location: (sanitized.location as string) || null,
+        timezone: (sanitized.timezone as string) || null,
+        status_id: sanitized.status_id as string,
+        source_id: (sanitized.source_id as string) || null,
+        trigger: (sanitized.trigger as string) || null,
+        lead_score: (sanitized.lead_score as number) || 0,
+        owner_id: (sanitized.owner_id as string) || null,
+        notes: (sanitized.notes as string) || null,
+        tags: (sanitized.tags as string[]) || [],
+        custom_fields: ((sanitized.custom_fields as Record<string, unknown>) || {}) as Database['public']['Tables']['crm_leads']['Insert']['custom_fields'],
         created_by: user.id,
       })
       .select(
@@ -359,7 +529,7 @@ const createLead = catchAsync(
     return NextResponse.json(
       {
         message: 'Lead created successfully',
-        data: lead,
+        data: filterLeadForRead(lead, fieldCtx),
       },
       { status: 201 },
     );
@@ -545,10 +715,202 @@ const createLeadSource = catchAsync(
   },
 );
 
+/**
+ * POST /api/leads/statuses
+ * Create a new lead status
+ */
+const createLeadStatus = catchAsync(
+  async ({
+    request,
+  }: {
+    request: NextRequest;
+    params?: Record<string, string>;
+  }) => {
+    const supabase = getSupabaseServerClient();
+    const body = await request.json();
+    const { workspace_id, status_name, color, icon, is_closed } = body;
+
+    if (!workspace_id || !status_name) {
+      return NextResponse.json(
+        { message: 'workspace_id and status_name are required' },
+        { status: 400 },
+      );
+    }
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { data: moduleData, error: moduleError } = await supabase
+      .from('crm_modules')
+      .select('id')
+      .eq('module_key', 'leads')
+      .single();
+
+    if (moduleError || !moduleData) {
+      console.error('Get module error:', moduleError);
+      return NextResponse.json(
+        { message: 'Failed to retrieve module information' },
+        { status: 500 },
+      );
+    }
+
+    const status_key = status_name
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '');
+
+    // Get highest sort_order
+    const { data: maxSort } = await supabase
+      .from('entity_statuses')
+      .select('sort_order')
+      .eq('workspace_id', workspace_id)
+      .eq('module_id', moduleData.id)
+      .order('sort_order', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const sort_order = (maxSort?.sort_order ?? -1) + 1;
+
+    const { data: statusRecord, error } = await supabase
+      .from('entity_statuses')
+      .insert({
+        workspace_id,
+        module_id: moduleData.id,
+        status_name: status_name.trim(),
+        status_key,
+        color: color || '#3B82F6',
+        icon: icon || null,
+        is_active: true,
+        is_system: false,
+        is_default: false,
+        is_closed: !!is_closed,
+        sort_order,
+        created_by: user.id,
+      })
+      .select('id, status_name, status_key, color, icon, is_closed')
+      .single();
+
+    if (error) {
+      console.error('Create status error:', error);
+      throw error;
+    }
+
+    return successDataResponse('Status created successfully', statusRecord);
+  },
+);
+
+/**
+ * PATCH /api/leads/statuses/[id]
+ * Update a lead status
+ */
+const updateLeadStatus = catchAsync(
+  async ({
+    request,
+    params,
+  }: {
+    request: NextRequest;
+    params?: Record<string, string>;
+  }) => {
+    const supabase = getSupabaseServerClient();
+    const id = params?.id;
+    const body = await request.json();
+    const { status_name, color, icon, is_closed, is_active } = body;
+
+    if (!id) {
+      return NextResponse.json(
+        { message: 'status id is required' },
+        { status: 400 },
+      );
+    }
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    }
+
+    const updateData: any = {};
+    if (status_name !== undefined) {
+      updateData.status_name = status_name.trim();
+      updateData.status_key = status_name
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '');
+    }
+    if (color !== undefined) updateData.color = color;
+    if (icon !== undefined) updateData.icon = icon;
+    if (is_closed !== undefined) updateData.is_closed = is_closed;
+    if (is_active !== undefined) updateData.is_active = is_active;
+    updateData.updated_by = user.id;
+    updateData.updated_at = new Date().toISOString();
+
+    const { data: statusRecord, error } = await supabase
+      .from('entity_statuses')
+      .update(updateData)
+      .eq('id', id)
+      .select('id, status_name, status_key, color, icon, is_closed')
+      .single();
+
+    if (error) {
+      console.error('Update status error:', error);
+      throw error;
+    }
+
+    return successDataResponse('Status updated successfully', statusRecord);
+  },
+);
+
+/**
+ * DELETE /api/leads/statuses/[id]
+ * Delete a lead status
+ */
+const deleteLeadStatus = catchAsync(
+  async ({
+    params,
+  }: {
+    request: NextRequest;
+    params?: Record<string, string>;
+  }) => {
+    const supabase = getSupabaseServerClient();
+    const id = params?.id;
+
+    if (!id) {
+      return NextResponse.json(
+        { message: 'status id is required' },
+        { status: 400 },
+      );
+    }
+
+    const { error } = await supabase
+      .from('entity_statuses')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Delete status error:', error);
+      throw error;
+    }
+
+    return successDataResponse('Status deleted successfully', { id });
+  },
+);
+
 export {
   getLeads,
   createLead,
   getLeadSources,
   getLeadStatuses,
   createLeadSource,
+  createLeadStatus,
+  updateLeadStatus,
+  deleteLeadStatus,
 };

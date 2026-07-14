@@ -58,6 +58,10 @@ import {
   TableRow,
 } from '@kit/ui/table';
 
+import { useLocalization } from '~/lib/localization/localization-provider';
+import { convertFromUSD, findLatestRateToUsd } from '@kit/shared/currency';
+import type { ExchangeRateRecord } from '@kit/shared/currency';
+import { useSupabase } from '@kit/supabase/hooks/use-supabase';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import {
   DashboardMetrics,
@@ -72,8 +76,14 @@ import { OpportunityDialog } from '../opportunities/components/opportunity-dialo
 import { CardWidgetContainer } from '@kit/ui/card-widget-container';
 import { Skeleton } from '@kit/ui/skeleton';
 
-export default function DashboardDemo() {
+export default function DashboardDemo({
+  dateFilter,
+}: {
+  dateFilter?: { from: string | null; to: string | null } | null;
+}) {
   const { currentWorkspace } = useRBAC();
+  const { formatCurrency } = useLocalization();
+  const supabase = useSupabase();
   const workspaceId = currentWorkspace?.id;
 
   const {
@@ -81,10 +91,49 @@ export default function DashboardDemo() {
     isLoading,
     refetch,
   } = useQuery({
-    queryKey: ['dashboard-metrics', workspaceId],
-    queryFn: () => getDashboardMetricsService(workspaceId!),
+    queryKey: ['dashboard-metrics', workspaceId, dateFilter],
+    queryFn: () => getDashboardMetricsService(workspaceId!, dateFilter),
     enabled: !!workspaceId,
   });
+
+  // Fetch workspace currencies
+  const { data: currenciesData } = useQuery({
+    queryKey: ['workspace-currencies', workspaceId],
+    queryFn: async () => {
+      if (!workspaceId) return [];
+      const { data, error } = await supabase
+        .schema('core')
+        .from('workspace_currencies')
+        .select('id, currency_code, is_default')
+        .eq('workspace_id', workspaceId)
+        .eq('is_active', true)
+        .order('is_default', { ascending: false });
+      if (error) return [];
+      return data;
+    },
+    enabled: !!workspaceId,
+  });
+
+  // Fetch exchange rates
+  const { data: exchangeRates = [] } = useQuery({
+    queryKey: ['exchange-rates'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .schema('core')
+        .from('currency_exchange_rates')
+        .select('*')
+        .eq('base_currency', 'USD');
+      if (error) return [];
+      return data;
+    },
+    staleTime: 24 * 60 * 60 * 1000,
+  });
+
+  // Convert pipeline value from USD to workspace currency
+  const workspaceCurrency = currenciesData?.find((c) => c.is_default)?.currency_code || 'USD';
+  const pipelineValueUsd = metrics?.opportunities?.totalAmount ?? 0;
+  const rate = findLatestRateToUsd(exchangeRates as ExchangeRateRecord[], workspaceCurrency)?.exchange_rate || 1;
+  const pipelineValue = convertFromUSD(pipelineValueUsd, rate);
 
   const queryClient = useQueryClient();
   const [isCreateLeadOpen, setIsCreateLeadOpen] = useState(false);
@@ -110,7 +159,7 @@ export default function DashboardDemo() {
   }
 
   return (
-    <div className="animate-in fade-in flex flex-col gap-4 pb-4 duration-500">
+    <div className="animate-in fade-in flex flex-col pb-4 duration-500">
       <div
         className={
           'grid grid-cols-1 gap-4 pb-6 md:grid-cols-2 xl:grid-cols-4 xl:gap-3 xl:pb-4 2xl:grid-cols-4 2xl:gap-4 2xl:pb-6'
@@ -122,7 +171,12 @@ export default function DashboardDemo() {
               <CardTitle className="secondary-text-small text-leadgaze-muted dark:text-white">
                 Total Leads
               </CardTitle>
-              <Figure>{metrics.leads.total}</Figure>
+              <Link
+                href="/home/sales/leads"
+                className="hover:underline"
+              >
+                <Figure>{metrics.leads.total}</Figure>
+              </Link>
             </div>
             <div className="flex h-8 w-8 items-center justify-center rounded bg-primary dark:bg-primary">
               <File className="h-4 w-4 text-white" />
@@ -141,7 +195,12 @@ export default function DashboardDemo() {
               <CardTitle className="secondary-text-small text-leadgaze-muted dark:text-white">
                 Contacts
               </CardTitle>
-              <Figure>{metrics.contacts.total}</Figure>
+              <Link
+                href="/home/sales/contacts"
+                className="hover:underline"
+              >
+                <Figure>{metrics.contacts.total}</Figure>
+              </Link>
             </div>
             <div className="flex h-8 w-8 items-center justify-center rounded bg-activity-5">
               <Users className="h-4 w-4 text-white" />
@@ -160,7 +219,12 @@ export default function DashboardDemo() {
               <CardTitle className="secondary-text-small text-leadgaze-muted dark:text-white">
                 Accounts
               </CardTitle>
-              <Figure>{metrics.accounts.total}</Figure>
+              <Link
+                href="/home/sales/accounts"
+                className="hover:underline"
+              >
+                <Figure>{metrics.accounts.total}</Figure>
+              </Link>
             </div>
             <div className="flex h-8 w-8 items-center justify-center rounded bg-activity-3">
               <Building2 className="h-4 w-4 text-white" />
@@ -179,13 +243,14 @@ export default function DashboardDemo() {
               <CardTitle className="secondary-text-small text-leadgaze-muted dark:text-white">
                 Pipeline Value
               </CardTitle>
-              <Figure>
-                {new Intl.NumberFormat('en-US', {
-                  style: 'currency',
-                  currency: 'USD',
-                  maximumFractionDigits: 0,
-                }).format(metrics.opportunities.totalAmount)}
-              </Figure>
+              <Link
+                href="/home/sales/opportunities"
+                className="hover:underline"
+              >
+                <Figure>
+                  {formatCurrency(pipelineValue, workspaceCurrency)}
+                </Figure>
+              </Link>
             </div>
             <div className="flex h-8 w-8 items-center justify-center rounded bg-activity-4">
               <Target className="h-4 w-4 text-white" />
@@ -299,7 +364,7 @@ export default function DashboardDemo() {
       />
 
       {/* Section 3: Pipeline & Upcoming Tasks */}
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 xl:gap-4 2xl:gap-8">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:gap-4 2xl:gap-4">
         <CardWidgetContainer title="Lead Pipeline">
           <div className="flex-1">
             <PipelineOverview metrics={metrics} />
@@ -337,7 +402,7 @@ function PipelineOverview({ metrics }: { metrics: DashboardMetrics }) {
   const maxValue = Math.max(...stages.map((s) => s.value), 1);
 
   return (
-    <div className="max-h-[400px] space-y-6 p-6 xl:max-h-[300px] xl:space-y-4 xl:p-4 2xl:max-h-[400px] 2xl:space-y-6 2xl:p-6">
+    <div className="max-h-[400px] space-y-6 p-6 xl:max-h-[430px] xl:space-y-4 xl:p-4 2xl:max-h-[440px] 2xl:space-y-6 2xl:p-6 overflow-auto">
       {stages.map((stage, index) => (
         <div key={stage.label} className="flex flex-col gap-1.5">
           <div className="flex justify-between items-center">
@@ -361,6 +426,8 @@ function PipelineOverview({ metrics }: { metrics: DashboardMetrics }) {
 }
 
 function UpcomingTasks({ tasks }: { tasks: DashboardTask[] }) {
+  const { formatDate } = useLocalization();
+
   const formatDueDateShort = (dateString: string) => {
     const date = new Date(dateString);
     const today = new Date();
@@ -380,7 +447,7 @@ function UpcomingTasks({ tasks }: { tasks: DashboardTask[] }) {
     if (dayDiff > 1) return `In ${dayDiff} days`;
     if (dayDiff === -1) return 'Yesterday';
     if (dayDiff < -1) return 'Overdue';
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    return formatDate(dateString);
   };
 
   const getTaskPriority = (task: DashboardTask) => {
@@ -394,7 +461,7 @@ function UpcomingTasks({ tasks }: { tasks: DashboardTask[] }) {
   const latestTasks = useMemo(() => tasks.slice(0, 3), [tasks]);
 
   return (
-    <div className="max-h-[500px] overflow-y-auto xl:max-h-[350px] 2xl:max-h-[500px]">
+    <div className="max-h-[400px] overflow-y-auto xl:max-h-[430px] 2xl:max-h-[440px] overflow-auto">
       {latestTasks.length === 0 ? (
             <div className="flex h-40 flex-col items-center justify-center text-slate-400">
               <FileText className="mb-2 h-8 w-8 opacity-20" />
@@ -647,7 +714,7 @@ function SalesDashboardSkeleton() {
       </div>
 
       {/* Lead Pipeline + Upcoming Tasks */}
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 xl:gap-4 2xl:gap-8">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:gap-4 2xl:gap-4">
         {/* Lead Pipeline skeleton */}
         <Card>
           <CardHeader className="border-b">

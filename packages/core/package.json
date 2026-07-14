@@ -26,6 +26,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@kit/integration-core": "workspace:*",
+    "@kit/integration-google": "workspace:*",
+    "@kit/integration-zoom": "workspace:*",
     "@kit/next": "workspace:*",
     "@kit/shared": "workspace:*",
     "@kit/supabase": "workspace:*",
@@ -33,6 +36,7 @@
     "@kit/ui": "workspace:*",
     "@tanstack/react-query": "5.90.2",
     "axios": "^1.16.1",
+    "date-fns": "^4.1.0",
     "googleapis": "^171.1.0",
     "imapflow": "^1.2.18",
     "lucide-react": "^0.545.0",

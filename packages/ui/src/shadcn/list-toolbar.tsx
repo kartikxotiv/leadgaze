@@ -1,18 +1,30 @@
 'use client';
 
 import * as React from 'react';
+
+import * as ReactDOM from 'react-dom';
+
 import {
-  ChevronLeft,
-  ChevronRight,
+  Check,
+  ChevronDown,
   Filter,
-  Search,
   LucideIcon,
+  Plus,
+  Search,
+  Trash2,
+  X,
 } from 'lucide-react';
 
 import { cn } from '../lib/utils';
 import { Button } from './button';
+import { DateRangePickerPanel } from './date-range-picker-panel';
 import { Input } from './input';
-import { Popover, PopoverContent, PopoverTrigger } from './popover';
+import {
+  Popover,
+  PopoverClose,
+  PopoverContent,
+  PopoverTrigger,
+} from './popover';
 import {
   Tooltip,
   TooltipContent,
@@ -28,15 +40,45 @@ export interface FilterOption {
   value: string;
   label: string;
   color?: string;
+  badge?: React.ReactNode;
+}
+
+export interface DateRangeValue {
+  preset:
+    | 'today'
+    | 'yesterday'
+    | 'last_7_days'
+    | 'this_week'
+    | 'this_month'
+    | 'this_quarter'
+    | 'last_quarter'
+    | 'last_month'
+    | 'last_six_months'
+    | 'this_year'
+    | 'last_year'
+    | 'custom'
+    | null;
+  from: string | null;
+  to: string | null;
 }
 
 export interface FilterGroup {
   key: string;
   label: string;
+  type?: 'options' | 'date';
+
+  // Options fields
   selectedValue?: string;
-  options: FilterOption[];
-  onSelect: (value: string) => void;
+  options?: FilterOption[];
+  onSelect?: (value: string) => void;
   selectedLabel?: string;
+  selectedValues?: string[];
+  onSelectValues?: (values: string[]) => void;
+
+  // Date fields
+  dateValue?: DateRangeValue | null;
+  onDateChange?: (value: DateRangeValue | null) => void;
+  dateLabel?: string;
 }
 
 export interface ToolbarAction {
@@ -46,43 +88,35 @@ export interface ToolbarAction {
   onClick: () => void;
   className?: string;
   show?: boolean;
-  /**
-   * - `'pill'`  → icon + text label (default)
-   * - `'icon'`  → icon-only square button
-   */
   variant?: 'icon' | 'pill';
-  /**
-   * Shadcn Button variant. Defaults to `'outline'`.
-   * Pass `'default'` for the primary-coloured action (e.g. "+ New Lead").
-   */
   buttonVariant?: 'default' | 'outline' | 'secondary' | 'ghost';
-  /** Extra class names forwarded to the Button */
   pillClassName?: string;
 }
 
 export interface ListToolBarProps {
-  // ── Search ─────────────────────────────────────────────────────────────────
   showSearch?: boolean;
   searchPlaceholder?: string;
   searchValue?: string;
   onSearchChange?: (value: string) => void;
-
-  // ── Filter ─────────────────────────────────────────────────────────────────
   showFilter?: boolean;
-  /** Label shown on the filter trigger button. Defaults to "Show Filters". */
   filterLabel?: string;
   filterGroups?: FilterGroup[];
   activeFilterCount?: number;
   onClearFilters?: () => void;
-
-  // ── Actions ────────────────────────────────────────────────────────────────
   actions?: ToolbarAction[];
-
-  // ── Column-visibility slot ─────────────────────────────────────────────────
   columnVisibilitySlot?: React.ReactNode;
-
-  // ── Root ───────────────────────────────────────────────────────────────────
+  statusSlot?: React.ReactNode;
+  align?: 'left' | 'right' | 'full';
   className?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Internal
+// ---------------------------------------------------------------------------
+
+interface FilterRow {
+  id: string;
+  filterGroupKey: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -95,30 +129,251 @@ export const ListToolBar: React.FC<ListToolBarProps> = ({
   searchValue = '',
   onSearchChange,
   showFilter = false,
-  filterLabel = 'Show Filters',
+  filterLabel: _filterLabel = 'Show Filters',
   filterGroups = [],
   activeFilterCount = 0,
   onClearFilters,
   actions = [],
   columnVisibilitySlot,
+  statusSlot,
+  align,
   className,
 }) => {
   const [isFilterOpen, setIsFilterOpen] = React.useState(false);
-  const [filterView, setFilterView] = React.useState<string>('main');
+
+  // ── Filter rows ──────────────────────────────────────────────────────────
+  const [filterRows, setFilterRows] = React.useState<FilterRow[]>([]);
+  const [openValueDropdown, setOpenValueDropdown] = React.useState<
+    string | null
+  >(null);
+  const [valueSearchTerm, setValueSearchTerm] = React.useState('');
+  const rowIdCounter = React.useRef(0);
+  const initialisedRef = React.useRef(false);
+  const [dropdownPos, setDropdownPos] = React.useState<{
+    top: number;
+    left: number;
+    width: number;
+  } | null>(null);
+
+  React.useEffect(() => {
+    if (isFilterOpen && !initialisedRef.current && filterGroups.length > 0) {
+      initialisedRef.current = true;
+
+      const activeGroups = filterGroups.filter((g) => {
+        if (g.type === 'date') return !!g.dateValue;
+        if (g.selectedValues) return g.selectedValues.length > 0;
+        return !!g.selectedValue;
+      });
+
+      if (activeGroups.length > 0) {
+        rowIdCounter.current = activeGroups.length;
+        setFilterRows(
+          activeGroups.map((g, index) => ({
+            id: `row-${index}`,
+            filterGroupKey: g.key,
+          })),
+        );
+      } else {
+        // No active filters - show one empty row by default
+        rowIdCounter.current = 1;
+        setFilterRows([
+          {
+            id: 'row-0',
+            filterGroupKey: '', // No field selected
+          },
+        ]);
+      }
+    }
+    if (!isFilterOpen) {
+      initialisedRef.current = false;
+      setOpenValueDropdown(null);
+      setValueSearchTerm('');
+    }
+  }, [isFilterOpen, filterGroups]);
+
+  // No global pointerdown listener — we use a transparent backdrop overlay
+  // instead, which avoids interfering with Radix Popover's event handling.
+
+  const addFilterRow = () => {
+    rowIdCounter.current++;
+    setFilterRows((prev) => [
+      ...prev,
+      {
+        id: `row-${rowIdCounter.current}`,
+        filterGroupKey: '', // Default to no field selected
+      },
+    ]);
+  };
+
+  const removeFilterRow = (rowId: string) => {
+    const row = filterRows.find((r) => r.id === rowId);
+    if (row) {
+      clearRowValues(row);
+    }
+    setFilterRows((prev) => prev.filter((r) => r.id !== rowId));
+  };
+
+  const updateFilterRowGroup = (rowId: string, groupKey: string) => {
+    // Find the current row to get the previous group
+    const currentRow = filterRows.find((r) => r.id === rowId);
+    if (currentRow && currentRow.filterGroupKey !== groupKey) {
+      // Clear values from the previous group if switching fields
+      const previousGroup = filterGroups.find(
+        (g) => g.key === currentRow.filterGroupKey,
+      );
+      if (previousGroup) {
+        if (previousGroup.type === 'date') {
+          previousGroup.onDateChange?.(null);
+        } else if (
+          previousGroup.selectedValues &&
+          previousGroup.onSelectValues
+        ) {
+          previousGroup.onSelectValues([]);
+        } else if (previousGroup.onSelect) {
+          previousGroup.onSelect('');
+        }
+      }
+    }
+
+    setFilterRows((prev) =>
+      prev.map((r) =>
+        r.id === rowId ? { ...r, filterGroupKey: groupKey } : r,
+      ),
+    );
+    setOpenValueDropdown(null);
+  };
+
+  const toggleValue = (row: FilterRow, value: string) => {
+    const group = filterGroups.find((g) => g.key === row.filterGroupKey);
+    if (!group || group.type === 'date') return;
+    if (group.selectedValues && group.onSelectValues) {
+      const next = group.selectedValues.includes(value)
+        ? group.selectedValues.filter((v) => v !== value)
+        : [...group.selectedValues, value];
+      group.onSelectValues(next);
+    } else if (group.onSelect) {
+      const isSelected = group.selectedValue === value;
+      group.onSelect(isSelected ? '' : value);
+    }
+    // Close dropdown on selection based on user requirement
+    setOpenValueDropdown(null);
+    setDropdownPos(null);
+    setValueSearchTerm('');
+  };
+
+  const selectAllValues = (row: FilterRow) => {
+    const group = filterGroups.find((g) => g.key === row.filterGroupKey);
+    if (group?.type === 'date') return;
+    if (group?.selectedValues && group.onSelectValues && group.options) {
+      group.onSelectValues(group.options.map((o) => o.value));
+    }
+  };
+
+  const clearRowValues = (row: FilterRow) => {
+    const group = filterGroups.find((g) => g.key === row.filterGroupKey);
+    if (group) {
+      if (group.type === 'date') {
+        group.onDateChange?.(null);
+      } else if (group.selectedValues && group.onSelectValues) {
+        group.onSelectValues([]);
+      } else if (group.onSelect) {
+        group.onSelect('');
+      }
+    }
+    // Clear the field selection (reset to no field selected)
+    updateFilterRowGroup(row.id, '');
+  };
+
+  const getGroupForRow = (row: FilterRow) =>
+    filterGroups.find((g) => g.key === row.filterGroupKey);
+
+  const getValueTriggerLabel = (group: FilterGroup | undefined): string => {
+    if (!group) return 'Select option';
+    if (group.type === 'date') {
+      if (!group.dateValue) return 'Select date';
+      if (group.dateValue.preset === 'custom') {
+        const from = group.dateValue.from
+          ? new Date(group.dateValue.from).toLocaleDateString()
+          : '';
+        const to = group.dateValue.to
+          ? new Date(group.dateValue.to).toLocaleDateString()
+          : '';
+        if (from && to && from !== to) return `${from} - ${to}`;
+        return from || to || 'Select date';
+      }
+      const presets: Record<string, string> = {
+        today: 'Today',
+        yesterday: 'Yesterday',
+        last_7_days: 'Last 7 Days',
+        this_week: 'This Week',
+        this_month: 'This Month',
+        this_quarter: 'This Quarter',
+        last_quarter: 'Last Quarter',
+        last_month: 'Last Month',
+        last_six_months: 'Last Six Months',
+        this_year: 'This Year',
+        last_year: 'Last Year',
+      };
+      return presets[group.dateValue.preset || ''] || 'Select date';
+    }
+
+    if (group.selectedValues && group.options) {
+      if (group.selectedValues.length === 0) return 'Select option';
+      if (group.selectedValues.length === 1) {
+        const opt = group.options.find(
+          (o) => o.value === group.selectedValues![0],
+        );
+        return opt?.label ?? '1 selected';
+      }
+      return `${group.selectedValues.length} selected`;
+    }
+    if (group.selectedValue && group.options) {
+      const opt = group.options.find((o) => o.value === group.selectedValue);
+      return opt?.label ?? '1 selected';
+    }
+    return 'Select option';
+  };
 
   const handleFilterOpenChange = (open: boolean) => {
     setIsFilterOpen(open);
-    if (!open) setFilterView('main');
+    if (!open) {
+      setOpenValueDropdown(null);
+      setValueSearchTerm('');
+    }
   };
 
-  const activeGroup = filterGroups.find((g) => g.key === filterView);
+  const handleClearAll = () => {
+    onClearFilters?.();
+    // Clear all values
+    filterGroups.forEach((g) => {
+      if (g.type === 'date') {
+        g.onDateChange?.(null);
+      } else if (g.selectedValues && g.onSelectValues) {
+        g.onSelectValues([]);
+      } else {
+        g.onSelect?.('');
+      }
+    });
+    // Clear all filter rows (field selections)
+    setFilterRows([]);
+  };
+
   const visibleActions = actions.filter((a) => a.show !== false);
+
+  const isFullWidth = align === 'full' || (!align && showSearch);
+  const isRightAligned = align === 'right';
 
   return (
     <TooltipProvider>
-      <div className={cn('flex w-full items-center gap-2 bg-white p-2 border-light-gray border-1 dark:dark-theme-color', className)}>
-
-        {/* ── Search: always visible, stretches to fill available space ───── */}
+      <div
+        className={cn(
+          'border-light-gray dark:dark-theme-color flex items-center gap-2 border-1 bg-white p-2',
+          isFullWidth ? 'w-full' : 'w-auto',
+          isRightAligned && 'ml-auto',
+          className,
+        )}
+      >
+        {/* ── Search ────────────────────────────────────────────────────────── */}
         {showSearch && (
           <div className="relative min-w-0 flex-1">
             <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
@@ -131,7 +386,7 @@ export const ListToolBar: React.FC<ListToolBarProps> = ({
           </div>
         )}
 
-        {/* ── Filter button ────────────────────────────────────────────────── */}
+        {/* ── Filter button + popover ──────────────────────────────────────── */}
         {showFilter && (
           <Popover open={isFilterOpen} onOpenChange={handleFilterOpenChange}>
             <PopoverTrigger asChild>
@@ -144,7 +399,6 @@ export const ListToolBar: React.FC<ListToolBarProps> = ({
                 aria-label="Open filters"
               >
                 <Filter className="h-4 w-4 text-gray-500 dark:text-white" />
-                <span className="hidden sm:inline">{filterLabel}</span>
                 {activeFilterCount > 0 && (
                   <span className="ml-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#4eacff] text-[10px] font-bold text-white">
                     {activeFilterCount}
@@ -153,113 +407,227 @@ export const ListToolBar: React.FC<ListToolBarProps> = ({
               </Button>
             </PopoverTrigger>
 
-            <PopoverContent className="w-80 p-0" align="end">
-              {/* Header */}
-              <div className="flex items-center justify-between border-b px-4 py-3">
-                <div className="flex items-center gap-2">
-                  {filterView !== 'main' && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 w-8 p-0 border-light-gray"
-                      onClick={() => setFilterView('main')}
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                    </Button>
-                  )}
-                  <span className="primary-text-medium">
-                    {filterView === 'main'
-                      ? 'Filters'
-                      : activeGroup?.label ?? 'Filter'}
+            <PopoverContent
+              className="max-h-[420px] w-[460px] overflow-y-auto p-0"
+              align="end"
+              onOpenAutoFocus={(e) => e.preventDefault()}
+              onPointerDownOutside={(e) => {
+                const target = e.target as HTMLElement;
+                if (
+                  target.closest('[data-value-portal]') ||
+                  target.closest('[data-value-backdrop]') ||
+                  target.closest('[data-filter-portal]')
+                ) {
+                  e.preventDefault();
+                }
+              }}
+              onInteractOutside={(e) => {
+                const target = e.target as HTMLElement;
+                if (
+                  target.closest('[data-value-portal]') ||
+                  target.closest('[data-value-backdrop]') ||
+                  target.closest('[data-filter-portal]')
+                ) {
+                  e.preventDefault();
+                }
+              }}
+            >
+              {/* ── Header ──────────────────────────────────────────────── */}
+              <div className="sticky top-0 z-10 flex items-center justify-between border-b bg-white px-4 py-3 dark:bg-gray-900">
+                <span className="primary-text-medium">Filters</span>
+                {activeFilterCount > 0 && (
+                  <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[#4eacff] px-1.5 text-[10px] font-bold text-white">
+                    {activeFilterCount}
                   </span>
-                </div>
-                <button
-                  className="text-muted-foreground hover:text-foreground text-xs underline"
-                  onClick={() => {
-                    onClearFilters?.();
-                    filterGroups.forEach((g) => g.onSelect(''));
-                  }}
-                >
-                  Clear all
-                </button>
+                )}
               </div>
 
-              {/* Body */}
+              {/* ── Filter rows ───────────────────────────────────────── */}
               <div className="p-2">
-                {/* Main view */}
-                {filterView === 'main' && filterGroups.length > 0 && (
-                  <div className="flex flex-col gap-1">
-                    {filterGroups.map((group) => (
-                      <button
-                        key={group.key}
-                        className="hover:bg-muted/50 flex w-full items-center justify-between rounded-md p-3 text-left text-sm font-medium transition-colors"
-                        onClick={() => setFilterView(group.key)}
-                      >
-                        <div className="flex flex-col gap-1">
-                          <span>{group.label}</span>
-                          <span className="text-muted-foreground primary-text-medium">
-                            {group.selectedLabel ?? 'All'}
-                          </span>
-                        </div>
-                        <ChevronRight className="h-4 w-4 text-gray-400" />
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                {/* Sub-view */}
-                {filterView !== 'main' && activeGroup && (
-                  <div className="flex flex-col gap-1 p-1">
-                    {activeGroup.options.map((option) => {
-                      const isSelected =
-                        activeGroup.selectedValue === option.value;
-                      return (
-                        <div
-                          key={option.value}
-                          className="hover:bg-muted/80 flex cursor-pointer items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors"
-                          onClick={() =>
-                            activeGroup.onSelect(
-                              isSelected ? '' : option.value,
-                            )
-                          }
-                        >
-                          <div
-                            className={cn(
-                              'flex h-4 w-4 shrink-0 items-center justify-center rounded-full border',
-                              isSelected
-                                ? 'border-black bg-transparent dark:border-white'
-                                : 'border-black/20 bg-transparent dark:border-white/30',
-                            )}
-                          >
-                            {isSelected && (
-                              <div className="h-2 w-2 rounded-full bg-black dark:bg-white" />
-                            )}
-                          </div>
-                          {option.color && (
-                            <div
-                              className="h-2 w-2 shrink-0 rounded-full"
-                              style={{ backgroundColor: option.color }}
-                            />
-                          )}
-                          <span className="truncate primary-text-medium dark:text-white">
-                            {option.label}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-
-                {/* Empty state */}
-                {filterView === 'main' && filterGroups.length === 0 && (
-                  <p className="text-muted-foreground px-3 py-4 text-center primary-text-medium">
-                    No filters available.
+                {filterRows.length === 0 && (
+                  <p className="text-muted-foreground px-3 py-4 text-center text-sm">
+                    No filters added.
                   </p>
                 )}
+
+                {filterRows.map((row) => {
+                  const group = getGroupForRow(row);
+                  const isValueOpen = openValueDropdown === row.id;
+                  const triggerLabel = getValueTriggerLabel(group);
+
+                  return (
+                    <div key={row.id} className="mb-2">
+                      <div className="flex items-center gap-1.5">
+                        {/* ── Field selector ──────────────────────────── */}
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-8 w-[130px] shrink-0 justify-between gap-1 text-xs font-medium"
+                            >
+                              <span className="truncate">
+                                {group?.label ?? 'Filter'}
+                              </span>
+                              <ChevronDown className="h-3 w-3 shrink-0 opacity-50" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent
+                            className="w-48 p-1"
+                            align="start"
+                            onOpenAutoFocus={(e) => e.preventDefault()}
+                            data-filter-portal
+                          >
+                            {filterGroups.length >= 1 && (
+                              <div className="px-1 pb-1">
+                                <Input
+                                  placeholder="Search…"
+                                  className="h-7 w-full text-xs"
+                                  onChange={(e) => {
+                                    const term = e.target.value.toLowerCase();
+                                    const container = e.currentTarget.closest(
+                                      '[data-filter-portal]',
+                                    );
+                                    if (!container) return;
+                                    container
+                                      .querySelectorAll<HTMLButtonElement>(
+                                        '[data-filter-group-option]',
+                                      )
+                                      .forEach((btn) => {
+                                        const label =
+                                          btn.getAttribute('data-label') ?? '';
+                                        btn.style.display = label
+                                          .toLowerCase()
+                                          .includes(term)
+                                          ? ''
+                                          : 'none';
+                                      });
+                                  }}
+                                />
+                              </div>
+                            )}
+                            {filterGroups.map((g) => (
+                              <PopoverClose asChild key={g.key}>
+                                <button
+                                  data-filter-group-option
+                                  data-label={g.label}
+                                  className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-800"
+                                  onClick={() =>
+                                    updateFilterRowGroup(row.id, g.key)
+                                  }
+                                >
+                                  {row.filterGroupKey === g.key && (
+                                    <Check className="h-3 w-3 shrink-0" />
+                                  )}
+                                  <span
+                                    className={cn(
+                                      'truncate text-[12px] font-medium',
+                                      row.filterGroupKey !== g.key && 'pl-5',
+                                    )}
+                                  >
+                                    {g.label}
+                                  </span>
+                                </button>
+                              </PopoverClose>
+                            ))}
+                          </PopoverContent>
+                        </Popover>
+
+                        {/* ── Operator ──────────────────────────────── */}
+                        <span className="shrink-0 text-xs text-gray-500">
+                          Is
+                        </span>
+
+                        {/* ── Value selector ────────────────────────── */}
+                        <div className="min-w-0 flex-1">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            data-value-trigger={row.id}
+                            className={cn(
+                              'h-8 w-full justify-between gap-1 text-xs',
+                              isValueOpen && 'ring-1 ring-gray-300',
+                            )}
+                            onPointerDown={(e) => e.stopPropagation()}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (isValueOpen) {
+                                setOpenValueDropdown(null);
+                                setValueSearchTerm('');
+                                setDropdownPos(null);
+                              } else {
+                                const rect =
+                                  e.currentTarget.getBoundingClientRect();
+                                setDropdownPos({
+                                  top: rect.bottom + 4,
+                                  left: rect.left,
+                                  width: Math.max(rect.width, 220),
+                                });
+                                setOpenValueDropdown(row.id);
+                                setValueSearchTerm('');
+                              }
+                            }}
+                          >
+                            <span className="truncate text-left">
+                              {triggerLabel}
+                            </span>
+                            <ChevronDown className="h-3 w-3 shrink-0 opacity-50" />
+                          </Button>
+                        </div>
+
+                        {/* ── Clear values ──────────────────────────── */}
+                        <button
+                          className="shrink-0 rounded p-1 text-gray-400 hover:text-gray-600"
+                          onClick={() => clearRowValues(row)}
+                          title="Clear"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+
+                        {/* ── Remove row ────────────────────────────── */}
+                        <button
+                          className="shrink-0 rounded p-1 text-gray-400 hover:text-red-500"
+                          onClick={() => removeFilterRow(row.id)}
+                          title="Remove filter"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
+
+              {/* ── Add filter button ──────────────────────────────────── */}
+              {filterGroups.length > 0 && (
+                <div className="sticky bottom-0 z-10 border-t bg-white p-2 dark:bg-gray-900">
+                  <button
+                    className="flex w-full items-center gap-1.5 rounded-sm px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
+                    onClick={addFilterRow}
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    <span>Add filter</span>
+                  </button>
+                </div>
+              )}
+
+              {/* ── Clear all ───────────────────────────────────────────── */}
+              {activeFilterCount > 0 && (
+                <div className="sticky bottom-0 z-10 border-t bg-white px-4 py-2 dark:bg-gray-900">
+                  <button
+                    className="text-xs text-gray-500 underline hover:text-gray-700"
+                    onClick={handleClearAll}
+                  >
+                    Clear all
+                  </button>
+                </div>
+              )}
             </PopoverContent>
           </Popover>
         )}
+
+        {/* ── Status filter slot ────────────────────────────────────────────── */}
+        {statusSlot}
 
         {/* ── Action buttons ───────────────────────────────────────────────── */}
         {visibleActions.map((action) => {
@@ -280,14 +648,11 @@ export const ListToolBar: React.FC<ListToolBarProps> = ({
                     action.pillClassName,
                     action.className,
                     'primary-text-medium dark:text-white',
-                    'h-9'
+                    'h-9',
                   )}
                   aria-label={action.label}
                 >
                   <Icon className="h-4 w-4" />
-                  {!isIconOnly && (
-                    <span className="hidden sm:inline">{action.label}</span>
-                  )}
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="bottom">
@@ -300,6 +665,134 @@ export const ListToolBar: React.FC<ListToolBarProps> = ({
         {/* ── Column visibility slot ───────────────────────────────────────── */}
         {columnVisibilitySlot}
       </div>
+
+      {/* ── Portal-rendered value dropdown (escapes PopoverContent overflow) ── */}
+      {openValueDropdown && dropdownPos
+        ? (() => {
+            const activeRow = filterRows.find(
+              (r) => r.id === openValueDropdown,
+            );
+            if (!activeRow) return null;
+            const activeGroup = getGroupForRow(activeRow);
+            if (!activeGroup) return null;
+            const isMulti = !!activeGroup.selectedValues;
+            const filtered = (activeGroup.options || []).filter((opt) =>
+              opt.label.toLowerCase().includes(valueSearchTerm.toLowerCase()),
+            );
+
+            return ReactDOM.createPortal(
+              <>
+                {/* Transparent backdrop — catches outside clicks to close dropdown */}
+                <div
+                  data-value-backdrop
+                  style={{
+                    position: 'fixed',
+                    inset: 0,
+                    zIndex: 9998,
+                  }}
+                  onClick={() => {
+                    setOpenValueDropdown(null);
+                    setValueSearchTerm('');
+                    setDropdownPos(null);
+                  }}
+                />
+                {/* Dropdown panel */}
+                <div
+                  data-value-portal
+                  style={{
+                    position: 'fixed',
+                    top: dropdownPos.top,
+                    left: dropdownPos.left,
+                    minWidth: dropdownPos.width,
+                    zIndex: 9999,
+                  }}
+                  className="rounded-md border bg-white shadow-lg dark:bg-gray-900"
+                >
+                  {/* Search */}
+                  {activeGroup.type === 'date' ? (
+                    <DateRangePickerPanel
+                      value={activeGroup.dateValue || null}
+                      onChange={(val) => {
+                        activeGroup.onDateChange?.(val);
+                        setOpenValueDropdown(null);
+                        setDropdownPos(null);
+                      }}
+                      onClose={() => {
+                        setOpenValueDropdown(null);
+                        setDropdownPos(null);
+                      }}
+                    />
+                  ) : (
+                    <>
+                      <div className="p-2">
+                        <input
+                          type="text"
+                          placeholder="Search…"
+                          value={valueSearchTerm}
+                          onChange={(e) => setValueSearchTerm(e.target.value)}
+                          className="h-7 w-full rounded border border-gray-200 px-2 text-xs outline-none focus:ring-1 focus:ring-gray-300"
+                          autoFocus
+                        />
+                      </div>
+
+                      {/* Select All (multi-select only) */}
+                      {isMulti && (
+                        <div className="px-2 pb-1">
+                          <button
+                            className="text-xs text-blue-600 hover:underline"
+                            onClick={() => selectAllValues(activeRow)}
+                          >
+                            Select All
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Options list */}
+                      <div className="max-h-[200px] overflow-y-auto px-1 pb-1">
+                        {filtered.length === 0 && (
+                          <p className="px-2 py-3 text-center text-xs text-gray-400">
+                            No options
+                          </p>
+                        )}
+                        {filtered.map((opt) => {
+                          const isSelected = isMulti
+                            ? activeGroup.selectedValues!.includes(opt.value)
+                            : activeGroup.selectedValue === opt.value;
+
+                          return (
+                            <button
+                              key={opt.value}
+                              className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-xs hover:bg-gray-100 dark:hover:bg-gray-800"
+                              onClick={() => toggleValue(activeRow, opt.value)}
+                            >
+                              {/* Color dot */}
+                              {opt.color && (
+                                <span
+                                  className="h-2.5 w-2.5 shrink-0 rounded-full"
+                                  style={{ backgroundColor: opt.color }}
+                                />
+                              )}
+                              <span className="flex-1 truncate">
+                                {opt.label}
+                              </span>
+                              {opt.badge && (
+                                <span className="shrink-0">{opt.badge}</span>
+                              )}
+                              {isSelected && (
+                                <Check className="h-4 w-4 shrink-0 text-blue-600" />
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </>
+                  )}
+                </div>
+              </>,
+              document.body,
+            );
+          })()
+        : null}
     </TooltipProvider>
   );
 };

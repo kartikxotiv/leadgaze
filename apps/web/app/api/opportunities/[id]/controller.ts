@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
+import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
 
 import { catchAsync, successDataResponse } from '~/utils/response-handler';
+
+import { buildOpportunityCurrencyFields } from '@kit/shared/currency';
 
 /**
  * GET /api/opportunities/[id]
@@ -115,12 +118,15 @@ export const updateOpportunity = catchAsync(
     let hasEditPermission = isWorkspaceOwner || isOwner || isCreator;
 
     if (!hasEditPermission) {
-      const { data: member } = await supabase
+      const { data: members } = await supabase
         .from('workspace_members')
-        .select('role_id')
+        .select('role_id, product_key')
         .eq('user_id', user.id)
-        .eq('workspace_id', existingOpportunity.workspace_id)
-        .single();
+        .eq('workspace_id', existingOpportunity.workspace_id);
+
+      const member = members?.find((m: any) => m.product_key === 'sales')
+        || members?.find((m: any) => m.product_key === null)
+        || members?.[0];
 
       if (member?.role_id) {
         const { data: permission } = await supabase
@@ -154,11 +160,44 @@ export const updateOpportunity = catchAsync(
       );
     }
 
+    // =====================================================
+    // MULTI-CURRENCY: Recalculate base_amount_usd if amount/currency changed
+    // =====================================================
+    let currencyFields = {};
+    const newCurrency = body.currency;
+    const newAmount = body.amount;
+
+    if (newAmount != null && newCurrency) {
+      try {
+        const adminClient = getSupabaseServerAdminClient();
+        const { data: rates } = await adminClient
+        .schema('core')
+          .from('currency_exchange_rates')
+          .select('*')
+          .eq('base_currency', 'USD')
+          .eq('target_currency', newCurrency.toUpperCase())
+          .order('fetched_at', { ascending: false })
+          .limit(1);
+
+        if (rates && rates.length > 0) {
+          const rate = rates[0];
+          currencyFields = buildOpportunityCurrencyFields({
+            amount: newAmount,
+            currency: newCurrency,
+            exchangeRateToUsd: rate.exchange_rate,
+            rateDate: rate.fetched_at.split('T')[0],
+          });
+        }
+      } catch (rateError) {
+        console.error('Failed to fetch exchange rate for update:', rateError);
+      }
+    }
 
     const { data: opportunity, error } = await supabase
       .from('crm_opportunities')
       .update({
         ...body,
+        ...currencyFields,
         updated_by: user.id,
         updated_at: new Date().toISOString(),
       })
@@ -244,12 +283,15 @@ export const deleteOpportunity = catchAsync(
 
     // If not owner, check RBAC permissions
     if (!hasPermission) {
-      const { data: member } = await supabase
+      const { data: members } = await supabase
         .from('workspace_members')
-        .select('role_id')
+        .select('role_id, product_key')
         .eq('user_id', user.id)
-        .eq('workspace_id', existingOpportunity.workspace_id)
-        .single();
+        .eq('workspace_id', existingOpportunity.workspace_id);
+
+      const member = members?.find((m: any) => m.product_key === 'sales')
+        || members?.find((m: any) => m.product_key === null)
+        || members?.[0];
 
       if (member?.role_id) {
         const { data: permission } = await supabase

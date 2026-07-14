@@ -190,6 +190,24 @@ export const getServiceCloudResourceController = catchAsync(
       query = query.eq('is_deleted', false);
     }
 
+    const createdAtFrom = url.searchParams.get('createdAtFrom');
+    const createdAtTo = url.searchParams.get('createdAtTo');
+    const updatedAtFrom = url.searchParams.get('updatedAtFrom');
+    const updatedAtTo = url.searchParams.get('updatedAtTo');
+
+    if (createdAtFrom) {
+      query = query.gte('created_at', `${createdAtFrom}T00:00:00.000Z`);
+    }
+    if (createdAtTo) {
+      query = query.lte('created_at', `${createdAtTo}T23:59:59.999Z`);
+    }
+    if (updatedAtFrom) {
+      query = query.gte('updated_at', `${updatedAtFrom}T00:00:00.000Z`);
+    }
+    if (updatedAtTo) {
+      query = query.lte('updated_at', `${updatedAtTo}T23:59:59.999Z`);
+    }
+
     if (id) {
       const { data, error: fetchError } = await query
         .eq('id', id)
@@ -206,7 +224,19 @@ export const getServiceCloudResourceController = catchAsync(
       );
     }
 
-    if (resource === 'tickets' && customerId) {
+    const createdByIds = url.searchParams.get('createdByIds') || '';
+    const statusIds = url.searchParams.get('statusIds') || '';
+    const priorityIds = url.searchParams.get('priorityIds') || '';
+    const assigneeIds = url.searchParams.get('assigneeIds') || '';
+
+    if (createdByIds && createdByIds !== 'all' && createdByIds !== 'undefined' && createdByIds !== 'null') {
+      const ids = createdByIds.split(',').map((id) => id.trim()).filter(Boolean);
+      if (ids.length > 0) {
+        query = query.in('created_by', ids);
+      }
+    }
+
+    if (resource === 'tickets' && customerId && customerId !== 'undefined' && customerId !== 'null') {
       query = query.eq('customer_id', customerId);
     }
 
@@ -237,11 +267,70 @@ export const getServiceCloudResourceController = catchAsync(
       query = query.in('id', assignedTicketIds);
     }
 
-    const { data, error: fetchError } = await query.order(config.orderBy, {
-      ascending: resource === 'ticket-priorities',
+    if (resource === 'tickets') {
+      if (statusIds && statusIds !== 'all' && statusIds !== 'undefined' && statusIds !== 'null') {
+        const ids = statusIds.split(',').map((id) => id.trim()).filter(Boolean);
+        if (ids.length > 0) {
+          query = query.in('status_id', ids);
+        }
+      }
+      if (priorityIds && priorityIds !== 'all' && priorityIds !== 'undefined' && priorityIds !== 'null') {
+        const ids = priorityIds.split(',').map((id) => id.trim()).filter(Boolean);
+        if (ids.length > 0) {
+          query = query.in('priority_id', ids);
+        }
+      }
+      if (assigneeIds && assigneeIds !== 'all' && assigneeIds !== 'undefined' && assigneeIds !== 'null') {
+        const ids = assigneeIds.split(',').map((id) => id.trim()).filter(Boolean);
+        if (ids.length > 0) {
+          const { data: ticketAssigneeData, error: taError } = await (supabase as any)
+            .schema('service_cloud')
+            .from('ticket_assignees')
+            .select('ticket_id')
+            .eq('workspace_id', workspaceId)
+            .in('account_id', ids);
+
+          if (taError) throw taError;
+          const ticketIds = Array.from(new Set(ticketAssigneeData?.map((ta: any) => ta.ticket_id).filter(Boolean) || []));
+          if (ticketIds.length === 0) {
+            query = query.in('id', ['00000000-0000-0000-0000-000000000000']);
+          } else {
+            query = query.in('id', ticketIds);
+          }
+        }
+      }
+    }
+
+    const sortColumn = url.searchParams.get('sortColumn');
+    const sortDirection = url.searchParams.get('sortDirection');
+
+    let finalSortColumn = sortColumn || config.orderBy;
+    const isNodeJsSort = finalSortColumn === 'lifecycle';
+
+    if (isNodeJsSort) {
+      finalSortColumn = config.orderBy;
+    }
+
+    const isAscending = sortColumn && !isNodeJsSort
+      ? sortDirection === 'asc'
+      : resource === 'ticket-priorities';
+
+    let { data, error: fetchError } = await query.order(finalSortColumn, {
+      ascending: isAscending,
     });
 
     if (fetchError) throw fetchError;
+
+    if (isNodeJsSort && sortColumn && data) {
+      const ascending = sortDirection === 'asc';
+      data = [...data].sort((a: any, b: any) => {
+        const aVal = String(a[sortColumn] || '').toLowerCase();
+        const bVal = String(b[sortColumn] || '').toLowerCase();
+        if (aVal < bVal) return ascending ? -1 : 1;
+        if (aVal > bVal) return ascending ? 1 : -1;
+        return 0;
+      });
+    }
 
     if (resource === 'tickets') {
       const tickets = data ?? [];
@@ -519,6 +608,9 @@ export const getServiceCloudDashboardController = catchAsync(
     const workspaceId =
       url.searchParams.get('workspaceId') ??
       url.searchParams.get('workspace_id');
+    const from = url.searchParams.get('from');
+    const to = url.searchParams.get('to');
+
     if (!workspaceId)
       return NextResponse.json(
         { success: false, message: 'workspaceId is required' },
@@ -535,6 +627,8 @@ export const getServiceCloudDashboardController = catchAsync(
       supabase as any
     ).rpc('get_service_cloud_dashboard_stats' as any, {
       p_workspace_id: workspaceId,
+      p_date_from: from || null,
+      p_date_to: to || null,
     });
     /* eslint-enable @typescript-eslint/no-explicit-any */
 

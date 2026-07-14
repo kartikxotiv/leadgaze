@@ -19,6 +19,7 @@ import featuresFlagConfig from '~/config/feature-flags.config';
 import { i18nResolver } from '~/lib/i18n/i18n.resolver';
 import { getI18nSettings } from '~/lib/i18n/i18n.settings';
 import { RBACProvider } from '~/lib/rbac/rbac-provider';
+import { LocalizationProvider } from '~/lib/localization/localization-provider';
 
 import { ReactQueryProvider } from './react-query-provider';
 
@@ -54,17 +55,19 @@ export function RootProviders({
 
           <AuthProvider>
             <RBACProvider>
-              <PermissionProviderWrapper>
-                <ThemeProvider
-                  attribute="class"
-                  enableSystem
-                  disableTransitionOnChange
-                  defaultTheme={theme}
-                  enableColorScheme={false}
-                >
-                  {children}
-                </ThemeProvider>
-              </PermissionProviderWrapper>
+              <LocalizationProvider>
+                <PermissionProviderWrapper>
+                  <ThemeProvider
+                    attribute="class"
+                    enableSystem
+                    disableTransitionOnChange
+                    defaultTheme={theme}
+                    enableColorScheme={false}
+                  >
+                    {children}
+                  </ThemeProvider>
+                </PermissionProviderWrapper>
+              </LocalizationProvider>
             </RBACProvider>
           </AuthProvider>
         </CaptchaProvider>

@@ -11,6 +11,7 @@ import pathsConfig from '~/config/paths.config';
 
 const CSRF_SECRET_COOKIE = 'csrfSecret';
 const NEXT_ACTION_HEADER = 'next-action';
+const TRUSTED_DEVICE_COOKIE = 'lg_trusted_device';
 
 export const config = {
   matcher: ['/((?!_next/static|_next/image|images|locales|assets|api/*).*)'],
@@ -70,7 +71,7 @@ async function withCsrfMiddleware(
     ignoreMethods: isServerAction(request)
       ? ['POST']
       : // always ignore GET, HEAD, and OPTIONS requests
-        ['GET', 'HEAD', 'OPTIONS'],
+      ['GET', 'HEAD', 'OPTIONS'],
   });
 
   try {
@@ -94,6 +95,52 @@ function isServerAction(request: NextRequest) {
 
   return headers.has(NEXT_ACTION_HEADER);
 }
+
+/**
+ * Check if the current request has a valid trusted device cookie.
+ * A trusted device allows the user to bypass MFA for 30 days.
+ */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+async function hasValidTrustedDevice(
+  supabase: any,
+  userId: string,
+  request: NextRequest,
+) {
+  try {
+    const deviceToken = request.cookies.get(TRUSTED_DEVICE_COOKIE)?.value;
+
+    if (!deviceToken) return false;
+
+    const now = new Date().toISOString();
+
+    // Look up the device in the database
+    const { data: device, error } = await supabase
+      .schema('core')
+      .from('trusted_devices')
+      .select('id, expires_at')
+      .eq('device_token', deviceToken)
+      .eq('user_id', userId)
+      .gte('expires_at', now)
+      .single();
+
+    if (error || !device) {
+      return false;
+    }
+
+    // Update last_used_at (fire-and-forget, don't block the request)
+    supabase
+      .schema('core')
+      .from('trusted_devices')
+      .update({ last_used_at: new Date().toISOString() })
+      .eq('id', device.id)
+      .then(() => { });
+
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Define URL patterns and their corresponding handlers.
  */
@@ -142,10 +189,10 @@ function getPatterns() {
         // /home/services, /home/inventory, /home/funds.
         const allowedModulePrefixes = [
           '/home/sales',
-          '/home/hrms',
           '/home/services',
-          '/home/inventory',
-          '/home/funds',
+          // '/home/hrms',
+          // '/home/inventory',
+          // '/home/funds',
         ];
         const isAllowedRoute = allowedModulePrefixes.some(
           (prefix) => next === prefix || next.startsWith(`${prefix}/`),
@@ -162,11 +209,22 @@ function getPatterns() {
         const requiresMultiFactorAuthentication =
           await checkRequiresMultiFactorAuthentication(supabase);
 
-        // If user requires multi-factor authentication, redirect to MFA page.
+        // If user requires MFA, check for a trusted device first
         if (requiresMultiFactorAuthentication) {
-          return NextResponse.redirect(
-            new URL(pathsConfig.auth.verifyMfa, origin).href,
+          const userId = data.claims.sub;
+          const trustedDevice = await hasValidTrustedDevice(
+            supabase,
+            userId,
+            req,
           );
+
+          // If no valid trusted device, redirect to MFA verification
+          if (!trustedDevice) {
+            return NextResponse.redirect(
+              new URL(pathsConfig.auth.verifyMfa, origin).href,
+            );
+          }
+          // Trusted device is valid — allow the request to continue (skip MFA)
         }
       },
     },
@@ -192,9 +250,18 @@ function getPatterns() {
           await checkRequiresMultiFactorAuthentication(supabase);
 
         if (requiresMultiFactorAuthentication) {
-          return NextResponse.redirect(
-            new URL(pathsConfig.auth.verifyMfa, origin).href,
+          const userId = data.claims.sub;
+          const trustedDevice = await hasValidTrustedDevice(
+            supabase,
+            userId,
+            req,
           );
+
+          if (!trustedDevice) {
+            return NextResponse.redirect(
+              new URL(pathsConfig.auth.verifyMfa, origin).href,
+            );
+          }
         }
       },
     },

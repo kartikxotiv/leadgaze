@@ -157,6 +157,36 @@ export type Database = {
         }
         Relationships: []
       }
+      currency_exchange_rates: {
+        Row: {
+          base_currency: string
+          exchange_rate: number
+          expires_at: string | null
+          fetched_at: string
+          id: string
+          provider: string | null
+          target_currency: string
+        }
+        Insert: {
+          base_currency: string
+          exchange_rate: number
+          expires_at?: string | null
+          fetched_at?: string
+          id?: string
+          provider?: string | null
+          target_currency: string
+        }
+        Update: {
+          base_currency?: string
+          exchange_rate?: number
+          expires_at?: string | null
+          fetched_at?: string
+          id?: string
+          provider?: string | null
+          target_currency?: string
+        }
+        Relationships: []
+      }
       document_relations: {
         Row: {
           created_at: string
@@ -734,6 +764,461 @@ export type Database = {
           },
         ]
       }
+      entity_field_values: {
+        Row: {
+          created_at: string
+          entity_id: string
+          entity_type: string
+          field_id: string
+          id: string
+          updated_at: string
+          value: Json | null
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          entity_id: string
+          entity_type: string
+          field_id: string
+          id?: string
+          updated_at?: string
+          value?: Json | null
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          entity_id?: string
+          entity_type?: string
+          field_id?: string
+          id?: string
+          updated_at?: string
+          value?: Json | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entity_field_values_field_id_fkey"
+            columns: ["field_id"]
+            isOneToOne: false
+            referencedRelation: "entity_fields"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      entity_fields: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          display_order: number
+          entity_type: string
+          field_key: string
+          field_label: string
+          field_type: string
+          id: string
+          is_active: boolean
+          is_required: boolean
+          is_system: boolean
+          product_key: string
+          settings: Json
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          display_order?: number
+          entity_type: string
+          field_key: string
+          field_label: string
+          field_type: string
+          id?: string
+          is_active?: boolean
+          is_required?: boolean
+          is_system?: boolean
+          product_key?: string
+          settings?: Json
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          display_order?: number
+          entity_type?: string
+          field_key?: string
+          field_label?: string
+          field_type?: string
+          id?: string
+          is_active?: boolean
+          is_required?: boolean
+          is_system?: boolean
+          product_key?: string
+          settings?: Json
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: []
+      }
+      field_access_members: {
+        Row: {
+          can_edit: boolean
+          can_view: boolean
+          created_at: string
+          field_access_rule_id: string
+          id: string
+          member_id: string
+          member_type: string
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          can_edit?: boolean
+          can_view?: boolean
+          created_at?: string
+          field_access_rule_id: string
+          id?: string
+          member_id: string
+          member_type: string
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          can_edit?: boolean
+          can_view?: boolean
+          created_at?: string
+          field_access_rule_id?: string
+          id?: string
+          member_id?: string
+          member_type?: string
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "field_access_members_field_access_rule_id_fkey"
+            columns: ["field_access_rule_id"]
+            isOneToOne: false
+            referencedRelation: "field_access_rules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      field_access_rules: {
+        Row: {
+          access_type: string
+          created_at: string
+          field_id: string
+          id: string
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          access_type?: string
+          created_at?: string
+          field_id: string
+          id?: string
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          access_type?: string
+          created_at?: string
+          field_id?: string
+          id?: string
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "field_access_rules_field_id_fkey"
+            columns: ["field_id"]
+            isOneToOne: true
+            referencedRelation: "entity_fields"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      integration_accounts: {
+        Row: {
+          access_scope: string
+          connection_id: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          display_name: string | null
+          email: string | null
+          external_account_id: string
+          id: string
+          is_deleted: boolean
+          metadata: Json
+          owner_user_id: string | null
+          status: string
+          updated_at: string
+          updated_by: string | null
+          workspace_id: string
+        }
+        Insert: {
+          access_scope?: string
+          connection_id: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          display_name?: string | null
+          email?: string | null
+          external_account_id: string
+          id?: string
+          is_deleted?: boolean
+          metadata?: Json
+          owner_user_id?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          workspace_id: string
+        }
+        Update: {
+          access_scope?: string
+          connection_id?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          display_name?: string | null
+          email?: string | null
+          external_account_id?: string
+          id?: string
+          is_deleted?: boolean
+          metadata?: Json
+          owner_user_id?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integration_accounts_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "integration_connections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      integration_connections: {
+        Row: {
+          config: Json
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          id: string
+          is_deleted: boolean
+          provider: string
+          status: string
+          updated_at: string
+          updated_by: string | null
+          workspace_id: string
+        }
+        Insert: {
+          config?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          id?: string
+          is_deleted?: boolean
+          provider: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          workspace_id: string
+        }
+        Update: {
+          config?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          id?: string
+          is_deleted?: boolean
+          provider?: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          workspace_id?: string
+        }
+        Relationships: []
+      }
+      integration_tokens: {
+        Row: {
+          access_token: string
+          account_id: string
+          created_at: string
+          error_count: number | null
+          expires_at: string | null
+          id: string
+          last_error: string | null
+          last_refreshed_at: string | null
+          refresh_token: string | null
+          scopes: string[] | null
+          token_type: string | null
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          access_token: string
+          account_id: string
+          created_at?: string
+          error_count?: number | null
+          expires_at?: string | null
+          id?: string
+          last_error?: string | null
+          last_refreshed_at?: string | null
+          refresh_token?: string | null
+          scopes?: string[] | null
+          token_type?: string | null
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          access_token?: string
+          account_id?: string
+          created_at?: string
+          error_count?: number | null
+          expires_at?: string | null
+          id?: string
+          last_error?: string | null
+          last_refreshed_at?: string | null
+          refresh_token?: string | null
+          scopes?: string[] | null
+          token_type?: string | null
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integration_tokens_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "integration_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meeting_notes: {
+        Row: {
+          content: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          id: string
+          is_deleted: boolean
+          meeting_id: string
+          note_type: string
+          updated_at: string
+          updated_by: string | null
+          workspace_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          id?: string
+          is_deleted?: boolean
+          meeting_id: string
+          note_type?: string
+          updated_at?: string
+          updated_by?: string | null
+          workspace_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          id?: string
+          is_deleted?: boolean
+          meeting_id?: string
+          note_type?: string
+          updated_at?: string
+          updated_by?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_notes_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meeting_participants: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          external_email: string | null
+          id: string
+          internal_user_id: string | null
+          is_host: boolean
+          joined_at: string | null
+          left_at: string | null
+          meeting_id: string
+          participant_type: string
+          response_status: string
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          external_email?: string | null
+          id?: string
+          internal_user_id?: string | null
+          is_host?: boolean
+          joined_at?: string | null
+          left_at?: string | null
+          meeting_id: string
+          participant_type?: string
+          response_status?: string
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          external_email?: string | null
+          id?: string
+          internal_user_id?: string | null
+          is_host?: boolean
+          joined_at?: string | null
+          left_at?: string | null
+          meeting_id?: string
+          participant_type?: string
+          response_status?: string
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_participants_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       meeting_relations: {
         Row: {
           created_at: string
@@ -769,59 +1254,150 @@ export type Database = {
           },
         ]
       }
+      meeting_reminders: {
+        Row: {
+          channel: string
+          created_at: string
+          id: string
+          meeting_id: string
+          offset_minutes: number
+          scheduled_at: string
+          sent_at: string | null
+          status: string
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          channel?: string
+          created_at?: string
+          id?: string
+          meeting_id: string
+          offset_minutes: number
+          scheduled_at: string
+          sent_at?: string | null
+          status?: string
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          id?: string
+          meeting_id?: string
+          offset_minutes?: number
+          scheduled_at?: string
+          sent_at?: string | null
+          status?: string
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_reminders_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       meetings: {
         Row: {
+          actual_end: string | null
+          actual_start: string | null
           created_at: string
           created_by: string | null
           deleted_at: string | null
           deleted_by: string | null
           description: string | null
           end_time: string | null
+          host_user_id: string | null
           id: string
           is_deleted: boolean
           location: string | null
+          meeting_host_email_account_id: string | null
+          meeting_type: string
+          meeting_url: string | null
+          provider: string
+          provider_event_id: string | null
+          provider_meeting_id: string | null
+          scheduled_end: string | null
+          scheduled_start: string | null
           start_time: string | null
           status: string
+          timezone: string
           title: string
           updated_at: string
           updated_by: string | null
           workspace_id: string
         }
         Insert: {
+          actual_end?: string | null
+          actual_start?: string | null
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
           description?: string | null
           end_time?: string | null
+          host_user_id?: string | null
           id?: string
           is_deleted?: boolean
           location?: string | null
+          meeting_host_email_account_id?: string | null
+          meeting_type?: string
+          meeting_url?: string | null
+          provider?: string
+          provider_event_id?: string | null
+          provider_meeting_id?: string | null
+          scheduled_end?: string | null
+          scheduled_start?: string | null
           start_time?: string | null
           status?: string
+          timezone?: string
           title: string
           updated_at?: string
           updated_by?: string | null
           workspace_id: string
         }
         Update: {
+          actual_end?: string | null
+          actual_start?: string | null
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
           description?: string | null
           end_time?: string | null
+          host_user_id?: string | null
           id?: string
           is_deleted?: boolean
           location?: string | null
+          meeting_host_email_account_id?: string | null
+          meeting_type?: string
+          meeting_url?: string | null
+          provider?: string
+          provider_event_id?: string | null
+          provider_meeting_id?: string | null
+          scheduled_end?: string | null
+          scheduled_start?: string | null
           start_time?: string | null
           status?: string
+          timezone?: string
           title?: string
           updated_at?: string
           updated_by?: string | null
           workspace_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "meetings_host_email_account_fk"
+            columns: ["meeting_host_email_account_id"]
+            isOneToOne: false
+            referencedRelation: "integration_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       module_entitlements: {
         Row: {
@@ -1058,6 +1634,8 @@ export type Database = {
           min_seats: number
           module_id: string
           monthly_price_per_seat: number
+          stripe_india_monthly_price_id: string | null
+          stripe_india_yearly_price_id: string | null
           stripe_monthly_price_id: string | null
           stripe_yearly_price_id: string | null
           tier_key: string
@@ -1075,6 +1653,8 @@ export type Database = {
           min_seats?: number
           module_id: string
           monthly_price_per_seat?: number
+          stripe_india_monthly_price_id?: string | null
+          stripe_india_yearly_price_id?: string | null
           stripe_monthly_price_id?: string | null
           stripe_yearly_price_id?: string | null
           tier_key: string
@@ -1092,6 +1672,8 @@ export type Database = {
           min_seats?: number
           module_id?: string
           monthly_price_per_seat?: number
+          stripe_india_monthly_price_id?: string | null
+          stripe_india_yearly_price_id?: string | null
           stripe_monthly_price_id?: string | null
           stripe_yearly_price_id?: string | null
           tier_key?: string
@@ -1618,6 +2200,72 @@ export type Database = {
         }
         Relationships: []
       }
+      trusted_devices: {
+        Row: {
+          browser: string | null
+          created_at: string | null
+          device_name: string | null
+          device_token: string
+          expires_at: string
+          id: string
+          ip_address: string | null
+          last_used_at: string | null
+          os: string | null
+          user_id: string
+        }
+        Insert: {
+          browser?: string | null
+          created_at?: string | null
+          device_name?: string | null
+          device_token: string
+          expires_at: string
+          id?: string
+          ip_address?: string | null
+          last_used_at?: string | null
+          os?: string | null
+          user_id: string
+        }
+        Update: {
+          browser?: string | null
+          created_at?: string | null
+          device_name?: string | null
+          device_token?: string
+          expires_at?: string
+          id?: string
+          ip_address?: string | null
+          last_used_at?: string | null
+          os?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_column_preferences: {
+        Row: {
+          entity_type: string
+          id: string
+          preferences: Json
+          updated_at: string
+          user_id: string
+          workspace_id: string
+        }
+        Insert: {
+          entity_type: string
+          id?: string
+          preferences?: Json
+          updated_at?: string
+          user_id: string
+          workspace_id: string
+        }
+        Update: {
+          entity_type?: string
+          id?: string
+          preferences?: Json
+          updated_at?: string
+          user_id?: string
+          workspace_id?: string
+        }
+        Relationships: []
+      }
       workspace_billing_accounts: {
         Row: {
           auto_renew: boolean
@@ -1686,6 +2334,39 @@ export type Database = {
           },
         ]
       }
+      workspace_currencies: {
+        Row: {
+          created_at: string
+          currency_code: string
+          currency_symbol: string
+          id: string
+          is_active: boolean
+          is_default: boolean
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          currency_code: string
+          currency_symbol: string
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          currency_code?: string
+          currency_symbol?: string
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: []
+      }
       workspace_modules: {
         Row: {
           enabled_at: string | null
@@ -1739,6 +2420,39 @@ export type Database = {
             referencedColumns: ["module_id"]
           },
         ]
+      }
+      workspace_preferences: {
+        Row: {
+          created_at: string
+          date_format: string
+          default_currency: string
+          id: string
+          time_format: string
+          timezone: string
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          date_format?: string
+          default_currency?: string
+          id?: string
+          time_format?: string
+          timezone?: string
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          date_format?: string
+          default_currency?: string
+          id?: string
+          time_format?: string
+          timezone?: string
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: []
       }
       workspace_subscriptions: {
         Row: {
@@ -4757,6 +5471,7 @@ export type Database = {
           name: string
           picture_url: string | null
           public_data: Json
+          timezone: string | null
           updated_at: string | null
           updated_by: string | null
         }
@@ -4769,6 +5484,7 @@ export type Database = {
           name: string
           picture_url?: string | null
           public_data?: Json
+          timezone?: string | null
           updated_at?: string | null
           updated_by?: string | null
         }
@@ -4781,6 +5497,7 @@ export type Database = {
           name?: string
           picture_url?: string | null
           public_data?: Json
+          timezone?: string | null
           updated_at?: string | null
           updated_by?: string | null
         }
@@ -4798,6 +5515,7 @@ export type Database = {
           module: string
           new_data: Json | null
           old_data: Json | null
+          product_key: string | null
           workspace_id: string
         }
         Insert: {
@@ -4811,6 +5529,7 @@ export type Database = {
           module: string
           new_data?: Json | null
           old_data?: Json | null
+          product_key?: string | null
           workspace_id: string
         }
         Update: {
@@ -4824,6 +5543,7 @@ export type Database = {
           module?: string
           new_data?: Json | null
           old_data?: Json | null
+          product_key?: string | null
           workspace_id?: string
         }
         Relationships: [
@@ -4839,6 +5559,47 @@ export type Database = {
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      companies: {
+        Row: {
+          billing_country: string
+          created_at: string
+          created_by: string | null
+          heard_about_us: string[] | null
+          id: string
+          logo_url: string | null
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          billing_country: string
+          created_at?: string
+          created_by?: string | null
+          heard_about_us?: string[] | null
+          id?: string
+          logo_url?: string | null
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          billing_country?: string
+          created_at?: string
+          created_by?: string | null
+          heard_about_us?: string[] | null
+          id?: string
+          logo_url?: string | null
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "companies_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "accounts"
             referencedColumns: ["id"]
           },
         ]
@@ -5126,6 +5887,13 @@ export type Database = {
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entity_statuses_account_type_fkey"
+            columns: ["account_type"]
+            isOneToOne: false
+            referencedRelation: "entity_statuses"
             referencedColumns: ["id"]
           },
         ]
@@ -5905,6 +6673,8 @@ export type Database = {
           account_id: string
           actual_close_date: string | null
           amount: number | null
+          amount_original: number | null
+          base_amount_usd: number | null
           campaign_id: string | null
           close_reason: string | null
           competitor: string | null
@@ -5912,10 +6682,14 @@ export type Database = {
           created_by: string | null
           created_from_lead_id: string | null
           currency: string | null
+          currency_original: string | null
           custom_fields: Json | null
           deleted_at: string | null
           deleted_by: string | null
           description: string | null
+          exchange_rate_date: string | null
+          exchange_rate_source: string | null
+          exchange_rate_to_usd: number | null
           expected_close_date: string | null
           expected_revenue: number | null
           id: string
@@ -5940,6 +6714,8 @@ export type Database = {
           account_id: string
           actual_close_date?: string | null
           amount?: number | null
+          amount_original?: number | null
+          base_amount_usd?: number | null
           campaign_id?: string | null
           close_reason?: string | null
           competitor?: string | null
@@ -5947,10 +6723,14 @@ export type Database = {
           created_by?: string | null
           created_from_lead_id?: string | null
           currency?: string | null
+          currency_original?: string | null
           custom_fields?: Json | null
           deleted_at?: string | null
           deleted_by?: string | null
           description?: string | null
+          exchange_rate_date?: string | null
+          exchange_rate_source?: string | null
+          exchange_rate_to_usd?: number | null
           expected_close_date?: string | null
           expected_revenue?: number | null
           id?: string
@@ -5975,6 +6755,8 @@ export type Database = {
           account_id?: string
           actual_close_date?: string | null
           amount?: number | null
+          amount_original?: number | null
+          base_amount_usd?: number | null
           campaign_id?: string | null
           close_reason?: string | null
           competitor?: string | null
@@ -5982,10 +6764,14 @@ export type Database = {
           created_by?: string | null
           created_from_lead_id?: string | null
           currency?: string | null
+          currency_original?: string | null
           custom_fields?: Json | null
           deleted_at?: string | null
           deleted_by?: string | null
           description?: string | null
+          exchange_rate_date?: string | null
+          exchange_rate_source?: string | null
+          exchange_rate_to_usd?: number | null
           expected_close_date?: string | null
           expected_revenue?: number | null
           id?: string
@@ -7244,11 +8030,15 @@ export type Database = {
           description: string | null
           display_name: string
           id: string
+          india_monthly_price_per_seat: number | null
+          india_yearly_price_per_seat: number | null
           is_active: boolean
           is_public: boolean
           min_seats: number
           monthly_price_per_seat: number | null
           product_key: string
+          stripe_india_monthly_price_id: string | null
+          stripe_india_yearly_price_id: string | null
           stripe_monthly_price_id: string | null
           stripe_product_id: string | null
           stripe_yearly_price_id: string | null
@@ -7261,11 +8051,15 @@ export type Database = {
           description?: string | null
           display_name: string
           id?: string
+          india_monthly_price_per_seat?: number | null
+          india_yearly_price_per_seat?: number | null
           is_active?: boolean
           is_public?: boolean
           min_seats?: number
           monthly_price_per_seat?: number | null
           product_key: string
+          stripe_india_monthly_price_id?: string | null
+          stripe_india_yearly_price_id?: string | null
           stripe_monthly_price_id?: string | null
           stripe_product_id?: string | null
           stripe_yearly_price_id?: string | null
@@ -7278,11 +8072,15 @@ export type Database = {
           description?: string | null
           display_name?: string
           id?: string
+          india_monthly_price_per_seat?: number | null
+          india_yearly_price_per_seat?: number | null
           is_active?: boolean
           is_public?: boolean
           min_seats?: number
           monthly_price_per_seat?: number | null
           product_key?: string
+          stripe_india_monthly_price_id?: string | null
+          stripe_india_yearly_price_id?: string | null
           stripe_monthly_price_id?: string | null
           stripe_product_id?: string | null
           stripe_yearly_price_id?: string | null
@@ -7477,6 +8275,8 @@ export type Database = {
           invited_by: string | null
           is_primary_contact: boolean
           personal_settings: Json | null
+          product_id: string | null
+          product_key: string | null
           role_id: string
           status: Database["public"]["Enums"]["workspace_member_status"]
           updated_at: string
@@ -7491,6 +8291,8 @@ export type Database = {
           invited_by?: string | null
           is_primary_contact?: boolean
           personal_settings?: Json | null
+          product_id?: string | null
+          product_key?: string | null
           role_id: string
           status?: Database["public"]["Enums"]["workspace_member_status"]
           updated_at?: string
@@ -7505,6 +8307,8 @@ export type Database = {
           invited_by?: string | null
           is_primary_contact?: boolean
           personal_settings?: Json | null
+          product_id?: string | null
+          product_key?: string | null
           role_id?: string
           status?: Database["public"]["Enums"]["workspace_member_status"]
           updated_at?: string
@@ -7512,6 +8316,13 @@ export type Database = {
           workspace_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "workspace_members_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_products"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "workspace_members_role_id_fkey"
             columns: ["role_id"]
@@ -7799,48 +8610,67 @@ export type Database = {
       }
       workspaces: {
         Row: {
+          company_id: string | null
           created_at: string
           created_by: string | null
           description: string | null
           icon_url: string | null
           id: string
           is_active: boolean
+          is_onboarding_finished: boolean
+          is_subscribed_for_updates: boolean
           logo_url: string | null
           name: string
           owner_id: string
+          product_preferences: Json
           settings: Json | null
           slug: string
           updated_at: string
         }
         Insert: {
+          company_id?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
           icon_url?: string | null
           id?: string
           is_active?: boolean
+          is_onboarding_finished?: boolean
+          is_subscribed_for_updates?: boolean
           logo_url?: string | null
           name: string
           owner_id: string
+          product_preferences?: Json
           settings?: Json | null
           slug: string
           updated_at?: string
         }
         Update: {
+          company_id?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
           icon_url?: string | null
           id?: string
           is_active?: boolean
+          is_onboarding_finished?: boolean
+          is_subscribed_for_updates?: boolean
           logo_url?: string | null
           name?: string
           owner_id?: string
+          product_preferences?: Json
           settings?: Json | null
           slug?: string
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "workspaces_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "workspaces_owner_id_fkey"
             columns: ["owner_id"]
@@ -8063,9 +8893,31 @@ export type Database = {
         Args: { p_workspace_id: string }
         Returns: boolean
       }
+      get_sales_dashboard_stats: {
+        Args: {
+          p_is_all_visible?: boolean
+          p_user_id?: string
+          p_visible_user_ids?: string[]
+          p_workspace_id: string
+        }
+        Returns: Json
+      }
+      get_service_cloud_dashboard_stats: {
+        Args: { p_workspace_id: string }
+        Returns: Json
+      }
       initialize_workspace_crm_data: {
         Args: { p_workspace_id: string }
         Returns: undefined
+      }
+      resolve_workspace_access: {
+        Args: {
+          p_require_shared_team?: boolean
+          p_user_email?: string
+          p_user_id: string
+          p_workspace_id: string
+        }
+        Returns: Json
       }
       user_has_product_access: {
         Args: {
@@ -9069,6 +9921,7 @@ export type Database = {
       time_entries: {
         Row: {
           account_id: string
+          activities: string | null
           billable: boolean
           created_at: string
           created_by: string | null
@@ -9086,6 +9939,7 @@ export type Database = {
         }
         Insert: {
           account_id: string
+          activities?: string | null
           billable?: boolean
           created_at?: string
           created_by?: string | null
@@ -9103,6 +9957,7 @@ export type Database = {
         }
         Update: {
           account_id?: string
+          activities?: string | null
           billable?: boolean
           created_at?: string
           created_by?: string | null
@@ -9195,7 +10050,30 @@ export type Database = {
     }
     Functions: {
       account_display_name: { Args: { p_account_id: string }; Returns: string }
+      core_email_matches_thread: {
+        Args: {
+          p_email_references: string
+          p_email_thread_key: string
+          p_in_reply_to: string
+          p_ticket_thread_key: string
+        }
+        Returns: boolean
+      }
+      core_email_thread_keys: {
+        Args: {
+          p_email_references: string
+          p_internet_message_id: string
+          p_thread_key: string
+        }
+        Returns: {
+          thread_key: string
+        }[]
+      }
       core_email_ticket_role: { Args: { p_direction: string }; Returns: string }
+      initialize_workspace_data: {
+        Args: { p_workspace_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       activity_event_enum:

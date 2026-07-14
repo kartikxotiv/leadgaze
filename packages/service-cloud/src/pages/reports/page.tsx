@@ -16,7 +16,8 @@ import {
 import { CardWidgetContainer } from '@kit/ui/card-widget-container';
 import { CardWidgetList, CardWidgetListItem } from '@kit/ui/card-widget-list';
 import { Skeleton } from '@kit/ui/skeleton';
-import { formatDate } from '@kit/shared/utils';
+import { useLocalization } from '@kit/shared/localization';
+import { useColumnResize } from '@kit/ui/use-column-resize';
 
 import { getServiceCloudDashboardService } from '../../services';
 import {
@@ -25,6 +26,7 @@ import {
   useServiceCloudPermissions,
 } from '../../utils';
 import { ServiceCloudAccessDenied } from '../_components/access-denied';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@kit/ui/table';
 
 function formatHours(seconds: number) {
   return `${Math.round((Number(seconds || 0) / 3600) * 10) / 10}h`;
@@ -43,6 +45,7 @@ export function ServiceCloudReportsPage({
 }: {
   workspaceId: string;
 }) {
+  const { formatDate } = useLocalization();
   const { canAccess, isLoading: isPermissionLoading } =
     useServiceCloudPermissions(workspaceId);
   const canView = canAccess(
@@ -107,7 +110,7 @@ export function ServiceCloudReportsPage({
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 mt-2">
       <section className="overflow-hidden rounded-none border bg-[radial-gradient(circle_at_top_left,_rgba(20,184,166,0.18),_transparent_35%),linear-gradient(135deg,_#102a43,_#0f766e_55%,_#172554)] p-6 text-white shadow-xl">
         <div className="max-w-3xl">
           <Badge className="border-white/20 bg-white/15 text-white hover:bg-white/20">
@@ -123,7 +126,7 @@ export function ServiceCloudReportsPage({
         </div>
       </section>
 
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {cards.map((card) => {
           const Icon = card.icon;
           return (
@@ -156,13 +159,13 @@ export function ServiceCloudReportsPage({
         })}
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
-        <div className="space-y-6">
+      <div className="flex flex-col lg:flex-row gap-4 w-full">
+        <div className="space-y-4 w-full lg:w-[65%]">
           <CardWidgetContainer
             title="Ticket Status Distribution"
             description="How many tickets are currently sitting in each status."
           >
-            <div className="space-y-4 px-6 py-4">
+            <div className="space-y-4 px-6 py-4  max-h-[460px] overflow-auto">
               {statusBreakdown.length === 0 ? (
                 <EmptyReport label="No ticket statuses found." />
               ) : (
@@ -185,6 +188,7 @@ export function ServiceCloudReportsPage({
             hideHeaderBorder={true}
           >
             <ReportTable
+              tableKey="sc-report-customer-workload"
               headers={[
                 'Customer',
                 'Open',
@@ -231,6 +235,7 @@ export function ServiceCloudReportsPage({
             hideHeaderBorder={true}
           >
             <ReportTable
+              tableKey="sc-report-oldest-tickets"
               headers={['Ticket', 'Customer', 'Owner', 'Age', 'Due']}
               empty="No open tickets."
               rows={openTicketAging.map((ticket: any) => [
@@ -261,6 +266,7 @@ export function ServiceCloudReportsPage({
             hideHeaderBorder={true}
           >
             <ReportTable
+              tableKey="sc-report-time-logs"
               headers={['Ticket', 'Customer', 'Entries', 'Logged', 'Latest']}
               empty="No time entries logged yet."
               rows={timeByTicket.map((ticket: any) => [
@@ -290,13 +296,13 @@ export function ServiceCloudReportsPage({
           </CardWidgetContainer>
         </div>
 
-        <aside className="space-y-6">
+        <div className="space-y-4 w-full lg:w-[35%]">
           <CardWidgetContainer
             title="Priority Mix"
             description="Open pressure by priority."
             hideHeaderBorder={true}
           >
-            <div className="px-6 py-4">
+            <div className="px-6 py-4 overflow-auto max-h-[380px]">
               {priorityBreakdown.length === 0 ? (
                 <EmptyReport label="No priority data." />
               ) : (
@@ -322,6 +328,7 @@ export function ServiceCloudReportsPage({
             hideHeaderBorder={true}
           >
             <ReportTable
+              tableKey="sc-report-assignee-workload"
               headers={['Agent', 'Open', 'Total', 'Logged']}
               empty="No assignee data."
               rows={assigneeWorkload
@@ -343,7 +350,7 @@ export function ServiceCloudReportsPage({
             description="Tickets consuming the most logged support time."
             hideHeaderBorder={true}
           >
-            <div className="space-y-4 px-6 py-4">
+            <div className="space-y-4 px-6 py-4 overflow-auto max-h-[320px]">
               {ticketTimeBreakdown.length === 0 ? (
                 <EmptyReport label="No logged ticket time yet." />
               ) : (
@@ -379,7 +386,7 @@ export function ServiceCloudReportsPage({
               )}
             </div>
           </CardWidgetContainer>
-        </aside>
+        </div>
       </div>
     </div>
   );
@@ -416,49 +423,54 @@ function MetricBar({
 }
 
 function ReportTable({
+  tableKey,
   headers,
   rows,
   empty,
 }: {
+  tableKey: string;
   headers: string[];
   rows: Array<Array<React.ReactNode>>;
   empty: string;
 }) {
+  const { getHeaderProps, getResizeHandleProps } = useColumnResize(tableKey);
+
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead className="bg-muted/40 text-muted-foreground border-b text-left text-xs uppercase">
-          <tr>
+    <div className="overflow-auto max-h-[350px]">
+      <Table>
+        <TableHeader className="text-left text-xs uppercase">
+          <TableRow>
             {headers.map((header) => (
-              <th key={header} className="p-3 font-medium">
+              <TableHead key={header} className="relative p-3 font-medium" {...getHeaderProps(header)}>
                 {header}
-              </th>
+                <span className="col-resize-handle" {...getResizeHandleProps(header)} />
+              </TableHead>
             ))}
-          </tr>
-        </thead>
-        <tbody>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {rows.length === 0 ? (
-            <tr>
-              <td
+            <TableRow>
+              <TableCell
                 className="text-muted-foreground p-6 text-center"
                 colSpan={headers.length}
               >
                 {empty}
-              </td>
-            </tr>
+              </TableCell>
+            </TableRow>
           ) : (
             rows.map((row, index) => (
-              <tr key={index} className="border-b last:border-b-0">
+              <TableRow key={index} className="border-b last:border-b-0">
                 {row.map((cell, cellIndex) => (
-                  <td key={cellIndex} className="p-3 align-top">
+                  <TableCell key={cellIndex} className="p-3 align-top">
                     {cell}
-                  </td>
+                  </TableCell>
                 ))}
-              </tr>
+              </TableRow>
             ))
           )}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   );
 }
@@ -473,7 +485,7 @@ function EmptyReport({ label }: { label: string }) {
 
 function ServiceCloudReportsSkeleton() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 mt-2">
       {/* Hero banner skeleton */}
       <section className="overflow-hidden rounded-none border bg-[radial-gradient(circle_at_top_left,_rgba(20,184,166,0.18),_transparent_35%),linear-gradient(135deg,_#102a43,_#0f766e_55%,_#172554)] p-6 shadow-xl">
         <div className="max-w-3xl space-y-3">
@@ -604,7 +616,7 @@ function ServiceCloudReportsSkeleton() {
               <Skeleton className="h-5 w-40" />
               <Skeleton className="mt-1 h-3 w-56" />
             </CardHeader>
-            <div className="overflow-x-auto">
+            <div className="overflow-auto max-h-[350px]">
               <div className="bg-muted/40 grid grid-cols-5 gap-3 border-b px-3 py-2">
                 {['Ticket', 'Customer', 'Entries', 'Logged', 'Latest'].map(
                   (h) => (
