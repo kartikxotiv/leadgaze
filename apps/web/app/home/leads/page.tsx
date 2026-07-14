@@ -446,7 +446,6 @@ export default function LeadsPage() {
 
   const defaultStatusIds = useMemo(() => {
     return statuses
-      .filter((s: any) => s.status_key !== 'unqualified')
       .map((s: any) => s.id);
   }, [statuses]);
 
