@@ -76,7 +76,11 @@ import { OpportunityDialog } from '../opportunities/components/opportunity-dialo
 import { CardWidgetContainer } from '@kit/ui/card-widget-container';
 import { Skeleton } from '@kit/ui/skeleton';
 
-export default function DashboardDemo() {
+export default function DashboardDemo({
+  dateFilter,
+}: {
+  dateFilter?: { from: string | null; to: string | null } | null;
+}) {
   const { currentWorkspace } = useRBAC();
   const { formatCurrency } = useLocalization();
   const supabase = useSupabase();
@@ -87,8 +91,8 @@ export default function DashboardDemo() {
     isLoading,
     refetch,
   } = useQuery({
-    queryKey: ['dashboard-metrics', workspaceId],
-    queryFn: () => getDashboardMetricsService(workspaceId!),
+    queryKey: ['dashboard-metrics', workspaceId, dateFilter],
+    queryFn: () => getDashboardMetricsService(workspaceId!, dateFilter),
     enabled: !!workspaceId,
   });
 
