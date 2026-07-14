@@ -42,6 +42,8 @@ const getMembers = catchAsync(
     const url = new URL(request.url);
     const workspaceId = url.searchParams.get('workspaceId');
     const productKey = url.searchParams.get('productKey');
+    const status = url.searchParams.get('status');
+    const search = url.searchParams.get('search');
 
     if (!workspaceId) {
       return NextResponse.json(
@@ -66,8 +68,12 @@ const getMembers = catchAsync(
 
     query = query.eq('workspace_id', workspaceId);
     
-    // Filter out removed/deleted members
-    query = query.neq('status', 'removed');
+    // Filter out removed/deleted members, or filter by specific status
+    if (status && status !== 'all') {
+      query = query.eq('status', status);
+    } else {
+      query = query.neq('status', 'removed');
+    }
 
     if (productKey) {
       query = query.eq('product_key', productKey);
@@ -82,9 +88,39 @@ const getMembers = catchAsync(
       throw error;
     }
 
+    let filteredMembers = members;
+
+    // Filter members by active seat assignment for the specified product, if provided
+    if (productKey) {
+      const adminClient = getSupabaseServerAdminClient() as any;
+      const { data: productRow } = await adminClient
+        .from('subscription_products')
+        .select('id')
+        .eq('product_key', productKey)
+        .maybeSingle();
+
+      if (productRow) {
+        const { data: activeAssignments } = await adminClient
+          .from('seat_assignments')
+          .select('user_id')
+          .eq('workspace_id', workspaceId)
+          .eq('product_id', productRow.id)
+          .eq('is_active', true);
+
+        const assignedUserIds = new Set(
+          activeAssignments?.map((a: any) => a.user_id) || []
+        );
+
+        // Pending members are always shown so admins can manage invites
+        filteredMembers = filteredMembers.filter(
+          (m: any) => m.status === 'pending' || (m.user_id && assignedUserIds.has(m.user_id))
+        );
+      }
+    }
+
     // Fetch account details for all members
-    if (members && members.length > 0) {
-      const userIds = members.map((m: any) => m.user_id).filter(Boolean);
+    if (filteredMembers && filteredMembers.length > 0) {
+      const userIds = filteredMembers.map((m: any) => m.user_id).filter(Boolean);
       if (userIds.length > 0) {
         const { data: accounts } = await supabase
           .from('accounts')
@@ -94,7 +130,7 @@ const getMembers = catchAsync(
         const accountMap = new Map(accounts?.map((a) => [a.id, a]) || []);
 
         // Map account data to members
-        const membersWithUsers = members.map((member: any) => ({
+        let membersWithUsers = filteredMembers.map((member: any) => ({
           ...member,
           user: accountMap.get(member.user_id)
             ? {
@@ -108,6 +144,17 @@ const getMembers = catchAsync(
             : null,
         })) as WorkspaceMemberWithData[];
 
+        if (search) {
+          const term = search.toLowerCase();
+          membersWithUsers = membersWithUsers.filter(
+            (m) =>
+              (m.user?.user_metadata?.full_name || '')
+                .toLowerCase()
+                .includes(term) ||
+              (m.user?.email || '').toLowerCase().includes(term),
+          );
+        }
+
         return successDataResponse(
           'Members retrieved successfully',
           membersWithUsers,
@@ -115,9 +162,24 @@ const getMembers = catchAsync(
       }
     }
 
+    let finalMembers = filteredMembers as WorkspaceMemberWithData[];
+    
+    // Fallback search if members didn't have user profiles (e.g. pending ones)
+    // Though usually pending members are in the invitations table.
+    if (search) {
+      const term = search.toLowerCase();
+      finalMembers = finalMembers.filter(
+        (m) =>
+          (m.user?.user_metadata?.full_name || '')
+            .toLowerCase()
+            .includes(term) ||
+          (m.user?.email || '').toLowerCase().includes(term),
+      );
+    }
+
     return successDataResponse(
       'Members retrieved successfully',
-      members as WorkspaceMemberWithData[],
+      finalMembers,
     );
   },
 );
@@ -656,6 +718,7 @@ const getPendingInvitations = catchAsync(
     const supabase = getSupabaseServerClient();
     const url = new URL(request.url);
     const workspaceId = url.searchParams.get('workspaceId');
+    const search = url.searchParams.get('search');
 
     if (!workspaceId) {
       return NextResponse.json(
@@ -664,7 +727,7 @@ const getPendingInvitations = catchAsync(
       );
     }
 
-    const { data: invitations, error } = await supabase
+    let query = supabase
       .from('workspace_invitations')
       .select(
         `
@@ -678,8 +741,15 @@ const getPendingInvitations = catchAsync(
       `,
       )
       .eq('workspace_id', workspaceId)
-      .eq('status', 'pending')
-      .order('created_at', { ascending: false });
+      .eq('status', 'pending');
+
+    if (search) {
+      query = query.ilike('email', `%${search}%`);
+    }
+
+    query = query.order('created_at', { ascending: false });
+
+    const { data: invitations, error } = await query;
 
     if (error) {
       console.error('Get pending invitations error:', error);
