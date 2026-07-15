@@ -21,8 +21,8 @@ const PRESETS = [
   { label: 'This Week', value: 'this_week' },
   { label: 'This Month', value: 'this_month' },
   { label: 'This Quarter', value: 'this_quarter' },
-  { label: 'Last Quarter', value: 'last_quarter' },
   { label: 'Last Month', value: 'last_month' },
+  { label: 'Last Six Months', value: 'last_six_months' },
   { label: 'This Year', value: 'this_year' },
   { label: 'Last Year', value: 'last_year' },
 ] as const;

@@ -51,7 +51,10 @@ export default function ServiceCloudLayout({
 }: React.PropsWithChildren) {
   const pathname = usePathname();
 
-  if (routesWithOwnHeader.some((segment) => pathname.includes(segment))) {
+  if (
+    routesWithOwnHeader.some((segment) => pathname.includes(segment)) ||
+    pathname === '/home/services'
+  ) {
     return (
       <ModuleAccessGuardWrapper moduleKey="service_cloud">
         {children}
