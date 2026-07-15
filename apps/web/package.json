@@ -42,6 +42,7 @@
     "@kit/i18n": "workspace:*",
     "@kit/integration-core": "workspace:*",
     "@kit/integration-google": "workspace:*",
+    "@kit/integration-website": "workspace:*",
     "@kit/integration-zoom": "workspace:*",
     "@kit/inventory": "workspace:*",
     "@kit/next": "workspace:*",
