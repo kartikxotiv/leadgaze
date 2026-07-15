@@ -331,6 +331,7 @@ export const createAccount = catchAsync(
 /**
  * GET /api/accounts/types
  * Fetch all account types for a workspace (stored in entity_statuses for the accounts module)
+ * Supports ?includeInactive=true to return all types (for management dialog)
  */
 export const getAccountTypes = catchAsync(
   async ({
@@ -342,6 +343,7 @@ export const getAccountTypes = catchAsync(
     const supabase = getSupabaseServerClient();
     const url = new URL(request.url);
     const workspaceId = url.searchParams.get('workspaceId');
+    const includeInactive = url.searchParams.get('includeInactive') === 'true';
 
     if (!workspaceId) {
       return NextResponse.json(
@@ -364,13 +366,18 @@ export const getAccountTypes = catchAsync(
       );
     }
 
-    const { data: types, error } = await supabase
+    let query = supabase
       .from('entity_statuses')
-      .select('id, status_name, status_key, color, icon, is_system, is_closed')
+      .select('id, status_name, status_key, color, icon, is_system, is_closed, is_active, is_default, sort_order')
       .eq('workspace_id', workspaceId)
       .eq('module_id', module.id)
-      .eq('is_active', true)
       .order('sort_order', { ascending: true });
+
+    if (!includeInactive) {
+      query = query.eq('is_active', true);
+    }
+
+    const { data: types, error } = await query;
 
     if (error) {
       console.error('Get account types error:', error);
@@ -378,6 +385,143 @@ export const getAccountTypes = catchAsync(
     }
 
     return successDataResponse('Account types retrieved successfully', types || []);
+  },
+);
+
+/**
+ * GET /api/accounts/types/[id]/affected
+ * Get count + first N accounts using this type (for pre-disable confirmation modal)
+ */
+export const getAffectedAccounts = catchAsync(
+  async ({
+    request,
+    params,
+  }: {
+    request: NextRequest;
+    params?: Record<string, string>;
+  }) => {
+    const adminClient = getSupabaseServerAdminClient<Database>();
+    const url = new URL(request.url);
+    const workspaceId = url.searchParams.get('workspaceId');
+    const limit = parseInt(url.searchParams.get('limit') || '10', 10);
+    const offset = parseInt(url.searchParams.get('offset') || '0', 10);
+    const typeId = params?.id;
+
+    if (!workspaceId || !typeId) {
+      return NextResponse.json(
+        { message: 'workspaceId and type id are required' },
+        { status: 400 },
+      );
+    }
+
+    /* eslint-disable @typescript-eslint/no-explicit-any */
+    const { data: records, error, count } = await adminClient
+      .from('crm_accounts')
+      .select('id, account_name', { count: 'exact' })
+      .eq('workspace_id', workspaceId)
+      .eq('account_type', typeId)
+      .eq('is_deleted', false)
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (error) {
+      console.error('Get affected accounts error:', error);
+      throw error;
+    }
+
+    const mapped = (records || []).map((r: any) => ({
+      id: r.id,
+      name: r.account_name,
+    }));
+    /* eslint-enable @typescript-eslint/no-explicit-any */
+
+    return successDataResponse('Affected accounts retrieved successfully', {
+      total_count: count ?? 0,
+      records: mapped,
+    });
+  },
+);
+
+/**
+ * PATCH /api/accounts/types/[id]/reassign
+ * Bulk-reassign all accounts from old type to new type, then disable old type.
+ * Body: { new_status_id: string, workspace_id: string }
+ */
+export const reassignAccountType = catchAsync(
+  async ({
+    request,
+    params,
+  }: {
+    request: NextRequest;
+    params?: Record<string, string>;
+  }) => {
+    const supabase = getSupabaseServerClient();
+    const adminClient = getSupabaseServerAdminClient<Database>();
+    const oldTypeId = params?.id;
+    const body = await request.json();
+    const { new_status_id, workspace_id } = body;
+
+    if (!oldTypeId || !new_status_id || !workspace_id) {
+      return NextResponse.json(
+        { message: 'id, new_status_id, and workspace_id are required' },
+        { status: 400 },
+      );
+    }
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Validate new type is active and belongs to the same workspace
+    const { data: newType } = await adminClient
+      .from('entity_statuses')
+      .select('id, is_active')
+      .eq('id', new_status_id)
+      .eq('workspace_id', workspace_id)
+      .eq('is_active', true)
+      .single();
+
+    if (!newType) {
+      return NextResponse.json(
+        { message: 'New type not found or is not active' },
+        { status: 400 },
+      );
+    }
+
+    // Bulk update all affected accounts
+    /* eslint-disable @typescript-eslint/no-explicit-any */
+    const { count: reassignedCount, error: updateError } = await (adminClient as any)
+      .from('crm_accounts')
+      .update({ account_type: new_status_id, updated_by: user.id, updated_at: new Date().toISOString() })
+      .eq('workspace_id', workspace_id)
+      .eq('account_type', oldTypeId)
+      .eq('is_deleted', false);
+    /* eslint-enable @typescript-eslint/no-explicit-any */
+
+    if (updateError) {
+      console.error('Reassign accounts error:', updateError);
+      throw updateError;
+    }
+
+    // Now disable the old type
+    const { error: disableError } = await adminClient
+      .from('entity_statuses')
+      .update({ is_active: false, updated_by: user.id, updated_at: new Date().toISOString() })
+      .eq('id', oldTypeId);
+
+    if (disableError) {
+      console.error('Disable account type error:', disableError);
+      throw disableError;
+    }
+
+    return successDataResponse('Accounts reassigned and type disabled successfully', {
+      reassigned_count: reassignedCount ?? 0,
+      disabled_status_id: oldTypeId,
+    });
   },
 );
 

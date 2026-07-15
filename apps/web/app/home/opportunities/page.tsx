@@ -635,13 +635,13 @@ export default function OpportunitiesPage() {
     Array<{ id: string; status_name: string; color?: string; sort_order?: number }>
   >({
     queryKey: ['opportunity-stages', workspace?.id],
-    queryFn: () => getOpportunityStatusesService(workspace?.id || ''),
+    queryFn: () => getOpportunityStatusesService({ workspaceId: workspace?.id || '' }),
     enabled: !!workspace?.id,
   });
 
   const { data: leadStages = [] } = useQuery({
     queryKey: ['lead-statuses', workspace?.id],
-    queryFn: () => getLeadStatusesService(workspace?.id || ''),
+    queryFn: () => getLeadStatusesService({ workspaceId: workspace?.id || '' }),
     enabled: !!workspace?.id,
   });
 

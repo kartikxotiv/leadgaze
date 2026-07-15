@@ -487,7 +487,7 @@ export default function LeadsPage() {
   // Fetch lead statuses
   const { data: statuses = [], isSuccess: isStatusesLoaded } = useQuery({
     queryKey: ['lead-statuses', workspace?.id],
-    queryFn: () => getLeadStatusesService(workspace?.id || ''),
+    queryFn: () => getLeadStatusesService({ workspaceId: workspace?.id || '' }),
     enabled: !!workspace?.id,
   });
 

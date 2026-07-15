@@ -107,7 +107,7 @@ export default function EditLeadDialog({
 
   const { data: statuses = [] } = useQuery({
     queryKey: ['lead-statuses', workspace?.id],
-    queryFn: () => getLeadStatusesService(workspace!.id),
+    queryFn: () => getLeadStatusesService({ workspaceId: workspace!.id }),
     enabled: !!workspace?.id,
   });
 
