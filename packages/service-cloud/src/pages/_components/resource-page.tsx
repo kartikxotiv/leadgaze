@@ -161,6 +161,8 @@ type ResourcePageProps = {
   canEditField?: (fieldKey: string) => boolean;
   /** Logged in user's ID to restrict dynamic fields edits to their creators */
   currentUserId?: string;
+  viewMode?: 'table' | 'kanban';
+  kanbanSlot?: (data: any[], refetch: () => void) => React.ReactNode;
 };
 
 function getInitialForm(
@@ -201,6 +203,8 @@ export function ServiceCloudResourcePage({
   canViewField,
   canEditField,
   currentUserId,
+  viewMode = 'table',
+  kanbanSlot,
 }: ResourcePageProps) {
   // Apply FLS: filter out columns the current user cannot view
   const visibleColumns = useMemo(
@@ -409,25 +413,28 @@ export function ServiceCloudResourcePage({
       </div>
       <PageBody className="sticky flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col overflow-hidden">
         <div className="flex min-h-0 w-full min-w-0 max-w-full flex-1 gap-0">
-          <CustomTableContainer
-            pagination={
-              <TablePagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                totalCount={totalCount}
-                pageSize={pageSize}
-                onPageChange={setCurrentPage}
-                onPageSizeChange={(val) => {
-                  setPageSize(val);
-                  setCurrentPage(1);
-                }}
-                entityLabel={entityLabel ?? resource}
-              />
-            }
-          >
-            <Table>
-              <TableHeader>
-                <TableRow>
+          {viewMode === 'kanban' && kanbanSlot ? (
+            kanbanSlot(data, refetch)
+          ) : (
+            <CustomTableContainer
+              pagination={
+                <TablePagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  totalCount={totalCount}
+                  pageSize={pageSize}
+                  onPageChange={setCurrentPage}
+                  onPageSizeChange={(val) => {
+                    setPageSize(val);
+                    setCurrentPage(1);
+                  }}
+                  entityLabel={entityLabel ?? resource}
+                />
+              }
+            >
+              <Table>
+                <TableHeader>
+                  <TableRow>
                   {visibleColumns.map((column) => (
                     <ColumnHeader
                       key={column.key}
@@ -555,6 +562,7 @@ export function ServiceCloudResourcePage({
               </TableBody>
             </Table>
           </CustomTableContainer>
+          )}
         </div>
       </PageBody>
       <AlertDialog

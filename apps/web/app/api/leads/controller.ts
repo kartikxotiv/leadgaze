@@ -611,10 +611,10 @@ const getLeadStatuses = catchAsync(
 
     const { data: statuses, error } = await supabase
       .from('entity_statuses')
-      .select('id, status_name, status_key, color, icon, is_closed')
+      .select('id, status_name, status_key, color, icon, is_closed, sort_order')
       .eq('workspace_id', workspaceId)
       .eq('module_id', module?.id)
-      .order('status_name', { ascending: true });
+      .order('sort_order', { ascending: true });
 
     if (error) {
       console.error('Get statuses error:', error);
