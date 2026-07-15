@@ -414,6 +414,7 @@ export default function RolesPage() {
     sortColumn={sortColumn}
     sortDirection={sortDirection}
     onSort={toggleSort}
+    sortable={false}
     className="relative"
     {...getHeaderProps('hierarchy')}
   >
