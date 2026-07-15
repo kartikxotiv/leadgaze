@@ -47,8 +47,10 @@ function percent(value: number, max: number) {
 
 export function ServiceCloudDashboardPage({
   workspaceId,
+  dateFilter,
 }: {
   workspaceId: string;
+  dateFilter?: { from: string | null; to: string | null } | null;
 }) {
   const { formatDate } = useLocalization();
   const { canAccess, isLoading: isPermissionLoading } =
@@ -59,8 +61,8 @@ export function ServiceCloudDashboardPage({
   );
 
   const { data, isLoading } = useQuery({
-    queryKey: ['service-cloud', 'dashboard', workspaceId],
-    queryFn: () => getServiceCloudDashboardService(workspaceId),
+    queryKey: ['service-cloud', 'dashboard', workspaceId, dateFilter],
+    queryFn: () => getServiceCloudDashboardService(workspaceId, dateFilter),
     enabled: Boolean(workspaceId && canView),
   });
 
