@@ -73,7 +73,7 @@ import { DeleteEntityDialog } from '../_components/delete-entity-dialog';
 import { EntityActionsDropdown } from '../_components/entity-actions-dropdown';
 import { OpportunityDialog } from './components/opportunity-dialog';
 import { OpportunitiesKanbanBoard } from './components/kanban/opportunities-kanban-board';
-import { ViewToggle } from '../leads/components/view-toggle';
+import { ViewToggle } from '@kit/ui/view-toggle';
 
 function PriorityBadge({ priority }: { priority: string | null | undefined }) {
   switch (priority?.toLowerCase()) {

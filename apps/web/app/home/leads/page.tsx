@@ -72,7 +72,7 @@ import { DeleteEntityDialog } from '../_components/delete-entity-dialog';
 import { EntityActionsDropdown } from '../_components/entity-actions-dropdown';
 import { LeadsKanbanBoard } from './components/kanban/leads-kanban-board';
 import CreateLeadDialog from './components/create-lead-dialog';
-import { ViewToggle, type ViewMode } from './components/view-toggle';
+import { ViewToggle, type ViewMode } from '@kit/ui/view-toggle';
 
 // System fields that exist in the database
 const SYSTEM_FIELDS: Array<{

@@ -62,7 +62,7 @@ function assigneeInitials(assignee: any) {
 }
 
 import { useRouter } from 'next/navigation';
-import { ViewToggle } from '../_components/view-toggle';
+import { ViewToggle } from '@kit/ui/view-toggle';
 import { TicketsKanbanBoard } from './components/kanban/tickets-kanban-board';
 
 function AssigneeStack({ assignees = [] }: { assignees?: any[] }) {
