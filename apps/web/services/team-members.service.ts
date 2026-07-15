@@ -138,8 +138,9 @@ const getInvitationsByEmailService = asyncHandlerClient(
 );
 
 const getPendingInvitationsService = asyncHandlerClient(
-  async (workspaceId: string, search?: string) => {
+  async (workspaceId: string, productKey?: string, search?: string) => {
     let url = `/team-members/invitations?workspaceId=${workspaceId}`;
+    if (productKey) url += `&productKey=${productKey}`;
     if (search) url += `&search=${encodeURIComponent(search)}`;
     const response = await ApiClient.get(url);
     return response.data;
