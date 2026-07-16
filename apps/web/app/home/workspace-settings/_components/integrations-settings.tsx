@@ -3,14 +3,14 @@
 import { useRouter } from 'next/navigation';
 import {
   Globe,
-  Plus,
   ArrowRight,
   MessageSquare,
   Calendar,
   Sparkles,
   CheckCircle2,
   Lock,
-  Building2
+  Building2,
+  BarChart3,
 } from 'lucide-react';
 
 import { Button } from '@kit/ui/button';
@@ -51,17 +51,21 @@ export function WorkspaceIntegrationsSettings({ workspace }: WorkspaceIntegratio
       badgeVariant: 'default' as const,
       path: `/home/sales/workspace-settings/integrations/zapier`,
       connected: true,
-    }
-  ];
-
-  const comingSoonIntegrations = [
+    },
     {
       id: 'google-ads',
       name: 'Google Ads Lead Forms',
-      description: 'Sync Google Ads lead form extensions directly with Leadgaze CRM.',
-      icon: <Sparkles className="h-6 w-6 text-yellow-500" />,
-      badge: 'Coming Soon',
+      description: 'Sync Google Ads lead form extensions directly with Leadgaze CRM automatically.',
+      icon: <BarChart3 className="h-6 w-6 text-blue-500" />,
+      badge: 'Available',
+      badgeVariant: 'default' as const,
+      path: `/home/sales/workspace-settings/integrations/google-ads`,
+      connected: true,
     },
+  ];
+
+  const comingSoonIntegrations = [
+
     {
       id: 'meta-ads',
       name: 'Meta Lead Ads',
