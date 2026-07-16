@@ -41,6 +41,16 @@ export function WorkspaceIntegrationsSettings({ workspace }: WorkspaceIntegratio
       badgeVariant: 'default' as const,
       path: `/home/sales/workspace-settings/integrations/website-connector`,
       connected: true,
+    },
+    {
+      id: 'zapier',
+      name: 'Zapier Integration',
+      description: 'Connect over 5,000+ apps using out-of-the-box automation triggers.',
+      icon: <CheckCircle2 className="h-6 w-6 text-orange-500" />,
+      badge: 'Available',
+      badgeVariant: 'default' as const,
+      path: `/home/sales/workspace-settings/integrations/zapier`,
+      connected: true,
     }
   ];
 
@@ -71,13 +81,6 @@ export function WorkspaceIntegrationsSettings({ workspace }: WorkspaceIntegratio
       name: 'WhatsApp Business',
       description: 'Convert WhatsApp chat interactions into CRM leads and support cases.',
       icon: <MessageSquare className="h-6 w-6 text-green-500" />,
-      badge: 'Planned',
-    },
-    {
-      id: 'zapier-make',
-      name: 'Zapier & Make',
-      description: 'Connect over 5,000+ apps using out-of-the-box automation triggers.',
-      icon: <CheckCircle2 className="h-6 w-6 text-orange-500" />,
       badge: 'Planned',
     },
     {

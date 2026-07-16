@@ -94,3 +94,10 @@ export const runConnectorSandboxService = asyncHandlerClient(
     await ApiClient.post(`/connectors/${connectorId}/sandbox`, payload);
   }
 );
+
+export const rotateConnectorApiKeyService = asyncHandlerClient(
+  async (connectorId: string): Promise<{ publicKey: string; secretKey: string; record: any }> => {
+    const response = await ApiClient.post(`/connectors/${connectorId}/rotate-key`);
+    return response.data?.data;
+  }
+);

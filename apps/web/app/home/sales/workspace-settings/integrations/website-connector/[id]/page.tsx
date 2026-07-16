@@ -14,6 +14,7 @@ import {
   updateConnectorFormService,
   runConnectorSandboxService,
   getConnectorLogsService,
+  rotateConnectorApiKeyService,
 } from '~/services/connectors.service';
 
 export default function WebsiteConnectorDetailRoute() {
@@ -61,6 +62,7 @@ export default function WebsiteConnectorDetailRoute() {
       }}
       onUpdateConnectorForm={updateConnectorFormService}
       onRunSandbox={runConnectorSandboxService}
+      onRotateKey={rotateConnectorApiKeyService}
       onNavigateBack={() =>
         router.push('/home/sales/workspace-settings/integrations/website-connector')
       }

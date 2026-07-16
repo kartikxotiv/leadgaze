@@ -119,6 +119,7 @@ export interface WebsiteConnectorDetailPageProps {
   onRunSandbox: (id: string, payload: { workspace_id: string; payload: any }) => Promise<void>;
   /** Navigate back to the list */
   onNavigateBack: () => void;
+  onRotateKey: (id: string) => Promise<{ publicKey: string; secretKey: string; record: any }>;
 }
 
 // ---------------------------------------------------------------------------
@@ -137,6 +138,7 @@ export function WebsiteConnectorDetailPage({
   onUpdateConnectorForm,
   onRunSandbox,
   onNavigateBack,
+  onRotateKey,
 }: WebsiteConnectorDetailPageProps) {
   // Supabase-driven state
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -149,6 +151,23 @@ export function WebsiteConnectorDetailPage({
   const [showSecret, setShowSecret] = useState(false);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [selectedLog, setSelectedLog] = useState<ConnectorLog | null>(null);
+
+  const [generatedSecretKey, setGeneratedSecretKey] = useState<string | null>(null);
+  const [showSecretKeyDialog, setShowSecretKeyDialog] = useState(false);
+
+  const handleRotateKey = async () => {
+    if (!connector) return;
+    try {
+      const data = await onRotateKey(connector.id);
+      setApiKeys([data.record]);
+      setGeneratedSecretKey(data.secretKey);
+      setShowSecretKeyDialog(true);
+      toast.success('API Keys rotated successfully.');
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Failed to rotate API Keys.');
+    }
+  };
 
   // Mutation pending flags
   const [isUpdatingConnector, setIsUpdatingConnector] = useState(false);
@@ -1020,36 +1039,24 @@ export function WebsiteConnectorDetailPage({
                         <Label>Secret API Key</Label>
                         <div className="flex items-center gap-2 rounded border bg-muted/20 p-2.5 font-mono text-sm">
                           <span className="flex-1 truncate">
-                            {showSecret
-                              ? apiKeys[0]?.hashed_secret_key
-                              : apiKeys[0]?.masked_secret_key || 'Generate a key...'}
+                            {apiKeys[0]?.masked_secret_key || 'Generate a key...'}
                           </span>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-7 w-7"
-                            onClick={() => setShowSecret(!showSecret)}
-                          >
-                            {showSecret ? (
-                              <EyeOff className="h-3.5 w-3.5" />
-                            ) : (
-                              <Eye className="h-3.5 w-3.5" />
-                            )}
-                          </Button>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-7 w-7"
-                            onClick={() => copyToClipboard(apiKeys[0]?.hashed_secret_key || '', 'sec')}
-                          >
-                            {copiedKey === 'sec' ? (
-                              <Check className="h-3.5 w-3.5 text-green-500" />
-                            ) : (
-                              <Copy className="h-3.5 w-3.5" />
-                            )}
-                          </Button>
                         </div>
                       </div>
+                    </div>
+
+                    <div className="flex justify-end pt-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          if (confirm('Rotating credentials will immediately revoke the current key. Any apps using the old key will break. Proceed?')) {
+                            handleRotateKey();
+                          }
+                        }}
+                      >
+                        Rotate Credentials
+                      </Button>
                     </div>
 
                     <div className="space-y-3 border-t pt-6">
@@ -1342,6 +1349,42 @@ export function WebsiteConnectorDetailPage({
             <DialogFooter>
               <Button onClick={() => setSelectedLog(null)}>Close</Button>
             </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Copy Key Protection Dialog */}
+        <Dialog open={showSecretKeyDialog} onOpenChange={(open) => {
+          setShowSecretKeyDialog(open);
+          if (!open) setGeneratedSecretKey(null);
+        }}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>New API Key Generated</DialogTitle>
+              <DialogDescription>
+                Copy this key and save it in a secure password manager. For security reasons, <strong>this key will not be shown again</strong>.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-2">
+              <div className="flex items-center gap-2 rounded border bg-muted/20 p-2.5 font-mono text-sm">
+                <span className="flex-1 truncate">{generatedSecretKey}</span>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-7 w-7"
+                  onClick={() => {
+                    if (generatedSecretKey) {
+                      navigator.clipboard.writeText(generatedSecretKey);
+                      toast.success('API Key copied successfully!');
+                    }
+                  }}
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="p-3 bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-900/30 rounded-md text-xs text-yellow-800 dark:text-yellow-400">
+                <strong>Important:</strong> Storing a new key immediately revokes any previously generated keys for this integration.
+              </div>
+            </div>
           </DialogContent>
         </Dialog>
       </PageBody>
