@@ -155,7 +155,7 @@ export default function NotesPage() {
     setDateRange: setUpdatedOnRange,
     computedDates: computedUpdatedOnDates,
     clearDateRange: clearUpdatedOnRange,
-  } = useDateRangeFilter();
+  } = useDateRangeFilter('updated');
 
   const [selectedCreatedByIds, setSelectedCreatedByIds] = useState<string[]>([]);
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
