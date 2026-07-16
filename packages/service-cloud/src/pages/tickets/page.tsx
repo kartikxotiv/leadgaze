@@ -3,6 +3,7 @@
 import { useCallback, useMemo, useState } from 'react';
 
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Check, FileUp, Loader2, Plus, User } from 'lucide-react';
@@ -162,6 +163,9 @@ export function ServiceCloudTicketsPage({
     SERVICE_CLOUD_FEATURE_KEYS.delete,
   );
 
+  const searchParams = useSearchParams();
+  const filterStatusParam = searchParams?.get('status');
+
   const [selectedCreatedByIds, setSelectedCreatedByIds] = useState<string[]>([]);
   const [selectedStatusIds, setSelectedStatusIds] = useState<string[]>([]);
   const [selectedPriorityIds, setSelectedPriorityIds] = useState<string[]>([]);
@@ -178,7 +182,7 @@ export function ServiceCloudTicketsPage({
     setDateRange: setUpdatedOnRange,
     computedDates: computedUpdatedOnDates,
     clearDateRange: clearUpdatedOnRange,
-  } = useDateRangeFilter();
+  } = useDateRangeFilter('updated');
 
   // Optimized: single API call fetches statuses + priorities + categories in parallel on server
   const { data: lookups, isLoading: lookupsIsLoading } = useQuery({
@@ -205,6 +209,15 @@ export function ServiceCloudTicketsPage({
   });
 
   const categories = allCategories;
+
+  const defaultStatusIds = useMemo(() => {
+    if (filterStatusParam === 'open') {
+      return statuses.filter((s: any) => s.lifecycle === 'open').map((s: any) => s.id);
+    }
+    return statuses
+      .filter((s: any) => s.lifecycle !== 'closed' && s.lifecycle !== 'resolved')
+      .map((s: any) => s.id);
+  }, [statuses, filterStatusParam]);
 
   const statusOptions = statuses.map((status: any) => ({
     label: status.name,
@@ -408,7 +421,11 @@ export function ServiceCloudTicketsPage({
   const queryParams = {
     ...(assignedToMeOnly ? { assignedToMe: 'true' } : {}),
     ...(selectedCreatedByIds.length > 0 ? { createdByIds: selectedCreatedByIds.join(',') } : {}),
-    ...(selectedStatusIds.length > 0 ? { statusIds: selectedStatusIds.join(',') } : {}),
+    ...(selectedStatusIds.length > 0
+      ? { statusIds: selectedStatusIds.join(',') }
+      : defaultStatusIds.length > 0
+        ? { statusIds: defaultStatusIds.join(',') }
+        : {}),
     ...(selectedPriorityIds.length > 0 ? { priorityIds: selectedPriorityIds.join(',') } : {}),
     ...(selectedAssigneeIds.length > 0 ? { assigneeIds: selectedAssigneeIds.join(',') } : {}),
     ...(computedCreatedOnDates?.from
