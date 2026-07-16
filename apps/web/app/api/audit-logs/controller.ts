@@ -84,8 +84,8 @@ export const getAuditLogs = catchAsync(
       query = query.eq('product_key', productKey);
     }
 
-    if (createdAtFrom) query = query.gte('created_at', `${createdAtFrom}T00:00:00.000Z`);
-    if (createdAtTo) query = query.lte('created_at', `${createdAtTo}T23:59:59.999Z`);
+    if (createdAtFrom) query = query.gte('created_at', (createdAtFrom.includes('T') ? createdAtFrom : `${createdAtFrom}T00:00:00.000Z`));
+    if (createdAtTo) query = query.lte('created_at', (createdAtTo.includes('T') ? createdAtTo : `${createdAtTo}T23:59:59.999Z`));
 
     const {
       data: logs,

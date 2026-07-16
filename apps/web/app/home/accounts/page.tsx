@@ -141,7 +141,7 @@ export default function AccountsPage() {
     setDateRange: setUpdatedOnRange,
     computedDates: computedUpdatedOnDates,
     clearDateRange: clearUpdatedOnRange,
-  } = useDateRangeFilter();
+  } = useDateRangeFilter('updated');
 
   const SYSTEM_FIELDS = useMemo(
     () => [

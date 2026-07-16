@@ -128,10 +128,10 @@ export const getNotes = catchAsync(
         if (searchTerm) {
           query = query.ilike('note', `%${searchTerm}%`);
         }
-        if (createdAtFrom) query = query.gte('created_at', `${createdAtFrom}T00:00:00.000Z`);
-        if (createdAtTo) query = query.lte('created_at', `${createdAtTo}T23:59:59.999Z`);
-        if (updatedAtFrom) query = query.gte('updated_at', `${updatedAtFrom}T00:00:00.000Z`);
-        if (updatedAtTo) query = query.lte('updated_at', `${updatedAtTo}T23:59:59.999Z`);
+        if (createdAtFrom) query = query.gte('created_at', (createdAtFrom.includes('T') ? createdAtFrom : `${createdAtFrom}T00:00:00.000Z`));
+        if (createdAtTo) query = query.lte('created_at', (createdAtTo.includes('T') ? createdAtTo : `${createdAtTo}T23:59:59.999Z`));
+        if (updatedAtFrom) query = query.gte('updated_at', (updatedAtFrom.includes('T') ? updatedAtFrom : `${updatedAtFrom}T00:00:00.000Z`));
+        if (updatedAtTo) query = query.lte('updated_at', (updatedAtTo.includes('T') ? updatedAtTo : `${updatedAtTo}T23:59:59.999Z`));
 
         const { data, error } = await query;
         if (error) throw error;
@@ -191,10 +191,10 @@ export const getNotes = catchAsync(
       if (searchTerm) {
         query = query.ilike('note', `%${searchTerm}%`);
       }
-      if (createdAtFrom) query = query.gte('created_at', `${createdAtFrom}T00:00:00.000Z`);
-      if (createdAtTo) query = query.lte('created_at', `${createdAtTo}T23:59:59.999Z`);
-      if (updatedAtFrom) query = query.gte('updated_at', `${updatedAtFrom}T00:00:00.000Z`);
-      if (updatedAtTo) query = query.lte('updated_at', `${updatedAtTo}T23:59:59.999Z`);
+      if (createdAtFrom) query = query.gte('created_at', (createdAtFrom.includes('T') ? createdAtFrom : `${createdAtFrom}T00:00:00.000Z`));
+      if (createdAtTo) query = query.lte('created_at', (createdAtTo.includes('T') ? createdAtTo : `${createdAtTo}T23:59:59.999Z`));
+      if (updatedAtFrom) query = query.gte('updated_at', (updatedAtFrom.includes('T') ? updatedAtFrom : `${updatedAtFrom}T00:00:00.000Z`));
+      if (updatedAtTo) query = query.lte('updated_at', (updatedAtTo.includes('T') ? updatedAtTo : `${updatedAtTo}T23:59:59.999Z`));
 
       const { data, error } = await query;
       if (error) throw error;
