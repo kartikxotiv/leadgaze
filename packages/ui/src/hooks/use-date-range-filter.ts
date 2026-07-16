@@ -1,8 +1,25 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { DateRangeValue } from '../shadcn/list-toolbar';
 
 export function useDateRangeFilter() {
+  const searchParams = useSearchParams();
   const [dateRange, setDateRange] = useState<DateRangeValue | null>(null);
+  const [initialized, setInitialized] = useState(false);
+
+  useEffect(() => {
+    if (!initialized && searchParams) {
+      const preset = searchParams.get('timeframePreset') as DateRangeValue['preset'];
+      if (preset) {
+        setDateRange({
+          preset,
+          from: searchParams.get('timeframeFrom') || null,
+          to: searchParams.get('timeframeTo') || null,
+        });
+      }
+      setInitialized(true);
+    }
+  }, [searchParams, initialized]);
 
   const computedDates = useMemo(() => {
     if (!dateRange) return null;

@@ -49,6 +49,7 @@ export default function ServiceCloudDashboardRoute() {
         <ServiceCloudDashboardPage
           workspaceId={workspaceId}
           dateFilter={computedDates}
+          dateRange={dateRange}
         />
       </PageBody>
     </>
