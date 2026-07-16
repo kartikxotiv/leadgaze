@@ -108,7 +108,7 @@ export function ServiceCloudDashboardPage({
       icon: AlertCircle,
       detail: 'Unresolved customer work',
       iconBg: 'bg-activity-4',
-      link: '/home/services/tickets',
+      link: '/home/services/tickets?status=open',
     },
     {
       label: 'Customers',

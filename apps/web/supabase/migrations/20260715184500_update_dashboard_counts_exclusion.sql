@@ -320,10 +320,12 @@ BEGIN
     AND (p_date_to IS NULL OR t.created_at <= p_date_to)
   INTO v_total_tickets;
 
-  SELECT COUNT(*)::INT FROM service_cloud.tickets
-  WHERE workspace_id = p_workspace_id AND is_deleted = false AND closed_at IS NULL
-    AND (p_date_from IS NULL OR created_at >= p_date_from)
-    AND (p_date_to IS NULL OR created_at <= p_date_to)
+  SELECT COUNT(*)::INT FROM service_cloud.tickets t
+  LEFT JOIN service_cloud.ticket_statuses ts ON ts.id = t.status_id
+  WHERE t.workspace_id = p_workspace_id AND t.is_deleted = false
+    AND ts.lifecycle = 'open'
+    AND (p_date_from IS NULL OR t.created_at >= p_date_from)
+    AND (p_date_to IS NULL OR t.created_at <= p_date_to)
   INTO v_open_tickets;
 
   SELECT COUNT(*)::INT FROM service_cloud.customers
@@ -372,13 +374,14 @@ BEGIN
       tp.name,
       tp.color,
       COUNT(t.id)::INT as count,
-      COUNT(t.id) FILTER (WHERE t.closed_at IS NULL)::INT as "openCount"
+      COUNT(t.id) FILTER (WHERE ts.lifecycle = 'open')::INT as "openCount"
     FROM service_cloud.ticket_priorities tp
     LEFT JOIN service_cloud.tickets t ON t.priority_id = tp.id
       AND t.workspace_id = p_workspace_id
       AND t.is_deleted = false
       AND (p_date_from IS NULL OR t.created_at >= p_date_from)
       AND (p_date_to IS NULL OR t.created_at <= p_date_to)
+    LEFT JOIN service_cloud.ticket_statuses ts ON ts.id = t.status_id
     WHERE tp.workspace_id = p_workspace_id
     GROUP BY tp.id, tp.name, tp.color, tp.severity_order
     ORDER BY tp.severity_order
@@ -392,8 +395,8 @@ BEGIN
       c.email,
       o.name as organization,
       COUNT(t.id)::INT as "totalTickets",
-      COUNT(t.id) FILTER (WHERE t.closed_at IS NULL)::INT as "openTickets",
-      COUNT(t.id) FILTER (WHERE t.closed_at IS NOT NULL)::INT as "closedTickets",
+      COUNT(t.id) FILTER (WHERE ts.lifecycle = 'open')::INT as "openTickets",
+      COUNT(t.id) FILTER (WHERE ts.lifecycle IN ('resolved', 'closed'))::INT as "closedTickets",
       COALESCE(SUM(t.total_logged_seconds), 0)::INT as "loggedSeconds",
       MAX(t.created_at) as "latestTicketAt"
     FROM service_cloud.customers c
@@ -402,6 +405,7 @@ BEGIN
       AND t.is_deleted = false
       AND (p_date_from IS NULL OR t.created_at >= p_date_from)
       AND (p_date_to IS NULL OR t.created_at <= p_date_to)
+    LEFT JOIN service_cloud.ticket_statuses ts ON ts.id = t.status_id
     LEFT JOIN service_cloud.organizations o ON o.id = c.organization_id
     WHERE c.workspace_id = p_workspace_id AND c.is_deleted = false
       AND (p_date_from IS NULL OR c.created_at >= p_date_from)
@@ -429,8 +433,7 @@ BEGIN
     LEFT JOIN public.accounts a ON a.id = t.assigned_agent_id
     WHERE t.workspace_id = p_workspace_id
       AND t.is_deleted = false
-      AND t.closed_at IS NULL
-      AND (ts.lifecycle IS NULL OR ts.lifecycle NOT IN ('resolved', 'closed'))
+      AND ts.lifecycle = 'open'
       AND (p_date_from IS NULL OR t.created_at >= p_date_from)
       AND (p_date_to IS NULL OR t.created_at <= p_date_to)
     ORDER BY t.created_at ASC
@@ -493,11 +496,12 @@ BEGIN
       COALESCE(t.assigned_agent_id::TEXT, 'unassigned') as id,
       COALESCE(a.name, a.email, 'Unassigned') as name,
       COUNT(t.id)::INT as "totalTickets",
-      COUNT(t.id) FILTER (WHERE t.closed_at IS NULL)::INT as "openTickets",
+      COUNT(t.id) FILTER (WHERE ts.lifecycle = 'open')::INT as "openTickets",
       COALESCE(SUM(t.total_logged_seconds), 0)::INT as "ticketLoggedSeconds",
       0::INT as "actualLoggedSeconds"
     FROM service_cloud.tickets t
     LEFT JOIN public.accounts a ON a.id = t.assigned_agent_id
+    LEFT JOIN service_cloud.ticket_statuses ts ON ts.id = t.status_id
     WHERE t.workspace_id = p_workspace_id AND t.is_deleted = false
       AND (p_date_from IS NULL OR t.created_at >= p_date_from)
       AND (p_date_to IS NULL OR t.created_at <= p_date_to)
