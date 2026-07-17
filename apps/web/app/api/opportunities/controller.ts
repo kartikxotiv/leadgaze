@@ -199,10 +199,10 @@ export const getOpportunities = catchAsync(
         .eq('is_deleted', false),
     );
 
-    if (createdAtFrom) mainQuery = mainQuery.gte('created_at', `${createdAtFrom}T00:00:00.000Z`);
-    if (createdAtTo) mainQuery = mainQuery.lte('created_at', `${createdAtTo}T23:59:59.999Z`);
-    if (updatedAtFrom) mainQuery = mainQuery.gte('updated_at', `${updatedAtFrom}T00:00:00.000Z`);
-    if (updatedAtTo) mainQuery = mainQuery.lte('updated_at', `${updatedAtTo}T23:59:59.999Z`);
+    if (createdAtFrom) mainQuery = mainQuery.gte('created_at', (createdAtFrom.includes('T') ? createdAtFrom : `${createdAtFrom}T00:00:00.000Z`));
+    if (createdAtTo) mainQuery = mainQuery.lte('created_at', (createdAtTo.includes('T') ? createdAtTo : `${createdAtTo}T23:59:59.999Z`));
+    if (updatedAtFrom) mainQuery = mainQuery.gte('updated_at', (updatedAtFrom.includes('T') ? updatedAtFrom : `${updatedAtFrom}T00:00:00.000Z`));
+    if (updatedAtTo) mainQuery = mainQuery.lte('updated_at', (updatedAtTo.includes('T') ? updatedAtTo : `${updatedAtTo}T23:59:59.999Z`));
 
     if (accountId) {
       mainQuery = mainQuery.eq('account_id', accountId);

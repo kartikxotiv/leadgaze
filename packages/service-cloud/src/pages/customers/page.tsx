@@ -141,7 +141,7 @@ export function ServiceCloudCustomersPage({
     setDateRange: setUpdatedOnRange,
     computedDates: computedUpdatedOnDates,
     clearDateRange: clearUpdatedOnRange,
-  } = useDateRangeFilter();
+  } = useDateRangeFilter('updated');
 
   const activeFilterCount =
     (selectedCreatedByIds.length > 0 ? 1 : 0) +

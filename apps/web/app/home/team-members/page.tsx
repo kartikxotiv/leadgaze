@@ -205,10 +205,11 @@ export default function TeamMembersPage() {
   // Server handles the search filter; query is skipped for 'accepted' or default empty filter
   const { data: pendingInvitationsData, isLoading: isLoadingInvitations } =
     useQuery({
-      queryKey: ['pendingInvitations', currentWorkspace?.id, debouncedSearchTerm, statusFilter],
+      queryKey: ['pendingInvitations', currentWorkspace?.id, productKey, debouncedSearchTerm, statusFilter],
       queryFn: () =>
         getPendingInvitationsService(
           currentWorkspace?.id || '',
+          productKey,
           debouncedSearchTerm || undefined,
         ),
       enabled: !!currentWorkspace?.id && statusFilter !== 'accepted' && statusFilter !== '',

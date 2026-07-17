@@ -36,7 +36,7 @@ export default function HomePage() {
         </PageHeaderActions>
       </PageHeader>
       <PageBody>
-        <DashboardDemo dateFilter={computedDates} />
+        <DashboardDemo dateFilter={computedDates} dateRange={dateRange} />
       </PageBody>
     </WorkspaceCheckWrapper>
   );
