@@ -731,13 +731,15 @@ export default function LeadsPage() {
   );
 
   /** Full columns list: system + custom (for export header row) */
-  const exportColumns = useMemo(
-    () => [
+  const exportColumns = useMemo(() => {
+    const cols = [
       ...EXPORT_COLUMNS,
       ...customFields.map((cf) => ({ key: cf.field_key, label: cf.field_label })),
-    ],
-    [customFields],
-  );
+    ];
+    return fieldPermissionCtx
+      ? filterExportColumns(cols, fieldPermissionCtx)
+      : cols;
+  }, [customFields, fieldPermissionCtx]);
 
   const { exportToCsv: triggerExport } = useCsvExport<Lead>({
     filename: 'leads_export',

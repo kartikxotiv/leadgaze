@@ -265,15 +265,18 @@ export function ServiceCloudTicketsPage({
     [],
   );
 
-  const exportColumns = useMemo(
-    () => [
+  const exportColumns = useMemo(() => {
+    const cols = [
       ...EXPORT_COLUMNS,
       ...systemFields
         .filter((f: any) => !f.is_system)
         .map((f: any) => ({ key: f.field_key, label: f.field_label })),
-    ],
-    [EXPORT_COLUMNS, systemFields],
-  );
+    ];
+    if (canViewColumn) {
+      return cols.filter((col) => canViewColumn(col.key));
+    }
+    return cols;
+  }, [EXPORT_COLUMNS, systemFields, canViewColumn]);
 
   const serializeTicketRow = useCallback(
     (ticket: any): Record<string, string> => {

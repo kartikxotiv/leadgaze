@@ -656,13 +656,15 @@ export default function AccountsPage() {
     [customFields, formatDate],
   );
 
-  const exportColumns = useMemo(
-    () => [
+  const exportColumns = useMemo(() => {
+    const cols = [
       ...EXPORT_COLUMNS,
       ...customFields.map((cf) => ({ key: cf.field_key, label: cf.field_label })),
-    ],
-    [customFields, EXPORT_COLUMNS],
-  );
+    ];
+    return _fieldPermissionCtx
+      ? filterExportColumns(cols, _fieldPermissionCtx)
+      : cols;
+  }, [customFields, EXPORT_COLUMNS, _fieldPermissionCtx]);
 
   const handleExportAll = useCallback(async () => {
     if (!workspace?.id) return;
