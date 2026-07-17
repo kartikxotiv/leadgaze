@@ -150,10 +150,10 @@ export function createCoreControllers(config: CoreResourceConfig) {
       if (filteredIds) query = query.in('id', filteredIds);
       if (threadId && config.table === 'emails') query = query.eq('thread_id', threadId);
 
-      if (createdAtFrom) query = query.gte('created_at', `${createdAtFrom}T00:00:00.000Z`);
-      if (createdAtTo) query = query.lte('created_at', `${createdAtTo}T23:59:59.999Z`);
-      if (updatedAtFrom) query = query.gte('updated_at', `${updatedAtFrom}T00:00:00.000Z`);
-      if (updatedAtTo) query = query.lte('updated_at', `${updatedAtTo}T23:59:59.999Z`);
+      if (createdAtFrom) query = query.gte('created_at', (createdAtFrom.includes('T') ? createdAtFrom : `${createdAtFrom}T00:00:00.000Z`));
+      if (createdAtTo) query = query.lte('created_at', (createdAtTo.includes('T') ? createdAtTo : `${createdAtTo}T23:59:59.999Z`));
+      if (updatedAtFrom) query = query.gte('updated_at', (updatedAtFrom.includes('T') ? updatedAtFrom : `${updatedAtFrom}T00:00:00.000Z`));
+      if (updatedAtTo) query = query.lte('updated_at', (updatedAtTo.includes('T') ? updatedAtTo : `${updatedAtTo}T23:59:59.999Z`));
       if (!id) {
         const order = config.defaultOrder ?? { column: 'created_at', ascending: false };
         query = query.order(order.column, { ascending: order.ascending });

@@ -118,6 +118,7 @@
     "./page-size-selector": "./src/shadcn/page-size-selector.tsx",
     "./detail-header": "./src/shadcn/detail-header.tsx",
     "./detail-info-row": "./src/shadcn/detail-info-row.tsx",
+    "./view-toggle": "./src/shadcn/view-toggle.tsx",
     "./utils": "./src/lib/utils/index.ts",
     "./use-column-visibility": "./src/hooks/use-column-visibility.ts",
     "./use-column-resize": "./src/hooks/use-column-resize.ts",

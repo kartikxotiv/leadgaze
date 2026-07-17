@@ -78,6 +78,7 @@ interface CsvImportDialogProps {
   saveButtonLabel?: string;
   acceptedFileName?: string;
   onUpload?: (result: CsvImportResult) => Promise<void> | void;
+  disabledReason?: string | null;
 }
 
 function autoMatch(originalValue: string, columns: CsvImportColumn[]): string {
@@ -106,6 +107,7 @@ export function CsvImportDialog({
   saveButtonLabel = 'Save Header Changes',
   acceptedFileName,
   onUpload,
+  disabledReason,
 }: CsvImportDialogProps) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -291,6 +293,19 @@ export function CsvImportDialog({
           )}
         </DialogHeader>
 
+        {/* ── Disabled Reason Banner ── */}
+        {disabledReason && (
+          <div className="bg-rose-50 border-b border-rose-200 px-6 py-4 dark:bg-rose-950/30 dark:border-rose-900/50">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="h-5 w-5 shrink-0 text-rose-600 mt-0.5" />
+              <div>
+                <h4 className="text-sm font-semibold text-rose-800 dark:text-rose-200">Import Disabled</h4>
+                <p className="text-sm text-rose-700 dark:text-rose-300 mt-1">{disabledReason}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* ── Scrollable Body ── */}
         <div className="min-h-0 flex-1 overflow-y-auto">
           {!selectedFile ? (
@@ -319,7 +334,7 @@ export function CsvImportDialog({
                   importing.
                 </p>
                 <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
-                  <Button onClick={handleBrowse}>Browse CSV</Button>
+                  <Button onClick={handleBrowse} disabled={!!disabledReason}>Browse CSV</Button>
                   <span className="text-xs text-slate-500 dark:text-slate-400">
                     or drag and drop a file
                   </span>
@@ -330,6 +345,7 @@ export function CsvImportDialog({
                   accept=".csv,text/csv"
                   className="hidden"
                   onChange={handleFileChange}
+                  disabled={!!disabledReason}
                 />
               </div>
             </div>

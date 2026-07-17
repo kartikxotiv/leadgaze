@@ -38,7 +38,7 @@ import type { ColumnEditFieldShape } from '@kit/ui/column-edit-modal';
 import { ColumnHeader } from '@kit/ui/column-header';
 import { CsvExportButton } from '@kit/ui/csv-export-button';
 import { CsvImportDialog } from '@kit/ui/csv-import-dialog';
-import { filterExportColumns } from '~/lib/field-permission';
+import { filterExportColumns, filterImportColumns } from '~/lib/field-permission';
 import { useDebounce } from '~/lib/hooks/use-debounce';
 import {
   useCreateField,
@@ -172,7 +172,7 @@ export default function ContactsPage() {
     setDateRange: setUpdatedOnRange,
     computedDates: computedUpdatedOnDates,
     clearDateRange: clearUpdatedOnRange,
-  } = useDateRangeFilter();
+  } = useDateRangeFilter('updated');
 
   const SYSTEM_FIELDS = useMemo(
     () => [
@@ -318,7 +318,7 @@ export default function ContactsPage() {
     [isVisible, canViewColumn],
   );
 
-  const importColumns = useMemo(() => {
+  const { importColumns, missingRequiredImportFields } = useMemo(() => {
     const cols = [
       { key: 'first_name', label: 'First Name', required: true },
       { key: 'last_name', label: 'Last Name' },
@@ -349,9 +349,11 @@ export default function ContactsPage() {
         required: false,
       })),
     ];
-    return _fieldPermissionCtx
-      ? filterExportColumns(cols, _fieldPermissionCtx)
-      : cols;
+    if (_fieldPermissionCtx) {
+      const { allowedColumns, missingRequired } = filterImportColumns(cols, _fieldPermissionCtx);
+      return { importColumns: allowedColumns, missingRequiredImportFields: missingRequired };
+    }
+    return { importColumns: cols, missingRequiredImportFields: [] };
   }, [_fieldPermissionCtx, customFields]);
 
   const openColumnEdit = (fieldKey: string) => {
@@ -633,13 +635,15 @@ export default function ContactsPage() {
     [customFields, formatDate],
   );
 
-  const exportColumns = useMemo(
-    () => [
+  const exportColumns = useMemo(() => {
+    const cols = [
       ...EXPORT_COLUMNS,
       ...customFields.map((cf) => ({ key: cf.field_key, label: cf.field_label })),
-    ],
-    [customFields, EXPORT_COLUMNS],
-  );
+    ];
+    return _fieldPermissionCtx
+      ? filterExportColumns(cols, _fieldPermissionCtx)
+      : cols;
+  }, [customFields, EXPORT_COLUMNS, _fieldPermissionCtx]);
 
   const handleExportAll = useCallback(async () => {
     if (!workspace?.id) return;
@@ -1174,6 +1178,11 @@ export default function ContactsPage() {
           title="Import Contacts from CSV"
           description="Upload a CSV, match each header to a database column, and save the adjusted file before the API upload step."
           columns={importColumns}
+          disabledReason={
+            missingRequiredImportFields.length > 0
+              ? `You do not have permission to edit mandatory fields required for import: ${missingRequiredImportFields.join(', ')}. Please contact your administrator.`
+              : null
+          }
           onUpload={async ({ headers, rows }) => {
             const customFieldKeys = new Set(customFields.map((cf) => cf.field_key));
 

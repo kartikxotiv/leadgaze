@@ -21,7 +21,7 @@ import { ColumnHeader } from '@kit/ui/column-header';
 import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
 import { CsvExportButton } from '@kit/ui/csv-export-button';
 import { CsvImportDialog } from '@kit/ui/csv-import-dialog';
-import { filterExportColumns } from '~/lib/field-permission';
+import { filterExportColumns, filterImportColumns } from '~/lib/field-permission';
 import CustomTableContainer from '@kit/ui/custom-table-container';
 import { ListToolBar } from '@kit/ui/list-toolbar';
 import type { FilterGroup } from '@kit/ui/list-toolbar';
@@ -73,7 +73,7 @@ import { DeleteEntityDialog } from '../_components/delete-entity-dialog';
 import { EntityActionsDropdown } from '../_components/entity-actions-dropdown';
 import { OpportunityDialog } from './components/opportunity-dialog';
 import { OpportunitiesKanbanBoard } from './components/kanban/opportunities-kanban-board';
-import { ViewToggle } from '../leads/components/view-toggle';
+import { ViewToggle } from '@kit/ui/view-toggle';
 
 function PriorityBadge({ priority }: { priority: string | null | undefined }) {
   switch (priority?.toLowerCase()) {
@@ -212,7 +212,7 @@ export default function OpportunitiesPage() {
     setDateRange: setUpdatedOnRange,
     computedDates: computedUpdatedOnDates,
     clearDateRange: clearUpdatedOnRange,
-  } = useDateRangeFilter();
+  } = useDateRangeFilter('updated');
 
   const SYSTEM_FIELDS = useMemo(
     () => [
@@ -372,7 +372,7 @@ export default function OpportunitiesPage() {
     })),
   ];
 
-  const importColumns = useMemo(() => {
+  const { importColumns, missingRequiredImportFields } = useMemo(() => {
     const cols = [
       { key: 'opportunity_name', label: 'Opportunity Name', required: true },
       { key: 'account_id', label: 'Account ID', required: true },
@@ -394,9 +394,11 @@ export default function OpportunitiesPage() {
         required: false,
       })),
     ];
-    return _fieldPermissionCtx
-      ? filterExportColumns(cols, _fieldPermissionCtx)
-      : cols;
+    if (_fieldPermissionCtx) {
+      const { allowedColumns, missingRequired } = filterImportColumns(cols, _fieldPermissionCtx);
+      return { importColumns: allowedColumns, missingRequiredImportFields: missingRequired };
+    }
+    return { importColumns: cols, missingRequiredImportFields: [] };
   }, [_fieldPermissionCtx, customFields]);
 
   const { visibility, toggleVisibility, isVisible, reset, mergeNewColumns } =
@@ -997,13 +999,15 @@ export default function OpportunitiesPage() {
     [customFields, formatDate, formatOpportunityAmount],
   );
 
-  const exportColumns = useMemo(
-    () => [
+  const exportColumns = useMemo(() => {
+    const cols = [
       ...EXPORT_COLUMNS,
       ...customFields.map((cf) => ({ key: cf.field_key, label: cf.field_label })),
-    ],
-    [customFields, EXPORT_COLUMNS],
-  );
+    ];
+    return _fieldPermissionCtx
+      ? filterExportColumns(cols, _fieldPermissionCtx)
+      : cols;
+  }, [customFields, EXPORT_COLUMNS, _fieldPermissionCtx]);
 
   const handleExportAll = useCallback(async () => {
     if (!workspace?.id) return;
@@ -1560,6 +1564,11 @@ export default function OpportunitiesPage() {
           title="Import Opportunities from CSV"
           description="Upload a CSV, match each header to a database column, and save the adjusted file before the API upload step."
           columns={importColumns}
+          disabledReason={
+            missingRequiredImportFields.length > 0
+              ? `You do not have permission to edit mandatory fields required for import: ${missingRequiredImportFields.join(', ')}. Please contact your administrator.`
+              : null
+          }
           onUpload={async ({ headers, rows }) => {
             const customFieldKeys = new Set(customFields.map((cf) => cf.field_key));
 

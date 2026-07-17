@@ -132,11 +132,10 @@ export function LeadsKanbanBoard({
     useSensor(KeyboardSensor),
   );
 
-  // Sort statuses by sort_order, exclude 'unqualified'
+  // Sort statuses by sort_order
   const sortedStatuses = useMemo(
     () =>
       [...statuses]
-        .filter((s) => s.status_key !== 'unqualified')
         .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)),
     [statuses],
   );

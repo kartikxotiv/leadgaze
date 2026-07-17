@@ -39,7 +39,7 @@ import { useDateRangeFilter } from '@kit/ui/use-date-range-filter';
 import { useTableSort } from '@kit/ui/use-table-sort';
 import { cn } from '@kit/ui/utils';
 
-import { filterExportColumns } from '~/lib/field-permission';
+import { filterExportColumns, filterImportColumns } from '~/lib/field-permission';
 import { useDebounce } from '~/lib/hooks/use-debounce';
 import {
   useCreateField,
@@ -153,7 +153,7 @@ export default function AccountsPage() {
     setDateRange: setUpdatedOnRange,
     computedDates: computedUpdatedOnDates,
     clearDateRange: clearUpdatedOnRange,
-  } = useDateRangeFilter();
+  } = useDateRangeFilter('updated');
 
   const SYSTEM_FIELDS = useMemo(
     () => [
@@ -320,7 +320,7 @@ export default function AccountsPage() {
     })),
   ];
 
-  const importColumns = useMemo(() => {
+  const { importColumns, missingRequiredImportFields } = useMemo(() => {
     const cols = [
       { key: 'account_name', label: 'Account Name', required: true },
       { key: 'website', label: 'Website' },
@@ -342,9 +342,11 @@ export default function AccountsPage() {
         required: false,
       })),
     ];
-    return _fieldPermissionCtx
-      ? filterExportColumns(cols, _fieldPermissionCtx)
-      : cols;
+    if (_fieldPermissionCtx) {
+      const { allowedColumns, missingRequired } = filterImportColumns(cols, _fieldPermissionCtx);
+      return { importColumns: allowedColumns, missingRequiredImportFields: missingRequired };
+    }
+    return { importColumns: cols, missingRequiredImportFields: [] };
   }, [_fieldPermissionCtx, customFields]);
 
   const { visibility, toggleVisibility, isVisible, reset, mergeNewColumns } =
@@ -656,13 +658,15 @@ export default function AccountsPage() {
     [customFields, formatDate],
   );
 
-  const exportColumns = useMemo(
-    () => [
+  const exportColumns = useMemo(() => {
+    const cols = [
       ...EXPORT_COLUMNS,
       ...customFields.map((cf) => ({ key: cf.field_key, label: cf.field_label })),
-    ],
-    [customFields, EXPORT_COLUMNS],
-  );
+    ];
+    return _fieldPermissionCtx
+      ? filterExportColumns(cols, _fieldPermissionCtx)
+      : cols;
+  }, [customFields, EXPORT_COLUMNS, _fieldPermissionCtx]);
 
   const handleExportAll = useCallback(async () => {
     if (!workspace?.id) return;
@@ -1231,6 +1235,11 @@ export default function AccountsPage() {
           title="Import Accounts from CSV"
           description="Upload a CSV, match each header to a database column, and save the adjusted file before the API upload step."
           columns={importColumns}
+          disabledReason={
+            missingRequiredImportFields.length > 0
+              ? `You do not have permission to edit mandatory fields required for import: ${missingRequiredImportFields.join(', ')}. Please contact your administrator.`
+              : null
+          }
           onUpload={async ({ headers, rows }) => {
             const customFieldKeys = new Set(customFields.map((cf) => cf.field_key));
 

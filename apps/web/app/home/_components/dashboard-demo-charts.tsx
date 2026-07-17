@@ -78,8 +78,10 @@ import { Skeleton } from '@kit/ui/skeleton';
 
 export default function DashboardDemo({
   dateFilter,
+  dateRange,
 }: {
   dateFilter?: { from: string | null; to: string | null } | null;
+  dateRange?: any;
 }) {
   const { currentWorkspace } = useRBAC();
   const { formatCurrency } = useLocalization();
@@ -141,6 +143,15 @@ export default function DashboardDemo({
   const [isCreateAccountOpen, setIsCreateAccountOpen] = useState(false);
   const [isCreateOpportunityOpen, setIsCreateOpportunityOpen] = useState(false);
 
+  const queryString = useMemo(() => {
+    if (!dateRange || !dateRange.preset) return '';
+    const params = new URLSearchParams();
+    params.set('timeframePreset', dateRange.preset);
+    if (dateRange.from) params.set('timeframeFrom', dateRange.from);
+    if (dateRange.to) params.set('timeframeTo', dateRange.to);
+    return `?${params.toString()}`;
+  }, [dateRange]);
+
   const handleCreateSuccess = () => {
     refetch();
     // Also refetch recent contacts if table is visible
@@ -172,7 +183,7 @@ export default function DashboardDemo({
                 Total Leads
               </CardTitle>
               <Link
-                href="/home/sales/leads"
+                href={`/home/sales/leads${queryString}`}
                 className="hover:underline"
               >
                 <Figure>{metrics.leads.total}</Figure>
@@ -196,7 +207,7 @@ export default function DashboardDemo({
                 Contacts
               </CardTitle>
               <Link
-                href="/home/sales/contacts"
+                href={`/home/sales/contacts${queryString}`}
                 className="hover:underline"
               >
                 <Figure>{metrics.contacts.total}</Figure>
@@ -220,7 +231,7 @@ export default function DashboardDemo({
                 Accounts
               </CardTitle>
               <Link
-                href="/home/sales/accounts"
+                href={`/home/sales/accounts${queryString}`}
                 className="hover:underline"
               >
                 <Figure>{metrics.accounts.total}</Figure>
@@ -244,7 +255,7 @@ export default function DashboardDemo({
                 Pipeline Value
               </CardTitle>
               <Link
-                href="/home/sales/opportunities"
+                href={`/home/sales/opportunities${queryString}`}
                 className="hover:underline"
               >
                 <Figure>

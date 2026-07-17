@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useMemo } from 'react';
 
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -48,9 +49,11 @@ function percent(value: number, max: number) {
 export function ServiceCloudDashboardPage({
   workspaceId,
   dateFilter,
+  dateRange,
 }: {
   workspaceId: string;
   dateFilter?: { from: string | null; to: string | null } | null;
+  dateRange?: any;
 }) {
   const { formatDate } = useLocalization();
   const { canAccess, isLoading: isPermissionLoading } =
@@ -59,6 +62,15 @@ export function ServiceCloudDashboardPage({
     SERVICE_CLOUD_MODULE_KEYS.dashboard,
     SERVICE_CLOUD_FEATURE_KEYS.view,
   );
+
+  const queryString = useMemo(() => {
+    if (!dateRange || !dateRange.preset) return '';
+    const params = new URLSearchParams();
+    params.set('timeframePreset', dateRange.preset);
+    if (dateRange.from) params.set('timeframeFrom', dateRange.from);
+    if (dateRange.to) params.set('timeframeTo', dateRange.to);
+    return `?${params.toString()}`;
+  }, [dateRange]);
 
   const { data, isLoading } = useQuery({
     queryKey: ['service-cloud', 'dashboard', workspaceId, dateFilter],
@@ -96,7 +108,7 @@ export function ServiceCloudDashboardPage({
       icon: AlertCircle,
       detail: 'Unresolved customer work',
       iconBg: 'bg-activity-4',
-      link: '/home/services/tickets',
+      link: '/home/services/tickets?status=open',
     },
     {
       label: 'Customers',
@@ -173,7 +185,7 @@ export function ServiceCloudDashboardPage({
                     {card.label}
                   </CardTitle>
                   {card.link ? <Link
-                    href={card.link}
+                    href={card.link.includes('?') ? `${card.link}&${queryString.replace('?', '')}` : `${card.link}${queryString}`}
                     className="hover:underline"
                   >
                     <div className="primary-heading-number text-leadgaze-dark dark:text-zinc-100">
@@ -312,7 +324,7 @@ export function ServiceCloudDashboardPage({
                   {customerBreakdown.slice(0, 6).map((customer: any) => (
                     <Link
                       key={customer.id}
-                      href="/home/services/customers"
+                      href={`/home/services/customers${queryString}`}
                       className="block"
                     >
                       <CardWidgetListItem
