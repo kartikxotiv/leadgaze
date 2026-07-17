@@ -44,7 +44,9 @@ const importTickets = catchAsync(async ({ request }: { request: NextRequest }) =
   const defaultStatus = statuses.find((s) => s.is_default) || statuses[0];
   const defaultPriority = priorities.find((p) => p.is_default) || priorities[0];
 
-  const insertPayloads = data.map((row: any) => {
+  const insertPayloads = [];
+
+  for (const row of data) {
     const cleanedRow: any = {};
     for (const [key, value] of Object.entries(row)) {
       if (value !== '') {
@@ -79,14 +81,41 @@ const importTickets = catchAsync(async ({ request }: { request: NextRequest }) =
     }
 
     // 5. Customer Mapping
-    if (cleanedRow.customer_id) {
-      const search = cleanedRow.customer_id.toLowerCase();
-      const match = customers.find((c) => c.name?.toLowerCase() === search || c.email?.toLowerCase() === search);
+    if (cleanedRow.customer_email) {
+      const emailSearch = cleanedRow.customer_email.toLowerCase();
+      let match = customers.find((c) => c.email?.toLowerCase() === emailSearch);
+      
+      if (!match && cleanedRow.customer_name) {
+        // Create new customer
+        const { data: newCustomer, error: customerError } = await supabase
+          .schema('service_cloud')
+          .from('customers')
+          .insert({
+            workspace_id: workspaceId,
+            name: cleanedRow.customer_name,
+            email: cleanedRow.customer_email,
+            created_by: user.id
+          })
+          .select('id, name, email')
+          .single();
+
+        if (newCustomer) {
+          match = newCustomer;
+          customers.push(newCustomer); // Add to local array to avoid duplicate creation
+        } else {
+          console.error('Error creating customer:', customerError);
+        }
+      }
+      
       if (match) {
         cleanedRow.customer_id = match.id;
-      } else {
-        delete cleanedRow.customer_id;
       }
+      
+      delete cleanedRow.customer_email;
+      delete cleanedRow.customer_name;
+    } else {
+      delete cleanedRow.customer_email;
+      delete cleanedRow.customer_name;
     }
 
     // 6. Organization Mapping
@@ -110,13 +139,13 @@ const importTickets = catchAsync(async ({ request }: { request: NextRequest }) =
       delete cleanedRow.owner_id;
     }
 
-    return {
+    insertPayloads.push({
       workspace_id: workspaceId,
       created_by: user.id,
       assigned_agent_id: cleanedRow.assigned_agent_id || user.id,
       ...cleanedRow,
-    };
-  });
+    });
+  }
 
   const { data: result, error } = await supabase
     .schema('service_cloud')
