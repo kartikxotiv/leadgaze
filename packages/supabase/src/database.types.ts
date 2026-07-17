@@ -8896,11 +8896,17 @@ export type Database = {
           p_user_id?: string
           p_visible_user_ids?: string[]
           p_workspace_id: string
+          p_date_from?: string | null
+          p_date_to?: string | null
         }
         Returns: Json
       }
       get_service_cloud_dashboard_stats: {
-        Args: { p_workspace_id: string }
+        Args: {
+          p_workspace_id: string
+          p_date_from?: string | null
+          p_date_to?: string | null
+        }
         Returns: Json
       }
       initialize_workspace_crm_data: {

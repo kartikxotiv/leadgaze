@@ -2040,7 +2040,7 @@ export default function MeetingsPage() {
     setDateRange: setUpdatedOnRange,
     computedDates: computedUpdatedOnDates,
     clearDateRange: clearUpdatedOnRange,
-  } = useDateRangeFilter();
+  } = useDateRangeFilter('updated');
 
   const isAdmin = useMemo(() => {
     if (!workspace) return false;

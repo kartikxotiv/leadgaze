@@ -719,6 +719,7 @@ const getPendingInvitations = catchAsync(
     const url = new URL(request.url);
     const workspaceId = url.searchParams.get('workspaceId');
     const search = url.searchParams.get('search');
+    const productKey = url.searchParams.get('productKey');
 
     if (!workspaceId) {
       return NextResponse.json(
@@ -737,11 +738,16 @@ const getPendingInvitations = catchAsync(
         invited_at,
         created_at,
         token_expires_at,
+        product_key,
         role:workspace_roles(id, role_name, role_key, hierarchy_level, color)
       `,
       )
       .eq('workspace_id', workspaceId)
       .eq('status', 'pending');
+
+    if (productKey) {
+      query = query.eq('product_key', productKey);
+    }
 
     if (search) {
       query = query.ilike('email', `%${search}%`);
