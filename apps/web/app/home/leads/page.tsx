@@ -39,7 +39,7 @@ import { useDateRangeFilter } from '@kit/ui/use-date-range-filter';
 import { useTableSort } from '@kit/ui/use-table-sort';
 import { cn } from '@kit/ui/utils';
 
-import { filterExportColumns } from '~/lib/field-permission';
+import { filterExportColumns, filterImportColumns } from '~/lib/field-permission';
 import { useDebounce } from '~/lib/hooks/use-debounce';
 import {
   type AccessType,
@@ -392,7 +392,7 @@ export default function LeadsPage() {
   ];
 
   // Import columns for CSV import
-  const importColumns = useMemo(() => {
+  const { importColumns, missingRequiredImportFields } = useMemo(() => {
     const cols = [
       { key: 'first_name', label: 'First Name', required: true },
       { key: 'last_name', label: 'Last Name' },
@@ -424,9 +424,11 @@ export default function LeadsPage() {
         required: false,
       })),
     ];
-    return fieldPermissionCtx
-      ? filterExportColumns(cols, fieldPermissionCtx)
-      : cols;
+    if (fieldPermissionCtx) {
+      const { allowedColumns, missingRequired } = filterImportColumns(cols, fieldPermissionCtx);
+      return { importColumns: allowedColumns, missingRequiredImportFields: missingRequired };
+    }
+    return { importColumns: cols, missingRequiredImportFields: [] };
   }, [fieldPermissionCtx, customFields]);
 
   // Initialize column visibility (merged with DB preferences when available)
@@ -1543,6 +1545,11 @@ export default function LeadsPage() {
           title="Import Leads from CSV"
           description="Upload a CSV, match each header to a database column, and save the adjusted file before the API upload step."
           columns={importColumns}
+          disabledReason={
+            missingRequiredImportFields.length > 0
+              ? `You do not have permission to edit mandatory fields required for import: ${missingRequiredImportFields.join(', ')}. Please contact your administrator.`
+              : null
+          }
           onUpload={async ({ headers, rows }) => {
             const customFieldKeys = new Set(customFields.map((cf) => cf.field_key));
 
