@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 
 import { usePathname, useRouter } from 'next/navigation';
 
-import { Building2, CreditCard, Globe, Mail, Settings2, Video } from 'lucide-react';
+import { Building2, CreditCard, Globe, Mail, Settings2, Video, Link2 } from 'lucide-react';
 
 import { CoreEmailSettingsPage } from '@kit/core/pages';
 import { getSupabaseBrowserClient } from '@kit/supabase/browser-client';
@@ -26,6 +26,7 @@ import OrgSubscriptionPage from '~/org/subscription/page';
 import { WorkspaceLocalizationSettings } from './_components/localization-settings';
 import { MeetingAccountsSettings } from './_components/meeting-accounts-settings';
 import { WorkspaceGeneralSettings } from './_components/general-settings';
+import { WorkspaceIntegrationsSettings } from './_components/integrations-settings';
 
 type WorkspaceSummary = {
   id: string;
@@ -166,14 +167,17 @@ export default function WorkspaceSettingsPage() {
   const canManageEmail = canAccess('emails', 'manage_email');
   const canManageMeetings = 1 == 1 || canAccess('meetings', 'manage');
 
-  const pathname = usePathname();
+  const pathname = usePathname() || '';
+  const isSalesModule = pathname.includes('/sales');
+  const showMeetingsTab = canManageMeetings && isSalesModule;
+
   const defaultTab = canViewGeneralSettings
     ? 'general'
     : canViewSettings
       ? 'localization'
       : canViewSubscription
         ? 'billing'
-        : canManageMeetings
+        : showMeetingsTab
           ? 'meetings'
           : 'emails';
 
@@ -249,13 +253,22 @@ export default function WorkspaceSettingsPage() {
                 Email Accounts
               </TabsTrigger>
             )}
-            {canManageMeetings && (
+            {showMeetingsTab && (
               <TabsTrigger
                 value="meetings"
                 className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
               >
                 <Video className="mr-2 h-4 w-4" />
                 Meeting Accounts
+              </TabsTrigger>
+            )}
+            {isSalesModule && (
+              <TabsTrigger
+                value="integrations"
+                className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
+              >
+                <Link2 className="mr-2 h-4 w-4" />
+                Integrations
               </TabsTrigger>
             )}
           </TabsList>
@@ -301,9 +314,15 @@ export default function WorkspaceSettingsPage() {
             </TabsContent>
           )}
 
-          {canManageMeetings && (
+          {showMeetingsTab && (
             <TabsContent value="meetings">
               <MeetingAccountsSettings workspace={workspace} />
+            </TabsContent>
+          )}
+
+          {isSalesModule && (
+            <TabsContent value="integrations">
+              <WorkspaceIntegrationsSettings workspace={workspace} />
             </TabsContent>
           )}
         </Tabs>

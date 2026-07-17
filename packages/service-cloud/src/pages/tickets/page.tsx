@@ -3,6 +3,7 @@
 import { useCallback, useMemo, useState } from 'react';
 
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Check, FileUp, Loader2, Plus, User } from 'lucide-react';
@@ -62,7 +63,7 @@ function assigneeInitials(assignee: any) {
 }
 
 import { useRouter } from 'next/navigation';
-import { ViewToggle } from '../_components/view-toggle';
+import { ViewToggle } from '@kit/ui/view-toggle';
 import { TicketsKanbanBoard } from './components/kanban/tickets-kanban-board';
 
 function AssigneeStack({ assignees = [] }: { assignees?: any[] }) {
@@ -162,6 +163,9 @@ export function ServiceCloudTicketsPage({
     SERVICE_CLOUD_FEATURE_KEYS.delete,
   );
 
+  const searchParams = useSearchParams();
+  const filterStatusParam = searchParams?.get('status');
+
   const [selectedCreatedByIds, setSelectedCreatedByIds] = useState<string[]>([]);
   const [selectedStatusIds, setSelectedStatusIds] = useState<string[]>([]);
   const [selectedPriorityIds, setSelectedPriorityIds] = useState<string[]>([]);
@@ -178,7 +182,7 @@ export function ServiceCloudTicketsPage({
     setDateRange: setUpdatedOnRange,
     computedDates: computedUpdatedOnDates,
     clearDateRange: clearUpdatedOnRange,
-  } = useDateRangeFilter();
+  } = useDateRangeFilter('updated');
 
   // Optimized: single API call fetches statuses + priorities + categories in parallel on server
   const { data: lookups, isLoading: lookupsIsLoading } = useQuery({
@@ -205,6 +209,15 @@ export function ServiceCloudTicketsPage({
   });
 
   const categories = allCategories;
+
+  const defaultStatusIds = useMemo(() => {
+    if (filterStatusParam === 'open') {
+      return statuses.filter((s: any) => s.lifecycle === 'open').map((s: any) => s.id);
+    }
+    return statuses
+      .filter((s: any) => s.lifecycle !== 'closed' && s.lifecycle !== 'resolved')
+      .map((s: any) => s.id);
+  }, [statuses, filterStatusParam]);
 
   const statusOptions = statuses.map((status: any) => ({
     label: status.name,
@@ -252,15 +265,18 @@ export function ServiceCloudTicketsPage({
     [],
   );
 
-  const exportColumns = useMemo(
-    () => [
+  const exportColumns = useMemo(() => {
+    const cols = [
       ...EXPORT_COLUMNS,
       ...systemFields
         .filter((f: any) => !f.is_system)
         .map((f: any) => ({ key: f.field_key, label: f.field_label })),
-    ],
-    [EXPORT_COLUMNS, systemFields],
-  );
+    ];
+    if (canViewColumn) {
+      return cols.filter((col) => canViewColumn(col.key));
+    }
+    return cols;
+  }, [EXPORT_COLUMNS, systemFields, canViewColumn]);
 
   const serializeTicketRow = useCallback(
     (ticket: any): Record<string, string> => {
@@ -408,7 +424,11 @@ export function ServiceCloudTicketsPage({
   const queryParams = {
     ...(assignedToMeOnly ? { assignedToMe: 'true' } : {}),
     ...(selectedCreatedByIds.length > 0 ? { createdByIds: selectedCreatedByIds.join(',') } : {}),
-    ...(selectedStatusIds.length > 0 ? { statusIds: selectedStatusIds.join(',') } : {}),
+    ...(selectedStatusIds.length > 0
+      ? { statusIds: selectedStatusIds.join(',') }
+      : defaultStatusIds.length > 0
+        ? { statusIds: defaultStatusIds.join(',') }
+        : {}),
     ...(selectedPriorityIds.length > 0 ? { priorityIds: selectedPriorityIds.join(',') } : {}),
     ...(selectedAssigneeIds.length > 0 ? { assigneeIds: selectedAssigneeIds.join(',') } : {}),
     ...(computedCreatedOnDates?.from

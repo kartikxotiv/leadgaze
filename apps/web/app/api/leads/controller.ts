@@ -227,10 +227,10 @@ const getLeads = catchAsync(
       mainQuery = mainQuery.or(buildSearchOrFilter());
     }
 
-    if (createdAtFrom) mainQuery = mainQuery.gte('created_at', `${createdAtFrom}T00:00:00.000Z`);
-    if (createdAtTo) mainQuery = mainQuery.lte('created_at', `${createdAtTo}T23:59:59.999Z`);
-    if (updatedAtFrom) mainQuery = mainQuery.gte('updated_at', `${updatedAtFrom}T00:00:00.000Z`);
-    if (updatedAtTo) mainQuery = mainQuery.lte('updated_at', `${updatedAtTo}T23:59:59.999Z`);
+    if (createdAtFrom) mainQuery = mainQuery.gte('created_at', (createdAtFrom.includes('T') ? createdAtFrom : `${createdAtFrom}T00:00:00.000Z`));
+    if (createdAtTo) mainQuery = mainQuery.lte('created_at', (createdAtTo.includes('T') ? createdAtTo : `${createdAtTo}T23:59:59.999Z`));
+    if (updatedAtFrom) mainQuery = mainQuery.gte('updated_at', (updatedAtFrom.includes('T') ? updatedAtFrom : `${updatedAtFrom}T00:00:00.000Z`));
+    if (updatedAtTo) mainQuery = mainQuery.lte('updated_at', (updatedAtTo.includes('T') ? updatedAtTo : `${updatedAtTo}T23:59:59.999Z`));
 
     // Pagination
     const from = (page - 1) * limit;
@@ -249,10 +249,10 @@ const getLeads = catchAsync(
       breakdownQuery = breakdownQuery.or(buildSearchOrFilter());
     }
 
-    if (createdAtFrom) breakdownQuery = breakdownQuery.gte('created_at', `${createdAtFrom}T00:00:00.000Z`);
-    if (createdAtTo) breakdownQuery = breakdownQuery.lte('created_at', `${createdAtTo}T23:59:59.999Z`);
-    if (updatedAtFrom) breakdownQuery = breakdownQuery.gte('updated_at', `${updatedAtFrom}T00:00:00.000Z`);
-    if (updatedAtTo) breakdownQuery = breakdownQuery.lte('updated_at', `${updatedAtTo}T23:59:59.999Z`);
+    if (createdAtFrom) breakdownQuery = breakdownQuery.gte('created_at', (createdAtFrom.includes('T') ? createdAtFrom : `${createdAtFrom}T00:00:00.000Z`));
+    if (createdAtTo) breakdownQuery = breakdownQuery.lte('created_at', (createdAtTo.includes('T') ? createdAtTo : `${createdAtTo}T23:59:59.999Z`));
+    if (updatedAtFrom) breakdownQuery = breakdownQuery.gte('updated_at', (updatedAtFrom.includes('T') ? updatedAtFrom : `${updatedAtFrom}T00:00:00.000Z`));
+    if (updatedAtTo) breakdownQuery = breakdownQuery.lte('updated_at', (updatedAtTo.includes('T') ? updatedAtTo : `${updatedAtTo}T23:59:59.999Z`));
 
     // Run main + breakdown queries in parallel
     console.log(
@@ -611,10 +611,10 @@ const getLeadStatuses = catchAsync(
 
     const { data: statuses, error } = await supabase
       .from('entity_statuses')
-      .select('id, status_name, status_key, color, icon, is_closed')
+      .select('id, status_name, status_key, color, icon, is_closed, sort_order')
       .eq('workspace_id', workspaceId)
       .eq('module_id', module?.id)
-      .order('status_name', { ascending: true });
+      .order('sort_order', { ascending: true });
 
     if (error) {
       console.error('Get statuses error:', error);

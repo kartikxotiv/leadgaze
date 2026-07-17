@@ -10,7 +10,7 @@ import { AddColumnModal } from '@kit/ui/add-column-modal';
 import { ColumnEditModal } from '@kit/ui/column-edit-modal';
 import type { ColumnEditFieldShape } from '@kit/ui/column-edit-modal';
 import { CsvImportDialog } from '@kit/ui/csv-import-dialog';
-import { filterExportColumns } from '~/lib/field-permission';
+import { filterExportColumns, filterImportColumns } from '~/lib/field-permission';
 
 import {
   type EntityField,
@@ -118,14 +118,15 @@ export default function ServiceCloudTicketsRoute() {
     productKey,
   });
 
-  const importColumns = useMemo(() => {
+  const { importColumns, missingRequiredImportFields } = useMemo(() => {
     const cols = [
       { key: 'subject', label: 'Subject', required: true },
       { key: 'description', label: 'Description' },
       { key: 'status_id', label: 'Status', required: true },
       { key: 'priority_id', label: 'Priority' },
       { key: 'category_id', label: 'Category' },
-      { key: 'customer_id', label: 'Customer ID' },
+      { key: 'customer_email', label: 'Customer Email', required: true },
+      { key: 'customer_name', label: 'Customer Name' },
       { key: 'organization_id', label: 'Organization ID' },
       { key: 'owner_id', label: 'Owner ID' },
       { key: 'tags', label: 'Tags' },
@@ -137,9 +138,11 @@ export default function ServiceCloudTicketsRoute() {
           required: false,
         })),
     ];
-    return fieldPermissionCtx
-      ? filterExportColumns(cols, fieldPermissionCtx)
-      : cols;
+    if (fieldPermissionCtx) {
+      const { allowedColumns, missingRequired } = filterImportColumns(cols, fieldPermissionCtx);
+      return { importColumns: allowedColumns, missingRequiredImportFields: missingRequired };
+    }
+    return { importColumns: cols, missingRequiredImportFields: [] };
   }, [fieldPermissionCtx, allEntityFields]);
 
   const createField = useCreateField();
@@ -270,8 +273,13 @@ export default function ServiceCloudTicketsRoute() {
         open={isImportDialogOpen}
         onOpenChange={setIsImportDialogOpen}
         title="Import Tickets from CSV"
-        description="Upload a CSV, match each header to a database column, and save the adjusted file before the API upload step."
+        description="Upload a CSV, match each header to a database column, and save."
         columns={importColumns}
+        disabledReason={
+          missingRequiredImportFields.length > 0
+            ? `You do not have permission to edit mandatory fields required for import: ${missingRequiredImportFields.join(', ')}. Please contact your administrator.`
+            : null
+        }
         onUpload={async ({ headers, rows }) => {
           const payload = rows.map((row) => {
             const obj: any = {};

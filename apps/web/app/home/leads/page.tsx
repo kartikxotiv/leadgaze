@@ -39,7 +39,7 @@ import { useDateRangeFilter } from '@kit/ui/use-date-range-filter';
 import { useTableSort } from '@kit/ui/use-table-sort';
 import { cn } from '@kit/ui/utils';
 
-import { filterExportColumns } from '~/lib/field-permission';
+import { filterExportColumns, filterImportColumns } from '~/lib/field-permission';
 import { useDebounce } from '~/lib/hooks/use-debounce';
 import {
   type AccessType,
@@ -72,7 +72,7 @@ import { DeleteEntityDialog } from '../_components/delete-entity-dialog';
 import { EntityActionsDropdown } from '../_components/entity-actions-dropdown';
 import { LeadsKanbanBoard } from './components/kanban/leads-kanban-board';
 import CreateLeadDialog from './components/create-lead-dialog';
-import { ViewToggle, type ViewMode } from './components/view-toggle';
+import { ViewToggle, type ViewMode } from '@kit/ui/view-toggle';
 
 // System fields that exist in the database
 const SYSTEM_FIELDS: Array<{
@@ -83,72 +83,72 @@ const SYSTEM_FIELDS: Array<{
   sortable?: boolean;
   width?: string;
 }> = [
-  { id: 'sno', key: 'sno', label: 'S. No.', sortable: false, width: 'w-12' },
-  { id: 'name', key: 'name', label: 'Name', sortKey: 'first_name' },
-  { id: 'first_name', key: 'first_name', label: 'First Name' },
-  { id: 'last_name', key: 'last_name', label: 'Last Name' },
-  { id: 'job_title', key: 'job_title', label: 'Job Title' },
-  { id: 'email', key: 'email', label: 'Email' },
-  { id: 'alt_email', key: 'alt_email', label: 'Alt Email' },
-  { id: 'phone', key: 'phone', label: 'Phone', sortable: false },
-  { id: 'mobile', key: 'mobile', label: 'Mobile', sortable: false },
-  { id: 'company', key: 'company', label: 'Company', sortKey: 'company_name' },
-  {
-    id: 'company_website',
-    key: 'company_website',
-    label: 'Company Website',
-    sortable: false,
-  },
-  {
-    id: 'company_linkedin',
-    key: 'company_linkedin',
-    label: 'Company LinkedIn',
-    sortable: false,
-  },
-  { id: 'linkedin', key: 'linkedin', label: 'LinkedIn', sortable: false },
-  { id: 'department', key: 'department', label: 'Department' },
-  {
-    id: 'industry',
-    key: 'industry',
-    label: 'Industry',
-    sortKey: 'industry.industry_name',
-  },
-  {
-    id: 'company_size',
-    key: 'company_size',
-    label: 'Company Size',
-  },
-  { id: 'location', key: 'location', label: 'Location' },
-  { id: 'timezone', key: 'timezone', label: 'Timezone', sortable: false },
-  {
-    id: 'status',
-    key: 'status',
-    label: 'Status',
-    sortKey: 'status.status_name',
-  },
-  {
-    id: 'source',
-    key: 'source',
-    label: 'Source',
-    sortKey: 'source.source_name',
-  },
-  { id: 'trigger', key: 'trigger', label: 'Trigger' },
-  { id: 'notes', key: 'notes', label: 'Notes', sortable: false },
-  { id: 'score', key: 'score', label: 'Score', sortable: false },
-  {
-    id: 'created_by',
-    key: 'created_by',
-    label: 'Created By',
-    sortKey: 'created_by_account.name',
-  },
-  { id: 'created_at', key: 'created_at', label: 'Created On' },
-  {
-    id: 'updated_by',
-    key: 'updated_by',
-    label: 'Last Updated By',
-    sortKey: 'updated_by_account.name',
-  },
-];
+    { id: 'sno', key: 'sno', label: 'S. No.', sortable: false, width: 'w-12' },
+    { id: 'name', key: 'name', label: 'Name', sortKey: 'first_name' },
+    { id: 'first_name', key: 'first_name', label: 'First Name' },
+    { id: 'last_name', key: 'last_name', label: 'Last Name' },
+    { id: 'job_title', key: 'job_title', label: 'Job Title' },
+    { id: 'email', key: 'email', label: 'Email' },
+    { id: 'alt_email', key: 'alt_email', label: 'Alt Email' },
+    { id: 'phone', key: 'phone', label: 'Phone', sortable: false },
+    { id: 'mobile', key: 'mobile', label: 'Mobile', sortable: false },
+    { id: 'company', key: 'company', label: 'Company', sortKey: 'company_name' },
+    {
+      id: 'company_website',
+      key: 'company_website',
+      label: 'Company Website',
+      sortable: false,
+    },
+    {
+      id: 'company_linkedin',
+      key: 'company_linkedin',
+      label: 'Company LinkedIn',
+      sortable: false,
+    },
+    { id: 'linkedin', key: 'linkedin', label: 'LinkedIn', sortable: false },
+    { id: 'department', key: 'department', label: 'Department' },
+    {
+      id: 'industry',
+      key: 'industry',
+      label: 'Industry',
+      sortKey: 'industry.industry_name',
+    },
+    {
+      id: 'company_size',
+      key: 'company_size',
+      label: 'Company Size',
+    },
+    { id: 'location', key: 'location', label: 'Location' },
+    { id: 'timezone', key: 'timezone', label: 'Timezone', sortable: false },
+    {
+      id: 'status',
+      key: 'status',
+      label: 'Status',
+      sortKey: 'status.status_name',
+    },
+    {
+      id: 'source',
+      key: 'source',
+      label: 'Source',
+      sortKey: 'source.source_name',
+    },
+    { id: 'trigger', key: 'trigger', label: 'Trigger' },
+    { id: 'notes', key: 'notes', label: 'Notes', sortable: false },
+    { id: 'score', key: 'score', label: 'Score', sortable: false },
+    {
+      id: 'created_by',
+      key: 'created_by',
+      label: 'Created By',
+      sortKey: 'created_by_account.name',
+    },
+    { id: 'created_at', key: 'created_at', label: 'Created On' },
+    {
+      id: 'updated_by',
+      key: 'updated_by',
+      label: 'Last Updated By',
+      sortKey: 'updated_by_account.name',
+    },
+  ];
 
 // Default visibility for system fields
 const DEFAULT_VISIBILITY: Record<string, boolean> = {
@@ -262,7 +262,7 @@ export default function LeadsPage() {
     setDateRange: setUpdatedOnRange,
     computedDates: computedUpdatedOnDates,
     clearDateRange: clearUpdatedOnRange,
-  } = useDateRangeFilter();
+  } = useDateRangeFilter('updated');
 
   const {
     canViewColumn,
@@ -392,7 +392,7 @@ export default function LeadsPage() {
   ];
 
   // Import columns for CSV import
-  const importColumns = useMemo(() => {
+  const { importColumns, missingRequiredImportFields } = useMemo(() => {
     const cols = [
       { key: 'first_name', label: 'First Name', required: true },
       { key: 'last_name', label: 'Last Name' },
@@ -424,9 +424,11 @@ export default function LeadsPage() {
         required: false,
       })),
     ];
-    return fieldPermissionCtx
-      ? filterExportColumns(cols, fieldPermissionCtx)
-      : cols;
+    if (fieldPermissionCtx) {
+      const { allowedColumns, missingRequired } = filterImportColumns(cols, fieldPermissionCtx);
+      return { importColumns: allowedColumns, missingRequiredImportFields: missingRequired };
+    }
+    return { importColumns: cols, missingRequiredImportFields: [] };
   }, [fieldPermissionCtx, customFields]);
 
   // Initialize column visibility (merged with DB preferences when available)
@@ -493,7 +495,7 @@ export default function LeadsPage() {
 
   const defaultStatusIds = useMemo(() => {
     return statuses
-      .filter((s: any) => s.status_key !== 'unqualified')
+      .filter((s: any) => !s.is_closed)
       .map((s: any) => s.id);
   }, [statuses]);
 
@@ -731,13 +733,15 @@ export default function LeadsPage() {
   );
 
   /** Full columns list: system + custom (for export header row) */
-  const exportColumns = useMemo(
-    () => [
+  const exportColumns = useMemo(() => {
+    const cols = [
       ...EXPORT_COLUMNS,
       ...customFields.map((cf) => ({ key: cf.field_key, label: cf.field_label })),
-    ],
-    [customFields],
-  );
+    ];
+    return fieldPermissionCtx
+      ? filterExportColumns(cols, fieldPermissionCtx)
+      : cols;
+  }, [customFields, fieldPermissionCtx]);
 
   const { exportToCsv: triggerExport } = useCsvExport<Lead>({
     filename: 'leads_export',
@@ -1007,17 +1011,17 @@ export default function LeadsPage() {
                   ? 'All statuses'
                   : selectedStatuses.length === 1
                     ? ((
-                        statuses.find(
-                          (s: any) => s.id === selectedStatuses[0],
-                        ) as any
-                      )?.status_name ?? '1 selected')
+                      statuses.find(
+                        (s: any) => s.id === selectedStatuses[0],
+                      ) as any
+                    )?.status_name ?? '1 selected')
                     : `${selectedStatuses.length} selected`,
               options: statuses.map((s: any) => ({
                 value: s.id,
                 label: s.status_name,
                 color: s.color,
                 badge:
-                  s.status_key === 'unqualified' ? (
+                  s.is_closed ? (
                     <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold tracking-wider text-amber-700 uppercase dark:bg-amber-900/20 dark:text-amber-400">
                       Closed
                     </span>
@@ -1034,10 +1038,10 @@ export default function LeadsPage() {
                   ? 'All members'
                   : selectedCreatedByIds.length === 1
                     ? ((
-                        members.find(
-                          (m: any) => m.user_id === selectedCreatedByIds[0],
-                        ) as any
-                      )?.user?.user_metadata?.full_name ?? '1 selected')
+                      members.find(
+                        (m: any) => m.user_id === selectedCreatedByIds[0],
+                      ) as any
+                    )?.user?.user_metadata?.full_name ?? '1 selected')
                     : `${selectedCreatedByIds.length} selected`,
               options: members
                 .filter((m: any) => m.user_id)
@@ -1216,65 +1220,65 @@ export default function LeadsPage() {
                     );
                   })}
 
-                  {/* Custom field columns with hover edit */}
-                  {customFields.map((field) => {
-                    if (!showColumn(field.field_key)) return null;
-                    return (
-                      <ColumnHeader
-                        key={field.id}
-                        columnId={field.field_key}
-                        label={field.field_label}
-                        field={field}
-                        sortColumn={sortColumn}
-                        sortDirection={sortDirection}
-                        onSort={toggleSort}
-                        sortable={true}
-                        isAdmin={isAdmin}
-                        onEditClick={
-                          isAdmin || (field as any).created_by === user?.id
-                            ? () => openColumnEdit(field.field_key)
-                            : undefined
-                        }
-                        onDeleteField={
-                          (isAdmin || (field as any).created_by === user?.id) &&
-                          !field.is_system
-                            ? handleDeleteField
-                            : undefined
-                        }
-                        {...getHeaderProps(field.field_key)}
-                      >
-                        <span
-                          className="col-resize-handle"
-                          {...getResizeHandleProps(field.field_key)}
-                        />
-                      </ColumnHeader>
-                    );
-                  })}
+                    {/* Custom field columns with hover edit */}
+                    {customFields.map((field) => {
+                      if (!showColumn(field.field_key)) return null;
+                      return (
+                        <ColumnHeader
+                          key={field.id}
+                          columnId={field.field_key}
+                          label={field.field_label}
+                          field={field}
+                          sortColumn={sortColumn}
+                          sortDirection={sortDirection}
+                          onSort={toggleSort}
+                          sortable={true}
+                          isAdmin={isAdmin}
+                          onEditClick={
+                            isAdmin || (field as any).created_by === user?.id
+                              ? () => openColumnEdit(field.field_key)
+                              : undefined
+                          }
+                          onDeleteField={
+                            (isAdmin || (field as any).created_by === user?.id) &&
+                              !field.is_system
+                              ? handleDeleteField
+                              : undefined
+                          }
+                          {...getHeaderProps(field.field_key)}
+                        >
+                          <span
+                            className="col-resize-handle"
+                            {...getResizeHandleProps(field.field_key)}
+                          />
+                        </ColumnHeader>
+                      );
+                    })}
 
-                  {/* Add Column — last header column (replaces Actions header) */}
-                  <TableHead className="sticky-right-header bg-background z-10 w-12 px-1 text-center">
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="mx-auto flex h-8 w-8 items-center justify-center border-dashed"
-                      onClick={() => setAddColumnModalOpen(true)}
-                      title="Add Column"
-                    >
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading || fieldsLoading || fieldPermissionsLoading ? (
-                  <>
-                    {[...Array(10)].map((_, i) => (
-                      <TableRow key={i}>
-                        <TableCell
-                          className="h-[52px] px-4 py-2"
-                          colSpan={
-                            visibility
-                              ? Object.values(visibility).filter(
+                    {/* Add Column — last header column (replaces Actions header) */}
+                    <TableHead className="sticky-right-header bg-background z-10 w-12 px-1 text-center">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="mx-auto flex h-8 w-8 items-center justify-center border-dashed"
+                        onClick={() => setAddColumnModalOpen(true)}
+                        title="Add Column"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {isLoading || fieldsLoading || fieldPermissionsLoading ? (
+                    <>
+                      {[...Array(10)].map((_, i) => (
+                        <TableRow key={i}>
+                          <TableCell
+                            className="h-[52px] px-4 py-2"
+                            colSpan={
+                              visibility
+                                ? Object.values(visibility).filter(
                                   (v) => v !== false,
                                 ).length + trailingColumnCount
                               : 8
@@ -1502,31 +1506,31 @@ export default function LeadsPage() {
                             {(lead as any).custom_fields?.[field.field_key] ??
                               '-'}
                           </TableCell>
-                        ) : null,
-                      )}
+                          ) : null,
+                        )}
 
-                      {/* Actions */}
-                      <TableCell className="bg-card sticky right-0 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <EntityActionsDropdown
-                            id={lead.id}
-                            viewPath={`/home/sales/leads/${lead.id}`}
-                            canDelete={canAccess('leads', 'delete')}
-                            onDelete={() => {
-                              setLeadToDelete(lead);
-                              setDeleteDialogOpen(true);
-                            }}
-                          />
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </CustomTableContainer>
+                        {/* Actions */}
+                        <TableCell className="bg-card sticky right-0 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <EntityActionsDropdown
+                              id={lead.id}
+                              viewPath={`/home/sales/leads/${lead.id}`}
+                              canDelete={canAccess('leads', 'delete')}
+                              onDelete={() => {
+                                setLeadToDelete(lead);
+                                setDeleteDialogOpen(true);
+                              }}
+                            />
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </CustomTableContainer>
           </div>
-          )}
+        )}
 
         {/* Create Lead Dialog */}
         <CreateLeadDialog
@@ -1541,6 +1545,11 @@ export default function LeadsPage() {
           title="Import Leads from CSV"
           description="Upload a CSV, match each header to a database column, and save the adjusted file before the API upload step."
           columns={importColumns}
+          disabledReason={
+            missingRequiredImportFields.length > 0
+              ? `You do not have permission to edit mandatory fields required for import: ${missingRequiredImportFields.join(', ')}. Please contact your administrator.`
+              : null
+          }
           onUpload={async ({ headers, rows }) => {
             const customFieldKeys = new Set(customFields.map((cf) => cf.field_key));
 
@@ -1624,9 +1633,9 @@ export default function LeadsPage() {
             onDelete={
               !editingField.is_system
                 ? () => {
-                    handleDeleteField(editingField.id);
-                    setEditingField(null);
-                  }
+                  handleDeleteField(editingField.id);
+                  setEditingField(null);
+                }
                 : undefined
             }
           />
