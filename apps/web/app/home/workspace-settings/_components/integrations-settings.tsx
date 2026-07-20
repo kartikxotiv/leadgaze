@@ -11,6 +11,7 @@ import {
   Lock,
   Building2,
   BarChart3,
+  Share2,
 } from 'lucide-react';
 
 import { Button } from '@kit/ui/button';
@@ -62,17 +63,20 @@ export function WorkspaceIntegrationsSettings({ workspace }: WorkspaceIntegratio
       path: `/home/sales/workspace-settings/integrations/google-ads`,
       connected: true,
     },
+    {
+      id: 'meta-ads',
+      name: 'Meta Lead Ads',
+      description: 'Automatically import Facebook and Instagram leads in real-time via webhooks.',
+      icon: <Share2 className="h-6 w-6 text-blue-600" />,
+      badge: 'Available',
+      badgeVariant: 'default' as const,
+      path: `/home/sales/workspace-settings/integrations/meta-ads`,
+      connected: true,
+    },
   ];
 
   const comingSoonIntegrations = [
 
-    {
-      id: 'meta-ads',
-      name: 'Meta Lead Ads',
-      description: 'Automatically import Facebook and Instagram leads in real-time.',
-      icon: <Sparkles className="h-6 w-6 text-blue-500" />,
-      badge: 'Coming Soon',
-    },
     {
       id: 'linkedin-ads',
       name: 'LinkedIn Lead Forms',
