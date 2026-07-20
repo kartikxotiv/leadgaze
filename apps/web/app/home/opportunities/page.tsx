@@ -65,6 +65,7 @@ import {
   getOpportunitiesService,
   getOpportunityStatusesService,
   updateOpportunityService,
+  importOpportunitiesService,
 } from '~/services/opportunities.service';
 import { getLeadStatusesService } from '~/services/leads.service';
 import { toast } from 'sonner';
@@ -607,21 +608,11 @@ export default function OpportunitiesPage() {
 
   const importMutation = useMutation({
     mutationFn: async (payload: any[]) => {
-      const res = await fetch('/api/opportunities/import', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          workspaceId: workspace?.id,
-          data: payload,
-        }),
+      if (!workspace?.id) throw new Error('Workspace ID is required');
+      return await importOpportunitiesService({
+        workspaceId: workspace.id,
+        data: payload,
       });
-
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.message || 'Failed to import opportunities');
-      }
-
-      return res.json();
     },
     onSuccess: (data, variables) => {
       toast.success(`Imported ${variables.length} opportunities successfully`);

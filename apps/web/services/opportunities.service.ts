@@ -192,6 +192,13 @@ const deleteOpportunityService = asyncHandlerClient(async (id: string) => {
   return response.data?.data;
 });
 
+const importOpportunitiesService = asyncHandlerClient(
+  async (payload: { workspaceId: string; data: any[] }) => {
+    const response = await ApiClient.post('/opportunities/import', payload);
+    return response.data;
+  },
+);
+
 export {
   getOpportunitiesService,
   getOpportunityByIdService,
@@ -204,4 +211,5 @@ export {
   updateOpportunityStageService,
   deleteOpportunityStageService,
   deleteOpportunityService,
+  importOpportunitiesService,
 };

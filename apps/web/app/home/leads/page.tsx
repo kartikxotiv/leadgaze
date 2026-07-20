@@ -65,6 +65,7 @@ import {
   getLeadStatusesService,
   getLeadsService,
   updateLeadService,
+  importLeadsService,
 } from '~/services/leads.service';
 import { Lead } from '~/services/leads.service';
 
@@ -575,21 +576,11 @@ export default function LeadsPage() {
 
   const importMutation = useMutation({
     mutationFn: async (payload: any[]) => {
-      const res = await fetch('/api/leads/import', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          workspaceId: workspace?.id,
-          data: payload,
-        }),
+      if (!workspace?.id) throw new Error('Workspace ID is required');
+      return await importLeadsService({
+        workspaceId: workspace.id,
+        data: payload,
       });
-
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.message || 'Failed to import leads');
-      }
-
-      return res.json();
     },
     onSuccess: (data, variables) => {
       toast.success(`Imported ${variables.length} leads successfully`);

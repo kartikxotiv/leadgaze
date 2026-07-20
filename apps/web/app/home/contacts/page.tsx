@@ -56,7 +56,7 @@ import { useLocalization } from '~/lib/localization/localization-provider';
 import { ModuleGuard } from '~/lib/rbac/module-guard';
 import { useModuleRoles, useRBAC } from '~/lib/rbac/rbac-provider';
 import { useTeamMembers } from '~/lib/hooks/use-team-members';
-import { Contact, getContactsService } from '~/services/contacts.service';
+import { Contact, getContactsService, importContactsService } from '~/services/contacts.service';
 
 import { DeleteEntityDialog } from '../_components/delete-entity-dialog';
 import { EntityActionsDropdown } from '../_components/entity-actions-dropdown';
@@ -524,21 +524,11 @@ export default function ContactsPage() {
 
   const importMutation = useMutation({
     mutationFn: async (payload: any[]) => {
-      const res = await fetch('/api/contacts/import', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          workspaceId: workspace?.id,
-          data: payload,
-        }),
+      if (!workspace?.id) throw new Error('Workspace ID is required');
+      return await importContactsService({
+        workspaceId: workspace.id,
+        data: payload,
       });
-
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.message || 'Failed to import contacts');
-      }
-
-      return res.json();
     },
     onSuccess: (data, variables) => {
       toast.success(`Imported ${variables.length} contacts successfully`);
