@@ -10,6 +10,8 @@ import { toast } from 'sonner';
 import { z } from 'zod';
 
 import { Button } from '@kit/ui/button';
+import { DateTimePicker } from '@kit/ui/datetime-picker';
+import { format } from 'date-fns';
 import {
   Command,
   CommandEmpty,
@@ -50,9 +52,11 @@ import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { getAccountsService } from '~/services/accounts.service';
 import {
   createOpportunityService,
-  getOpportunityStatusesService,
   updateOpportunityService,
 } from '~/services/opportunities.service';
+import { getWorkspaceCurrenciesService, type WorkspaceCurrency } from '~/services/workspace-currencies.service';
+import { useLocalization } from '~/lib/localization/localization-provider';
+import { ManageableStatusSelect } from '../../_components/manageable-status-select';
 
 const formSchema = z.object({
   opportunity_name: z.string().min(1, 'Opportunity Name is required'),
@@ -89,17 +93,13 @@ export function OpportunityDialog({
 }: OpportunityDialogProps) {
   const queryClient = useQueryClient();
   const { currentWorkspace } = useRBAC();
+  const { formatCurrency } = useLocalization();
   const isEditMode = !!opportunity;
   const [openAccountCombobox, setOpenAccountCombobox] = useState(false);
   const [accountSearchQuery, setAccountSearchQuery] = useState('');
   const debouncedAccountSearchQuery = useDebounce(accountSearchQuery, 300);
 
-  // Fetch Stages
-  const { data: stages = [] } = useQuery({
-    queryKey: ['opportunity-stages', currentWorkspace?.id],
-    queryFn: () => getOpportunityStatusesService(currentWorkspace!.id),
-    enabled: !!currentWorkspace?.id && isOpen,
-  });
+  // Fetch Stages — removed; ManageableStatusSelect manages its own data
 
   // Fetch Accounts (for selection)
   const {
@@ -116,6 +116,13 @@ export function OpportunityDialog({
   });
 
   const accounts = accountsData.data;
+
+  // Fetch workspace currencies for the currency dropdown
+  const { data: workspaceCurrencies = [] } = useQuery({
+    queryKey: ['workspace-currencies', currentWorkspace?.id],
+    queryFn: () => getWorkspaceCurrenciesService(currentWorkspace!.id),
+    enabled: !!currentWorkspace?.id && isOpen,
+  });
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -147,7 +154,7 @@ export function OpportunityDialog({
           stage_id: opportunity.stage_id || '',
           amount: opportunity.amount ? String(opportunity.amount) : '',
           currency: opportunity.currency || 'USD',
-          probability: opportunity.probability
+      probability: opportunity.probability
             ? String(opportunity.probability)
             : '',
           expected_close_date: opportunity.expected_close_date
@@ -326,24 +333,16 @@ export function OpportunityDialog({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Stage</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                      value={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select stage" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {stages.map((stage: any) => (
-                          <SelectItem key={stage.id} value={stage.id}>
-                            {stage.status_name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <FormControl>
+                      <ManageableStatusSelect
+                        moduleKey="opportunities"
+                        workspaceId={currentWorkspace?.id ?? ''}
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        disabled={mutation.isPending}
+                        placeholder="Select stage"
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -370,9 +369,23 @@ export function OpportunityDialog({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Currency</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="USD" />
-                    </FormControl>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select currency" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {workspaceCurrencies.map((cur: WorkspaceCurrency) => (
+                          <SelectItem key={cur.currency_code} value={cur.currency_code}>
+                            {cur.currency_symbol} {cur.currency_code}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -400,7 +413,7 @@ export function OpportunityDialog({
                   <FormItem>
                     <FormLabel>Expected Close Date</FormLabel>
                     <FormControl>
-                      <Input {...field} type="date" />
+                      <DateTimePicker mode="date" placeholder="Select date" value={field.value ? new Date(field.value) : undefined} onChange={(date) => field.onChange(date ? format(date, 'yyyy-MM-dd') : '')} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

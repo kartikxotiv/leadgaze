@@ -8,7 +8,13 @@ export const getServiceCloudResourceService = asyncHandlerClient(
     workspaceId: string,
     params: Record<string, string> = {},
   ) => {
-    const searchParams = new URLSearchParams({ workspaceId, ...params });
+    const cleanParams: Record<string, string> = { workspaceId };
+    for (const [key, val] of Object.entries(params)) {
+      if (val !== undefined && val !== null && val !== '') {
+        cleanParams[key] = String(val);
+      }
+    }
+    const searchParams = new URLSearchParams(cleanParams);
     const res = await ServiceCloudApiClient.get(
       `/${resource}?${searchParams.toString()}`,
     );
@@ -40,10 +46,15 @@ export const deleteServiceCloudResourceService = asyncHandlerClient(
 );
 
 export const getServiceCloudDashboardService = asyncHandlerClient(
-  async (workspaceId: string) => {
-    const res = await ServiceCloudApiClient.get(
-      `/dashboard?workspaceId=${workspaceId}`,
-    );
+  async (
+    workspaceId: string,
+    dateFilter?: { from: string | null; to: string | null } | null,
+  ) => {
+    let url = `/dashboard?workspaceId=${workspaceId}`;
+    if (dateFilter?.from) url += `&from=${dateFilter.from}`;
+    if (dateFilter?.to) url += `&to=${dateFilter.to}`;
+
+    const res = await ServiceCloudApiClient.get(url);
     return res.data?.data;
   },
 );
@@ -60,6 +71,15 @@ export const getServiceCloudTicketLookupsService = asyncHandlerClient(
 export const convertCoreEmailToServiceCloudTicketService = asyncHandlerClient(
   async (payload: ServiceCloudRecord) => {
     const res = await ServiceCloudApiClient.post('/email-to-ticket', payload);
+    return res.data?.data;
+  },
+);
+
+export const detectEmailTicketService = asyncHandlerClient(
+  async (workspaceId: string, emailId: string) => {
+    const res = await ServiceCloudApiClient.get(
+      `/detect-email-ticket?workspace_id=${workspaceId}&email_id=${emailId}`,
+    );
     return res.data?.data;
   },
 );

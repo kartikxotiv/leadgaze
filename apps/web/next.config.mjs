@@ -65,24 +65,25 @@ function getRemotePatterns() {
   const remotePatterns = [];
 
   if (SUPABASE_URL) {
-    const hostname = new URL(SUPABASE_URL).hostname;
-
+    const url = new URL(SUPABASE_URL);
     remotePatterns.push({
-      protocol: 'https',
-      hostname,
+      protocol: url.protocol.replace(':', ''),
+      hostname: url.hostname,
     });
   }
 
-  return IS_PRODUCTION
-    ? remotePatterns
-    : [
-        {
-          protocol: 'http',
-          hostname: '127.0.0.1',
-        },
-        {
-          protocol: 'http',
-          hostname: 'localhost',
-        },
-      ];
+  if (!IS_PRODUCTION) {
+    remotePatterns.push(
+      {
+        protocol: 'http',
+        hostname: '127.0.0.1',
+      },
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+      }
+    );
+  }
+
+  return remotePatterns;
 }

@@ -266,10 +266,11 @@ export function CreateContactDialog({
                 type="button"
                 variant="outline"
                 onClick={() => onOpenChange(false)}
+                className='mb-2'
               >
                 Cancel
               </Button>
-              <Button type="submit" form="dialog-form" disabled={mutation.isPending}>
+              <Button type="submit" form="dialog-form" disabled={mutation.isPending} className='mb-2'>
                 {mutation.isPending ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (

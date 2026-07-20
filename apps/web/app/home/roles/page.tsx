@@ -8,7 +8,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Edit2,
   GripVertical,
-  Loader2,
   Plus,
   Shield,
   Trash2,
@@ -17,16 +16,11 @@ import { toast } from 'sonner';
 
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@kit/ui/card';
 import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
 import CustomTableContainer from '@kit/ui/custom-table-container';
+import { ListToolBar } from '@kit/ui/list-toolbar';
 import { PageBody, PageHeader } from '@kit/ui/page';
+import { StatusFilterDropdown } from '@kit/ui/status-filter-dropdown';
 import { Skeleton } from '@kit/ui/skeleton';
 import {
   Table,
@@ -36,10 +30,12 @@ import {
   TableHeader,
   TableRow,
 } from '@kit/ui/table';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@kit/ui/tooltip';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
-import { cn } from '@kit/ui/utils';
+import { useColumnResize } from '@kit/ui/use-column-resize';
+import { useTableSort } from '@kit/ui/use-table-sort';
+import { SortableTableHead } from '@kit/ui/sortable-table-head';
 
+import { useDebounce } from '~/lib/hooks/use-debounce';
 import { ModuleGuard } from '~/lib/rbac/module-guard';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { getModuleKeyFromPath } from '~/lib/rbac/route-module-map';
@@ -49,7 +45,6 @@ import {
   getRolesService,
   reorderRolesService,
 } from '~/services/roles.service';
-
 import { CreateRoleDialog } from './components/create-role-dialog';
 import { EditRoleDialog } from './components/edit-role-dialog';
 
@@ -65,6 +60,10 @@ export default function RolesPage() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [orderedRoles, setOrderedRoles] = useState<Role[]>([]);
   const [draggedRoleIndex, setDraggedRoleIndex] = useState<number | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [typeFilter, setTypeFilter] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<string>('');
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
   const columns = useMemo(
     () => [
@@ -86,19 +85,86 @@ export default function RolesPage() {
       status: true,
     });
 
+  const { getHeaderProps, getResizeHandleProps } = useColumnResize('roles');
+
+
+  const { sortColumn, sortDirection, toggleSort, sortState } = useTableSort<Role>(
+    'roles',
+    [],
+    { mode: 'server' }
+  );
+
   // Fetch roles filtered by current product/module
   const {
     data: roles = EMPTY_ROLES,
     isLoading,
     error,
   } = useQuery({
-    queryKey: ['workspaceRoles', currentWorkspace?.id, productKey],
+    queryKey: ['workspaceRoles', currentWorkspace?.id, productKey, sortState, typeFilter, statusFilter, debouncedSearchTerm],
     queryFn: async () => {
-      const res = await getRolesService(currentWorkspace?.id || '', productKey);
+      const res = await getRolesService(
+        currentWorkspace?.id || '',
+        productKey,
+        sortColumn || undefined,
+        sortDirection || undefined,
+        {
+          type: typeFilter && typeFilter !== 'all' ? typeFilter : undefined,
+          status:
+            statusFilter && statusFilter !== 'all' ? statusFilter : undefined,
+          searchTerm: debouncedSearchTerm || undefined,
+        }
+      );
       return res?.data || [];
     },
     enabled: !!currentWorkspace?.id,
   });
+
+  const filterGroups = useMemo(() => {
+    return [
+      {
+        key: 'type',
+        label: 'Type',
+        selectedValue: typeFilter || undefined,
+        selectedLabel:
+          typeFilter === 'system'
+            ? 'System'
+            : typeFilter === 'custom'
+              ? 'Custom'
+              : undefined,
+        options: [
+          { value: 'system', label: 'System' },
+          { value: 'custom', label: 'Custom' },
+        ],
+        onSelect: (val: string) => setTypeFilter(val),
+      },
+      {
+        key: 'status',
+        label: 'Status',
+        selectedValue: statusFilter || undefined,
+        selectedLabel:
+          statusFilter === 'active'
+            ? 'Active'
+            : statusFilter === 'inactive'
+              ? 'Inactive'
+              : undefined,
+        options: [
+          { value: 'active', label: 'Active' },
+          { value: 'inactive', label: 'Inactive' },
+        ],
+        onSelect: (val: string) => setStatusFilter(val),
+      },
+    ];
+  }, [typeFilter, statusFilter]);
+
+  // Filtered roles based on type filter and search term
+  const filteredRoles = useMemo(() => {
+    return orderedRoles;
+  }, [orderedRoles]);
+
+  const isDragDisabled =
+    (sortColumn !== null && sortColumn !== 'hierarchy_level') ||
+    (typeFilter !== 'all' && typeFilter !== '') ||
+    !!debouncedSearchTerm;
 
   // Reorder mutation
   const reorderRolesMutation = useMutation({
@@ -121,12 +187,7 @@ export default function RolesPage() {
   // Sync state when data fetches
   useEffect(() => {
     if (Array.isArray(roles)) {
-      setOrderedRoles(
-        [...roles].sort(
-          (a: Role, b: Role) =>
-            (b.hierarchy_level || 0) - (a.hierarchy_level || 0),
-        ),
-      );
+      setOrderedRoles(roles);
     }
   }, [roles]);
 
@@ -213,138 +274,69 @@ export default function RolesPage() {
     return `Level ${role.hierarchy_level || 0}`;
   };
 
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (typeFilter && typeFilter !== 'all') count++;
+    if (statusFilter && statusFilter !== 'all') count++;
+    return count;
+  }, [typeFilter, statusFilter]);
+
+  const handleClearFilters = () => {
+    setTypeFilter('');
+    setStatusFilter('');
+  };
+
   return (
     <ModuleGuard module="roles">
       <div className="flex shrink-0 flex-col gap-2 overflow-hidden">
         <PageHeader
-          title={`Roles Management (${Array.isArray(roles) ? roles.length : 0})`}
+          title={`Roles Management (${roles.length})`}
           description="Create and manage workspace roles with custom permissions"
-        >
-          <div className="flex items-center gap-2">
-            {/* {canAccess('roles', 'create') && (
-                <Button
-                  onClick={() => setCreateDialogOpen(true)}
-                  size="sm"
-                  className="h-9 gap-2"
-                >
-                  <Plus className="h-4 w-4" />
-                  New Role
-                </Button>
-              )} */}
+        />
+      </div>
 
-            {canAccess('roles', 'create') && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="outline"
-                    onClick={() => setCreateDialogOpen(true)}
-                    size="sm"
-                    className="dark:dark-background-color h-9 w-9 bg-white p-0 hover:cursor-pointer"
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-
-                <TooltipContent side="bottom">
-                  <p>New Role</p>
-                </TooltipContent>
-              </Tooltip>
-            )}
-
+      {/* Toolbar with search, type filter, actions */}
+      <div className="w-full max-w-full min-w-0 shrink-0 border-b pb-2">
+        <ListToolBar
+          filterGroups={filterGroups}
+          showFilter
+          filterLabel="Show Filters"
+          activeFilterCount={activeFilterCount}
+          onClearFilters={handleClearFilters}
+          showSearch
+          searchPlaceholder="Search roles..."
+          searchValue={searchTerm}
+          onSearchChange={setSearchTerm}
+          actions={[
+            ...(canAccess('roles', 'create')
+              ? [
+                  {
+                    key: 'add',
+                    label: 'New Role',
+                    icon: Plus,
+                    onClick: () => setCreateDialogOpen(true),
+                    show: true,
+                    buttonVariant: 'default' as const,
+                  },
+                ]
+              : []),
+          ]}
+          columnVisibilitySlot={
             <ColumnVisibilitySelector
               columns={columns}
               visibility={visibility}
               onToggle={toggleVisibility}
               onReset={reset}
             />
-          </div>
-        </PageHeader>
-        {/* Summary Cards */}
-        <div className="w-full max-w-full min-w-0 overflow-x-auto pb-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <Card
-              className={cn(
-                'hover:border-primary/50 bg-card rounded-sm-card inline-flex w-auto shrink-0 cursor-pointer transition-all',
-              )}
-            >
-              <CardContent className={cn('flex items-center px-3 py-2')}>
-                <div className="flex items-center gap-2 whitespace-nowrap">
-                  <div className="bg-activity-3 h-2 w-2 shrink-0 rounded-full" />
-                  <span
-                    className={cn(
-                      'primary-text-medium text-leadgaze-dark uppercase dark:text-white',
-                    )}
-                  >
-                    Total Roles ({Array.isArray(roles) ? roles.length : 0})
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card
-              className={cn(
-                'hover:border-primary/50 bg-card rounded-sm-card inline-flex w-auto shrink-0 cursor-pointer transition-all',
-              )}
-            >
-              <CardContent className={cn('flex items-center px-3 py-2')}>
-                <div className="flex items-center gap-2 whitespace-nowrap">
-                  <div className="bg-activity-1 h-2 w-2 shrink-0 rounded-full" />
-                  <span
-                    className={cn(
-                      'primary-text-medium text-leadgaze-dark uppercase dark:text-white',
-                    )}
-                  >
-                    System Roles (
-                    {Array.isArray(roles)
-                      ? roles.filter((r: Role) => r.is_system).length
-                      : 0}
-                    )
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card
-              className={cn(
-                'hover:border-primary/50 bg-card rounded-sm-card inline-flex w-auto shrink-0 cursor-pointer transition-all',
-              )}
-            >
-              <CardContent className={cn('flex items-center px-3 py-2')}>
-                <div className="flex items-center gap-2 whitespace-nowrap">
-                  <div className="bg-activity-4 h-2 w-2 shrink-0 rounded-full" />
-                  <span
-                    className={cn(
-                      'primary-text-medium text-leadgaze-dark uppercase dark:text-white',
-                    )}
-                  >
-                    Custom Roles (
-                    {Array.isArray(roles)
-                      ? roles.filter((r: Role) => !r.is_system).length
-                      : 0}
-                    )
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+          }
+        />
       </div>
       <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden">
-        <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col gap-0">
-          <Card className="flex min-h-0 flex-col border-none shadow-none">
-            <CardHeader className="shrink-0 p-4">
-              <div>
-                <CardTitle className="leading-tight">Workspace Roles</CardTitle>
-                <CardDescription>
-                  Manage roles and their permissions
-                </CardDescription>
-              </div>
-            </CardHeader>
-          </Card>
+        <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 gap-0">
           <CustomTableContainer>
             {isLoading ? (
               <div className="listing-table-container min-w-0 flex-1 overflow-x-auto overflow-y-auto rounded-lg pb-6">
-                <table className="w-max min-w-full caption-bottom border-separate border-spacing-0 text-sm">
+                <Table className="w-max min-w-full caption-bottom border-separate border-spacing-0 text-sm">
                   <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
                     <TableRow>
                       {isVisible('role_name') && (
@@ -364,28 +356,22 @@ export default function RolesPage() {
                   <TableBody>
                     {[...Array(8)].map((_, i) => (
                       <TableRow key={i}>
-                        <TableCell
-                          className="h-[52px] px-4 py-2"
-                          colSpan={
-                            visibility
-                              ? Object.values(visibility).filter(
-                                  (v) => v !== false,
-                                ).length + 1
-                              : 6
-                          }
-                        >
+                         <TableCell
+                           className="h-[52px] px-4 py-2"
+                           colSpan={6}
+                         >
                           <Skeleton className="h-7 w-full" />
                         </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
-                </table>
+                </Table>
               </div>
             ) : error ? (
               <div className="border-destructive/50 bg-destructive/10 text-destructive rounded-lg border p-4">
                 Failed to load roles
               </div>
-            ) : !Array.isArray(roles) || roles.length === 0 ? (
+            ) : filteredRoles.length === 0 ? (
               <div className="py-12 text-center table-row-border">
                 <Shield className="text-muted-foreground/30 mx-auto mb-4 h-12 w-12" />
                 <p className="text-muted-foreground">No roles found</p>
@@ -394,24 +380,86 @@ export default function RolesPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    {isVisible('role_name') && <TableHead>Role Name</TableHead>}
-                    {isVisible('role_key') && <TableHead>Role Key</TableHead>}
+                    {isVisible('role_name') && (
+  <SortableTableHead
+    label="Role Name"
+    columnId="role_name"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('role_name')}
+  >
+    <span className="col-resize-handle" {...getResizeHandleProps('role_name')} />
+  </SortableTableHead>
+)}
+                    {isVisible('role_key') && (
+  <SortableTableHead
+    label="Role Key"
+    columnId="role_key"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('role_key')}
+  >
+    <span className="col-resize-handle" {...getResizeHandleProps('role_key')} />
+  </SortableTableHead>
+)}
                     {isVisible('hierarchy') && (
-                      <TableHead>Access Level</TableHead>
-                    )}
-                    {isVisible('type') && <TableHead>Type</TableHead>}
-                    {isVisible('status') && <TableHead>Status</TableHead>}
+  <SortableTableHead
+    label="Access Level"
+    columnId="hierarchy"
+    sortKey="hierarchy_level"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    sortable={false}
+    className="relative"
+    {...getHeaderProps('hierarchy')}
+  >
+    <span className="col-resize-handle" {...getResizeHandleProps('hierarchy')} />
+  </SortableTableHead>
+)}
+                    {isVisible('type') && (
+  <SortableTableHead
+    label="Type"
+    columnId="type"
+    sortKey="is_system"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('type')}
+  >
+    <span className="col-resize-handle" {...getResizeHandleProps('type')} />
+  </SortableTableHead>
+)}
+                    {isVisible('status') && (
+  <SortableTableHead
+    label="Status"
+    columnId="status"
+    sortKey="is_active"
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    onSort={toggleSort}
+    className="relative"
+    {...getHeaderProps('status')}
+  >
+    <span className="col-resize-handle" {...getResizeHandleProps('status')} />
+  </SortableTableHead>
+)}
                     <TableHead className="sticky-right-header text-right">
                       Actions
                     </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {orderedRoles?.map((role: Role, index: number) => (
+                  {filteredRoles?.map((role: Role, index: number) => (
                     <TableRow
                       key={role.id}
                       className={draggedRoleIndex === index ? 'opacity-50' : ''}
-                      draggable={canAccess('roles', 'edit')}
+                      draggable={!isDragDisabled && canAccess('roles', 'edit')}
                       onDragStart={(e) => handleDragStart(e, index)}
                       onDragOver={(e) => handleDragOver(e, index)}
                       onDrop={(e) => handleDrop(e)}
@@ -506,9 +554,9 @@ export default function RolesPage() {
                     </TableRow>
                   ))}
                 </TableBody>
-              </Table>
-            )}
-          </CustomTableContainer>
+              </Table>            
+            )}        
+          </CustomTableContainer>  
         </div>
 
         {/* Dialogs */}

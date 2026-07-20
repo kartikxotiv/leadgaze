@@ -109,9 +109,11 @@ export default function InviteAcceptancePage() {
   useEffect(() => {
     if (!user && token && !loading) {
       const nextPath = encodeURIComponent(`/invite?token=${token}`);
-      router.push(`/auth/sign-up?next=${nextPath}`);
+      const emailParam = invitation?.email ? `&email=${encodeURIComponent(invitation.email)}` : '';
+      const inviteTokenParam = `&invite_token=${token}`;
+      router.push(`/auth/sign-up?next=${nextPath}${inviteTokenParam}${emailParam}`);
     }
-  }, [user, token, loading, router]);
+  }, [user, token, loading, router, invitation]);
 
   // Accept invite mutation
   const acceptMutation = useMutation({

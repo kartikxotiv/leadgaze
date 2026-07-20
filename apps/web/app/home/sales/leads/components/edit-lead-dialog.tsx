@@ -679,11 +679,11 @@ export default function EditLeadDialog({
                 variant="outline"
                 onClick={() => handleOpenChange(false)}
                 disabled={isLoading}
-                className="border-gray-300 text-gray-900 dark:border-slate-700 dark:text-white"
+                className="border-gray-300 text-gray-900 dark:border-slate-700 dark:text-white mb-2"
               >
                 Cancel
               </Button>
-              <Button type="submit" form="dialog-form" disabled={isLoading} className="gap-2">
+              <Button type="submit" form="dialog-form" disabled={isLoading} className="gap-2 mb-2">
                 {isLoading ? (
                   <>
                     <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />

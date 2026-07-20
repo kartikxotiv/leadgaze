@@ -62,6 +62,13 @@ const getContactsService = asyncHandlerClient(
     page?: number;
     limit?: number;
     searchTerm?: string;
+    sortColumn?: string;
+    sortDirection?: 'asc' | 'desc' | null;
+    createdAtFrom?: string;
+    createdAtTo?: string;
+    updatedAtFrom?: string;
+    updatedAtTo?: string;
+    createdByIds?: string | string[];
   }) => {
     const {
       workspaceId,
@@ -69,8 +76,24 @@ const getContactsService = asyncHandlerClient(
       page = 1,
       limit = 20,
       searchTerm = '',
+      sortColumn = '',
+      sortDirection = '',
+      createdAtFrom = '',
+      createdAtTo = '',
+      updatedAtFrom = '',
+      updatedAtTo = '',
+      createdByIds = '',
     } = params;
-    let url = `/contacts?workspaceId=${workspaceId}&page=${page}&limit=${limit}&searchTerm=${searchTerm}`;
+    let url = `/contacts?workspaceId=${workspaceId}&page=${page}&limit=${limit}&searchTerm=${searchTerm}&sortColumn=${sortColumn}&sortDirection=${sortDirection || ''}`;
+    
+    if (createdAtFrom) url += `&createdAtFrom=${createdAtFrom}`;
+    if (createdAtTo) url += `&createdAtTo=${createdAtTo}`;
+    if (updatedAtFrom) url += `&updatedAtFrom=${updatedAtFrom}`;
+    if (updatedAtTo) url += `&updatedAtTo=${updatedAtTo}`;
+    if (createdByIds) {
+      const createdByParam = Array.isArray(createdByIds) ? createdByIds.join(',') : createdByIds;
+      url += `&createdByIds=${createdByParam}`;
+    }
     if (accountId) {
       url += `&accountId=${accountId}`;
     }
@@ -106,11 +129,18 @@ const deleteContactService = asyncHandlerClient(async (id: string) => {
   return response.data?.data;
 });
 
+const importContactsService = asyncHandlerClient(
+  async (payload: { workspaceId: string; data: any[] }) => {
+    const response = await ApiClient.post('/contacts/import', payload);
+    return response.data;
+  },
+);
+
 export {
   getContactsService,
   getContactByIdService,
   createContactService,
-
+  importContactsService,
   updateContactService,
   deleteContactService,
 };

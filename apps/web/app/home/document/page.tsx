@@ -1,7 +1,9 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
+
 import Link from 'next/link';
+
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Briefcase,
@@ -11,16 +13,20 @@ import {
   FileText,
   FileType,
   FileUp,
-  File as LucideFile,
   Loader2,
+  File as LucideFile,
   MoreHorizontal,
+  MoreVertical,
   Trash2,
   User,
   Users,
 } from 'lucide-react';
 import { toast } from 'sonner';
+
 import { Button } from '@kit/ui/button';
+import { Badge } from '@kit/ui/badge';
 import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
+import CustomTableContainer from '@kit/ui/custom-table-container';
 import {
   Dialog,
   DialogContent,
@@ -35,15 +41,8 @@ import {
 } from '@kit/ui/dropdown-menu';
 import { Input } from '@kit/ui/input';
 import { Label } from '@kit/ui/label';
+import { ListToolBar } from '@kit/ui/list-toolbar';
 import { PageBody, PageHeader } from '@kit/ui/page';
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from '@kit/ui/pagination';
 import { RadioGroup, RadioGroupItem } from '@kit/ui/radio-group';
 import {
   Select,
@@ -53,6 +52,7 @@ import {
   SelectValue,
 } from '@kit/ui/select';
 import { Skeleton } from '@kit/ui/skeleton';
+import { SortableTableHead } from '@kit/ui/sortable-table-head';
 import {
   Table,
   TableBody,
@@ -61,11 +61,16 @@ import {
   TableHeader,
   TableRow,
 } from '@kit/ui/table';
+import { TablePagination } from '@kit/ui/table-pagination';
+import { useColumnResize } from '@kit/ui/use-column-resize';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
-import { ListToolBar } from '@kit/ui/list-toolbar';
-import CustomTableContainer from '@kit/ui/custom-table-container';
+import { useDateRangeFilter } from '@kit/ui/use-date-range-filter';
+import { useTableSort } from '@kit/ui/use-table-sort';
 
+import { useLocalization } from '~/lib/localization/localization-provider';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
+import { useDebounce } from '~/lib/hooks/use-debounce';
+import { usePackageMembers } from '~/lib/hooks/use-package-members';
 import { getAccountsService } from '~/services/accounts.service';
 import {
   Document,
@@ -77,7 +82,6 @@ import {
 import { getContactsService } from '~/services/contacts.service';
 import { getLeadsService } from '~/services/leads.service';
 import { getOpportunitiesService } from '~/services/opportunities.service';
-import { formatDate } from '@kit/shared/utils';
 
 function DocumentPageSkeleton() {
   return (
@@ -101,13 +105,17 @@ function DocumentPageSkeleton() {
             <Table className="w-max min-w-full border-separate border-spacing-0 text-sm">
               <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
                 <TableRow>
-                  <TableHead className="w-12 whitespace-nowrap">S. No.</TableHead>
+                  <TableHead className="w-12 whitespace-nowrap">
+                    S. No.
+                  </TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead>Type</TableHead>
                   <TableHead>Size</TableHead>
                   <TableHead>Uploaded By</TableHead>
                   <TableHead>Entity</TableHead>
-                  <TableHead className="sticky right-0 text-right">Actions</TableHead>
+                  <TableHead className="sticky right-0 text-right">
+                    Actions
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -129,12 +137,30 @@ function DocumentPageSkeleton() {
 
 export default function DocumentPage() {
   const { currentWorkspace: workspace } = useRBAC();
+  const { formatDate } = useLocalization();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
   const [entityTypeFilter, setEntityTypeFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 15;
+  const [pageSize, setPageSize] = useState(15);
+  const itemsPerPage = pageSize;
+  const {
+    dateRange: createdOnRange,
+    setDateRange: setCreatedOnRange,
+    computedDates: computedCreatedOnDates,
+    clearDateRange: clearCreatedOnRange,
+  } = useDateRangeFilter();
+  const {
+    dateRange: updatedOnRange,
+    setDateRange: setUpdatedOnRange,
+    computedDates: computedUpdatedOnDates,
+    clearDateRange: clearUpdatedOnRange,
+  } = useDateRangeFilter('updated');
+
+  const [selectedCreatedByIds, setSelectedCreatedByIds] = useState<string[]>([]);
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
+  const { members } = usePackageMembers();
 
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -151,7 +177,8 @@ export default function DocumentPage() {
       { id: 'type', label: 'Type' },
       { id: 'size', label: 'Size' },
       { id: 'uploader', label: 'Uploaded By' },
-      { id: 'entity', label: 'Entity' },
+      { id: 'category', label: 'Entity' },
+      { id: 'associate', label: 'Associate With' },
       { id: 'last_modified', label: 'Last Modified' },
       { id: 'created_by', label: 'Created By' },
       { id: 'created_at', label: 'Created On' },
@@ -167,18 +194,43 @@ export default function DocumentPage() {
       type: true,
       size: true,
       uploader: true,
-      entity: true,
+      category: true,
+      associate: true,
       last_modified: false,
       created_by: false,
       created_at: false,
       updated_by: false,
     });
 
+  const { getHeaderProps, getResizeHandleProps } = useColumnResize('documents');
+
   const { data: documents = [], isLoading } = useQuery({
-    queryKey: ['documents', workspace?.id],
+    queryKey: [
+      'documents',
+      workspace?.id,
+      typeFilter,
+      entityTypeFilter,
+      debouncedSearchTerm,
+      selectedCreatedByIds,
+      computedCreatedOnDates,
+      computedUpdatedOnDates,
+    ],
     queryFn: () => {
       if (!workspace?.id) return [];
-      return getDocumentsService(workspace.id);
+      return getDocumentsService(
+        workspace.id,
+        entityTypeFilter === 'all' ? undefined : entityTypeFilter,
+        undefined,
+        {
+          type: typeFilter === 'all' ? undefined : typeFilter,
+          searchTerm: debouncedSearchTerm || undefined,
+          createdAtFrom: computedCreatedOnDates?.from,
+          createdAtTo: computedCreatedOnDates?.to,
+          updatedAtFrom: computedUpdatedOnDates?.from,
+          updatedAtTo: computedUpdatedOnDates?.to,
+          createdByIds: selectedCreatedByIds.length > 0 ? selectedCreatedByIds : undefined,
+        },
+      );
     },
     enabled: !!workspace?.id,
   });
@@ -269,7 +321,15 @@ export default function DocumentPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, typeFilter, entityTypeFilter]);
+  }, [
+    debouncedSearchTerm,
+    typeFilter,
+    entityTypeFilter,
+    selectedCreatedByIds,
+    pageSize,
+    createdOnRange,
+    updatedOnRange,
+  ]);
 
   const getFileTypeCategory = (fileType: string): string => {
     const t = (fileType || '').toLowerCase();
@@ -293,26 +353,18 @@ export default function DocumentPage() {
   };
 
   const filteredDocuments = useMemo(() => {
-    return documents.filter((doc: Document) => {
-      const matchesSearch = doc.name
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase());
+    return documents;
+  }, [documents]);
 
-      const category = getFileTypeCategory(doc.file_type || '');
-      const matchesType = typeFilter === 'all' || category === typeFilter;
-
-      const matchesEntityType =
-        entityTypeFilter === 'all' ||
-        doc.entity_type?.toLowerCase() === entityTypeFilter.toLowerCase();
-
-      return matchesSearch && matchesType && matchesEntityType;
+  const { sortColumn, sortDirection, toggleSort, sortedData } =
+    useTableSort<Document>('documents', filteredDocuments, {
+      onSortChange: () => setCurrentPage(1),
     });
-  }, [documents, searchTerm, typeFilter, entityTypeFilter]);
 
   const paginatedDocs = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage;
-    return filteredDocuments.slice(start, start + itemsPerPage);
-  }, [filteredDocuments, currentPage, itemsPerPage]);
+    return sortedData.slice(start, start + itemsPerPage);
+  }, [sortedData, currentPage, itemsPerPage]);
 
   const totalPages = Math.ceil(filteredDocuments.length / itemsPerPage);
   const totalCount = filteredDocuments.length;
@@ -378,15 +430,57 @@ export default function DocumentPage() {
     return 'Document';
   };
 
+  const getCategoryBadge = (type: string) => {
+    switch (type?.toLowerCase()) {
+      case 'lead':
+        return (
+          <Badge
+            variant="outline"
+            className="border-blue-200 bg-blue-50 text-blue-600"
+          >
+            Lead
+          </Badge>
+        );
+      case 'contact':
+        return (
+          <Badge
+            variant="outline"
+            className="border-emerald-200 bg-emerald-50 text-emerald-600"
+          >
+            Contact
+          </Badge>
+        );
+      case 'opportunity':
+        return (
+          <Badge
+            variant="outline"
+            className="border-purple-200 bg-purple-50 text-purple-600"
+          >
+            Opportunity
+          </Badge>
+        );
+      case 'account':
+        return (
+          <Badge
+            variant="outline"
+            className="border-amber-200 bg-amber-50 text-amber-600"
+          >
+            Account
+          </Badge>
+        );
+      default:
+        return <Badge variant="secondary">{type || 'General'}</Badge>;
+    }
+  };
+
   const filterGroups = useMemo(() => {
     return [
       {
         key: 'type',
         label: 'File Type',
         selectedValue: typeFilter === 'all' ? '' : typeFilter,
-        selectedLabel: typeFilter === 'all'
-          ? 'All types'
-          : typeFilter.toUpperCase(),
+        selectedLabel:
+          typeFilter === 'all' ? 'All types' : typeFilter.toUpperCase(),
         options: [
           { value: 'pdf', label: 'PDF' },
           { value: 'image', label: 'Images' },
@@ -399,9 +493,12 @@ export default function DocumentPage() {
         key: 'entity',
         label: 'Entity',
         selectedValue: entityTypeFilter === 'all' ? '' : entityTypeFilter,
-        selectedLabel: entityTypeFilter === 'all'
-          ? 'All entities'
-          : entityTypeFilter.charAt(0).toUpperCase() + entityTypeFilter.slice(1) + 's',
+        selectedLabel:
+          entityTypeFilter === 'all'
+            ? 'All entities'
+            : entityTypeFilter.charAt(0).toUpperCase() +
+              entityTypeFilter.slice(1) +
+              's',
         options: [
           { value: 'lead', label: 'Leads' },
           { value: 'contact', label: 'Contacts' },
@@ -410,19 +507,70 @@ export default function DocumentPage() {
         ],
         onSelect: (val: string) => setEntityTypeFilter(val || 'all'),
       },
+      {
+        key: 'created_by',
+        label: 'Created By',
+        selectedValues: selectedCreatedByIds,
+        selectedLabel:
+          selectedCreatedByIds.length === 0
+            ? 'All members'
+            : selectedCreatedByIds.length === 1
+              ? ((
+                  members.find(
+                    (m: any) => m.user_id === selectedCreatedByIds[0],
+                  ) as any
+                )?.user?.user_metadata?.full_name ?? '1 selected')
+              : `${selectedCreatedByIds.length} selected`,
+        options: members
+          .filter((m: any) => m.user_id)
+          .map((m: any) => ({
+            value: m.user_id,
+            label:
+              m.user?.user_metadata?.full_name ||
+              m.user?.email ||
+              m.user_id,
+          })),
+        onSelectValues: setSelectedCreatedByIds,
+      },
+      {
+        key: 'created_on',
+        label: 'Created On',
+        type: 'date',
+        dateValue: createdOnRange,
+        onDateChange: (val) => {
+          setCreatedOnRange(val);
+          setCurrentPage(1);
+        },
+      },
+      {
+        key: 'updated_on',
+        label: 'Updated On',
+        type: 'date',
+        dateValue: updatedOnRange,
+        onDateChange: (val) => {
+          setUpdatedOnRange(val);
+          setCurrentPage(1);
+        },
+      },
     ];
-  }, [typeFilter, entityTypeFilter]);
+  }, [typeFilter, entityTypeFilter, createdOnRange, updatedOnRange, selectedCreatedByIds, members]);
 
   const activeFilterCount = useMemo(() => {
     let count = 0;
     if (typeFilter !== 'all') count++;
     if (entityTypeFilter !== 'all') count++;
+    if (selectedCreatedByIds.length > 0) count++;
+    if (createdOnRange) count++;
+    if (updatedOnRange) count++;
     return count;
-  }, [typeFilter, entityTypeFilter]);
+  }, [typeFilter, entityTypeFilter, selectedCreatedByIds, createdOnRange, updatedOnRange]);
 
   const handleClearFilters = () => {
     setTypeFilter('all');
     setEntityTypeFilter('all');
+    setSelectedCreatedByIds([]);
+    clearCreatedOnRange();
+    clearUpdatedOnRange();
   };
 
   if (!workspace) {
@@ -439,7 +587,7 @@ export default function DocumentPage() {
       </div>
 
       {/* Full-width search / filter / actions toolbar */}
-      <div className="w-full max-w-full min-w-0 shrink-0 border-b pb-2 pt-2">
+      <div className="w-full max-w-full min-w-0 shrink-0 border-b pt-2 pb-2">
         <ListToolBar
           showSearch
           searchPlaceholder="Search documents..."
@@ -479,84 +627,209 @@ export default function DocumentPage() {
       <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden">
         <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 gap-0">
           <CustomTableContainer
-            pagination={totalCount > 0 && (
-              <div className="primary-text-regular text-leadgaze-muted bg-sidebar sticky bottom-0 z-10 -mx-4 flex shrink-0 items-center justify-between border-t px-4 py-1.5 lg:-mx-8 lg:px-8">
-                <div>
-                  Showing{' '}
-                  <span className="text-foreground font-medium">
-                    {(currentPage - 1) * itemsPerPage + 1}
-                  </span>{' '}
-                  to{' '}
-                  <span className="text-foreground font-medium">
-                    {Math.min(currentPage * itemsPerPage, totalCount)}
-                  </span>{' '}
-                  of{' '}
-                  <span className="text-foreground font-medium">
-                    {totalCount}
-                  </span>{' '}
-                  documents
-                </div>
-                <Pagination className="w-auto">
-                  <PaginationContent>
-                    <PaginationItem>
-                      <PaginationPrevious
-                        className={
-                          currentPage === 1
-                            ? 'pointer-events-none opacity-50'
-                            : 'cursor-pointer'
-                        }
-                        onClick={() =>
-                          setCurrentPage((prev) => Math.max(prev - 1, 1))
-                        }
-                      />
-                    </PaginationItem>
-                    {Array.from({ length: totalPages }).map((_, i) => (
-                      <PaginationItem key={i}>
-                        <PaginationLink
-                          isActive={currentPage === i + 1}
-                          onClick={() => setCurrentPage(i + 1)}
-                          className="cursor-pointer"
-                        >
-                          {i + 1}
-                        </PaginationLink>
-                      </PaginationItem>
-                    ))}
-                    <PaginationItem>
-                      <PaginationNext
-                        className={
-                          currentPage === totalPages
-                            ? 'pointer-events-none opacity-50'
-                            : 'cursor-pointer'
-                        }
-                        onClick={() =>
-                          setCurrentPage((prev) =>
-                            Math.min(prev + 1, totalPages),
-                          )
-                        }
-                      />
-                    </PaginationItem>
-                  </PaginationContent>
-                </Pagination>
-              </div>
-            )}
+            pagination={
+              <TablePagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalCount={totalCount}
+                pageSize={pageSize}
+                onPageChange={setCurrentPage}
+                onPageSizeChange={(val) => {
+                  setPageSize(val);
+                  setCurrentPage(1);
+                }}
+                entityLabel="documents"
+              />
+            }
           >
             <Table>
               <TableHeader>
                 <TableRow>
                   {isVisible('sno') && (
-                    <TableHead className="w-12 whitespace-nowrap">
-                      S. No.
-                    </TableHead>
+                    <SortableTableHead
+                      label="S. No."
+                      columnId="sno"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={toggleSort}
+                      sortable={false}
+                      className="relative w-12 whitespace-nowrap"
+                      {...getHeaderProps('sno')}
+                    >
+                      <span
+                        className="col-resize-handle"
+                        {...getResizeHandleProps('sno')}
+                      />
+                    </SortableTableHead>
                   )}
-                  {isVisible('name') && <TableHead>Name</TableHead>}
-                  {isVisible('type') && <TableHead>Type</TableHead>}
-                  {isVisible('size') && <TableHead>Size</TableHead>}
-                  {isVisible('uploader') && <TableHead>Uploaded By</TableHead>}
-                  {isVisible('entity') && <TableHead>Entity</TableHead>}
-                  {isVisible('last_modified') && <TableHead>Last Modified At</TableHead>}
-                  {isVisible('created_by') && <TableHead>Created By</TableHead>}
-                  {isVisible('created_at') && <TableHead>Created On</TableHead>}
-                  {isVisible('updated_by') && <TableHead>Last Updated By</TableHead>}
+                  {isVisible('name') && (
+                    <SortableTableHead
+                      label="Name"
+                      columnId="name"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={toggleSort}
+                      sortable={false}
+                      className="relative"
+                      {...getHeaderProps('name')}
+                    >
+                      <span
+                        className="col-resize-handle"
+                        {...getResizeHandleProps('name')}
+                      />
+                    </SortableTableHead>
+                  )}
+                  {isVisible('type') && (
+                    <SortableTableHead
+                      label="Type"
+                      columnId="type"
+                      sortKey="file_type"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={toggleSort}
+                      className="relative"
+                      {...getHeaderProps('type')}
+                    >
+                      <span
+                        className="col-resize-handle"
+                        {...getResizeHandleProps('type')}
+                      />
+                    </SortableTableHead>
+                  )}
+                  {isVisible('size') && (
+                    <SortableTableHead
+                      label="Size"
+                      columnId="size"
+                      sortKey="size_bytes"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={toggleSort}
+                      className="relative"
+                      {...getHeaderProps('size')}
+                    >
+                      <span
+                        className="col-resize-handle"
+                        {...getResizeHandleProps('size')}
+                      />
+                    </SortableTableHead>
+                  )}
+                  {isVisible('uploader') && (
+                    <SortableTableHead
+                      label="Uploaded By"
+                      columnId="uploader"
+                      sortKey="created_by_user.name"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={toggleSort}
+                      className="relative"
+                      {...getHeaderProps('uploader')}
+                    >
+                      <span
+                        className="col-resize-handle"
+                        {...getResizeHandleProps('uploader')}
+                      />
+                    </SortableTableHead>
+                  )}
+                  {isVisible('category') && (
+                    <SortableTableHead
+                      label="Entity"
+                      columnId="category"
+                      sortKey="entity_type"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={toggleSort}
+                      className="relative"
+                      {...getHeaderProps('category')}
+                    >
+                      <span
+                        className="col-resize-handle"
+                        {...getResizeHandleProps('category')}
+                      />
+                    </SortableTableHead>
+                  )}
+                  {isVisible('associate') && (
+                    <SortableTableHead
+                      label="Associate With"
+                      columnId="associate"
+                      sortKey="entity_name"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={toggleSort}
+                      className="relative"
+                      {...getHeaderProps('associate')}
+                    >
+                      <span
+                        className="col-resize-handle"
+                        {...getResizeHandleProps('associate')}
+                      />
+                    </SortableTableHead>
+                  )}
+                  {isVisible('last_modified') && (
+                    <SortableTableHead
+                      label="Last Modified At"
+                      columnId="last_modified"
+                      sortKey="updated_at"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={toggleSort}
+                      className="relative"
+                      {...getHeaderProps('last_modified')}
+                    >
+                      <span
+                        className="col-resize-handle"
+                        {...getResizeHandleProps('last_modified')}
+                      />
+                    </SortableTableHead>
+                  )}
+                  {isVisible('created_by') && (
+                    <SortableTableHead
+                      label="Created By"
+                      columnId="created_by"
+                      sortKey="created_by_user.name"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={toggleSort}
+                      className="relative"
+                      {...getHeaderProps('created_by')}
+                    >
+                      <span
+                        className="col-resize-handle"
+                        {...getResizeHandleProps('created_by')}
+                      />
+                    </SortableTableHead>
+                  )}
+                  {isVisible('created_at') && (
+                    <SortableTableHead
+                      label="Created On"
+                      columnId="created_at"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={toggleSort}
+                      className="relative"
+                      {...getHeaderProps('created_at')}
+                    >
+                      <span
+                        className="col-resize-handle"
+                        {...getResizeHandleProps('created_at')}
+                      />
+                    </SortableTableHead>
+                  )}
+                  {isVisible('updated_by') && (
+                    <SortableTableHead
+                      label="Last Updated By"
+                      columnId="updated_by"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={toggleSort}
+                      className="relative"
+                      {...getHeaderProps('updated_by')}
+                    >
+                      <span
+                        className="col-resize-handle"
+                        {...getResizeHandleProps('updated_by')}
+                      />
+                    </SortableTableHead>
+                  )}
                   <TableHead className="sticky-right-header">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -569,7 +842,9 @@ export default function DocumentPage() {
                           className="h-[52px] px-4 py-2"
                           colSpan={
                             visibility
-                              ? Object.values(visibility).filter((v) => v !== false).length + 1
+                              ? Object.values(visibility).filter(
+                                  (v) => v !== false,
+                                ).length + 1
                               : 6
                           }
                         >
@@ -614,12 +889,17 @@ export default function DocumentPage() {
                           {doc.created_by_user?.name || '-'}
                         </TableCell>
                       )}
-                      {isVisible('entity') && (
+                      {isVisible('category') && (
+                        <TableCell>
+                          {getCategoryBadge(doc.entity_type)}
+                        </TableCell>
+                      )}
+                      {isVisible('associate') && (
                         <TableCell>
                           {doc.entity_name && (
                             <Link
                               href={`/home/sales/${doc.entity_type === 'opportunity' ? 'opportunities' : `${doc.entity_type}s`}/${doc.entity_id}`}
-                              className="primary-text-medium text-leadgaze-primary dark:text-leadgaze-primary text-xs"
+                              className="primary-text-medium text-leadgaze-primary dark:text-leadgaze-primary text-xs font-medium hover:underline"
                               title={`${doc.entity_type}: ${doc.entity_name}`}
                             >
                               {doc.entity_name}
@@ -651,7 +931,7 @@ export default function DocumentPage() {
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="icon">
-                              <MoreHorizontal className="h-4 w-4" />
+                              <MoreVertical className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
@@ -660,6 +940,24 @@ export default function DocumentPage() {
                               onClick={() => handleEdit(doc)}
                             >
                               <Edit className="h-4 w-4" /> Rename
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="gap-2" asChild>
+                              <a
+                                href={`/api/documents/${doc.id}/download?mode=view`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                <FileUp className="h-4 w-4" /> View
+                              </a>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="gap-2" asChild>
+                              <a
+                                href={`/api/documents/${doc.id}/download?mode=download`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                <FileUp className="h-4 w-4" /> Download
+                              </a>
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               className="gap-2 text-red-500"
@@ -677,7 +975,8 @@ export default function DocumentPage() {
                     <TableCell
                       colSpan={
                         visibility
-                          ? Object.values(visibility).filter((v) => v !== false).length + 1
+                          ? Object.values(visibility).filter((v) => v !== false)
+                              .length + 1
                           : 10
                       }
                       className="text-muted-foreground h-24 text-center"
@@ -694,11 +993,11 @@ export default function DocumentPage() {
 
       {/* Upload Dialog */}
       <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
-        <DialogContent className="flex max-h-[90vh] flex-col p-0 max-w-[600px]">
+        <DialogContent className="flex max-h-[90vh] max-w-[600px] flex-col p-0">
           <DialogHeader className="border-b p-6 pb-4">
             <DialogTitle>Upload Document</DialogTitle>
           </DialogHeader>
-          <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+          <div className="flex-1 space-y-4 overflow-y-auto px-6 py-4">
             <div className="space-y-4">
               <Label>Associate with</Label>
               <RadioGroup
@@ -785,8 +1084,9 @@ export default function DocumentPage() {
                 type="file"
                 onChange={(e) => setFile(e.target.files?.[0] || null)}
               />
-            </div></div>
-          <div className="border-t p-6 mt-auto">
+            </div>
+          </div>
+          <div className="mt-auto border-t p-6">
             <Button
               onClick={handleUpload}
               disabled={!file || !entityId || createMutation.isPending}
@@ -808,7 +1108,7 @@ export default function DocumentPage() {
           <DialogHeader className="border-b p-6 pb-4">
             <DialogTitle>Rename Document</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 pt-4">
+          <div className="flex-1 space-y-4 px-6 py-4">
             <div className="space-y-2">
               <Label>Document Name</Label>
               <Input

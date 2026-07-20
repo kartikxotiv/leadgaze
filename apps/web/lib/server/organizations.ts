@@ -33,9 +33,12 @@ export const getUserOrganizations = cache(async (userId?: string) => {
     throw error;
   }
 
-  return (data ?? [])
+  const workspaces = (data ?? [])
     .map((member) => member.workspace as unknown as WorkspaceRow | null)
     .filter((workspace): workspace is WorkspaceRow => Boolean(workspace));
+
+  // Deduplicate by workspace ID
+  return Array.from(new Map(workspaces.map((w) => [w.id, w])).values());
 });
 
 export async function getCurrentUserOrganizationId(userId?: string) {

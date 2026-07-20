@@ -17,6 +17,8 @@ export const getDashboardMetrics = catchAsync(
     const adminClient = getSupabaseServerAdminClient<Database>();
     const url = new URL(request.url);
     const workspaceId = url.searchParams.get('workspaceId');
+    const from = url.searchParams.get('from');
+    const to = url.searchParams.get('to');
 
     if (!workspaceId) {
       return NextResponse.json(
@@ -70,13 +72,14 @@ export const getDashboardMetrics = catchAsync(
     const isOwner =
       workspace?.owner_id === actorAccountId || workspace?.owner_id === user.id;
 
-    const { data: membership } = await adminClient
+    const { data: memberships } = await adminClient
       .from('workspace_members')
       .select('id')
       .eq('workspace_id', workspaceId)
       .eq('user_id', actorAccountId)
-      .eq('status', 'accepted')
-      .maybeSingle();
+      .eq('status', 'accepted');
+
+    const membership = memberships && memberships.length > 0 ? memberships[0] : null;
 
     if (!isOwner && !membership) {
       return NextResponse.json(
@@ -110,6 +113,8 @@ export const getDashboardMetrics = catchAsync(
         p_is_all_visible: isAllVisible,
         p_visible_user_ids: visibleUserIds,
         p_user_id: actorAccountId,
+        p_date_from: from || null,
+        p_date_to: to || null,
       },
     );
     /* eslint-enable @typescript-eslint/no-explicit-any */

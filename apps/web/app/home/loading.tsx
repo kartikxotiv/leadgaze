@@ -1,3 +1,3 @@
-import { GlobalLoader } from '@kit/ui/global-loader';
+import { FullScreenLoader } from '../org/_components/Loader';
 
-export default GlobalLoader;
+export default FullScreenLoader;

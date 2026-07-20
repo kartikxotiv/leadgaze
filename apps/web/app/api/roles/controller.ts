@@ -18,6 +18,11 @@ const getAllRoles = catchAsync(
     const url = new URL(request.url);
     const workspaceId = url.searchParams.get('workspaceId');
     const productKey = url.searchParams.get('productKey');
+    const sortColumn = url.searchParams.get('sortColumn') || 'hierarchy_level';
+    const sortDirection = url.searchParams.get('sortDirection') || 'desc';
+    const type = url.searchParams.get('type');
+    const status = url.searchParams.get('status');
+    const searchTerm = url.searchParams.get('searchTerm');
 
     if (!workspaceId) {
       return NextResponse.json(
@@ -29,12 +34,37 @@ const getAllRoles = catchAsync(
     let query = supabase
       .from('workspace_roles')
       .select('*')
-      .eq('workspace_id', workspaceId)
-      .order('hierarchy_level', { ascending: false })
-      .order('role_name', { ascending: true });
+      .eq('workspace_id', workspaceId);
 
     if (productKey) {
       query = query.eq('product_key', productKey);
+    }
+
+    if (type === 'system') {
+      query = query.eq('is_system', true);
+    } else if (type === 'custom') {
+      query = query.eq('is_system', false);
+    }
+
+    if (status === 'active') {
+      query = query.eq('is_active', true);
+    } else if (status === 'inactive') {
+      query = query.eq('is_active', false);
+    }
+
+    if (searchTerm) {
+      query = query.or(`role_name.ilike.%${searchTerm}%,role_key.ilike.%${searchTerm}%`);
+    }
+
+    if (sortColumn) {
+      query = query.order(sortColumn, { ascending: sortDirection === 'asc' });
+      if (sortColumn !== 'role_name') {
+        query = query.order('role_name', { ascending: true });
+      }
+    } else {
+      query = query
+        .order('hierarchy_level', { ascending: false })
+        .order('role_name', { ascending: true });
     }
 
     const { data: roles, error } = await query;

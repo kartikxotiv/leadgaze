@@ -1,14 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { Check, Filter, Loader2, Plus } from 'lucide-react';
+import { Check, FileUp, Loader2, Plus, User } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { formatDate } from '@kit/shared/utils';
+import { useLocalization } from '@kit/shared/localization';
 import { Avatar, AvatarFallback, AvatarImage } from '@kit/ui/avatar';
 import { Button } from '@kit/ui/button';
 import {
@@ -29,6 +30,8 @@ import {
   SelectValue,
 } from '@kit/ui/select';
 import { Textarea } from '@kit/ui/textarea';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@kit/ui/tooltip';
+import { useDateRangeFilter } from '@kit/ui/use-date-range-filter';
 
 import {
   type ServiceCloudRecord,
@@ -58,6 +61,10 @@ function assigneeInitials(assignee: any) {
     .map((part: string) => part[0]?.toUpperCase())
     .join('');
 }
+
+import { useRouter } from 'next/navigation';
+import { ViewToggle } from '@kit/ui/view-toggle';
+import { TicketsKanbanBoard } from './components/kanban/tickets-kanban-board';
 
 function AssigneeStack({ assignees = [] }: { assignees?: any[] }) {
   if (assignees.length === 0) {
@@ -96,12 +103,49 @@ function AssigneeStack({ assignees = [] }: { assignees?: any[] }) {
 
 export function ServiceCloudTicketsPage({
   workspaceId,
+  isAdmin = false,
+  onColumnAddClick,
+  onColumnEditClick,
+  customColumns = [],
+  systemFields = [],
+  canViewColumn,
+  canEditField,
+  currentUserId,
+  teamMembers = [],
+  canImport = false,
+  onImportClick,
 }: {
   workspaceId: string;
+  isAdmin?: boolean;
+  onColumnAddClick?: () => void;
+  onColumnEditClick?: (columnKey: string) => void;
+  customColumns?: any[];
+  systemFields?: any[];
+  /** Optional FLS function: columns for which this returns false are hidden. */
+  canViewColumn?: (columnKey: string) => boolean;
+  /** Optional FLS function: form fields for which this returns false are hidden in create/edit modals. */
+  canEditField?: (fieldKey: string) => boolean;
+  currentUserId?: string;
+  teamMembers?: any[];
+  canImport?: boolean;
+  onImportClick?: () => void;
 }) {
+  const { formatDate } = useLocalization();
+  const router = useRouter();
   const [createOpen, setCreateOpen] = useState(false);
   const [assignedToMeOnly, setAssignedToMeOnly] = useState(false);
+  
+  const [viewMode, setViewMode] = useState<'table' | 'kanban'>(() => {
+    if (typeof window === 'undefined') return 'table';
+    return (localStorage.getItem('leadgaze-view-mode-tickets') as any) ?? 'table';
+  });
+  const handleViewModeChange = (mode: 'table' | 'kanban') => {
+    setViewMode(mode);
+    localStorage.setItem('leadgaze-view-mode-tickets', mode);
+  };
   const { canAccess, isLoading } = useServiceCloudPermissions(workspaceId);
+  const getLabel = (key: string, fallback: string) =>
+    systemFields.find((f: any) => f.field_key === key)?.field_label ?? fallback;
   const canView = canAccess(
     SERVICE_CLOUD_MODULE_KEYS.tickets,
     SERVICE_CLOUD_FEATURE_KEYS.view,
@@ -119,16 +163,61 @@ export function ServiceCloudTicketsPage({
     SERVICE_CLOUD_FEATURE_KEYS.delete,
   );
 
+  const searchParams = useSearchParams();
+  const filterStatusParam = searchParams?.get('status');
+
+  const [selectedCreatedByIds, setSelectedCreatedByIds] = useState<string[]>([]);
+  const [selectedStatusIds, setSelectedStatusIds] = useState<string[]>([]);
+  const [selectedPriorityIds, setSelectedPriorityIds] = useState<string[]>([]);
+  const [selectedAssigneeIds, setSelectedAssigneeIds] = useState<string[]>([]);
+
+  const {
+    dateRange: createdOnRange,
+    setDateRange: setCreatedOnRange,
+    computedDates: computedCreatedOnDates,
+    clearDateRange: clearCreatedOnRange,
+  } = useDateRangeFilter();
+  const {
+    dateRange: updatedOnRange,
+    setDateRange: setUpdatedOnRange,
+    computedDates: computedUpdatedOnDates,
+    clearDateRange: clearUpdatedOnRange,
+  } = useDateRangeFilter('updated');
+
   // Optimized: single API call fetches statuses + priorities + categories in parallel on server
-  const { data: lookups } = useQuery({
+  const { data: lookups, isLoading: lookupsIsLoading } = useQuery({
     queryKey: ['service-cloud', 'ticket-lookups', workspaceId],
     queryFn: () => getServiceCloudTicketLookupsService(workspaceId),
     enabled: Boolean(workspaceId),
   });
 
-  const statuses: any[] = lookups?.statuses ?? [];
-  const priorities: any[] = lookups?.priorities ?? [];
-  const categories: any[] = lookups?.categories ?? [];
+  const allStatuses: any[] = lookups?.statuses ?? [];
+  const allPriorities: any[] = lookups?.priorities ?? [];
+  const allCategories: any[] = lookups?.categories ?? [];
+
+  // Filter out private statuses/priorities that the current user cannot access
+  const statuses = allStatuses.filter((s: any) => {
+    if (s.access_type === 'public') return true;
+    if (s.access_type === 'private') return false;
+    return true;
+  });
+
+  const priorities = allPriorities.filter((p: any) => {
+    if (p.access_type === 'public') return true;
+    if (p.access_type === 'private') return false;
+    return true;
+  });
+
+  const categories = allCategories;
+
+  const defaultStatusIds = useMemo(() => {
+    if (filterStatusParam === 'open') {
+      return statuses.filter((s: any) => s.lifecycle === 'open').map((s: any) => s.id);
+    }
+    return statuses
+      .filter((s: any) => s.lifecycle !== 'closed' && s.lifecycle !== 'resolved')
+      .map((s: any) => s.id);
+  }, [statuses, filterStatusParam]);
 
   const statusOptions = statuses.map((status: any) => ({
     label: status.name,
@@ -146,12 +235,217 @@ export function ServiceCloudTicketsPage({
     label: category.name,
     value: category.id,
   }));
-  const statusById = new Map<string, any>(
-    statuses.map((status: any) => [status.id, status]),
+  const statusById = useMemo(() => new Map<string, any>(
+    allStatuses.map((status: any) => [status.id, status]),
+  ), [allStatuses]);
+  const priorityById = useMemo(() => new Map<string, any>(
+    allPriorities.map((priority: any) => [priority.id, priority]),
+  ), [allPriorities]);
+  const categoryById = useMemo(() => new Map<string, any>(
+    allCategories.map((cat: any) => [cat.id, cat]),
+  ), [allCategories]);
+
+  // CSV Export fields config
+  const EXPORT_COLUMNS = useMemo(
+    () => [
+      { key: 'ticket_number', label: 'Ticket #' },
+      { key: 'subject', label: 'Subject' },
+      { key: 'description', label: 'Description' },
+      { key: 'status', label: 'Status' },
+      { key: 'priority', label: 'Priority' },
+      { key: 'category', label: 'Category' },
+      { key: 'customer_name', label: 'Customer Name' },
+      { key: 'customer_email', label: 'Customer Email' },
+      { key: 'organization', label: 'Organization' },
+      { key: 'assignees', label: 'Assignees' },
+      { key: 'source', label: 'Source' },
+      { key: 'created_at', label: 'Created At' },
+      { key: 'updated_at', label: 'Updated At' },
+    ],
+    [],
   );
-  const priorityById = new Map<string, any>(
-    priorities.map((priority: any) => [priority.id, priority]),
+
+  const exportColumns = useMemo(() => {
+    const cols = [
+      ...EXPORT_COLUMNS,
+      ...systemFields
+        .filter((f: any) => !f.is_system)
+        .map((f: any) => ({ key: f.field_key, label: f.field_label })),
+    ];
+    if (canViewColumn) {
+      return cols.filter((col) => canViewColumn(col.key));
+    }
+    return cols;
+  }, [EXPORT_COLUMNS, systemFields, canViewColumn]);
+
+  const serializeTicketRow = useCallback(
+    (ticket: any): Record<string, string> => {
+      const base: Record<string, string> = {
+        ticket_number: ticket.ticket_number ?? '',
+        subject: ticket.subject ?? '',
+        description: ticket.description ?? '',
+        status: statusById.get(ticket.status_id)?.name ?? '',
+        priority: priorityById.get(ticket.priority_id)?.name ?? '',
+        category: categoryById.get(ticket.category_id)?.name ?? '',
+        customer_name: ticket.customer?.name ?? '',
+        customer_email: ticket.customer?.email ?? '',
+        organization: ticket.organization?.name ?? '',
+        assignees: Array.isArray(ticket.assignees)
+          ? ticket.assignees
+              .map((a: any) => a.account?.name || a.account?.email || '')
+              .filter(Boolean)
+              .join(', ')
+          : '',
+        source: ticket.source ?? '',
+        created_at: ticket.created_at ? formatDate(ticket.created_at) : '',
+        updated_at: ticket.updated_at ? formatDate(ticket.updated_at) : '',
+      };
+
+      // Append custom fields
+      systemFields
+        .filter((f: any) => !f.is_system)
+        .forEach((cf: any) => {
+          base[cf.field_key] = String(ticket.custom_fields?.[cf.field_key] ?? '');
+        });
+
+      return base;
+    },
+    [statusById, priorityById, categoryById, formatDate, systemFields],
   );
+
+  const activeFilterCount =
+    (assignedToMeOnly ? 1 : 0) +
+    (selectedCreatedByIds.length > 0 ? 1 : 0) +
+    (selectedStatusIds.length > 0 ? 1 : 0) +
+    (selectedPriorityIds.length > 0 ? 1 : 0) +
+    (selectedAssigneeIds.length > 0 ? 1 : 0) +
+    (createdOnRange ? 1 : 0) +
+    (updatedOnRange ? 1 : 0);
+
+  const filterGroups = [
+    {
+      key: 'status',
+      label: 'Status',
+      selectedValues: selectedStatusIds,
+      selectedLabel:
+        selectedStatusIds.length === 0
+          ? 'All statuses'
+          : `${selectedStatusIds.length} selected`,
+      options: statusOptions,
+      onSelectValues: setSelectedStatusIds,
+    },
+    {
+      key: 'priority',
+      label: 'Priority',
+      selectedValues: selectedPriorityIds,
+      selectedLabel:
+        selectedPriorityIds.length === 0
+          ? 'All priorities'
+          : `${selectedPriorityIds.length} selected`,
+      options: priorityOptions,
+      onSelectValues: setSelectedPriorityIds,
+    },
+    {
+      key: 'assignees',
+      label: 'Assignees',
+      selectedValues: selectedAssigneeIds,
+      selectedLabel:
+        selectedAssigneeIds.length === 0
+          ? 'All assignees'
+          : selectedAssigneeIds.length === 1
+            ? ((
+                (Array.isArray(teamMembers) ? teamMembers : []).find(
+                  (m: any) => m?.user_id === selectedAssigneeIds[0],
+                ) as any
+              )?.user?.user_metadata?.full_name ?? '1 selected')
+            : `${selectedAssigneeIds.length} selected`,
+      options: (Array.isArray(teamMembers) ? teamMembers : [])
+        .filter((m: any) => m?.user_id)
+        .reduce((acc: any[], m: any) => {
+          if (!acc.some((x) => x.value === m.user_id)) {
+            acc.push({
+              value: m.user_id,
+              label:
+                m.user?.user_metadata?.full_name ||
+                m.user?.email ||
+                m.user_id,
+            });
+          }
+          return acc;
+        }, []),
+      onSelectValues: setSelectedAssigneeIds,
+    },
+    {
+      key: 'created_by',
+      label: 'Created By',
+      selectedValues: selectedCreatedByIds,
+      selectedLabel:
+        selectedCreatedByIds.length === 0
+          ? 'All members'
+          : selectedCreatedByIds.length === 1
+            ? ((
+                (Array.isArray(teamMembers) ? teamMembers : []).find(
+                  (m: any) => m?.user_id === selectedCreatedByIds[0],
+                ) as any
+              )?.user?.user_metadata?.full_name ?? '1 selected')
+            : `${selectedCreatedByIds.length} selected`,
+      options: (Array.isArray(teamMembers) ? teamMembers : [])
+        .filter((m: any) => m?.user_id)
+        .reduce((acc: any[], m: any) => {
+          if (!acc.some((x) => x.value === m.user_id)) {
+            acc.push({
+              value: m.user_id,
+              label:
+                m.user?.user_metadata?.full_name ||
+                m.user?.email ||
+                m.user_id,
+            });
+          }
+          return acc;
+        }, []),
+      onSelectValues: setSelectedCreatedByIds,
+    },
+    {
+      key: 'created_on',
+      label: 'Created On',
+      type: 'date',
+      dateValue: createdOnRange,
+      onDateChange: setCreatedOnRange,
+    },
+    {
+      key: 'updated_on',
+      label: 'Updated On',
+      type: 'date',
+      dateValue: updatedOnRange,
+      onDateChange: setUpdatedOnRange,
+    },
+  ];
+
+  const queryParams = {
+    ...(assignedToMeOnly ? { assignedToMe: 'true' } : {}),
+    ...(selectedCreatedByIds.length > 0 ? { createdByIds: selectedCreatedByIds.join(',') } : {}),
+    ...(selectedStatusIds.length > 0
+      ? { statusIds: selectedStatusIds.join(',') }
+      : defaultStatusIds.length > 0
+        ? { statusIds: defaultStatusIds.join(',') }
+        : {}),
+    ...(selectedPriorityIds.length > 0 ? { priorityIds: selectedPriorityIds.join(',') } : {}),
+    ...(selectedAssigneeIds.length > 0 ? { assigneeIds: selectedAssigneeIds.join(',') } : {}),
+    ...(computedCreatedOnDates?.from
+      ? { createdAtFrom: computedCreatedOnDates.from }
+      : {}),
+    ...(computedCreatedOnDates?.to
+      ? { createdAtTo: computedCreatedOnDates.to }
+      : {}),
+    ...(computedUpdatedOnDates?.from
+      ? { updatedAtFrom: computedUpdatedOnDates.from }
+      : {}),
+    ...(computedUpdatedOnDates?.to
+      ? { updatedAtTo: computedUpdatedOnDates.to }
+      : {}),
+  };
+
+
 
   // --- Custom Create Ticket state ---
   const [customerMode, setCustomerMode] = useState<'existing' | 'new'>(
@@ -288,63 +582,137 @@ export function ServiceCloudTicketsPage({
     <>
       <ServiceCloudResourcePage
         workspaceId={workspaceId}
+        viewMode={viewMode}
+        kanbanSlot={(data, refetch) => (
+          <TicketsKanbanBoard
+            workspaceId={workspaceId}
+            tickets={data}
+            statuses={statuses}
+            priorities={priorities}
+            isLoading={lookupsIsLoading}
+            canUpdate={canEdit}
+            canCreate={canCreate}
+            canDelete={canDelete}
+            onClick={(id) => router.push(`/home/services/tickets/${id}`)}
+            onDelete={() => {}}
+            onCreateTicket={(statusId) => {
+              setTicketStatusId(statusId);
+              setCreateOpen(true);
+            }}
+            refetch={refetch}
+          />
+        )}
         resource="tickets"
         title="Tickets"
         description="Create, assign, and track support requests."
         canCreate={false}
         canEdit={canEdit}
         canDelete={canDelete}
-        queryParams={assignedToMeOnly ? { assignedToMe: 'true' } : {}}
+        isAdmin={isAdmin}
+        onColumnAddClick={onColumnAddClick}
+        onColumnEditClick={onColumnEditClick}
+        canViewColumn={canViewColumn}
+        canEditField={canEditField}
+        currentUserId={currentUserId}
+        systemFields={systemFields}
+        enableExport={true}
+        serializeRow={serializeTicketRow}
+        exportColumns={exportColumns}
+        queryParams={queryParams}
+        filterGroups={filterGroups}
+        activeFilterCount={activeFilterCount}
+        onClearFilters={() => {
+          setAssignedToMeOnly(false);
+          setSelectedCreatedByIds([]);
+          setSelectedStatusIds([]);
+          setSelectedPriorityIds([]);
+          setSelectedAssigneeIds([]);
+          clearCreatedOnRange();
+          clearUpdatedOnRange();
+        }}
         toolbar={
           <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              variant={assignedToMeOnly ? 'default' : 'outline'}
-              onClick={() => setAssignedToMeOnly((current) => !current)}
-            >
-              {assignedToMeOnly ? (
-                <Check className="mr-2 h-4 w-4" />
-              ) : (
-                <Filter className="mr-2 h-4 w-4" />
-              )}
-              Assigned to me
-            </Button>
-            {canCreate ? (
-              <Button type="button" onClick={openCreateDialog}>
-                <Plus className="mr-2 h-4 w-4" />
-                New Ticket
-              </Button>
-            ) : null}
+            <ViewToggle view={viewMode} onChange={handleViewModeChange} />
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  variant={assignedToMeOnly ? 'default' : 'outline'}
+                  onClick={() => setAssignedToMeOnly((current) => !current)}
+                  className="h-9 shrink-0 gap-1.5"
+                >
+                  {assignedToMeOnly ? (
+                    <Check className="h-4 w-4" />
+                  ) : (
+                    <User className="h-4 w-4" />
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                <span>Assigned to me</span>
+              </TooltipContent>
+            </Tooltip>
           </div>
         }
+        actions={[
+          ...(canImport && onImportClick
+            ? [
+                {
+                  key: 'import',
+                  label: 'Import',
+                  icon: FileUp,
+                  onClick: onImportClick,
+                  buttonVariant: 'outline' as const,
+                },
+              ]
+            : []),
+          ...(canCreate
+            ? [
+                {
+                  key: 'create',
+                  label: 'New Ticket',
+                  icon: Plus,
+                  onClick: openCreateDialog,
+                  buttonVariant: 'default' as const,
+                },
+              ]
+            : []),
+        ]}
         fields={[
-          { key: 'subject', label: 'Subject', required: true },
-          { key: 'description', label: 'Description' },
+          {
+            key: 'subject',
+            label: getLabel('subject', 'Subject'),
+            required: true,
+          },
+          { key: 'description', label: getLabel('description', 'Description') },
           {
             key: 'status_id',
-            label: 'Status',
+            label: getLabel('status_id', 'Status'),
             type: 'select',
             required: true,
             options: statusOptions,
           },
           {
             key: 'priority_id',
-            label: 'Priority',
+            label: getLabel('priority_id', 'Priority'),
             type: 'select',
             options: priorityOptions,
           },
           {
             key: 'category_id',
-            label: 'Category',
+            label: getLabel('category_id', 'Category'),
             type: 'select',
             options: categoryOptions,
           },
         ]}
         columns={[
-          { key: 'ticket_number', label: 'Ticket #' },
+          {
+            key: 'ticket_number',
+            label: getLabel('ticket_number', 'Ticket #'),
+          },
           {
             key: 'subject',
-            label: 'Subject',
+            label: getLabel('subject', 'Subject'),
             render: (ticket) => (
               <Link
                 href={`/home/services/tickets/${ticket.id}`}
@@ -356,33 +724,36 @@ export function ServiceCloudTicketsPage({
           },
           {
             key: 'assignees',
-            label: 'Assignees',
+            label: getLabel('assignees', 'Assignees'),
             render: (ticket) => <AssigneeStack assignees={ticket.assignees} />,
           },
           {
             key: 'status_id',
-            label: 'Status',
+            label: getLabel('status_id', 'Status'),
             render: (ticket) => (
               <StatusBadge
                 value={statusById.get(ticket.status_id)?.name as string}
+                color={statusById.get(ticket.status_id)?.color as string}
               />
             ),
           },
           {
             key: 'priority_id',
-            label: 'Priority',
+            label: getLabel('priority_id', 'Priority'),
             render: (ticket) => (
               <StatusBadge
                 value={priorityById.get(ticket.priority_id)?.name as string}
+                color={priorityById.get(ticket.priority_id)?.color as string}
               />
             ),
           },
           {
             key: 'created_at',
-            label: 'Created',
+            label: getLabel('created_at', 'Created'),
             render: (ticket) =>
               ticket.created_at ? formatDate(ticket.created_at) : '-',
           },
+          ...customColumns,
         ]}
       />
 
@@ -402,108 +773,137 @@ export function ServiceCloudTicketsPage({
 
             <div className="flex-1 space-y-4 overflow-y-auto p-6 pb-8">
               <div className="grid gap-4">
-                <div className="grid gap-2">
-                  <Label>
-                    Subject <span className="text-destructive">*</span>
-                  </Label>
-                  <Input
-                    value={ticketSubject}
-                    onChange={(e) => setTicketSubject(e.target.value)}
-                  />
-                </div>
-
-                <div className="grid gap-2">
-                  <Label>Description</Label>
-                  <Textarea
-                    value={ticketDescription}
-                    onChange={(e) => setTicketDescription(e.target.value)}
-                    className="min-h-24"
-                  />
-                </div>
-
-                <div className="grid gap-4 sm:grid-cols-3">
+                {(!canEditField || canEditField('subject')) && (
                   <div className="grid gap-2">
                     <Label>
-                      Status <span className="text-destructive">*</span>
+                      Subject <span className="text-destructive">*</span>
                     </Label>
-                    <Select
-                      value={ticketStatusId || String(openStatus?.id ?? '')}
-                      onValueChange={setTicketStatusId}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {statusOptions.map((opt) => (
-                          <SelectItem key={opt.value} value={opt.value}>
-                            {opt.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Input
+                      value={ticketSubject}
+                      onChange={(e) => setTicketSubject(e.target.value)}
+                    />
                   </div>
+                )}
+
+                {(!canEditField || canEditField('description')) && (
                   <div className="grid gap-2">
-                    <Label>Priority</Label>
-                    <Select
-                      value={ticketPriorityId}
-                      onValueChange={setTicketPriorityId}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select priority" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {priorityOptions.map((opt) => (
-                          <SelectItem key={opt.value} value={opt.value}>
-                            {opt.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Label>Description</Label>
+                    <Textarea
+                      value={ticketDescription}
+                      onChange={(e) => setTicketDescription(e.target.value)}
+                      className="min-h-24"
+                    />
                   </div>
-                  <div className="grid gap-2">
-                    <Label>Category</Label>
-                    <Select
-                      value={ticketCategoryId}
-                      onValueChange={setTicketCategoryId}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {categoryOptions.map((opt) => (
-                          <SelectItem key={opt.value} value={opt.value}>
-                            {opt.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                )}
+
+                <div className="grid gap-4 sm:grid-cols-3">
+                  {(!canEditField || canEditField('status')) && (
+                    <div className="grid gap-2">
+                      <Label>
+                        Status <span className="text-destructive">*</span>
+                      </Label>
+                      <Select
+                        value={ticketStatusId || String(openStatus?.id ?? '')}
+                        onValueChange={setTicketStatusId}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {statusOptions.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value}>
+                              <div className="flex items-center gap-2">
+                                {opt.color ? (
+                                  <span
+                                    className="h-2 w-2 shrink-0 rounded-full border border-black/10 dark:border-white/10"
+                                    style={{ backgroundColor: opt.color }}
+                                  />
+                                ) : null}
+                                <span>{opt.label}</span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                  {(!canEditField || canEditField('priority')) && (
+                    <div className="grid gap-2">
+                      <Label>Priority</Label>
+                      <Select
+                        value={ticketPriorityId}
+                        onValueChange={setTicketPriorityId}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select priority" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {priorityOptions.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value}>
+                              <div className="flex items-center gap-2">
+                                {opt.color ? (
+                                  <span
+                                    className="h-2 w-2 shrink-0 rounded-full border border-black/10 dark:border-white/10"
+                                    style={{ backgroundColor: opt.color }}
+                                  />
+                                ) : null}
+                                <span>{opt.label}</span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                  {(!canEditField || canEditField('category')) && (
+                    <div className="grid gap-2">
+                      <Label>Category</Label>
+                      <Select
+                        value={ticketCategoryId}
+                        onValueChange={setTicketCategoryId}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {categoryOptions.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
                 </div>
 
                 {/* Customer Section */}
-                <div className="grid gap-2">
-                  <Label>
-                    Customer <span className="text-destructive">*</span>
-                  </Label>
-                  <RadioGroup
-                    value={customerMode}
-                    onValueChange={(value) =>
-                      setCustomerMode(value as 'existing' | 'new')
-                    }
-                    className="grid gap-2 sm:grid-cols-2"
-                  >
-                    <Label className="flex cursor-pointer items-center gap-2 rounded-md border p-3">
-                      <RadioGroupItem value="existing" />
-                      <span>Link existing</span>
+                {(!canEditField || canEditField('customer')) && (
+                  <div className="grid gap-2">
+                    <Label>
+                      Customer <span className="text-destructive">*</span>
                     </Label>
-                    <Label className="flex cursor-pointer items-center gap-2 rounded-md border p-3">
-                      <RadioGroupItem value="new" />
-                      <span>Create new</span>
-                    </Label>
-                  </RadioGroup>
-                </div>
+                    <RadioGroup
+                      value={customerMode}
+                      onValueChange={(value) =>
+                        setCustomerMode(value as 'existing' | 'new')
+                      }
+                      className="grid gap-2 sm:grid-cols-2"
+                    >
+                      <Label className="flex cursor-pointer items-center gap-2 rounded-md border p-3">
+                        <RadioGroupItem value="existing" />
+                        <span>Link existing</span>
+                      </Label>
+                      <Label className="flex cursor-pointer items-center gap-2 rounded-md border p-3">
+                        <RadioGroupItem value="new" />
+                        <span>Create new</span>
+                      </Label>
+                    </RadioGroup>
+                  </div>
+                )}
 
-                {customerMode === 'existing' ? (
+                {(!canEditField || canEditField('customer')) &&
+                customerMode === 'existing' ? (
                   <Select
                     value={selectedCustomerId}
                     onValueChange={setSelectedCustomerId}
@@ -523,7 +923,8 @@ export function ServiceCloudTicketsPage({
                       ))}
                     </SelectContent>
                   </Select>
-                ) : (
+                ) : (!canEditField || canEditField('customer')) &&
+                  customerMode === 'new' ? (
                   <div className="grid gap-3 sm:grid-cols-2">
                     <div className="grid gap-2">
                       <Label>
@@ -544,34 +945,39 @@ export function ServiceCloudTicketsPage({
                       />
                     </div>
                   </div>
-                )}
+                ) : null}
 
                 {/* Organization Section */}
-                <div className="grid gap-2">
-                  <Label>Organization</Label>
-                  <RadioGroup
-                    value={organizationMode}
-                    onValueChange={(value) =>
-                      setOrganizationMode(value as 'none' | 'existing' | 'new')
-                    }
-                    className="grid gap-2 sm:grid-cols-3"
-                  >
-                    <Label className="flex cursor-pointer items-center gap-2 rounded-md border p-3">
-                      <RadioGroupItem value="none" />
-                      <span>None</span>
-                    </Label>
-                    <Label className="flex cursor-pointer items-center gap-2 rounded-md border p-3">
-                      <RadioGroupItem value="existing" />
-                      <span>Existing</span>
-                    </Label>
-                    <Label className="flex cursor-pointer items-center gap-2 rounded-md border p-3">
-                      <RadioGroupItem value="new" />
-                      <span>Create new</span>
-                    </Label>
-                  </RadioGroup>
-                </div>
+                {(!canEditField || canEditField('organization')) && (
+                  <div className="grid gap-2">
+                    <Label>Organization</Label>
+                    <RadioGroup
+                      value={organizationMode}
+                      onValueChange={(value) =>
+                        setOrganizationMode(
+                          value as 'none' | 'existing' | 'new',
+                        )
+                      }
+                      className="grid gap-2 sm:grid-cols-3"
+                    >
+                      <Label className="flex cursor-pointer items-center gap-2 rounded-md border p-3">
+                        <RadioGroupItem value="none" />
+                        <span>None</span>
+                      </Label>
+                      <Label className="flex cursor-pointer items-center gap-2 rounded-md border p-3">
+                        <RadioGroupItem value="existing" />
+                        <span>Existing</span>
+                      </Label>
+                      <Label className="flex cursor-pointer items-center gap-2 rounded-md border p-3">
+                        <RadioGroupItem value="new" />
+                        <span>Create new</span>
+                      </Label>
+                    </RadioGroup>
+                  </div>
+                )}
 
-                {organizationMode === 'existing' ? (
+                {(!canEditField || canEditField('organization')) &&
+                organizationMode === 'existing' ? (
                   <Select
                     value={selectedOrganizationId}
                     onValueChange={setSelectedOrganizationId}
@@ -587,7 +993,8 @@ export function ServiceCloudTicketsPage({
                       ))}
                     </SelectContent>
                   </Select>
-                ) : organizationMode === 'new' ? (
+                ) : (!canEditField || canEditField('organization')) &&
+                  organizationMode === 'new' ? (
                   <div className="grid gap-2">
                     <Label>
                       Organization Name{' '}
@@ -603,12 +1010,17 @@ export function ServiceCloudTicketsPage({
             </div>
 
             <DialogFooter className="border-t border-gray-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
-              <Button variant="outline" onClick={() => setCreateOpen(false)}>
+              <Button
+                className="mb-2"
+                variant="outline"
+                onClick={() => setCreateOpen(false)}
+              >
                 Cancel
               </Button>
               <Button
                 onClick={submitCreateTicket}
                 disabled={createTicketMutation.isPending}
+                className="mb-2"
               >
                 {createTicketMutation.isPending ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

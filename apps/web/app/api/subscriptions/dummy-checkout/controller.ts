@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
+import { requireSubscriptionManagePermission } from '~/lib/server/subscription-permissions';
+
 import { catchAsync } from '../../../../utils/response-handler';
 
 /**
@@ -50,6 +52,11 @@ export const dummyCheckout = catchAsync(
     }
 
     const cycle = billingCycle || 'monthly';
+
+    await requireSubscriptionManagePermission({
+      accountId: user.id,
+      workspaceId,
+    });
 
     // Resolve product
     const { data: product, error: productError } = await adminClient
@@ -210,9 +217,8 @@ export const dummyCheckout = catchAsync(
 
 // ─── Helper: Auto-assign seat to the buyer ─────────────────────────
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function autoAssignSeatToBuyer(
-  adminClient: any,
+  adminClient: ReturnType<typeof getSupabaseServerAdminClient>,
   workspaceId: string,
   userId: string,
   productId: string,

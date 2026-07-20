@@ -71,6 +71,17 @@ redirect_uri = ""
 # or any other third-party OIDC providers.
 url = ""
 
+[auth.external.google]
+enabled = true
+client_id = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID)"
+secret = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_SECRET)"
+# Overrides the default auth redirectUrl.
+redirect_uri = ""
+# Overrides the default auth provider URL.
+url = ""
+# Skip nonce check (set to true for local dev if needed)
+skip_nonce_check = false
+
 [auth.email.template.invite]
 subject = "You are invited to Makerkit"
 content_path = "./supabase/templates/invite-user.html"

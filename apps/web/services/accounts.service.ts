@@ -64,11 +64,39 @@ const getAccountsService = asyncHandlerClient(
     page?: number;
     limit?: number;
     searchTerm?: string;
+    sortColumn?: string;
+    sortDirection?: 'asc' | 'desc' | null;
+    createdAtFrom?: string;
+    createdAtTo?: string;
+    updatedAtFrom?: string;
+    updatedAtTo?: string;
+    createdByIds?: string | string[];
   }) => {
-    const { workspaceId, page = 1, limit = 20, searchTerm = '' } = params;
-    const response = await ApiClient.get(
-      `/accounts?workspaceId=${workspaceId}&page=${page}&limit=${limit}&searchTerm=${searchTerm}`,
-    );
+    const { 
+      workspaceId, 
+      page = 1, 
+      limit = 20, 
+      searchTerm = '', 
+      sortColumn = '', 
+      sortDirection = '',
+      createdAtFrom = '',
+      createdAtTo = '',
+      updatedAtFrom = '',
+      updatedAtTo = '',
+      createdByIds = '',
+    } = params;
+    let url = `/accounts?workspaceId=${workspaceId}&page=${page}&limit=${limit}&searchTerm=${searchTerm}&sortColumn=${sortColumn}&sortDirection=${sortDirection || ''}`;
+    
+    if (createdAtFrom) url += `&createdAtFrom=${createdAtFrom}`;
+    if (createdAtTo) url += `&createdAtTo=${createdAtTo}`;
+    if (updatedAtFrom) url += `&updatedAtFrom=${updatedAtFrom}`;
+    if (updatedAtTo) url += `&updatedAtTo=${updatedAtTo}`;
+    if (createdByIds) {
+      const createdByParam = Array.isArray(createdByIds) ? createdByIds.join(',') : createdByIds;
+      url += `&createdByIds=${createdByParam}`;
+    }
+    
+    const response = await ApiClient.get(url);
     return {
       data: (response.data?.data || []) as Account[],
       count: (response.data?.count || 0) as number,
@@ -100,10 +128,56 @@ const deleteAccountService = asyncHandlerClient(async (id: string) => {
   return response.data?.data;
 });
 
+export interface AccountType {
+  id: string;
+  status_name: string;
+  status_key: string;
+  color: string;
+  icon?: string;
+  is_closed?: boolean;
+  is_system?: boolean;
+}
+
+const getAccountTypesService = asyncHandlerClient(async (workspaceId: string) => {
+  const response = await ApiClient.get(`/accounts/types?workspaceId=${workspaceId}`);
+  return (response.data?.data || []) as AccountType[];
+});
+
+const createAccountTypeService = asyncHandlerClient(
+  async (payload: Partial<Record<string, any>>) => {
+    const response = await ApiClient.post('/accounts/types', payload);
+    return response.data?.data as AccountType;
+  },
+);
+
+const updateAccountTypeService = asyncHandlerClient(
+  async (id: string, payload: Partial<Record<string, any>>) => {
+    const response = await ApiClient.patch(`/accounts/types/${id}`, payload);
+    return response.data?.data as AccountType;
+  },
+);
+
+const deleteAccountTypeService = asyncHandlerClient(async (id: string) => {
+  const response = await ApiClient.delete(`/accounts/types/${id}`);
+  return response.data?.data;
+});
+
+const importAccountsService = asyncHandlerClient(
+  async (payload: { workspaceId: string; data: any[] }) => {
+    const response = await ApiClient.post('/accounts/import', payload);
+    return response.data;
+  },
+);
+
 export {
   getAccountsService,
   getAccountByIdService,
   createAccountService,
   updateAccountService,
   deleteAccountService,
+  getAccountTypesService,
+  createAccountTypeService,
+  updateAccountTypeService,
+  deleteAccountTypeService,
+  importAccountsService,
 };

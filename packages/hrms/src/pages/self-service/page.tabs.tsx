@@ -28,6 +28,9 @@ import {
   getRequestStatusLabel,
 } from './page.data';
 import { getStatusBadgeClassName } from './page.shared';
+import { useColumnResize } from '@kit/ui/use-column-resize';
+import { useTableSort } from '@kit/ui/use-table-sort';
+import { SortableTableHead } from '@kit/ui/sortable-table-head';
 
 export function SelfServicePayslipsTab(props: {
   canDownload: boolean;
@@ -35,6 +38,13 @@ export function SelfServicePayslipsTab(props: {
   onView: (payslip: SelfServicePayslipSummary) => void;
   payslips: Array<SelfServicePayslipSummary>;
 }) {
+  const { getHeaderProps, getResizeHandleProps } = useColumnResize('hrms-self-service-payslips');
+
+  const { sortColumn, sortDirection, toggleSort, sortedData } = useTableSort<SelfServicePayslipSummary>(
+    'hrms-self-service-payslips',
+    props.payslips
+  );
+
   return (
     <TabsContent value="payslips" className="mt-0">
       <div className="grid gap-2">
@@ -47,18 +57,70 @@ export function SelfServicePayslipsTab(props: {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Period</TableHead>
-                <TableHead>Gross</TableHead>
-                <TableHead>Deductions</TableHead>
-                <TableHead>Net Pay</TableHead>
-                <TableHead>Status</TableHead>
+                <SortableTableHead
+                  label="Period"
+                  columnId="period"
+                  sortColumn={sortColumn}
+                  sortDirection={sortDirection}
+                  onSort={toggleSort}
+                  className="relative"
+                  {...getHeaderProps('period')}
+                >
+                  <span className="col-resize-handle" {...getResizeHandleProps('period')} />
+                </SortableTableHead>
+                <SortableTableHead
+                  label="Gross"
+                  columnId="gross"
+                  sortKey="gross_salary"
+                  sortColumn={sortColumn}
+                  sortDirection={sortDirection}
+                  onSort={toggleSort}
+                  className="relative"
+                  {...getHeaderProps('gross')}
+                >
+                  <span className="col-resize-handle" {...getResizeHandleProps('gross')} />
+                </SortableTableHead>
+                <SortableTableHead
+                  label="Deductions"
+                  columnId="deductions"
+                  sortColumn={sortColumn}
+                  sortDirection={sortDirection}
+                  onSort={toggleSort}
+                  className="relative"
+                  {...getHeaderProps('deductions')}
+                >
+                  <span className="col-resize-handle" {...getResizeHandleProps('deductions')} />
+                </SortableTableHead>
+                <SortableTableHead
+                  label="Net Pay"
+                  columnId="net_pay"
+                  sortKey="net_salary"
+                  sortColumn={sortColumn}
+                  sortDirection={sortDirection}
+                  onSort={toggleSort}
+                  className="relative"
+                  {...getHeaderProps('net_pay')}
+                >
+                  <span className="col-resize-handle" {...getResizeHandleProps('net_pay')} />
+                </SortableTableHead>
+                <SortableTableHead
+                  label="Status"
+                  columnId="status"
+                  sortColumn={sortColumn}
+                  sortDirection={sortDirection}
+                  onSort={toggleSort}
+                  className="relative"
+                  {...getHeaderProps('status')}
+                >
+                  <span className="col-resize-handle" {...getResizeHandleProps('status')} />
+                </SortableTableHead>
                 <TableHead className="sticky right-0 px-4 text-right">
                   Actions
                 </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {props.payslips.map((payslip) => (
+              {sortedData.map((payslip) => (
                 <TableRow key={payslip.id} className="hover:bg-muted/50">
                   <TableCell className="font-medium">
                     {formatPayslipPeriod(payslip)}

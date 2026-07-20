@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
+import { requireSubscriptionManagePermission } from '~/lib/server/subscription-permissions';
 import { getStripeClient } from '~/lib/stripe/stripe-client';
 
 import { catchAsync } from '../../../../utils/response-handler';
@@ -73,18 +74,10 @@ export const updateSeatsViaStripe = catchAsync(
       );
     }
 
-    // Only workspace owner can modify seats
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const workspace = seat.workspaces as any;
-    if (workspace?.owner_id !== user.id) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: 'Only the workspace owner can modify seat counts',
-        },
-        { status: 403 },
-      );
-    }
+    await requireSubscriptionManagePermission({
+      accountId: user.id,
+      workspaceId: seat.workspace_id,
+    });
 
     // Cannot reduce below used seats
     if (newQuantity < seat.seats_used) {

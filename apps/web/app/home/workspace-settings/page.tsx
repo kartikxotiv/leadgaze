@@ -1,11 +1,10 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import { useEffect, useState } from 'react';
 
 import { usePathname, useRouter } from 'next/navigation';
 
-import { Building2, CreditCard, Mail, Settings2 } from 'lucide-react';
+import { Building2, CreditCard, Globe, Mail, Settings2, Video, Link2 } from 'lucide-react';
 
 import { CoreEmailSettingsPage } from '@kit/core/pages';
 import { getSupabaseBrowserClient } from '@kit/supabase/browser-client';
@@ -18,37 +17,34 @@ import {
   CardHeader,
   CardTitle,
 } from '@kit/ui/card';
-import { CardWidgetContainer } from '@kit/ui/card-widget-container';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@kit/ui/dropdown-menu';
 import { PageBody, PageHeader } from '@kit/ui/page';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@kit/ui/tabs';
 
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import OrgSubscriptionPage from '~/org/subscription/page';
 
-import { EmailAccountsSettings } from './_components/email-accounts-settings';
+import { WorkspaceLocalizationSettings } from './_components/localization-settings';
+import { MeetingAccountsSettings } from './_components/meeting-accounts-settings';
+import { WorkspaceGeneralSettings } from './_components/general-settings';
+import { WorkspaceIntegrationsSettings } from './_components/integrations-settings';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+type WorkspaceSummary = {
+  id: string;
+  name: string;
+};
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+type WorkspaceMembershipRow = {
+  workspaces: WorkspaceSummary | null;
+};
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-function WorkspaceManagement({ currentWorkspace }: { currentWorkspace: any }) {
+function WorkspaceManagement({
+  currentWorkspace,
+}: {
+  currentWorkspace: WorkspaceSummary | null;
+}) {
   const { data: user } = useUser();
   const router = useRouter();
-  const [workspaces, setWorkspaces] = useState<any[]>([]);
+  const [_workspaces, setWorkspaces] = useState<WorkspaceSummary[]>([]);
 
   useEffect(() => {
     const fetchWorkspaces = async () => {
@@ -72,15 +68,18 @@ function WorkspaceManagement({ currentWorkspace }: { currentWorkspace: any }) {
 
         if (error) throw error;
 
+        const rows = (data ?? []) as WorkspaceMembershipRow[];
         const uniqueWorkspaces = Array.from(
           new Map(
-            data?.map((item: any) => [
-              item.workspaces.id,
-              {
-                id: item.workspaces.id,
-                name: item.workspaces.name,
-              },
-            ]),
+            rows
+              .filter((item) => item.workspaces)
+              .map((item) => [
+                item.workspaces!.id,
+                {
+                  id: item.workspaces!.id,
+                  name: item.workspaces!.name,
+                },
+              ]),
           ).values(),
         );
 
@@ -93,7 +92,7 @@ function WorkspaceManagement({ currentWorkspace }: { currentWorkspace: any }) {
     fetchWorkspaces();
   }, [user?.id]);
 
-  const handleWorkspaceChange = (workspaceId: string) => {
+  const _handleWorkspaceChange = (workspaceId: string) => {
     localStorage.setItem('selectedWorkspace', workspaceId);
     router.refresh();
   };
@@ -152,30 +151,91 @@ function WorkspaceManagement({ currentWorkspace }: { currentWorkspace: any }) {
 }
 
 export default function WorkspaceSettingsPage() {
-  const { currentWorkspace: workspace, canAccess } = useRBAC();
-  const isAdmin = workspace?.role?.role_key === 'admin';
-  const canManageEmail = canAccess('emails', 'manage_email');
+  const {
+    currentWorkspace: workspace,
+    canAccess,
+    isLoading: isRbacLoading,
+  } = useRBAC();
+  const canViewSettings = canAccess('settings', 'view');
+  const isAdmin =
+    workspace?.currentRole?.role_key === 'admin' ||
+    (workspace?.currentRole?.hierarchy_level ?? 0) >= 100;
+  const canViewGeneralSettings = canViewSettings && isAdmin;
 
-  const pathname = usePathname();
-  const shouldUseWebEmailSettings = pathname === '/home/workspace-settings';
+  const canViewSubscription = canAccess('subscription', 'view');
+  const canManageSubscription = canAccess('subscription', 'manage');
+  const canManageEmail = canAccess('emails', 'manage_email');
+  const canManageMeetings = 1 == 1 || canAccess('meetings', 'manage');
+
+  const pathname = usePathname() || '';
+  const isSalesModule = pathname.includes('/sales');
+  const showMeetingsTab = canManageMeetings && isSalesModule;
+
+  const defaultTab = canViewGeneralSettings
+    ? 'general'
+    : canViewSettings
+      ? 'localization'
+      : canViewSubscription
+        ? 'billing'
+        : showMeetingsTab
+          ? 'meetings'
+          : 'emails';
+
+  if (isRbacLoading) {
+    return null;
+  }
+
+  if (
+    !canViewSettings &&
+    !canViewSubscription &&
+    !canManageEmail &&
+    !canManageMeetings
+  ) {
+    return (
+      <>
+        <PageHeader
+          title="Workspace"
+          description="Manage your workspace configuration, email accounts, meeting accounts, and templates."
+        />
+        <PageBody className="flex min-w-0 flex-1 shrink-0 flex-col">
+          <Card>
+            <CardContent className="text-muted-foreground p-6 text-sm">
+              You do not have permission to view workspace settings.
+            </CardContent>
+          </Card>
+        </PageBody>
+      </>
+    );
+  }
 
   return (
     <>
       <PageHeader
         title="Workspace"
-        description="Manage your workspace configuration, email accounts, and templates."
+        description="Manage your workspace configuration, email accounts, meeting accounts, and templates."
       />
       <PageBody className="sticky flex min-w-0 flex-1 shrink-0 flex-col overflow-hidden">
-        <Tabs defaultValue="general" className="space-y-6 overflow-auto">
+        <Tabs defaultValue={defaultTab} className="space-y-6 overflow-auto">
           <TabsList className="mb-1 h-auto w-full justify-start gap-8 rounded-none border-b bg-transparent p-0">
-            <TabsTrigger
-              value="general"
-              className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
-            >
-              <Settings2 className="mr-2 h-4 w-4" />
-              General
-            </TabsTrigger>
-            {isAdmin && (
+            {canViewGeneralSettings && (
+              <TabsTrigger
+                value="general"
+                className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
+              >
+                <Settings2 className="mr-2 h-4 w-4" />
+                General
+              </TabsTrigger>
+            )}
+            {canViewSettings && (
+              <TabsTrigger
+                value="localization"
+                className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
+              >
+                <Globe className="mr-2 h-4 w-4" />
+                Localization
+              </TabsTrigger>
+            )}
+            {canViewSubscription && (
               <TabsTrigger
                 value="billing"
                 className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
@@ -184,40 +244,87 @@ export default function WorkspaceSettingsPage() {
                 Billing
               </TabsTrigger>
             )}
-            <TabsTrigger
-              value="emails"
-              className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
-            >
-              <Mail className="mr-2 h-4 w-4" />
-              Email Accounts
-            </TabsTrigger>
+            {canManageEmail && (
+              <TabsTrigger
+                value="emails"
+                className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
+              >
+                <Mail className="mr-2 h-4 w-4" />
+                Email Accounts
+              </TabsTrigger>
+            )}
+            {showMeetingsTab && (
+              <TabsTrigger
+                value="meetings"
+                className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
+              >
+                <Video className="mr-2 h-4 w-4" />
+                Meeting Accounts
+              </TabsTrigger>
+            )}
+            {isSalesModule && (
+              <TabsTrigger
+                value="integrations"
+                className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
+              >
+                <Link2 className="mr-2 h-4 w-4" />
+                Integrations
+              </TabsTrigger>
+            )}
           </TabsList>
 
-          <TabsContent value="general">
-            <WorkspaceManagement currentWorkspace={workspace} />
-          </TabsContent>
+          {canViewGeneralSettings && workspace?.id && (
+            <TabsContent value="general">
+              {/* <WorkspaceManagement currentWorkspace={workspace} /> */}
+              <WorkspaceGeneralSettings workspaceId={workspace.id} />
+            </TabsContent>
+          )}
 
-          <TabsContent value="billing">
-            <OrgSubscriptionPage />
-          </TabsContent>
+          {canViewSettings && workspace?.id && (
+            <TabsContent value="localization">
+              <WorkspaceLocalizationSettings workspaceId={workspace.id} />
+            </TabsContent>
+          )}
 
-          <TabsContent value="emails">
-            {/* {shouldUseWebEmailSettings ? (
+          {canViewSubscription && (
+            <TabsContent value="billing">
+              <OrgSubscriptionPage
+                canManageSubscription={canManageSubscription}
+              />
+            </TabsContent>
+          )}
+
+          {canManageEmail && (
+            <TabsContent value="emails">
+              {/* {shouldUseWebEmailSettings ? (
               <EmailAccountsSettings workspace={workspace} />
             ) : ( */}
-            <CoreEmailSettingsPage
-              workspace={workspace}
-              embedded
-              googleAuthPath="/api/email/google/auth"
-              googleReturnUrl={pathname || '/home/workspace-settings'}
-              permissions={{
-                manageAccounts: canManageEmail,
-                manageTemplates: canManageEmail,
-                manageVariables: canManageEmail,
-              }}
-            />
-            {/* )} */}
-          </TabsContent>
+              <CoreEmailSettingsPage
+                workspace={workspace}
+                embedded
+                googleAuthPath="/api/email/google/auth"
+                googleReturnUrl={pathname || '/home/workspace-settings'}
+                permissions={{
+                  manageAccounts: canManageEmail,
+                  manageTemplates: canManageEmail,
+                  manageVariables: canManageEmail,
+                }}
+              />
+              {/* )} */}
+            </TabsContent>
+          )}
+
+          {showMeetingsTab && (
+            <TabsContent value="meetings">
+              <MeetingAccountsSettings workspace={workspace} />
+            </TabsContent>
+          )}
+
+          {isSalesModule && (
+            <TabsContent value="integrations">
+              <WorkspaceIntegrationsSettings workspace={workspace} />
+            </TabsContent>
+          )}
         </Tabs>
       </PageBody>
     </>

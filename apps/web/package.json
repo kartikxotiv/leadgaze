@@ -32,6 +32,8 @@
     "supabase:migration:applied": "supabase migration repair --status applied <timestamp>"
   },
   "dependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/utilities": "^3.2.2",
     "@edge-csrf/nextjs": "2.5.3-cloudflare-rc1",
     "@hookform/resolvers": "^5.2.2",
     "@kit/accounts": "workspace:*",
@@ -40,6 +42,12 @@
     "@kit/fund-raise": "workspace:*",
     "@kit/hrms": "workspace:*",
     "@kit/i18n": "workspace:*",
+    "@kit/integration-core": "workspace:*",
+    "@kit/integration-google": "workspace:*",
+    "@kit/integration-google-ads": "workspace:*",
+    "@kit/integration-website": "workspace:*",
+    "@kit/integration-zapier": "workspace:*",
+    "@kit/integration-zoom": "workspace:*",
     "@kit/inventory": "workspace:*",
     "@kit/next": "workspace:*",
     "@kit/service-cloud": "workspace:*",

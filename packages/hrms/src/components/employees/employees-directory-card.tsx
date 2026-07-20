@@ -1,6 +1,6 @@
 'use client';
 
-import { MoreHorizontal } from 'lucide-react';
+import { MoreHorizontal, MoreVertical } from 'lucide-react';
 
 import { Avatar, AvatarFallback } from '@kit/ui/avatar';
 import { Button } from '@kit/ui/button';
@@ -36,6 +36,10 @@ import type {
 import { useRbac } from '../rbac/rbac-context';
 import { EmployeeStatusBadge } from './employee-status-badge';
 import { formatDate } from '@kit/shared/utils';
+import { PageSizeSelector } from '@kit/ui/page-size-selector';
+import { useColumnResize } from '@kit/ui/use-column-resize';
+import { useTableSort } from '@kit/ui/use-table-sort';
+import { SortableTableHead } from '@kit/ui/sortable-table-head';
 
 export function EmployeesDirectoryCard(props: {
   employees: Array<Employee>;
@@ -45,6 +49,7 @@ export function EmployeesDirectoryCard(props: {
   onDeleteRequested: (employee: Employee) => void;
   onEditRequested: (employee: Employee) => void;
   onPageChange: (page: number) => void;
+  onPageSizeChange: (pageSize: number) => void;
   pagination: EmployeeListPagination;
   visibility: Record<string, boolean>;
 }) {
@@ -60,15 +65,22 @@ export function EmployeesDirectoryCard(props: {
     props.pagination.total,
   );
   const visibleColumnCount =
-    Object.values(props.visibility).filter((value) => value !== false).length +
     1;
+
+  const { getHeaderProps, getResizeHandleProps } = useColumnResize('hrms-employees');
+
+  const { sortColumn, sortDirection, toggleSort, sortedData } = useTableSort<Employee>(
+    'hrms-employees',
+    props.employees,
+    { onSortChange: () => props.onPageChange(1) }
+  );
 
   return (
     <CustomTableContainer
       pagination={
         props.pagination.total > 0 ? (
           <div className="primary-text-regular text-leadgaze-muted bg-sidebar sticky bottom-0 z-10 -mx-4 flex shrink-0 items-center justify-between border-t px-4 py-1.5 lg:-mx-8 lg:px-8">
-            <div>
+            <div className="flex items-center gap-1">
               Showing{' '}
               <span className="primary-text-regular text-leadgaze-muted">
                 {from}
@@ -83,6 +95,14 @@ export function EmployeesDirectoryCard(props: {
               </span>{' '}
               entries
             </div>
+            <div className="flex w-full max-w-full min-w-0 items-center justify-end px-2">
+                      <PageSizeSelector
+                      value={props.pagination.pageSize}
+                      onChange={(val) => {
+                        props.onPageSizeChange(val);
+                      }}
+                    />
+                  </div>
             <Pagination className="w-auto">
               <PaginationContent>
                 <PaginationItem>
@@ -132,28 +152,154 @@ export function EmployeesDirectoryCard(props: {
         <TableHeader>
           <TableRow>
             {props.isColumnVisible('sno') && (
-              <TableHead className="w-12 whitespace-nowrap">S. No.</TableHead>
+              <SortableTableHead
+                label="S. No."
+                columnId="sno"
+                sortColumn={sortColumn}
+                sortDirection={sortDirection}
+                onSort={toggleSort}
+                sortable={false}
+                className="relative w-12 whitespace-nowrap"
+                {...getHeaderProps('sno')}
+              >
+                <span className="col-resize-handle" {...getResizeHandleProps('sno')} />
+              </SortableTableHead>
             )}
             {props.isColumnVisible('employee') && (
-              <TableHead>Employee</TableHead>
+              <SortableTableHead
+                label="Employee"
+                columnId="employee"
+                sortKey="first_name"
+                sortColumn={sortColumn}
+                sortDirection={sortDirection}
+                onSort={toggleSort}
+                className="relative"
+                {...getHeaderProps('employee')}
+              >
+                <span className="col-resize-handle" {...getResizeHandleProps('employee')} />
+              </SortableTableHead>
             )}
-            {props.isColumnVisible('code') && <TableHead>Code</TableHead>}
+            {props.isColumnVisible('code') && (
+              <SortableTableHead
+                label="Code"
+                columnId="code"
+                sortKey="employee_code"
+                sortColumn={sortColumn}
+                sortDirection={sortDirection}
+                onSort={toggleSort}
+                className="relative"
+                {...getHeaderProps('code')}
+              >
+                <span className="col-resize-handle" {...getResizeHandleProps('code')} />
+              </SortableTableHead>
+            )}
             {props.isColumnVisible('department') && (
-              <TableHead>Department</TableHead>
+              <SortableTableHead
+                label="Department"
+                columnId="department"
+                sortKey="department.name"
+                sortColumn={sortColumn}
+                sortDirection={sortDirection}
+                onSort={toggleSort}
+                className="relative"
+                {...getHeaderProps('department')}
+              >
+                <span className="col-resize-handle" {...getResizeHandleProps('department')} />
+              </SortableTableHead>
             )}
-            {props.isColumnVisible('manager') && <TableHead>Manager</TableHead>}
+            {props.isColumnVisible('manager') && (
+              <SortableTableHead
+                label="Manager"
+                columnId="manager"
+                sortKey="manager.first_name"
+                sortColumn={sortColumn}
+                sortDirection={sortDirection}
+                onSort={toggleSort}
+                className="relative"
+                {...getHeaderProps('manager')}
+              >
+                <span className="col-resize-handle" {...getResizeHandleProps('manager')} />
+              </SortableTableHead>
+            )}
             {props.isColumnVisible('designation') && (
-              <TableHead>Designation</TableHead>
+              <SortableTableHead
+                label="Designation"
+                columnId="designation"
+                sortColumn={sortColumn}
+                sortDirection={sortDirection}
+                onSort={toggleSort}
+                className="relative"
+                {...getHeaderProps('designation')}
+              >
+                <span className="col-resize-handle" {...getResizeHandleProps('designation')} />
+              </SortableTableHead>
             )}
             {props.isColumnVisible('employment_type') && (
-              <TableHead>Employment Type</TableHead>
+              <SortableTableHead
+                label="Employment Type"
+                columnId="employment_type"
+                sortColumn={sortColumn}
+                sortDirection={sortDirection}
+                onSort={toggleSort}
+                className="relative"
+                {...getHeaderProps('employment_type')}
+              >
+                <span className="col-resize-handle" {...getResizeHandleProps('employment_type')} />
+              </SortableTableHead>
             )}
-            {props.isColumnVisible('status') && <TableHead>Status</TableHead>}
+            {props.isColumnVisible('status') && (
+              <SortableTableHead
+                label="Status"
+                columnId="status"
+                sortColumn={sortColumn}
+                sortDirection={sortDirection}
+                onSort={toggleSort}
+                className="relative"
+                {...getHeaderProps('status')}
+              >
+                <span className="col-resize-handle" {...getResizeHandleProps('status')} />
+              </SortableTableHead>
+            )}
             {props.isColumnVisible('joining_date') && (
-              <TableHead>Joining Date</TableHead>
+              <SortableTableHead
+                label="Joining Date"
+                columnId="joining_date"
+                sortColumn={sortColumn}
+                sortDirection={sortDirection}
+                onSort={toggleSort}
+                className="relative"
+                {...getHeaderProps('joining_date')}
+              >
+                <span className="col-resize-handle" {...getResizeHandleProps('joining_date')} />
+              </SortableTableHead>
             )}
-            {props.isColumnVisible('email') && <TableHead>Email</TableHead>}
-            {props.isColumnVisible('phone') && <TableHead>Phone</TableHead>}
+            {props.isColumnVisible('email') && (
+              <SortableTableHead
+                label="Email"
+                columnId="email"
+                sortKey="work_email"
+                sortColumn={sortColumn}
+                sortDirection={sortDirection}
+                onSort={toggleSort}
+                className="relative"
+                {...getHeaderProps('email')}
+              >
+                <span className="col-resize-handle" {...getResizeHandleProps('email')} />
+              </SortableTableHead>
+            )}
+            {props.isColumnVisible('phone') && (
+              <SortableTableHead
+                label="Phone"
+                columnId="phone"
+                sortColumn={sortColumn}
+                sortDirection={sortDirection}
+                onSort={toggleSort}
+                className="relative"
+                {...getHeaderProps('phone')}
+              >
+                <span className="col-resize-handle" {...getResizeHandleProps('phone')} />
+              </SortableTableHead>
+            )}
             <TableHead className="sticky right-0 px-4 text-right">
               Actions
             </TableHead>
@@ -188,7 +334,7 @@ export function EmployeesDirectoryCard(props: {
             </TableRow>
           ) : null}
 
-          {props.employees.map((employee, index) => (
+          {sortedData.map((employee, index) => (
             <TableRow key={employee.id} className="hover:bg-muted/50">
               {props.isColumnVisible('sno') && (
                 <TableCell className="text-muted-foreground w-12">
@@ -281,7 +427,7 @@ export function EmployeesDirectoryCard(props: {
                         variant="ghost"
                         aria-label="More actions"
                       >
-                        <MoreHorizontal className="h-4 w-4" />
+                        <MoreVertical className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
 

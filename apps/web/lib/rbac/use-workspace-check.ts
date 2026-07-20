@@ -17,49 +17,69 @@ export function useWorkspaceCheck() {
   const supabase = useSupabase();
 
   const {
-    data: hasWorkspace,
+    data: workspaceCheckData,
     isLoading: isWorkspaceLoading,
+    isFetching: isWorkspaceFetching,
     isError,
     refetch,
   } = useQuery({
     queryKey: ['userHasWorkspace', user?.id],
     queryFn: async () => {
-      if (!user?.id) return false;
+      if (!user?.id) return { hasWorkspace: false, isOnboardingFinished: true };
 
-      const { error, count } = await supabase
+      const { data, error } = await supabase
         .from('workspace_members')
-        .select('id', { count: 'exact', head: true })
+        .select('workspace_id, workspaces!inner(is_onboarding_finished)')
         .eq('user_id', user.id)
-        .eq('status', 'accepted');
+        .eq('status', 'accepted')
+        .limit(1)
+        .maybeSingle();
 
       if (error) {
         console.error('Workspace check error:', error);
         throw error;
       }
 
-      // Use count from the response
-      const hasWorkspaces = (count ?? 0) > 0;
+      const hasWorkspace = !!data;
+      const isOnboardingFinished =
+        (data?.workspaces as any)?.is_onboarding_finished ?? true;
 
-      return hasWorkspaces;
+      return { hasWorkspace, isOnboardingFinished };
     },
     enabled: !!user?.id,
-    staleTime: 0,
-    refetchOnWindowFocus: true,
+    staleTime: 30 * 1000, // 30 s — set synchronously via setQueryData after onboarding
+    refetchOnWindowFocus: false,
   });
 
-  // We consider it "loading" if we are still fetching the user OR the workspace
-  const isLoading = isUserLoading || (!!user?.id && isWorkspaceLoading);
+  // isLoading  = true only on the very first fetch (no cached data yet)
+  // isFetching = true also during background refetches (e.g. after invalidation)
+  // We treat both as "loading" so the redirect effect never fires on stale data.
+  const isLoading =
+    isUserLoading || (!!user?.id && (isWorkspaceLoading || isWorkspaceFetching));
+
+  const hasWorkspace = workspaceCheckData?.hasWorkspace ?? false;
+  const isOnboardingFinished = workspaceCheckData?.isOnboardingFinished ?? true;
 
   useEffect(() => {
-    // Only redirect if we are sure the user is logged in AND we have finished checking for workspaces
-    // and explicitly found that they have none.
-    if (!isLoading && !isError && user?.id && hasWorkspace === false) {
+    // Never redirect while any fetch is in flight — stale data may still be
+    // in cache from a previous page, causing false-negative redirects.
+    if (isLoading || isError || !user?.id) return;
+
+    // No workspace at all → go create one
+    if (hasWorkspace === false) {
+      router.push(pathsConfig.app.workspaceSetup);
+      return;
+    }
+
+    // Has workspace but onboarding not finished → send back to setup
+    if (hasWorkspace === true && !isOnboardingFinished) {
       router.push(pathsConfig.app.workspaceSetup);
     }
-  }, [isLoading, isError, user?.id, hasWorkspace, router]);
+  }, [isLoading, isError, user?.id, hasWorkspace, isOnboardingFinished, router]);
 
   return {
     hasWorkspace: user?.id ? (hasWorkspace ?? null) : null,
+    isOnboardingFinished,
     isLoading,
     refetch,
   };

@@ -14,7 +14,6 @@ import {
   NotebookPen,
   Settings,
   ShieldCheck,
-  Ticket,
   Users,
 } from 'lucide-react';
 
@@ -28,7 +27,6 @@ import {
   useInventoryPermissions,
 } from '@kit/inventory';
 import {
-  canAccessServiceCloudSettings,
   getServiceCloudRoutesForPermissions,
   useServiceCloudPermissions,
 } from '@kit/service-cloud';
@@ -45,10 +43,6 @@ function getModuleCommonPaths(moduleBasePath: string) {
     profileSettings: `${moduleBasePath}/profile-settings`,
     workspaceSettings: `${moduleBasePath}/workspace-settings`,
     teamMembers: `${moduleBasePath}/team-members`,
-    teams:
-      moduleBasePath === '/home/services'
-        ? `${moduleBasePath}/workspace-teams`
-        : `${moduleBasePath}/teams`,
     roles: `${moduleBasePath}/roles`,
     auditLogs: `${moduleBasePath}/audit-logs`,
   };
@@ -60,7 +54,9 @@ function scopeCommonItems<T extends { path?: string }>(
 ) {
   const paths = getModuleCommonPaths(moduleBasePath);
 
-  return items.map((item) => {
+  return items
+    .filter((item) => item.path !== pathsConfig.app.teams)
+    .map((item) => {
     if (item.path === pathsConfig.app.profileSettings) {
       return {
         ...item,
@@ -72,13 +68,6 @@ function scopeCommonItems<T extends { path?: string }>(
       return {
         ...item,
         path: paths.teamMembers,
-      };
-    }
-
-    if (item.path === pathsConfig.app.teams) {
-      return {
-        ...item,
-        path: paths.teams,
       };
     }
 
@@ -228,31 +217,30 @@ export function HomeSidebarClient(_props: { user: JwtPayload }) {
     // 4. Service Cloud Module
     if (isServiceCloudModule) {
       const commonPaths = getModuleCommonPaths('/home/services');
-      const canManageServiceSettings = canAccessServiceCloudSettings(
-        canAccessServiceCloud,
-      );
+      const canViewWorkspaceSettings =
+        canAccess('settings', 'view') ||
+        canAccess('subscription', 'view') ||
+        canAccess('emails', 'manage_email');
       const teamItems =
         permissionNavConfig?.teamItems ||
         getNavigationConfig(canAccess).teamItems;
       const scopedTeamItems = scopeCommonItems(teamItems, '/home/services');
-      const settingsChildren = [
-        ...(canManageServiceSettings
-          ? [
-              {
-                label: 'common:routes.workspace-settings',
-                path: commonPaths.workspaceSettings,
-                Icon: <Settings className="h-4 w-4" />,
-              },
-            ]
-          : []),
-        ...scopedTeamItems.map((item) => {
-          const IconComponent = item.Icon;
-          return {
-            ...item,
-            Icon: <IconComponent className="h-4 w-4" />,
-          };
-        }),
-      ];
+      const settingsChildren = canViewWorkspaceSettings
+        ? [
+            {
+              label: 'common:routes.workspace-settings',
+              path: commonPaths.workspaceSettings,
+              Icon: <Settings className="h-4 w-4" />,
+            },
+            ...scopedTeamItems.map((item) => {
+              const IconComponent = item.Icon;
+              return {
+                ...item,
+                Icon: <IconComponent className="h-4 w-4" />,
+              };
+            }),
+          ]
+        : [];
 
       return [
         ...getServiceCloudRoutesForPermissions(canAccessServiceCloud),
@@ -313,11 +301,7 @@ export function HomeSidebarClient(_props: { user: JwtPayload }) {
               path: '/home/sales/document',
               Icon: <FileText className="h-4 w-4" />,
             },
-            {
-              label: 'Teams',
-              path: pathsConfig.app.teams,
-              Icon: <Users className="h-4 w-4" />,
-            },
+
           ],
         },
         {
@@ -386,11 +370,7 @@ export function HomeSidebarClient(_props: { user: JwtPayload }) {
             path: '/home/sales/document',
             Icon: <FileText className="h-4 w-4" />,
           },
-          {
-            label: 'Teams',
-            path: pathsConfig.app.teams,
-            Icon: <Users className="h-4 w-4" />,
-          },
+
         ],
       },
 

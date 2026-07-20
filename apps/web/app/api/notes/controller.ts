@@ -9,6 +9,23 @@ import {
 import { getRelatedEntityIds } from '../_helpers/get-related-entities';
 import { getEntityName } from '../_helpers/get-entity-name';
 
+// Map UI sales entity types to database convention (sales_*)
+function toDbEntityType(type: string): string {
+  const salesTypes = ['lead', 'contact', 'account', 'opportunity'];
+  if (salesTypes.includes(type)) {
+    return `sales_${type}`;
+  }
+  return type;
+}
+
+// Map database convention (sales_*) back to UI types
+function toUiEntityType(type: string): string {
+  if (type?.startsWith('sales_')) {
+    return type.substring(6);
+  }
+  return type;
+}
+
 /**
  * GET /api/notes
  * Fetch notes for an entity
@@ -27,6 +44,15 @@ export const getNotes = catchAsync(
     const entityType = url.searchParams.get('entityType');
     const entityId = url.searchParams.get('entityId');
     const workspaceId = url.searchParams.get('workspaceId');
+    const status = url.searchParams.get('status') || 'active';
+    const isClosedFilter = status === 'closed';
+
+    const searchTerm = url.searchParams.get('searchTerm') || '';
+    const createdByIds = url.searchParams.get('createdByIds') || '';
+    const createdAtFrom = url.searchParams.get('createdAtFrom') || '';
+    const createdAtTo = url.searchParams.get('createdAtTo') || '';
+    const updatedAtFrom = url.searchParams.get('updatedAtFrom') || '';
+    const updatedAtTo = url.searchParams.get('updatedAtTo') || '';
 
     if (!workspaceId) {
       return NextResponse.json(
@@ -59,43 +85,135 @@ export const getNotes = catchAsync(
       // Get all related entity IDs (includes lead conversion chain)
       const entityIds = await getRelatedEntityIds(supabase, entityType, entityId);
 
-      // Build query - fetch notes for all related entities
-      const notePromises = entityIds.map(({ entity_type, entity_id }) => {
-        let query = supabase
-          .from('crm_notes')
-          .select('*, created_by_user:accounts(name, email)')
+      // Fetch note IDs from core.note_relations for the related entities (with DB schema mapping)
+      const relationPromises = entityIds.map(async ({ entity_type, entity_id }) => {
+        const dbType = toDbEntityType(entity_type);
+        const { data } = await supabase
+          .schema('core')
+          .from('note_relations')
+          .select('note_id')
           .eq('workspace_id', workspaceId)
-          .eq('entity_type', entity_type)
-          .eq('entity_id', entity_id)
-          .eq('is_deleted', false);
+          .eq('entity_type', dbType)
+          .eq('entity_id', entity_id);
+        return data || [];
+      });
+
+      const relationResults = await Promise.all(relationPromises);
+      const noteIds = Array.from(
+        new Set(relationResults.flat().map((r: any) => r.note_id))
+      );
+
+      if (noteIds.length === 0) {
+        uniqueNotes = [];
+      } else {
+        let query = supabase
+          .schema('core')
+          .from('notes')
+          .select('*, note_relations(*)')
+          .eq('workspace_id', workspaceId)
+          .in('id', noteIds)
+          .eq('is_deleted', false)
+          .eq('is_closed', isClosedFilter);
 
         if (!isWorkspaceOwner) {
           query = query.eq('created_by', user.id);
         }
 
-        return query;
-      });
+        if (createdByIds && createdByIds !== 'all') {
+          const ids = createdByIds.split(',').map((id) => id.trim()).filter(Boolean);
+          if (ids.length > 0) {
+            query = query.in('created_by', ids);
+          }
+        }
+        if (searchTerm) {
+          query = query.ilike('note', `%${searchTerm}%`);
+        }
+        if (createdAtFrom) query = query.gte('created_at', (createdAtFrom.includes('T') ? createdAtFrom : `${createdAtFrom}T00:00:00.000Z`));
+        if (createdAtTo) query = query.lte('created_at', (createdAtTo.includes('T') ? createdAtTo : `${createdAtTo}T23:59:59.999Z`));
+        if (updatedAtFrom) query = query.gte('updated_at', (updatedAtFrom.includes('T') ? updatedAtFrom : `${updatedAtFrom}T00:00:00.000Z`));
+        if (updatedAtTo) query = query.lte('updated_at', (updatedAtTo.includes('T') ? updatedAtTo : `${updatedAtTo}T23:59:59.999Z`));
 
-      const results = await Promise.all(notePromises);
-      const allNotes = results.flatMap((result) => result.data || []);
-      uniqueNotes = Array.from(
-        new Map(allNotes.map((note) => [note.id, note])).values(),
-      );
+        const { data, error } = await query;
+        if (error) throw error;
+        uniqueNotes = data || [];
+      }
     } else {
       // Fetch all notes for the workspace
       let query = supabase
-        .from('crm_notes')
-        .select('*, created_by_user:accounts(name, email)')
+        .schema('core')
+        .from('notes')
+        .select('*, note_relations(*)')
         .eq('workspace_id', workspaceId)
-        .eq('is_deleted', false);
+        .eq('is_deleted', false)
+        .eq('is_closed', isClosedFilter);
 
       if (!isWorkspaceOwner) {
         query = query.eq('created_by', user.id);
       }
 
+      const moduleParam = url.searchParams.get('module') || '';
+
+      if (entityType) {
+        const dbType = toDbEntityType(entityType);
+        const { data: relations } = await supabase
+          .schema('core')
+          .from('note_relations')
+          .select('note_id')
+          .eq('workspace_id', workspaceId)
+          .eq('entity_type', dbType);
+        const noteIds = Array.from(new Set(relations?.map((r: any) => r.note_id) || []));
+        if (noteIds.length === 0) {
+          query = query.in('id', ['00000000-0000-0000-0000-000000000000']);
+        } else {
+          query = query.in('id', noteIds);
+        }
+      } else if (moduleParam === 'sales') {
+        const { data: relations } = await supabase
+          .schema('core')
+          .from('note_relations')
+          .select('note_id')
+          .eq('workspace_id', workspaceId)
+          .in('entity_type', ['sales_lead', 'sales_contact', 'sales_account', 'sales_opportunity']);
+        const noteIds = Array.from(new Set(relations?.map((r: any) => r.note_id) || []));
+        if (noteIds.length === 0) {
+          query = query.in('id', ['00000000-0000-0000-0000-000000000000']);
+        } else {
+          query = query.in('id', noteIds);
+        }
+      }
+
+      if (createdByIds && createdByIds !== 'all') {
+        const ids = createdByIds.split(',').map((id) => id.trim()).filter(Boolean);
+        if (ids.length > 0) {
+          query = query.in('created_by', ids);
+        }
+      }
+      if (searchTerm) {
+        query = query.ilike('note', `%${searchTerm}%`);
+      }
+      if (createdAtFrom) query = query.gte('created_at', (createdAtFrom.includes('T') ? createdAtFrom : `${createdAtFrom}T00:00:00.000Z`));
+      if (createdAtTo) query = query.lte('created_at', (createdAtTo.includes('T') ? createdAtTo : `${createdAtTo}T23:59:59.999Z`));
+      if (updatedAtFrom) query = query.gte('updated_at', (updatedAtFrom.includes('T') ? updatedAtFrom : `${updatedAtFrom}T00:00:00.000Z`));
+      if (updatedAtTo) query = query.lte('updated_at', (updatedAtTo.includes('T') ? updatedAtTo : `${updatedAtTo}T23:59:59.999Z`));
+
       const { data, error } = await query;
       if (error) throw error;
       uniqueNotes = data || [];
+    }
+
+    // Fetch user details for created_by (avoiding cross-schema PostgREST join issues)
+    const accountIds = Array.from(
+      new Set(uniqueNotes.map((n) => n.created_by).filter(Boolean)),
+    );
+    const accountsMap = new Map();
+    if (accountIds.length > 0) {
+      const { data: accountsData } = await supabase
+        .from('accounts')
+        .select('id, name, email')
+        .in('id', accountIds);
+      accountsData?.forEach((acc: any) => {
+        accountsMap.set(acc.id, acc);
+      });
     }
 
     // Sort by created_at descending
@@ -107,14 +225,19 @@ export const getNotes = catchAsync(
     // Add entity names to each note
     const notesWithEntityNames = await Promise.all(
       uniqueNotes.map(async (note) => {
-        const entityName = await getEntityName(
-          supabase,
-          note.entity_type,
-          note.entity_id,
-        );
+        const relation = note.note_relations?.[0] || {};
+        const entityTypeVal = toUiEntityType(note.entity_type ?? relation.entity_type);
+        const entityIdVal = note.entity_id ?? relation.entity_id;
+        const entityName = entityTypeVal && entityIdVal
+          ? await getEntityName(supabase, entityTypeVal as any, entityIdVal)
+          : null;
         return {
           ...note,
+          content: note.note,
+          entity_type: entityTypeVal,
+          entity_id: entityIdVal,
           entity_name: entityName,
+          created_by_user: note.created_by ? accountsMap.get(note.created_by) || null : null,
         };
       }),
     );
@@ -147,22 +270,52 @@ export const createNote = catchAsync(
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
-    const { data: note, error } = await supabase
-      .from('crm_notes')
+    const { data: noteData, error: noteError } = await supabase
+      .schema('core')
+      .from('notes')
       .insert({
         workspace_id,
-        entity_type,
-        entity_id,
-        content,
+        note: content,
         created_by: user.id,
+        updated_by: user.id,
       })
-      .select('*, created_by_user:accounts(name, email)')
+      .select('*')
       .single();
 
-    if (error) {
-      console.error('Create note error:', error);
-      throw error;
+    if (noteError) {
+      console.error('Create note error:', noteError);
+      throw noteError;
     }
+
+    const { error: relationError } = await supabase
+      .schema('core')
+      .from('note_relations')
+      .insert({
+        workspace_id,
+        note_id: noteData.id,
+        entity_type: toDbEntityType(entity_type),
+        entity_id,
+      });
+
+    if (relationError) {
+      console.error('Create note relation error:', relationError);
+      throw relationError;
+    }
+
+    // Retrieve user profile to match response format
+    const { data: userAccount } = await supabase
+      .from('accounts')
+      .select('name, email')
+      .eq('id', user.id)
+      .single();
+
+    const note: any = {
+      ...noteData,
+      content: noteData.note,
+      entity_type: toUiEntityType(entity_type),
+      entity_id,
+      created_by_user: userAccount,
+    };
 
     return successDataResponse('Note created', note);
   },
@@ -179,23 +332,79 @@ export const updateNote = catchAsync(
     const supabase = getSupabaseServerClient();
     const noteId = params?.id;
     const body = await request.json();
-    const { content } = body;
+    const { content, is_closed } = body;
 
     if (!noteId) {
       return NextResponse.json({ message: 'ID required' }, { status: 400 });
     }
 
-    const { data: note, error } = await supabase
-      .from('crm_notes')
-      .update({ content, updated_at: new Date().toISOString() })
+    // Get current user (needed for closed_by tracking)
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Build update payload
+    const updatePayload: any = {
+      updated_at: new Date().toISOString(),
+      updated_by: user.id,
+    };
+    if (content !== undefined) {
+      updatePayload.note = content;
+    }
+    if (is_closed !== undefined) {
+      updatePayload.is_closed = is_closed;
+      if (is_closed) {
+        updatePayload.closed_at = new Date().toISOString();
+        updatePayload.closed_by = user.id;
+      } else {
+        updatePayload.closed_at = null;
+        updatePayload.closed_by = null;
+      }
+    }
+
+    const { data: noteData, error } = await supabase
+      .schema('core')
+      .from('notes')
+      .update(updatePayload)
       .eq('id', noteId)
-      .select('*, created_by_user:accounts(name, email)')
+      .select('*')
       .single();
 
     if (error) {
       console.error('Update note error:', error);
       throw error;
     }
+
+    // Retrieve user profile to match response format
+    let userAccount = null;
+    if (noteData.created_by) {
+      const { data } = await supabase
+        .from('accounts')
+        .select('name, email')
+        .eq('id', noteData.created_by)
+        .maybeSingle();
+      userAccount = data;
+    }
+
+    // Get entity_type and entity_id from relations for the return payload
+    const { data: relation } = await supabase
+      .schema('core')
+      .from('note_relations')
+      .select('entity_type, entity_id')
+      .eq('note_id', noteId)
+      .maybeSingle();
+
+    const note: any = {
+      ...noteData,
+      content: noteData.note,
+      entity_type: toUiEntityType(relation?.entity_type),
+      entity_id: relation?.entity_id,
+      created_by_user: userAccount,
+    };
 
     return successDataResponse('Note updated', note);
   },
@@ -217,7 +426,8 @@ export const deleteNote = catchAsync(
       return NextResponse.json({ message: 'ID required' }, { status: 400 });
 
     const { error } = await supabase
-      .from('crm_notes')
+      .schema('core')
+      .from('notes')
       .update({ is_deleted: true, deleted_at: new Date().toISOString() })
       .eq('id', noteId);
 

@@ -11,6 +11,8 @@ import pathsConfig from '~/config/paths.config';
 import { createI18nServerInstance } from '~/lib/i18n/i18n.server';
 import { withI18n } from '~/lib/i18n/with-i18n';
 
+import { Footer } from '../../_components/footer';
+
 export const generateMetadata = async () => {
   const i18n = await createI18nServerInstance();
 
@@ -24,7 +26,19 @@ const paths = {
   home: pathsConfig.app.home,
 };
 
-function SignInPage() {
+interface SignInPageProps {
+  searchParams: Promise<{
+    next?: string;
+  }>;
+}
+
+async function SignInPage({ searchParams }: SignInPageProps) {
+  const resolvedSearchParams = await searchParams;
+  const nextParam = resolvedSearchParams.next;
+  const signUpUrl = nextParam
+    ? `${pathsConfig.auth.signUp}?next=${encodeURIComponent(nextParam)}`
+    : pathsConfig.auth.signUp;
+
   return (
     <div className="fixed inset-0 z-50 grid min-h-screen overflow-y-auto bg-[var(--color-leadgaze-auth-surface)] text-slate-800 lg:grid-cols-[minmax(340px,1fr)_minmax(420px,1fr)]">
       <section className="relative hidden min-h-screen flex-col overflow-hidden bg-[linear-gradient(180deg,var(--color-leadgaze-auth-1)_0%,var(--color-leadgaze-auth-2)_10%,var(--color-leadgaze-auth-3)_20%,var(--color-leadgaze-auth-4)_30%,var(--color-leadgaze-auth-5)_40%,var(--color-leadgaze-auth-6)_50%,var(--color-leadgaze-auth-7)_60%,var(--color-leadgaze-auth-8)_70%,var(--color-leadgaze-auth-9)_80%,var(--color-leadgaze-auth-10)_90%,var(--color-leadgaze-auth-11)_100%)] px-12 py-16 text-white lg:flex xl:px-16">
@@ -158,7 +172,7 @@ function SignInPage() {
                 size={'sm'}
                 className="h-auto p-0 text-xs font-semibold text-[var(--color-leadgaze-auth-7)]"
               >
-                <Link href={pathsConfig.auth.signUp}>Sign up for free</Link>
+                <Link href={signUpUrl}>Sign up for free</Link>
               </Button>
             </div>
           </div>
@@ -175,6 +189,7 @@ function SignInPage() {
             </div>
           </div>
         </div>
+        <Footer />
       </section>
     </div>
   );

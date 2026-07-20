@@ -9,6 +9,23 @@ import {
 import { getRelatedEntityIds } from '../_helpers/get-related-entities';
 import { getEntityName } from '../_helpers/get-entity-name';
 
+// Map UI sales entity types to database convention (sales_*)
+function toDbEntityType(type: string): string {
+  const salesTypes = ['lead', 'contact', 'account', 'opportunity'];
+  if (salesTypes.includes(type)) {
+    return `sales_${type}`;
+  }
+  return type;
+}
+
+// Map database convention (sales_*) back to UI types
+function toUiEntityType(type: string): string {
+  if (type?.startsWith('sales_')) {
+    return type.substring(6);
+  }
+  return type;
+}
+
 /**
  * GET /api/meetings
  * Fetch meetings for an entity
@@ -27,6 +44,15 @@ export const getMeetings = catchAsync(
     const entityType = url.searchParams.get('entityType');
     const entityId = url.searchParams.get('entityId');
     const workspaceId = url.searchParams.get('workspaceId');
+
+    const searchTerm = url.searchParams.get('searchTerm') || '';
+    const createdByIds = url.searchParams.get('createdByIds') || '';
+    const statuses = url.searchParams.get('statuses') || '';
+    const timeframe = url.searchParams.get('timeframe') || '';
+    const createdAtFrom = url.searchParams.get('createdAtFrom') || '';
+    const createdAtTo = url.searchParams.get('createdAtTo') || '';
+    const updatedAtFrom = url.searchParams.get('updatedAtFrom') || '';
+    const updatedAtTo = url.searchParams.get('updatedAtTo') || '';
 
     if (!workspaceId) {
       return NextResponse.json(
@@ -61,17 +87,38 @@ export const getMeetings = catchAsync(
 
       // Build query - fetch meetings for all related entities
       const meetingPromises = entityIds.map(({ entity_type, entity_id }) => {
+        const dbType = toDbEntityType(entity_type);
         let query = supabase
           .from('crm_meetings')
           .select('*, created_by_user:accounts(name, email)')
           .eq('workspace_id', workspaceId)
-          .eq('entity_type', entity_type)
+          .eq('entity_type', dbType)
           .eq('entity_id', entity_id)
           .eq('is_deleted', false);
 
         if (!isWorkspaceOwner) {
           query = query.eq('created_by', user.id);
         }
+
+        if (createdByIds && createdByIds !== 'all') {
+          const ids = createdByIds.split(',').map((id) => id.trim()).filter(Boolean);
+          if (ids.length > 0) {
+            query = query.in('created_by', ids);
+          }
+        }
+        if (statuses) {
+          const statusList = statuses.split(',').map((s) => s.trim()).filter(Boolean);
+          if (statusList.length > 0) {
+            query = query.in('status', statusList);
+          }
+        }
+        if (searchTerm) {
+          query = query.or(`title.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`);
+        }
+        if (createdAtFrom) query = query.gte('created_at', (createdAtFrom.includes('T') ? createdAtFrom : `${createdAtFrom}T00:00:00.000Z`));
+        if (createdAtTo) query = query.lte('created_at', (createdAtTo.includes('T') ? createdAtTo : `${createdAtTo}T23:59:59.999Z`));
+        if (updatedAtFrom) query = query.gte('updated_at', (updatedAtFrom.includes('T') ? updatedAtFrom : `${updatedAtFrom}T00:00:00.000Z`));
+        if (updatedAtTo) query = query.lte('updated_at', (updatedAtTo.includes('T') ? updatedAtTo : `${updatedAtTo}T23:59:59.999Z`));
 
         return query;
       });
@@ -90,6 +137,26 @@ export const getMeetings = catchAsync(
         query = query.eq('created_by', user.id);
       }
 
+      if (createdByIds && createdByIds !== 'all') {
+        const ids = createdByIds.split(',').map((id) => id.trim()).filter(Boolean);
+        if (ids.length > 0) {
+          query = query.in('created_by', ids);
+        }
+      }
+      if (statuses) {
+        const statusList = statuses.split(',').map((s) => s.trim()).filter(Boolean);
+        if (statusList.length > 0) {
+          query = query.in('status', statusList);
+        }
+      }
+      if (searchTerm) {
+        query = query.or(`title.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`);
+      }
+      if (createdAtFrom) query = query.gte('created_at', (createdAtFrom.includes('T') ? createdAtFrom : `${createdAtFrom}T00:00:00.000Z`));
+      if (createdAtTo) query = query.lte('created_at', (createdAtTo.includes('T') ? createdAtTo : `${createdAtTo}T23:59:59.999Z`));
+      if (updatedAtFrom) query = query.gte('updated_at', (updatedAtFrom.includes('T') ? updatedAtFrom : `${updatedAtFrom}T00:00:00.000Z`));
+      if (updatedAtTo) query = query.lte('updated_at', (updatedAtTo.includes('T') ? updatedAtTo : `${updatedAtTo}T23:59:59.999Z`));
+
       const { data, error } = await query;
       if (error) throw error;
       allMeetings = data || [];
@@ -99,11 +166,30 @@ export const getMeetings = catchAsync(
     const now = new Date();
     const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
-    const filteredMeetings = allMeetings.filter((meeting) => {
+    let filteredMeetings = allMeetings.filter((meeting) => {
       const endTime = new Date(meeting.end_time);
       // Show if end time is in the future OR within last 1 day
       return endTime >= oneDayAgo;
     });
+
+    if (timeframe) {
+      const timeframeList = timeframe.split(',').map((t) => t.trim()).filter(Boolean);
+      if (timeframeList.length > 0 && timeframeList.length < 2) {
+        const checkTime = new Date();
+        filteredMeetings = filteredMeetings.filter((meeting) => {
+          const start = meeting.start_time || meeting.scheduled_start || meeting.actual_start;
+          if (!start) return timeframeList.includes('upcoming');
+          const meetingDate = new Date(start);
+          const isUpcoming =
+            meetingDate >= checkTime &&
+            meeting.status !== 'completed' &&
+            meeting.status !== 'cancelled';
+          if (timeframeList.includes('upcoming')) return isUpcoming;
+          if (timeframeList.includes('past')) return !isUpcoming;
+          return true;
+        });
+      }
+    }
 
     // Remove duplicates
     const uniqueMeetings = Array.from(
@@ -119,13 +205,15 @@ export const getMeetings = catchAsync(
     // Add entity names to each meeting
     const meetingsWithEntityNames = await Promise.all(
       uniqueMeetings.map(async (meeting) => {
+        const uiType = toUiEntityType(meeting.entity_type);
         const entityName = await getEntityName(
           supabase,
-          meeting.entity_type,
+          uiType as any,
           meeting.entity_id,
         );
         return {
           ...meeting,
+          entity_type: uiType,
           entity_name: entityName,
         };
       }),
@@ -168,11 +256,13 @@ export const createMeeting = catchAsync(
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
+    const dbType = toDbEntityType(entity_type);
+
     const { data: meeting, error } = await supabase
       .from('crm_meetings')
       .insert({
         workspace_id,
-        entity_type,
+        entity_type: dbType,
         entity_id,
         title,
         start_time,

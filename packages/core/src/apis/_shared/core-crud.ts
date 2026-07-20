@@ -118,6 +118,10 @@ export function createCoreControllers(config: CoreResourceConfig) {
   const get = catchAsync(async ({ request }) => {
     const url = new URL(request.url);
     const { workspaceId, entityType, entityId, id, threadId } = entityFilters(url);
+    const createdAtFrom = url.searchParams.get('createdAtFrom');
+    const createdAtTo = url.searchParams.get('createdAtTo');
+    const updatedAtFrom = url.searchParams.get('updatedAtFrom');
+    const updatedAtTo = url.searchParams.get('updatedAtTo');
 
     if (!workspaceId) {
       return NextResponse.json({ success: false, message: 'workspaceId query parameter is required' }, { status: 400 });
@@ -134,11 +138,22 @@ export function createCoreControllers(config: CoreResourceConfig) {
 
       let query = (supabase as any).schema('core').from(config.table).select('*').eq('workspace_id', workspaceId);
       if (config.softDelete !== false) query = query.eq('is_deleted', false);
+      const statusParam = url.searchParams.get('status');
+      if (statusParam === 'closed' && config.table === 'notes') {
+        query = query.eq('is_closed', true);
+      } else if (statusParam === 'active' && config.table === 'notes') {
+        query = query.eq('is_closed', false);
+      }
       if (id) query = query.eq('id', id).maybeSingle();
       if (!config.relation && entityType) query = query.eq('entity_type', entityType);
       if (!config.relation && entityId) query = query.eq('entity_id', entityId);
       if (filteredIds) query = query.in('id', filteredIds);
       if (threadId && config.table === 'emails') query = query.eq('thread_id', threadId);
+
+      if (createdAtFrom) query = query.gte('created_at', (createdAtFrom.includes('T') ? createdAtFrom : `${createdAtFrom}T00:00:00.000Z`));
+      if (createdAtTo) query = query.lte('created_at', (createdAtTo.includes('T') ? createdAtTo : `${createdAtTo}T23:59:59.999Z`));
+      if (updatedAtFrom) query = query.gte('updated_at', (updatedAtFrom.includes('T') ? updatedAtFrom : `${updatedAtFrom}T00:00:00.000Z`));
+      if (updatedAtTo) query = query.lte('updated_at', (updatedAtTo.includes('T') ? updatedAtTo : `${updatedAtTo}T23:59:59.999Z`));
       if (!id) {
         const order = config.defaultOrder ?? { column: 'created_at', ascending: false };
         query = query.order(order.column, { ascending: order.ascending });

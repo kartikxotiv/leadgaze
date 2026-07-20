@@ -62,6 +62,7 @@ import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { getAccountsService } from '~/services/accounts.service';
 import { getContactsService } from '~/services/contacts.service';
 import { convertLeadService } from '~/services/leads.service';
+import { getOpportunitiesService } from '~/services/opportunities.service';
 
 interface ConvertLeadDialogProps {
   leadId: string;
@@ -116,9 +117,12 @@ export function ConvertLeadDialog({
   const debouncedAccountSearch = useDebounce(accountSearch, 300);
   const [contactSearch, setContactSearch] = useState('');
   const debouncedContactSearch = useDebounce(contactSearch, 300);
+  const [opportunitySearch, setOpportunitySearch] = useState('');
+  const debouncedOpportunitySearch = useDebounce(opportunitySearch, 300);
 
   const [openAccountPopover, setOpenAccountPopover] = useState(false);
   const [openContactPopover, setOpenContactPopover] = useState(false);
+  const [openOpportunityPopover, setOpenOpportunityPopover] = useState(false);
 
   // Fetch Existing Accounts
   const { data: accountsData = { data: [] } } = useQuery({
@@ -133,7 +137,7 @@ export function ConvertLeadDialog({
 
   // Fetch Existing Contacts
   const { data: contactsData = { data: [] } } = useQuery({
-    queryKey: ['contacts', currentWorkspace?.id, debouncedAccountSearch],
+    queryKey: ['contacts', currentWorkspace?.id, debouncedContactSearch],
     queryFn: () =>
       getContactsService({
         workspaceId: currentWorkspace!.id,
@@ -142,8 +146,20 @@ export function ConvertLeadDialog({
     enabled: !!currentWorkspace?.id && open,
   });
 
+  // Fetch Existing Opportunities
+  const { data: opportunitiesData = { data: [] } } = useQuery({
+    queryKey: ['opportunities', currentWorkspace?.id, debouncedOpportunitySearch],
+    queryFn: () =>
+      getOpportunitiesService({
+        workspaceId: currentWorkspace!.id,
+        searchTerm: debouncedOpportunitySearch,
+      }),
+    enabled: !!currentWorkspace?.id && open,
+  });
+
   const accounts = accountsData.data;
   const contactsList = contactsData.data;
+  const opportunitiesList = opportunitiesData.data;
 
   // Show all statuses in the converted status dropdown
   const convertedStatuses = statuses || [];
@@ -590,6 +606,81 @@ export function ConvertLeadDialog({
                           Choose Existing Opportunity
                         </FormLabel>
                       </div>
+                      {field.value === 'existing' && (
+                        <div className="w-full pl-6">
+                          <FormField
+                            control={form.control}
+                            name="existingOpportunityId"
+                            render={({ field: oppField }) => (
+                              <Popover
+                                open={openOpportunityPopover}
+                                onOpenChange={setOpenOpportunityPopover}
+                              >
+                                <PopoverTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    role="combobox"
+                                    className={cn(
+                                      'w-full justify-between font-normal',
+                                      !oppField.value && 'text-muted-foreground',
+                                    )}
+                                  >
+                                    {oppField.value
+                                      ? opportunitiesList.find(
+                                          (o: any) => o.id === oppField.value,
+                                        )?.opportunity_name || 'Select opportunity'
+                                      : 'Select existing opportunity...'}
+                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-[400px] p-0">
+                                  <Command shouldFilter={false}>
+                                    <CommandInput
+                                      placeholder="Search opportunities..."
+                                      value={opportunitySearch}
+                                      onValueChange={setOpportunitySearch}
+                                    />
+                                    <CommandList>
+                                      <CommandEmpty>
+                                        No opportunities found.
+                                      </CommandEmpty>
+                                      <CommandGroup>
+                                        {opportunitiesList.map((opp: any) => (
+                                          <CommandItem
+                                            key={opp.id}
+                                            value={opp.id}
+                                            onSelect={() => {
+                                              form.setValue(
+                                                'existingOpportunityId',
+                                                opp.id,
+                                              );
+                                              form.setValue(
+                                                'opportunityName',
+                                                opp.opportunity_name,
+                                              );
+                                              setOpenOpportunityPopover(false);
+                                            }}
+                                          >
+                                            <Check
+                                              className={cn(
+                                                'mr-2 h-4 w-4',
+                                                oppField.value === opp.id
+                                                  ? 'opacity-100'
+                                                  : 'opacity-0',
+                                              )}
+                                            />
+                                            {opp.opportunity_name}
+                                          </CommandItem>
+                                        ))}
+                                      </CommandGroup>
+                                    </CommandList>
+                                  </Command>
+                                </PopoverContent>
+                              </Popover>
+                            )}
+                          />
+                        </div>
+                      )}
                     </RadioGroup>
                   )}
                 />
@@ -638,10 +729,11 @@ export function ConvertLeadDialog({
                 variant="outline"
                 onClick={() => onOpenChange(false)}
                 disabled={isSubmitting}
+                className='mb-2'
               >
                 Cancel
               </Button>
-              <Button type="submit" form="dialog-form" disabled={isSubmitting}>
+              <Button type="submit" form="dialog-form" disabled={isSubmitting} className='mb-2'>
                 {isSubmitting ? 'Converting...' : 'Convert'}
               </Button>
             </DialogFooter>

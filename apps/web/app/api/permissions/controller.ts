@@ -33,24 +33,29 @@ const getPermissions = catchAsync(
     }
 
     // Get user's role in the workspace
-    const { data: memberData, error: memberError } = await supabase
+    const { data: members, error: memberError } = await supabase
       .from('workspace_members')
       .select(
         `
-      role_id,
-      workspace_roles (*)
-    `,
+        role_id,
+        workspace_roles (*)
+      `,
       )
       .eq('workspace_id', workspaceId)
-      .eq('user_id', user.id)
-      .single();
+      .eq('user_id', user.id);
 
-    if (memberError || !memberData) {
+    if (memberError || !members || members.length === 0) {
       return NextResponse.json(
         { message: 'User is not a member of this workspace' },
         { status: 403 },
       );
     }
+
+    // Find the primary global membership (where product_key is null) if it exists,
+    // or fallback to sales, or the first available membership.
+    const memberData = members.find((m: any) => m.workspace_roles?.product_key === null) 
+      || members.find((m: any) => m.workspace_roles?.product_key === 'sales')
+      || members[0];
 
     const role = memberData.workspace_roles;
     const roleId = memberData.role_id;

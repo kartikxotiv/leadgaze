@@ -1,26 +1,31 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
+
 import Link from 'next/link';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Briefcase,
   Building2,
+  Check,
   Edit,
   Loader2,
   MoreHorizontal,
+  MoreVertical,
   Plus,
+  RotateCcw,
   Trash2,
   User,
   Users,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { formatDate } from '@kit/shared/utils';
+import { useLocalization } from '@kit/shared/localization';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
+import CustomTableContainer from '@kit/ui/custom-table-container';
 import {
   Dialog,
   DialogContent,
@@ -35,15 +40,8 @@ import {
 } from '@kit/ui/dropdown-menu';
 import { Input } from '@kit/ui/input';
 import { Label } from '@kit/ui/label';
+import { ListToolBar } from '@kit/ui/list-toolbar';
 import { PageBody, PageHeader } from '@kit/ui/page';
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from '@kit/ui/pagination';
 import { RadioGroup, RadioGroupItem } from '@kit/ui/radio-group';
 import {
   Select,
@@ -52,6 +50,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@kit/ui/select';
+import { Skeleton } from '@kit/ui/skeleton';
+import { SortableTableHead } from '@kit/ui/sortable-table-head';
 import {
   Table,
   TableBody,
@@ -60,13 +60,16 @@ import {
   TableHeader,
   TableRow,
 } from '@kit/ui/table';
+import { TablePagination } from '@kit/ui/table-pagination';
 import { Textarea } from '@kit/ui/textarea';
+import { useColumnResize } from '@kit/ui/use-column-resize';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
-import { Skeleton } from '@kit/ui/skeleton';
-import { ListToolBar } from '@kit/ui/list-toolbar';
-import CustomTableContainer from '@kit/ui/custom-table-container';
+import { useDateRangeFilter } from '@kit/ui/use-date-range-filter';
+import { useTableSort } from '@kit/ui/use-table-sort';
 
 import { useRBAC } from '~/lib/rbac/rbac-provider';
+import { useDebounce } from '~/lib/hooks/use-debounce';
+import { usePackageMembers } from '~/lib/hooks/use-package-members';
 import { getAccountsService } from '~/services/accounts.service';
 import {
   Note,
@@ -101,12 +104,16 @@ function NotesPageSkeleton() {
             <Table className="w-max min-w-full border-separate border-spacing-0 text-sm">
               <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
                 <TableRow>
-                  <TableHead className="w-12 whitespace-nowrap">S. No.</TableHead>
+                  <TableHead className="w-12 whitespace-nowrap">
+                    S. No.
+                  </TableHead>
                   <TableHead>Category</TableHead>
                   <TableHead>Associate With</TableHead>
                   <TableHead>Note Content</TableHead>
                   <TableHead>Author</TableHead>
-                  <TableHead className="sticky right-0 text-right">Actions</TableHead>
+                  <TableHead className="sticky right-0 text-right">
+                    Actions
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -130,9 +137,29 @@ export default function NotesPage() {
   const { currentWorkspace: workspace } = useRBAC();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'active' | 'closed'>(
+    'active',
+  );
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 15;
+  const [pageSize, setPageSize] = useState(15);
+  const itemsPerPage = pageSize;
+  const {
+    dateRange: createdOnRange,
+    setDateRange: setCreatedOnRange,
+    computedDates: computedCreatedOnDates,
+    clearDateRange: clearCreatedOnRange,
+  } = useDateRangeFilter();
+  const {
+    dateRange: updatedOnRange,
+    setDateRange: setUpdatedOnRange,
+    computedDates: computedUpdatedOnDates,
+    clearDateRange: clearUpdatedOnRange,
+  } = useDateRangeFilter('updated');
+
+  const [selectedCreatedByIds, setSelectedCreatedByIds] = useState<string[]>([]);
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
+  const { members } = usePackageMembers();
 
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [newNoteContent, setNewNoteContent] = useState('');
@@ -142,11 +169,12 @@ export default function NotesPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingNote, setEditingNote] = useState<Note | null>(null);
   const [editContent, setEditContent] = useState('');
+  const { formatDate } = useLocalization();
 
   const noteColumns = useMemo(
     () => [
       { id: 'sno', label: 'S. No.' },
-      { id: 'category', label: 'Category' },
+      { id: 'category', label: 'Entity' },
       { id: 'associate', label: 'Associate With' },
       { id: 'content', label: 'Note Content' },
       { id: 'author', label: 'Author' },
@@ -171,11 +199,36 @@ export default function NotesPage() {
       updated_by: false,
     });
 
+  const { getHeaderProps, getResizeHandleProps } = useColumnResize('notes');
+
   const { data: notes = [], isLoading } = useQuery({
-    queryKey: ['notes', workspace?.id],
+    queryKey: [
+      'notes',
+      workspace?.id,
+      statusFilter,
+      categoryFilter,
+      debouncedSearchTerm,
+      selectedCreatedByIds,
+      computedCreatedOnDates,
+      computedUpdatedOnDates,
+    ],
     queryFn: async () => {
       if (!workspace?.id) return [];
-      const res = await getNotesService(workspace.id);
+      const res = await getNotesService(
+        workspace.id,
+        categoryFilter === 'all' ? undefined : categoryFilter,
+        undefined,
+        statusFilter,
+        {
+          searchTerm: debouncedSearchTerm || undefined,
+          createdAtFrom: computedCreatedOnDates?.from,
+          createdAtTo: computedCreatedOnDates?.to,
+          updatedAtFrom: computedUpdatedOnDates?.from,
+          updatedAtTo: computedUpdatedOnDates?.to,
+          createdByIds: selectedCreatedByIds.length > 0 ? selectedCreatedByIds : undefined,
+          module: 'sales',
+        },
+      );
       return res;
     },
     enabled: !!workspace?.id,
@@ -245,10 +298,21 @@ export default function NotesPage() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, content }: { id: string; content: string }) =>
-      updateNoteService(id, { content }),
-    onSuccess: () => {
-      toast.success('Note updated');
+    mutationFn: ({
+      id,
+      content,
+      is_closed,
+    }: {
+      id: string;
+      content?: string;
+      is_closed?: boolean;
+    }) => updateNoteService(id, { content, is_closed }),
+    onSuccess: (data, variables) => {
+      if (variables.is_closed !== undefined) {
+        toast.success(variables.is_closed ? 'Note closed' : 'Note reopened');
+      } else {
+        toast.success('Note updated');
+      }
       setIsEditDialogOpen(false);
       setEditingNote(null);
       queryClient.invalidateQueries({ queryKey: ['notes', workspace?.id] });
@@ -267,26 +331,21 @@ export default function NotesPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, categoryFilter]);
+  }, [debouncedSearchTerm, categoryFilter, selectedCreatedByIds, pageSize, createdOnRange, updatedOnRange]);
 
   const filteredNotes = useMemo(() => {
-    return notes.filter((note: Note) => {
-      const matchesSearch = note.content
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase());
+    return notes;
+  }, [notes]);
 
-      const matchesCategory =
-        categoryFilter === 'all' ||
-        note.entity_type?.toLowerCase() === categoryFilter.toLowerCase();
-
-      return matchesSearch && matchesCategory;
+  const { sortColumn, sortDirection, toggleSort, sortedData } =
+    useTableSort<Note>('notes', filteredNotes, {
+      onSortChange: () => setCurrentPage(1),
     });
-  }, [notes, searchTerm, categoryFilter]);
 
   const paginatedNotes = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage;
-    return filteredNotes.slice(start, start + itemsPerPage);
-  }, [filteredNotes, currentPage, itemsPerPage]);
+    return sortedData.slice(start, start + itemsPerPage);
+  }, [sortedData, currentPage, itemsPerPage]);
 
   const totalPages = Math.ceil(filteredNotes.length / itemsPerPage);
   const totalCount = filteredNotes.length;
@@ -366,9 +425,12 @@ export default function NotesPage() {
         key: 'entity',
         label: 'Entity',
         selectedValue: categoryFilter === 'all' ? '' : categoryFilter,
-        selectedLabel: categoryFilter === 'all'
-          ? 'All entities'
-          : categoryFilter.charAt(0).toUpperCase() + categoryFilter.slice(1) + 's',
+        selectedLabel:
+          categoryFilter === 'all'
+            ? 'All entities'
+            : categoryFilter.charAt(0).toUpperCase() +
+              categoryFilter.slice(1) +
+              's',
         options: [
           { value: 'lead', label: 'Leads' },
           { value: 'contact', label: 'Contacts' },
@@ -377,8 +439,67 @@ export default function NotesPage() {
         ],
         onSelect: (val: string) => setCategoryFilter(val || 'all'),
       },
+      {
+        key: 'created_by',
+        label: 'Created By',
+        selectedValues: selectedCreatedByIds,
+        selectedLabel:
+          selectedCreatedByIds.length === 0
+            ? 'All members'
+            : selectedCreatedByIds.length === 1
+              ? ((
+                  members.find(
+                    (m: any) => m.user_id === selectedCreatedByIds[0],
+                  ) as any
+                )?.user?.user_metadata?.full_name ?? '1 selected')
+              : `${selectedCreatedByIds.length} selected`,
+        options: members
+          .filter((m: any) => m.user_id)
+          .map((m: any) => ({
+            value: m.user_id,
+            label:
+              m.user?.user_metadata?.full_name ||
+              m.user?.email ||
+              m.user_id,
+          })),
+        onSelectValues: setSelectedCreatedByIds,
+      },
+      {
+        key: 'created_on',
+        label: 'Created On',
+        type: 'date',
+        dateValue: createdOnRange,
+        onDateChange: (val) => {
+          setCreatedOnRange(val);
+          setCurrentPage(1);
+        },
+      },
+      {
+        key: 'updated_on',
+        label: 'Updated On',
+        type: 'date',
+        dateValue: updatedOnRange,
+        onDateChange: (val) => {
+          setUpdatedOnRange(val);
+          setCurrentPage(1);
+        },
+      },
+      {
+        key: 'status',
+        label: 'Status',
+        selectedValue: statusFilter,
+        selectedLabel: statusFilter === 'active' ? 'Active' : 'Closed',
+        options: [
+          { value: 'active', label: 'Active' },
+          { value: 'closed', label: 'Closed' },
+        ],
+        onSelect: (val: string) => {
+          setStatusFilter((val as any) || 'active');
+          setCurrentPage(1);
+        },
+      },
     ];
-  }, [categoryFilter]);
+  }, [categoryFilter, createdOnRange, updatedOnRange, statusFilter, selectedCreatedByIds, members]);
 
   if (!workspace) {
     return <NotesPageSkeleton />;
@@ -394,7 +515,7 @@ export default function NotesPage() {
       </div>
 
       {/* Full-width search / filter / actions toolbar */}
-      <div className="w-full max-w-full min-w-0 shrink-0 border-b pb-2 pt-2">
+      <div className="w-full max-w-full min-w-0 shrink-0 border-b pt-2 pb-2">
         <ListToolBar
           showSearch
           searchPlaceholder="Search notes..."
@@ -403,8 +524,20 @@ export default function NotesPage() {
           showFilter
           filterLabel="Show Filters"
           filterGroups={filterGroups}
-          activeFilterCount={categoryFilter !== 'all' ? 1 : 0}
-          onClearFilters={() => setCategoryFilter('all')}
+          activeFilterCount={
+            (categoryFilter !== 'all' ? 1 : 0) +
+            (createdOnRange ? 1 : 0) +
+            (updatedOnRange ? 1 : 0) +
+            (statusFilter !== 'active' ? 1 : 0) +
+            (selectedCreatedByIds.length > 0 ? 1 : 0)
+          }
+          onClearFilters={() => {
+            setCategoryFilter('all');
+            setStatusFilter('active');
+            setSelectedCreatedByIds([]);
+            clearCreatedOnRange();
+            clearUpdatedOnRange();
+          }}
           actions={[
             {
               key: 'add',
@@ -434,83 +567,175 @@ export default function NotesPage() {
       <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden">
         <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 gap-0">
           <CustomTableContainer
-            pagination={totalCount > 0 && (
-              <div className="primary-text-regular text-leadgaze-muted bg-sidebar sticky bottom-0 z-10 -mx-4 flex shrink-0 items-center justify-between border-t px-4 py-1.5 lg:-mx-8 lg:px-8">
-                <div>
-                  Showing{' '}
-                  <span className="text-foreground font-medium">
-                    {(currentPage - 1) * itemsPerPage + 1}
-                  </span>{' '}
-                  to{' '}
-                  <span className="text-foreground font-medium">
-                    {Math.min(currentPage * itemsPerPage, totalCount)}
-                  </span>{' '}
-                  of{' '}
-                  <span className="text-foreground font-medium">
-                    {totalCount}
-                  </span>{' '}
-                  notes
-                </div>
-                <Pagination className="w-auto">
-                  <PaginationContent>
-                    <PaginationItem>
-                      <PaginationPrevious
-                        className={
-                          currentPage === 1
-                            ? 'pointer-events-none opacity-50'
-                            : 'cursor-pointer'
-                        }
-                        onClick={() =>
-                          setCurrentPage((prev) => Math.max(prev - 1, 1))
-                        }
-                      />
-                    </PaginationItem>
-                    {Array.from({ length: totalPages }).map((_, i) => (
-                      <PaginationItem key={i}>
-                        <PaginationLink
-                          isActive={currentPage === i + 1}
-                          onClick={() => setCurrentPage(i + 1)}
-                          className="cursor-pointer"
-                        >
-                          {i + 1}
-                        </PaginationLink>
-                      </PaginationItem>
-                    ))}
-                    <PaginationItem>
-                      <PaginationNext
-                        className={
-                          currentPage === totalPages
-                            ? 'pointer-events-none opacity-50'
-                            : 'cursor-pointer'
-                        }
-                        onClick={() =>
-                          setCurrentPage((prev) =>
-                            Math.min(prev + 1, totalPages),
-                          )
-                        }
-                      />
-                    </PaginationItem>
-                  </PaginationContent>
-                </Pagination>
-              </div>
-            )}
+            pagination={
+              <TablePagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalCount={totalCount}
+                pageSize={pageSize}
+                onPageChange={setCurrentPage}
+                onPageSizeChange={(val) => {
+                  setPageSize(val);
+                  setCurrentPage(1);
+                }}
+                entityLabel="notes"
+              />
+            }
           >
             <Table>
               <TableHeader>
                 <TableRow>
                   {isVisible('sno') && (
-                    <TableHead className="w-12 whitespace-nowrap">
-                      S. No.
-                    </TableHead>
+                    <SortableTableHead
+                      label="S. No."
+                      columnId="sno"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={toggleSort}
+                      sortable={false}
+                      className="relative w-12 whitespace-nowrap"
+                      {...getHeaderProps('sno')}
+                    >
+                      <span
+                        className="col-resize-handle"
+                        {...getResizeHandleProps('sno')}
+                      />
+                    </SortableTableHead>
                   )}
-                  {isVisible('category') && <TableHead>Category</TableHead>}
-                  {isVisible('associate') && <TableHead>Associate With</TableHead>}
-                  {isVisible('content') && <TableHead className="min-w-[300px]">Note Content</TableHead>}
-                  {isVisible('author') && <TableHead>Author</TableHead>}
-                  {isVisible('updated_at') && <TableHead>Updated At</TableHead>}
-                  {isVisible('created_by') && <TableHead>Created By</TableHead>}
-                  {isVisible('created_at') && <TableHead>Created On</TableHead>}
-                  {isVisible('updated_by') && <TableHead>Last Updated By</TableHead>}
+                  {isVisible('category') && (
+                    <SortableTableHead
+                      label="Entity"
+                      columnId="category"
+                      sortKey="entity_type"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={toggleSort}
+                      className="relative"
+                      {...getHeaderProps('category')}
+                    >
+                      <span
+                        className="col-resize-handle"
+                        {...getResizeHandleProps('category')}
+                      />
+                    </SortableTableHead>
+                  )}
+                  {isVisible('associate') && (
+                    <SortableTableHead
+                      label="Associate With"
+                      columnId="associate"
+                      sortKey="entity_name"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={toggleSort}
+                      className="relative"
+                      sortable={false}
+                      {...getHeaderProps('associate')}
+                    >
+                      <span
+                        className="col-resize-handle"
+                        {...getResizeHandleProps('associate')}
+                      />
+                    </SortableTableHead>
+                  )}
+                  {isVisible('content') && (
+                    <SortableTableHead
+                      label="Note Content"
+                      columnId="content"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={toggleSort}
+                      sortable={false}
+                      className="relative min-w-[300px]"
+                      {...getHeaderProps('content')}
+                    >
+                      <span
+                        className="col-resize-handle"
+                        {...getResizeHandleProps('content')}
+                      />
+                    </SortableTableHead>
+                  )}
+                  {isVisible('author') && (
+                    <SortableTableHead
+                      label="Author"
+                      columnId="author"
+                      sortKey="created_by_user.name"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={toggleSort}
+                      className="relative"
+                      {...getHeaderProps('author')}
+                    >
+                      <span
+                        className="col-resize-handle"
+                        {...getResizeHandleProps('author')}
+                      />
+                    </SortableTableHead>
+                  )}
+                  {isVisible('updated_at') && (
+                    <SortableTableHead
+                      label="Updated At"
+                      columnId="updated_at"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={toggleSort}
+                      className="relative"
+                      {...getHeaderProps('updated_at')}
+                    >
+                      <span
+                        className="col-resize-handle"
+                        {...getResizeHandleProps('updated_at')}
+                      />
+                    </SortableTableHead>
+                  )}
+                  {isVisible('created_by') && (
+                    <SortableTableHead
+                      label="Created By"
+                      columnId="created_by"
+                      sortKey="created_by_user.name"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={toggleSort}
+                      className="relative"
+                      {...getHeaderProps('created_by')}
+                    >
+                      <span
+                        className="col-resize-handle"
+                        {...getResizeHandleProps('created_by')}
+                      />
+                    </SortableTableHead>
+                  )}
+                  {isVisible('created_at') && (
+                    <SortableTableHead
+                      label="Created On"
+                      columnId="created_at"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={toggleSort}
+                      className="relative"
+                      {...getHeaderProps('created_at')}
+                    >
+                      <span
+                        className="col-resize-handle"
+                        {...getResizeHandleProps('created_at')}
+                      />
+                    </SortableTableHead>
+                  )}
+                  {isVisible('updated_by') && (
+                    <SortableTableHead
+                      label="Last Updated By"
+                      columnId="updated_by"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={toggleSort}
+                      className="relative"
+                      {...getHeaderProps('updated_by')}
+                    >
+                      <span
+                        className="col-resize-handle"
+                        {...getResizeHandleProps('updated_by')}
+                      />
+                    </SortableTableHead>
+                  )}
                   <TableHead className="sticky-right-header">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -523,7 +748,9 @@ export default function NotesPage() {
                           className="h-[52px] px-4 py-2"
                           colSpan={
                             visibility
-                              ? Object.values(visibility).filter((v) => v !== false).length + 1
+                              ? Object.values(visibility).filter(
+                                  (v) => v !== false,
+                                ).length + 1
                               : 6
                           }
                         >
@@ -567,7 +794,9 @@ export default function NotesPage() {
                       )}
                       {isVisible('content') && (
                         <TableCell className="primary-text-medium">
-                          <p className="line-clamp-2 max-w-[400px] text-sm whitespace-pre-wrap">
+                          <p
+                            className={`line-clamp-2 max-w-[400px] text-sm whitespace-pre-wrap ${note.is_closed ? 'text-muted-foreground line-through' : ''}`}
+                          >
                             {note.content}
                           </p>
                         </TableCell>
@@ -605,7 +834,7 @@ export default function NotesPage() {
                               size="icon"
                               className="h-8 w-8"
                             >
-                              <MoreHorizontal className="h-4 w-4" />
+                              <MoreVertical className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
@@ -615,6 +844,31 @@ export default function NotesPage() {
                             >
                               <Edit className="h-4 w-4" /> Edit Note
                             </DropdownMenuItem>
+                            {note.is_closed ? (
+                              <DropdownMenuItem
+                                className="gap-2"
+                                onClick={() =>
+                                  updateMutation.mutate({
+                                    id: note.id,
+                                    is_closed: false,
+                                  })
+                                }
+                              >
+                                <RotateCcw className="h-4 w-4" /> Reopen Note
+                              </DropdownMenuItem>
+                            ) : (
+                              <DropdownMenuItem
+                                className="gap-2"
+                                onClick={() =>
+                                  updateMutation.mutate({
+                                    id: note.id,
+                                    is_closed: true,
+                                  })
+                                }
+                              >
+                                <Check className="h-4 w-4" /> Close Note
+                              </DropdownMenuItem>
+                            )}
                             <DropdownMenuItem
                               className="gap-2 text-red-500"
                               onClick={() => handleDelete(note.id)}
@@ -631,7 +885,8 @@ export default function NotesPage() {
                     <TableCell
                       colSpan={
                         visibility
-                          ? Object.values(visibility).filter((v) => v !== false).length + 1
+                          ? Object.values(visibility).filter((v) => v !== false)
+                              .length + 1
                           : 10
                       }
                       className="text-muted-foreground h-24 text-center"
@@ -650,11 +905,11 @@ export default function NotesPage() {
 
       {/* Create Dialog */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="flex max-h-[90vh] flex-col p-0 max-w-[600px]">
+        <DialogContent className="flex max-h-[90vh] max-w-[600px] flex-col p-0">
           <DialogHeader className="border-b p-6 pb-4">
             <DialogTitle>Add New Note</DialogTitle>
           </DialogHeader>
-          <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+          <div className="flex-1 space-y-4 overflow-y-auto px-6 py-4">
             <div className="space-y-4">
               <Label>Associate with</Label>
               <RadioGroup
@@ -746,7 +1001,7 @@ export default function NotesPage() {
               />
             </div>
           </div>
-          <div className="border-t p-6 mt-auto flex justify-end gap-2">
+          <div className="mt-auto flex justify-end gap-2 border-t p-6">
             <Button
               variant="outline"
               onClick={() => setIsCreateDialogOpen(false)}
@@ -757,9 +1012,7 @@ export default function NotesPage() {
             <Button
               onClick={handleCreate}
               disabled={
-                createMutation.isPending ||
-                !newNoteContent.trim() ||
-                !entityId
+                createMutation.isPending || !newNoteContent.trim() || !entityId
               }
             >
               {createMutation.isPending && (
@@ -777,7 +1030,7 @@ export default function NotesPage() {
           <DialogHeader className="border-b p-6 pb-4">
             <DialogTitle>Edit Note</DialogTitle>
           </DialogHeader>
-          <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+          <div className="flex-1 space-y-4 overflow-y-auto px-6 py-4">
             <Textarea
               placeholder="Enter note content..."
               value={editContent}
@@ -785,7 +1038,7 @@ export default function NotesPage() {
               rows={6}
             />
           </div>
-          <div className="border-t p-6 mt-auto flex justify-end gap-2">
+          <div className="mt-auto flex justify-end gap-2 border-t p-6">
             <Button
               variant="outline"
               onClick={() => setIsEditDialogOpen(false)}

@@ -183,6 +183,12 @@ export const getCoreEmailActivityController = catchAsync(
           !accountEmail || account.email === accountEmail,
       )
       .map((account: { id: number; email: string }) => account.id);
+    const inboxEmails = accessibleInboxAccounts
+      .filter(
+        (account: { id: number; email: string }) =>
+          !accountEmail || account.email === accountEmail,
+      )
+      .map((account: { id: number; email: string }) => account.email);
 
     if (inboxAccountIds.length === 0) {
       return successDataResponse('Email activity retrieved successfully', {
@@ -198,8 +204,17 @@ export const getCoreEmailActivityController = catchAsync(
       .from('emails')
       .select('*,email_relations(*)', { count: 'exact' })
       .eq('workspace_id', resolvedWorkspaceId!)
-      .eq('is_deleted', false)
-      .in('email_account_id', inboxAccountIds);
+      .eq('is_deleted', false);
+
+    const inboxIdentityFilters = [
+      `email_account_id.in.(${inboxAccountIds.join(',')})`,
+      ...inboxEmails.flatMap((email: string) => [
+        `from_email.ilike.${email}`,
+        `to_email.ilike.${email}`,
+      ]),
+    ];
+
+    query = query.or(inboxIdentityFilters.join(','));
 
     if (direction === 'inbound' || direction === 'outbound') {
       query = query.eq('direction', direction);

@@ -5,33 +5,53 @@ import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeft,
+  Bell,
   Briefcase,
   Building2,
+  Calendar,
+  ChevronDown,
   Clock,
+  Download,
   Edit2,
+  Factory,
+  FileStack,
+  FileText,
+  Flag,
+  Globe,
+  Linkedin,
   Mail,
   MapPin,
   Phone,
+  Plus,
+  RefreshCw,
   Trash2,
   User,
+  Users,
+  CheckSquare,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { CoreEmailComposeDialog } from '@kit/core/pages';
 import { getCoreEmailAccountsService } from '@kit/core/services';
-import { formatDate, formatDateTime } from '@kit/shared/utils';
+import { useLocalization } from '~/lib/localization/localization-provider';
 import { useUser } from '@kit/supabase/hooks/use-user';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@kit/ui/accordion';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@kit/ui/card';
-import { CardWidgetContainer } from '@kit/ui/card-widget-container';
-import { CustomInputForView } from '@kit/ui/custom-input-for-view';
 import { DetailHeader } from '@kit/ui/detail-header';
+import { DetailInfoList, DetailInfoRow } from '@kit/ui/detail-info-row';
 import { PageBody, PageHeader } from '@kit/ui/page';
 import { Skeleton } from '@kit/ui/skeleton';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@kit/ui/tabs';
 import {
   Tooltip,
   TooltipContent,
@@ -47,6 +67,12 @@ import {
 } from '~/lib/permissions/use-permissions';
 import { ModuleGuard } from '~/lib/rbac/module-guard';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
+import { useFieldPermissions } from '~/lib/hooks/use-field-permissions';
+import { useDynamicColumns } from '~/lib/hooks/use-dynamic-columns';
+import {
+  assignLeadToUser,
+  getLeadAssignees,
+} from '~/services/lead-assignees.service';
 import {
   getLeadByIdService,
   getLeadStatusesService,
@@ -62,16 +88,19 @@ import {
 import { EntityCalls } from '../../_components/entity-calls';
 import { EntityEmails } from '../../_components/entity-emails';
 import { EntityNotes } from '../../_components/entity-notes';
+import { EntityTasks } from '../../_components/entity-tasks';
+import { AssignUserModal } from '../components/assign-user-modal';
 import { ChangeStatusDialog } from '../components/change-status-dialog';
 import { ConvertLeadDialog } from '../components/convert-lead-dialog';
 import EditLeadDialog from '../components/edit-lead-dialog';
 import { LeadAssignees } from '../components/lead-assignees';
 import { LogCallDialog } from '../components/log-call-dialog';
+import { CardWidgetContainer } from '@kit/ui/card-widget-container';
 
 function LeadDetailsSkeleton() {
   return (
     <div className="flex h-full flex-col">
-      <div className="px-6 pb-2 pt-4">
+      <div className="px-6 pt-4 pb-2">
         <Skeleton className="h-8 w-20 rounded-md" />
       </div>
       <PageBody>
@@ -143,6 +172,7 @@ export default function LeadDetailsPage() {
   const router = useRouter();
   const params = useParams();
   const { currentWorkspace: workspace, canAccess } = useRBAC();
+  const { formatDate, formatDateTime } = useLocalization();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [statusModalOpen, setStatusModalOpen] = useState(false);
@@ -150,11 +180,36 @@ export default function LeadDetailsPage() {
   const [isLogCallDialogOpen, setIsLogCallDialogOpen] = useState(false);
   const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [openAccordion, setOpenAccordion] = useState<string>('');
 
   const queryClient = useQueryClient();
 
   const leadId = params?.id as string;
   const canManageEmail = canAccess('emails', 'manage_email');
+
+  // Page-level assign modal (works even when accordion is collapsed)
+  const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+  const { data: pageAssignees = [] } = useQuery({
+    queryKey: ['lead-assignees', leadId],
+    queryFn: async () => {
+      const res = await getLeadAssignees(leadId);
+      return res?.data ?? [];
+    },
+    enabled: !!leadId,
+  });
+  const pageAssignMutation = useMutation({
+    mutationFn: (userId: string) =>
+      assignLeadToUser(leadId, { assigned_to_user_id: userId }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['lead-assignees', leadId] });
+      toast.success('User assigned to lead');
+      setIsAssignModalOpen(false);
+    },
+    onError: (error: any) => {
+      const message = error?.response?.data?.message || 'Failed to assign user';
+      toast.error(message);
+    },
+  });
 
   const {
     data: lead,
@@ -212,6 +267,32 @@ export default function LeadDetailsPage() {
       source_id: lead.source_id,
     });
   }, [lead]);
+
+  const { canView } = useFieldPermissions({
+    entityType: 'leads',
+    workspaceId: workspace?.id,
+    enabled: !!workspace?.id,
+  });
+
+  const { fields = [] } = useDynamicColumns({
+    entityType: 'leads',
+    workspaceId: workspace?.id,
+    userId: user?.id,
+    enabled: !!workspace?.id,
+  });
+
+  const customFieldsToShow = useMemo(() => {
+    if (!lead) return [];
+    const leadCustom = (lead.custom_fields as Record<string, unknown>) || {};
+    return fields.filter(
+      (f) =>
+        !f.is_system &&
+        canView(f.field_key) &&
+        leadCustom[f.field_key] !== undefined &&
+        leadCustom[f.field_key] !== null &&
+        leadCustom[f.field_key] !== '',
+    );
+  }, [fields, canView, lead]);
 
   if (!workspace) {
     // Workspace context still hydrating; show skeleton, same as isLoading.
@@ -286,7 +367,7 @@ export default function LeadDetailsPage() {
   }) => (
     <div className="flex items-start justify-between">
       <div>
-        <p className="text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">
+        <p className="text-xs font-semibold tracking-wide text-gray-600 uppercase dark:text-gray-400">
           {label}
         </p>
         <p className="mt-1 text-sm text-gray-900 dark:text-white">
@@ -298,7 +379,7 @@ export default function LeadDetailsPage() {
 
   return (
     <ModuleGuard module="leads">
-      <div className="flex w-full items-center justify-between pb-2 pt-4">
+      <div className="flex flex-wrap items-start gap-2 pt-4 pb-2 sm:flex-nowrap sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
           <Button
             variant="ghost"
@@ -307,30 +388,125 @@ export default function LeadDetailsPage() {
             className="border-leadgaze-border border p-0"
           >
             <Link href="/home/sales/leads">
-              <ArrowLeft className="ml-2 mr-2 h-4 w-4" />
+              <ArrowLeft className="mr-2 ml-2 h-4 w-4" />
             </Link>
           </Button>
           <div className="flex flex-col">
-            <h1 className="text-lg font-semibold">Lead details</h1>
+            <h1 className="text-leadgaze-dark text-lg font-bold dark:text-white">
+              Lead details
+            </h1>
             <p className="text-leadgaze-muted text-sm">
               View and edit lead information
             </p>
           </div>
         </div>
-        {canEdit && (
-          <Button
-            variant="default"
-            size="sm"
-            onClick={() => setIsEditDialogOpen(true)}
-            className="gap-2"
-          >
-            <Edit2 className="h-4 w-4" />
-            Edit Profile
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {canEdit && (
+            <TooltipProvider delayDuration={300}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setStatusModalOpen(true)}
+                    className="gap-2"
+                    disabled={isSaving}
+                  >
+                    <Flag className="h-4 w-4" />
+                    <span className="hidden sm:inline">Change Status</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent className="sm:hidden">
+                  Change Status
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+
+          {canEdit && (
+            <TooltipProvider delayDuration={300}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsLogCallDialogOpen(true)}
+                    className="gap-2"
+                    title="Log a call"
+                  >
+                    <Phone className="h-4 w-4" />
+                    <span className="hidden sm:inline">Log Call</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent className="sm:hidden">Log Call</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+
+          {canManageEmail && (
+            <TooltipProvider delayDuration={300}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className={`gap-2 ${!lead.email ? 'opacity-50' : ''}`}
+                    disabled={!lead.email}
+                    onClick={() => lead.email && setIsEmailDialogOpen(true)}
+                    title={
+                      !lead.email
+                        ? 'Lead has no email address'
+                        : 'Send email to lead'
+                    }
+                  >
+                    <Mail className="h-4 w-4" />
+                    <span className="hidden sm:inline">Send Email</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent className="sm:hidden">
+                  {!lead.email ? 'Lead has no email' : 'Send Email'}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+
+          {!lead.is_converted_to_account && canConvert && (
+            <TooltipProvider delayDuration={300}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleConvertLead}
+                    className="gap-2"
+                    disabled={isSaving}
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                    <span className="hidden sm:inline">Convert Lead</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent className="sm:hidden">
+                  Convert Lead
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+
+          {canEdit && (
+            <Button
+              variant="default"
+              size="sm"
+              onClick={() => setIsEditDialogOpen(true)}
+              className="gap-2"
+            >
+              <Edit2 className="h-4 w-4" />
+              <span className="hidden sm:inline">Edit Profile</span>
+            </Button>
+          )}
+        </div>
       </div>
 
-      <PageBody className="pb-6">
+      <PageBody className="pb-6 lg:overflow-hidden">
         <DeleteEntityDialog
           isOpen={deleteDialogOpen}
           onOpenChange={setDeleteDialogOpen}
@@ -339,13 +515,13 @@ export default function LeadDetailsPage() {
           entityName={`${lead.first_name} ${lead.last_name || ''}`}
           onSuccess={() => router.push('/home/sales/leads')}
         />
-        <div className="grid gap-6 lg:grid-cols-3">
+        <div className="flex w-full flex-col gap-4 lg:min-h-0 lg:flex-1 lg:flex-row">
           {/* Main Content */}
-          <div className="space-y-6 lg:col-span-2">
+          <div className="w-full space-y-4 lg:w-[65%] lg:overflow-y-auto">
             <DetailHeader
               avatar={
                 <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-blue-400 to-blue-600 text-lg font-semibold text-white">
-                  {lead.first_name.charAt(0)}
+                  {lead.first_name?.charAt(0)}
                   {lead.last_name?.charAt(0)}
                 </div>
               }
@@ -368,272 +544,232 @@ export default function LeadDetailsPage() {
                   <div className="flex items-center gap-1.5 text-xs text-gray-500">
                     <Clock className="h-3 w-3" />
                     <span>
-                      Created on{' '}
-                      {new Date(lead.created_at).toLocaleDateString(undefined, {
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric',
-                      })}
+                      Created by {lead.created_by_account?.name || 'Unknown'} on {formatDate(lead.created_at)}
                     </span>
                   </div>
+                  {lead.updated_by && (
+                    <>
+                      <div className="hidden h-1 w-1 rounded-full bg-gray-300 sm:block dark:bg-gray-600" />
+                      <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                        <Clock className="h-3 w-3" />
+                        <span>
+                          Updated by {lead.updated_by_account?.name || 'Unknown'} on {formatDate(lead.updated_at)}
+                        </span>
+                      </div>
+                    </>
+                  )}
                 </>
               }
               email={lead.email || undefined}
-              actions={
-                <div className="flex gap-2">
-                  {canEdit && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setStatusModalOpen(true)}
-                      className="flex h-8 items-center justify-center px-4"
-                      disabled={isSaving}
-                    >
-                      Change Status
-                    </Button>
-                  )}
+              right={
+                lead.lead_score !== null ? (
+                  <div className="mx-auto flex flex-col items-center gap-1 lg:mx-0">
+                    <span className="primary-text-medium text-leadgaze-dark dark:text-white">
+                      Lead Score
+                    </span>
 
-                  {canEdit && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setIsLogCallDialogOpen(true)}
-                      className="p-3"
-                      title="Log a call"
-                    >
-                      <div className="flex items-center justify-center rounded-full bg-[#44bbb3] p-2">
-                        <Phone className="h-3 w-3 text-white" />
+                    <div className="relative h-15 w-15 shrink-0">
+                      <svg
+                        className="h-full w-full -rotate-90 transform"
+                        viewBox="0 0 100 100"
+                      >
+                        <circle
+                          cx="50"
+                          cy="50"
+                          r="45"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="3"
+                          className="text-gray-200 dark:text-gray-700"
+                        />
+                        <circle
+                          cx="50"
+                          cy="50"
+                          r="45"
+                          fill="none"
+                          stroke={statusColor}
+                          strokeWidth="3"
+                          strokeDasharray={`${((scoringResult?.totalScore ?? lead.lead_score) / 100) * 283} 283`}
+                          strokeLinecap="round"
+                        />
+                      </svg>
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <span className="primary-heading text-gray-900 dark:text-white">
+                          {scoringResult?.totalScore ?? lead.lead_score}
+                        </span>
                       </div>
-                    </Button>
-                  )}
-
-                  {canManageEmail && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className={`flex h-8 w-8 items-center justify-center overflow-hidden p-0 ${!lead.email ? 'opacity-50' : ''}`}
-                      disabled={!lead.email}
-                      onClick={() => lead.email && setIsEmailDialogOpen(true)}
-                      title={
-                        !lead.email
-                          ? 'Lead has no email address'
-                          : 'Send email to lead'
-                      }
-                    >
-                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-400">
-                        <Mail className="h-3.5 w-3.5 text-white" />
-                      </div>
-                    </Button>
-                  )}
-
-                  {!lead.is_converted_to_account && canConvert && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleConvertLead}
-                      className="flex h-8 items-center justify-center px-4"
-                      disabled={isSaving}
-                    >
-                      Convert Lead
-                    </Button>
-                  )}
-                </div>
+                    </div>
+                  </div>
+                ) : undefined
               }
             />
-            {/* $$$$$$$$$$$$$*/}
-
-            {/* Comapny */}
-            <CardWidgetContainer
-              title="Company"
-              icon={
-                <User className="text-leadgaze-dark h-5 w-5 dark:text-white" />
-              }
+            {/* Tabs Section */}
+            <Tabs
+              defaultValue={canManageEmail ? 'email' : 'notes'}
+              className="space-y-4"
             >
-              <div className="flex-1">
-                <div className="grid grid-cols-1 gap-4 px-6 py-3 md:grid-cols-2">
-                  {lead.company_name && (
-                    <CustomInputForView
-                      label="Company"
-                      value={lead.company_name}
-                    />
-                  )}
+              <TabsList className="mb-2 h-auto w-full justify-start gap-3 overflow-x-auto rounded-none border-b bg-transparent p-0 [-ms-overflow-style:none] [scrollbar-width:none] sm:gap-6 [&::-webkit-scrollbar]:hidden">
+                {canManageEmail && (
+                  <TabsTrigger
+                    value="email"
+                    className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
+                  >
+                    <Mail className="mr-2 h-4 w-4" />
+                    Email
+                  </TabsTrigger>
+                )}
+                <TabsTrigger
+                  value="notes"
+                  className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
+                >
+                  <FileText className="mr-2 h-4 w-4" />
+                  Notes
+                </TabsTrigger>
+                <TabsTrigger
+                  value="meetings"
+                  className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
+                >
+                  <Calendar className="mr-2 h-4 w-4" />
+                  Meetings
+                </TabsTrigger>
+                <TabsTrigger
+                  value="calls"
+                  className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
+                >
+                  <Phone className="mr-2 h-4 w-4" />
+                  Calls
+                </TabsTrigger>
+                <TabsTrigger
+                  value="reminders"
+                  className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
+                >
+                  <Bell className="mr-2 h-4 w-4" />
+                  Reminders
+                </TabsTrigger>
+                <TabsTrigger
+                  value="tasks"
+                  className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
+                >
+                  <CheckSquare className="mr-2 h-4 w-4" />
+                  Tasks
+                </TabsTrigger>
+                <TabsTrigger
+                  value="documents"
+                  className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
+                >
+                  <FileText className="mr-2 h-4 w-4" />
+                  Documents
+                </TabsTrigger>
+                <TabsTrigger
+                  value="activity"
+                  className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
+                >
+                  <Clock className="mr-2 h-4 w-4" />
+                  Activity
+                </TabsTrigger>
+              </TabsList>
 
-                  {lead.job_title && (
-                    <CustomInputForView
-                      label="Job Title"
-                      value={lead.job_title}
-                    />
-                  )}
-                  {lead.industry && (
-                    <CustomInputForView
-                      label="Industry"
-                      value={lead.industry.industry_name}
-                    />
-                  )}
-                  {lead.company_size && (
-                    <CustomInputForView
-                      label="Company Size"
-                      value={lead.company_size}
-                    />
-                  )}
-                  {lead.company_website ? (
-                    <CustomInputForView
-                      label="Website"
-                      value={
-                        <a
-                          href={lead.company_website}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="block break-all text-sm text-blue-600 hover:underline dark:text-blue-400"
-                        >
-                          {lead.company_website}
-                        </a>
-                      }
-                    />
-                  ) : null}
-                  {lead.company_linkedin_url ? (
-                    <CustomInputForView
-                      label="Company LinkedIn"
-                      value={
-                        <a
-                          href={lead.company_linkedin_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="block break-all text-sm text-blue-600 hover:underline dark:text-blue-400"
-                        >
-                          {lead.company_linkedin_url}
-                        </a>
-                      }
-                    />
-                  ) : null}
-                  {lead.department && (
-                    <CustomInputForView
-                      label="Department"
-                      value={lead.department}
-                    />
-                  )}
-                  {lead.notes && (
-                    <CustomInputForView
-                      label="Notes"
-                      value={lead.notes}
-                      as="textarea"
-                    />
-                  )}
-                </div>
-              </div>
-            </CardWidgetContainer>
+              {canManageEmail && (
+                <TabsContent
+                  value="email"
+                  className="max-h-[500px] overflow-y-auto"
+                >
+                  <EntityEmails
+                    entityId={leadId}
+                    entityType="lead"
+                    entityName={fullName}
+                    entityEmail={lead.email || undefined}
+                  />
+                </TabsContent>
+              )}
 
-            {/* Contact Information Section */}
-            <CardWidgetContainer
-              title="Contact"
-              icon={
-                <User className="text-leadgaze-dark h-5 w-5 dark:text-white" />
-              }
-            >
-              <div className="flex-1">
-                <div className="grid grid-cols-1 gap-4 px-6 py-3 md:grid-cols-2">
-                  {lead.email && (
-                    <CustomInputForView
-                      label="Primary Email"
-                      value={
-                        <a
-                          href={`mailto:${lead.email}`}
-                          className="block break-all text-sm text-blue-600 hover:underline dark:text-blue-400"
-                        >
-                          {lead.email}
-                        </a>
-                      }
-                    />
-                  )}
+              <TabsContent
+                value="notes"
+                className="max-h-[500px] overflow-y-auto"
+              >
+                <EntityNotes entityType="lead" entityId={leadId} />
+              </TabsContent>
 
-                  {lead.alt_email && (
-                    <CustomInputForView
-                      label="Alternative Email"
-                      value={
-                        <a
-                          href={`mailto:${lead.alt_email}`}
-                          className="block break-all text-sm text-blue-600 hover:underline dark:text-blue-400"
-                        >
-                          {lead.alt_email}
-                        </a>
-                      }
-                    />
-                  )}
+              <TabsContent
+                value="meetings"
+                className="max-h-[500px] overflow-y-auto"
+              >
+                <EntityMeetings entityType="lead" entityId={leadId} />
+              </TabsContent>
 
-                  {lead.phone_number && (
-                    <CustomInputForView
-                      label="Phone"
-                      value={
-                        <a
-                          href={`tel:${lead.phone_number}`}
-                          className="block text-sm text-gray-700 dark:text-gray-300"
-                        >
-                          {lead.phone_number}
-                        </a>
-                      }
-                    />
-                  )}
+              <TabsContent
+                value="calls"
+                className="max-h-[500px] overflow-y-auto"
+              >
+                <EntityCalls entityType="lead" entityId={leadId} />
+              </TabsContent>
 
-                  {lead.mobile_number && (
-                    <CustomInputForView
-                      label="Mobile"
-                      value={
-                        <a
-                          href={`tel:${lead.mobile_number}`}
-                          className="block text-sm text-gray-700 dark:text-gray-300"
-                        >
-                          {lead.mobile_number}
-                        </a>
-                      }
-                    />
-                  )}
+              <TabsContent
+                value="reminders"
+                className="max-h-[500px] overflow-y-auto"
+              >
+                <EntityReminders entityType="lead" entityId={leadId} />
+              </TabsContent>
 
-                  {lead.location && (
-                    <CustomInputForView
-                      label="Location"
-                      value={lead.location}
-                    />
-                  )}
+              <TabsContent
+                value="documents"
+                className="max-h-[500px] overflow-y-auto"
+              >
+                <EntityDocuments entityType="lead" entityId={leadId} />
+              </TabsContent>
 
-                  {lead.timezone && (
-                    <CustomInputForView
-                      label="Timezone"
-                      value={lead.timezone}
-                    />
-                  )}
+              <TabsContent
+                value="tasks"
+                className="max-h-[500px] overflow-y-auto"
+              >
+                <EntityTasks entityType="lead" entityId={leadId} />
+              </TabsContent>
 
-                  {lead.linkedin_url && (
-                    <CustomInputForView
-                      label="LinkedIn"
-                      value={
-                        <a
-                          href={lead.linkedin_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="block break-all text-sm text-blue-600 hover:underline dark:text-blue-400"
-                        >
-                          {lead.linkedin_url}
-                        </a>
-                      }
-                    />
-                  )}
-                </div>
-              </div>
-            </CardWidgetContainer>
-
-            {/* Notes Section */}
-            <EntityNotes entityType="lead" entityId={leadId} />
+              <TabsContent value="activity">
+                <CardWidgetContainer
+                  title="Activity"
+                  hideHeaderBorder={true}
+                  icon={<Clock className="text-leadgaze-dark h-5 w-5 dark:text-white" />}>
+                  <CardContent className="px-6 py-3">
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3 dark:bg-slate-900">
+                        <div className="h-2 w-2 rounded-full bg-green-500" />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium text-gray-900 dark:text-white">
+                            Lead Created
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {formatDate(lead.created_at)}
+                          </p>
+                        </div>
+                      </div>
+                      {lead.updated_at &&
+                        lead.updated_at !== lead.created_at && (
+                          <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3 dark:bg-slate-900">
+                            <div className="h-2 w-2 rounded-full bg-blue-500" />
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-medium text-gray-900 dark:text-white">
+                                Lead Updated
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                {formatDate(lead.updated_at)}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                    </div>
+                  </CardContent>
+                </CardWidgetContainer>
+              </TabsContent>
+            </Tabs>
 
             {/* Danger Zone */}
             {canAccess('leads', 'delete') && (
-              <Card className="border-destructive/50 border-solid">
-                <CardHeader>
-                  <CardTitle className="text-destructive text-lg"></CardTitle>
-                </CardHeader>
+              <Card className="border-destructive/50 hidden border-solid lg:block">
                 <CardContent>
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-1">
-                      <p className="font-medium">Delete Lead</p>
+                  <div className="mt-6 flex flex-col items-center justify-between md:flex-row">
+                    <div className="mb-2 space-y-1">
+                      <p className="font-medium dark:text-white">Delete Lead</p>
                       <p className="text-muted-foreground text-sm">
                         Once you delete a lead, there is no going back. Please
                         be certain.
@@ -667,281 +803,380 @@ export default function LeadDetailsPage() {
           </div>
 
           {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Lead Scoring Card */}
-            {lead.lead_score !== null && (
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="flex flex-row items-start justify-between gap-6">
-                    {/* Left side: Breakdown */}
-                    <div className="w-full flex-1 space-y-4">
-                      <h3 className="mb-2 text-base font-semibold text-zinc-950 dark:text-white">
-                        Lead Score
-                      </h3>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-gray-600 dark:text-gray-400">
-                          Total Score
-                        </span>
-                        <span className="font-semibold text-gray-900 dark:text-white">
-                          {scoringResult?.totalScore ?? lead.lead_score} / 100
-                        </span>
-                      </div>
+          <div className="w-full space-y-4 lg:w-[35%] lg:overflow-y-auto">
+            {/* Accordion Sections */}
+            <Accordion
+              type="single"
+              collapsible
+              className="space-y-2"
+              value={openAccordion}
+              onValueChange={setOpenAccordion}
+            >
+              {/* Company */}
+              <AccordionItem
+                value="company"
+                className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
+              >
+                <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                  <span className="primary-heading text-leadgaze-dark flex items-center gap-2 dark:text-white">
+                    <Building2 className="text-leadgaze-dark h-5 w-5 dark:text-white" />
+                    Company Details
+                  </span>
+                </AccordionTrigger>
+                <AccordionContent className="px-4 pb-4">
+                  <DetailInfoList>
 
-                      {scoringResult && (
-                        <div className="space-y-3 border-t pt-4">
-                          <p className="text-xs font-bold uppercase tracking-wider text-gray-500">
-                            Breakdown
-                          </p>
+                    <DetailInfoRow
+                      icon={<Building2 className="h-5 w-5" />}
+                      label="Company Name"
+                      value={lead.company_name || '-'}
+                    />
 
-                          {/* Fit Score Breakdown */}
-                          <div className="space-y-1">
-                            <div className="flex justify-between text-xs font-semibold text-gray-400">
-                              <span>Fit Coverage</span>
-                              <span>{scoringResult.fitScore} / 60</span>
-                            </div>
-                            {Object.entries(scoringResult.breakdown.fit).map(
-                              ([label, score]) => (
-                                <div
-                                  key={label}
-                                  className="flex justify-between text-xs"
-                                >
-                                  <span className="text-gray-600 dark:text-gray-400">
-                                    {label}
-                                  </span>
-                                  <span className="font-medium text-green-600">
-                                    +{score}
-                                  </span>
-                                </div>
-                              ),
-                            )}
-                          </div>
+                    {/* {lead.job_title && (
+                      <DetailInfoRow
+                        icon={<Briefcase className="h-4 w-4" />}
+                        label="Job Title"
+                        value={lead.job_title}
+                      />
+                    )} */}
 
-                          {/* Engagement Score Breakdown */}
-                          {Object.keys(scoringResult.breakdown.engagement)
-                            .length > 0 && (
-                            <div className="space-y-1 pt-2">
-                              <p className="text-xs font-semibold text-gray-400">
-                                Engagement
-                              </p>
-                              {Object.entries(
-                                scoringResult.breakdown.engagement,
-                              ).map(([label, score]) => (
-                                <div
-                                  key={label}
-                                  className="flex justify-between text-xs"
-                                >
-                                  <span className="text-gray-600 dark:text-gray-400">
-                                    {label}
-                                  </span>
-                                  <span className="font-medium text-blue-600">
-                                    +{score}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          )}
+                    <DetailInfoRow
+                      icon={<Factory className="h-5 w-5" />}
+                      label="Industry"
+                      value={lead?.industry?.industry_name ?? '-'}
+                    />
 
-                          {/* Adjustments (Status) */}
-                          {Object.keys(scoringResult.breakdown.adjustments)
-                            .length > 0 && (
-                            <div className="space-y-1 pt-2">
-                              <p className="text-xs font-semibold text-gray-400">
-                                Status Adjustments
-                              </p>
-                              {Object.entries(
-                                scoringResult.breakdown.adjustments,
-                              ).map(([label, score]) => (
-                                <div
-                                  key={label}
-                                  className="flex justify-between text-xs"
-                                >
-                                  <span className="text-gray-600 dark:text-gray-400">
-                                    {label}
-                                  </span>
-                                  <span
-                                    className={cn(
-                                      'font-medium',
-                                      score > 0
-                                        ? 'text-green-600'
-                                        : score === -100
-                                          ? 'text-red-600'
-                                          : 'text-amber-600',
-                                    )}
-                                  >
-                                    {score > 0
-                                      ? `+${score}`
-                                      : score === -100
-                                        ? 'Reset'
-                                        : score}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
 
-                    {/* Right side: Circular Progress Indicator */}
-                    <div className="flex flex-shrink-0 items-center justify-center self-center sm:self-start">
-                      <div className="relative h-24 w-24">
-                        <svg
-                          className="h-full w-full -rotate-90 transform"
-                          viewBox="0 0 100 100"
+                    <DetailInfoRow
+                      icon={<Users className="h-5 w-5" />}
+                      label="Company Size"
+                      value={lead?.company_size || '-'}
+                    />
+
+
+                    <DetailInfoRow
+                      icon={<Globe className="h-5 w-5" />}
+                      label="Website"
+                      value={
+                        lead.company_website ? <a
+                          href={lead.company_website}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline dark:text-blue-400"
                         >
-                          <circle
-                            cx="50"
-                            cy="50"
-                            r="45"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            className="text-gray-200 dark:text-gray-700"
-                          />
-                          <circle
-                            cx="50"
-                            cy="50"
-                            r="45"
-                            fill="none"
-                            stroke={statusColor}
-                            strokeWidth="2"
-                            strokeDasharray={`${((scoringResult?.totalScore ?? lead.lead_score) / 100) * 283} 283`}
-                            strokeLinecap="round"
-                          />
-                        </svg>
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <span className="text-2xl font-bold text-gray-900 dark:text-white">
-                            {scoringResult?.totalScore ?? lead.lead_score}
-                          </span>
-                        </div>
+                          {lead.company_website}
+                        </a> : '-'}
+                    />
+
+                    {/* {lead.company_linkedin_url && (
+                      <DetailInfoRow
+                        icon={<Linkedin className="h-5 w-5" />}
+                        label="LinkedIn"
+                        value={
+                          <a
+                            href={lead.company_linkedin_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:underline dark:text-blue-400"
+                          >
+                            {lead.company_linkedin_url}
+                          </a>
+                        }
+                      />
+                    )} */}
+                    {/* {lead.department && (
+                      <DetailInfoRow
+                        icon={<FileText className="h-5 w-5" />}
+                        label="Department"
+                        value={lead.department}
+                      />
+                    )} */}
+                    {/* {lead.notes && (
+                      <DetailInfoRow
+                        icon={<FileText className="h-4 w-4" />}
+                        label="Notes"
+                        value={lead.notes}
+                      />
+                    )} */}
+                  </DetailInfoList>
+                </AccordionContent>
+              </AccordionItem>
+
+              {/* Contact */}
+              <AccordionItem
+                value="contact"
+                className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
+              >
+                <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                  <span className="primary-heading text-leadgaze-dark flex items-center gap-2">
+                    <User className="text-leadgaze-dark h-5 w-5 dark:text-white" />
+                    Contact Details
+                  </span>
+                </AccordionTrigger>
+                <AccordionContent className="px-4 pb-4">
+                  <DetailInfoList>
+
+                    <DetailInfoRow
+                      icon={<Mail className="h-5 w-5" />}
+                      label="Email"
+                      value={
+                        lead.email ? <a
+                          href={`mailto:${lead.email}`}
+                          className="text-blue-600 hover:underline dark:text-blue-400"
+                        >
+                          {lead.email}
+                        </a> : '-'
+                      }
+                    />
+
+                    <DetailInfoRow
+                      icon={<Mail className="h-5 w-5" />}
+                      label="Alt Email"
+                      value={
+                        lead.alt_email ? <a
+                          href={`mailto:${lead.alt_email}`}
+                          className="text-blue-600 hover:underline dark:text-blue-400"
+                        >
+                          {lead.alt_email}
+                        </a> : '-'
+                      }
+                    />
+
+                    <DetailInfoRow
+                      icon={<Phone className="h-5 w-5" />}
+                      label="Phone"
+                      value={
+                        lead.phone_number ? <a href={`tel:${lead.phone_number}`}>
+                          {lead.phone_number}
+                        </a> : '-'
+                      }
+                    />
+
+                    <DetailInfoRow
+                      icon={<Phone className="h-5 w-5" />}
+                      label="Mobile"
+                      value={
+                        lead.mobile_number ? <a href={`tel:${lead.mobile_number}`}>
+                          {lead.mobile_number}
+                        </a> : '-'
+                      }
+                    />
+
+                    <DetailInfoRow
+                      icon={<MapPin className="h-5 w-5" />}
+                      label="Location"
+                      value={lead.location || '-'}
+                    />
+
+                    <DetailInfoRow
+                      icon={<Clock className="h-5 w-5" />}
+                      label="Timezone"
+                      value={lead.timezone || '-'}
+                    />
+
+                    <DetailInfoRow
+                      icon={<Linkedin className="h-5 w-5" />}
+                      label="LinkedIn"
+                      value={
+                        lead.linkedin_url ? <a
+                          href={lead.linkedin_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline dark:text-blue-400"
+                        >
+                          {lead.linkedin_url}
+                        </a> : '-'
+                      }
+                    />
+
+                  </DetailInfoList>
+                </AccordionContent>
+              </AccordionItem>
+
+              {/* Assigned Team Members */}
+              {workspace?.id && (
+                <AccordionItem
+                  value="assignees"
+                  className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
+                >
+                  <AccordionTrigger
+                    hideChevron
+                    className="px-4 py-3 hover:no-underline"
+                  >
+                    <div className="flex w-full justify-between">
+                      <span className="primary-heading text-leadgaze-dark flex items-center gap-2">
+                        <Users className="text-leadgaze-dark h-5 w-5 dark:text-white" />
+                        Assigned Members
+                      </span>
+                      <Button
+                        size="sm"
+                        className="mr-3 ml-2 shrink-0 gap-2"
+                        onPointerDown={(e) => e.stopPropagation()}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsAssignModalOpen(true);
+                        }}
+                      >
+                        <Plus className="h-4 w-4" />
+                        Assign Member
+                      </Button>
+                    </div>
+                    <ChevronDown
+                      className={cn(
+                        'text-muted-foreground h-4 w-4 shrink-0 transition-transform duration-200',
+                        openAccordion === 'assignees' && 'rotate-180',
+                      )}
+                    />
+                  </AccordionTrigger>
+                  <AccordionContent className="px-4 pb-4">
+                    <LeadAssignees
+                      leadId={leadId}
+                      workspaceId={workspace.id}
+                      embedded
+                    />
+                  </AccordionContent>
+                </AccordionItem>
+              )}
+
+              {/* Lead Owner */}
+              {lead.owner && (
+                <AccordionItem
+                  value="owner"
+                  className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
+                >
+                  <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                    <span className="primary-heading text-leadgaze-dark flex items-center gap-2">
+                      <User className="text-leadgaze-dark h-4 w-4 dark:text-white" />
+                      Lead Owner
+                    </span>
+                  </AccordionTrigger>
+                  <AccordionContent className="px-4 pb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-blue-400 to-blue-600 text-sm font-semibold text-white">
+                        {lead.owner.name?.charAt(0) || 'U'}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">
+                          {lead.owner.name}
+                        </p>
+                        <p className="truncate text-xs text-gray-600 dark:text-gray-400">
+                          {lead.owner.email}
+                        </p>
                       </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+                  </AccordionContent>
+                </AccordionItem>
+              )}
 
-            {/* Lead Assignees Section */}
-            {workspace?.id && (
-              <LeadAssignees leadId={leadId} workspaceId={workspace.id} />
-            )}
+              {/* Additional Data (Custom Fields) */}
+              {customFieldsToShow.length > 0 && (
+                <AccordionItem
+                  value="additional"
+                  className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
+                >
+                  <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                    <span className="primary-heading text-leadgaze-dark flex items-center gap-2">
+                      <FileText className="text-leadgaze-dark h-4 w-4 dark:text-white" />
+                      Additional Data
+                    </span>
+                  </AccordionTrigger>
+                  <AccordionContent className="px-4 pb-4">
+                    <DetailInfoList>
+                      {customFieldsToShow.map((field) => {
+                        const val = (lead.custom_fields as Record<string, unknown>)?.[field.field_key];
+                        return (
+                          <DetailInfoRow
+                            key={field.id}
+                            label={field.field_label}
+                            value={val === true ? 'Yes' : val === false ? 'No' : String(val ?? '-')}
+                          />
+                        );
+                      })}
+                    </DetailInfoList>
+                  </AccordionContent>
+                </AccordionItem>
+              )}
 
-            {/* Meetings */}
-            <EntityMeetings entityType="lead" entityId={leadId} />
-
-            {/* Email Activity (Drafts, Scheduled, Sent) */}
-            <EntityEmails
-              entityId={leadId}
-              entityType="lead"
-              entityName={fullName}
-              entityEmail={lead.email || undefined}
-            />
-
-            {/* Call Logs Section */}
-            <EntityCalls entityType="lead" entityId={leadId} />
-
-            {/* Activity Section */}
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0">
-                <div className="flex items-center gap-2">
-                  <Clock className="text-leadgaze-dark h-5 w-5 dark:text-white" />
-                  <CardTitle className="text-lg">Activity</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3 dark:bg-slate-900">
-                    <div className="h-2 w-2 rounded-full bg-green-500" />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-gray-900 dark:text-white">
-                        Lead Created
+              {/* Details / Metadata */}
+              {/* <AccordionItem value="details" className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900">
+                <AccordionTrigger className="hover:no-underline px-4 py-3">
+                  <span className="primary-heading text-leadgaze-dark flex items-center gap-2">
+                    <Clock className="text-leadgaze-dark h-4 w-4 dark:text-white" />
+                    Details
+                  </span>
+                </AccordionTrigger>
+                <AccordionContent className="px-4 pb-4">
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">
+                        Created
                       </p>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-sm text-gray-700 dark:text-gray-300">
                         {formatDate(lead.created_at)}
                       </p>
                     </div>
-                  </div>
-                  {lead.updated_at && lead.updated_at !== lead.created_at && (
-                    <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3 dark:bg-slate-900">
-                      <div className="h-2 w-2 rounded-full bg-blue-500" />
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-gray-900 dark:text-white">
-                          Lead Updated
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">
+                        Last Updated
+                      </p>
+                      <p className="text-sm text-gray-700 dark:text-gray-300">
+                        {formatDate(lead.updated_at)}
+                      </p>
+                    </div>
+                    {lead.lead_score !== null && (
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">
+                          Lead Score
                         </p>
-                        <p className="text-xs text-gray-500">
-                          {formatDate(lead.updated_at)}
+                        <p className="text-sm text-gray-700 dark:text-gray-300">
+                          {scoringResult?.totalScore ?? lead.lead_score}/100
                         </p>
                       </div>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+                    )}
+                  </div>
+                </AccordionContent>
+              </AccordionItem> */}
+            </Accordion>
+          </div>
 
-            {/* Owner Information */}
-            {lead.owner && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Lead Owner</CardTitle>
-                </CardHeader>
+          {/* Danger Zone */}
+          <div className="w-full lg:hidden">
+            {canAccess('leads', 'delete') && (
+              <Card className="border-destructive/50 border-solid">
                 <CardContent>
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-blue-400 to-blue-600 text-sm font-semibold text-white">
-                      {lead.owner.name?.charAt(0) || 'U'}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-gray-900 dark:text-white">
-                        {lead.owner.name}
-                      </p>
-                      <p className="truncate text-xs text-gray-600 dark:text-gray-400">
-                        {lead.owner.email}
+                  <div className="mt-6 flex flex-col items-center justify-between md:flex-row">
+                    <div className="mb-2 space-y-1">
+                      <p className="font-medium dark:text-white">Delete Lead</p>
+                      <p className="text-muted-foreground text-sm">
+                        Once you delete a lead, there is no going back. Please
+                        be certain.
                       </p>
                     </div>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span>
+                            <Button
+                              variant="destructive"
+                              disabled={!canAccess('leads', 'delete')}
+                              onClick={() => setDeleteDialogOpen(true)}
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Delete Lead
+                            </Button>
+                          </span>
+                        </TooltipTrigger>
+                        {!canAccess('leads', 'delete') && (
+                          <TooltipContent>
+                            <p>You do not have permission to delete</p>
+                          </TooltipContent>
+                        )}
+                      </Tooltip>
+                    </TooltipProvider>
                   </div>
                 </CardContent>
               </Card>
             )}
-
-            {/* Reminders */}
-            <EntityReminders entityType="lead" entityId={leadId} />
-
-            {/* Documents */}
-            <EntityDocuments entityType="lead" entityId={leadId} />
-
-            {/* Metadata */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Details</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">
-                    Created
-                  </p>
-                  <p className="text-sm text-gray-700 dark:text-gray-300">
-                    {formatDate(lead.created_at)}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">
-                    Last Updated
-                  </p>
-                  <p className="text-sm text-gray-700 dark:text-gray-300">
-                    {formatDate(lead.updated_at)}
-                  </p>
-                </div>
-                {lead.lead_score !== null && (
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">
-                      Lead Score
-                    </p>
-                    <p className="text-sm text-gray-700 dark:text-gray-300">
-                      {scoringResult?.totalScore ?? lead.lead_score}/100
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
           </div>
         </div>
       </PageBody>
@@ -1016,6 +1251,19 @@ export default function LeadDetailsPage() {
             lead_name: fullName,
             lead_email: lead.email,
           }}
+        />
+      )}
+
+      {/* Page-level Assign User Modal (works from accordion header even when collapsed) */}
+      {workspace?.id && (
+        <AssignUserModal
+          isOpen={isAssignModalOpen}
+          onOpenChange={setIsAssignModalOpen}
+          leadId={leadId}
+          workspaceId={workspace.id}
+          currentAssignees={pageAssignees}
+          onAssign={(userId) => pageAssignMutation.mutate(userId)}
+          isLoading={pageAssignMutation.isPending}
         />
       )}
     </ModuleGuard>

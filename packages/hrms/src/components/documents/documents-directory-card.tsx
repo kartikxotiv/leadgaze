@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 
-import { ExternalLink, FileText, MoreHorizontal } from 'lucide-react';
+import { ExternalLink, FileText, MoreHorizontal, MoreVertical } from 'lucide-react';
 
 import { Button } from '@kit/ui/button';
 import { CustomTableContainer } from '@kit/ui/custom-table-container';
@@ -25,6 +25,9 @@ import {
 import type { EmployeeDocument } from '../../types/document.type';
 import { useRbac } from '../rbac/rbac-context';
 import { formatDate } from '@kit/shared/utils';
+import { useColumnResize } from '@kit/ui/use-column-resize';
+import { useTableSort } from '@kit/ui/use-table-sort';
+import { SortableTableHead } from '@kit/ui/sortable-table-head';
 
 export function DocumentsDirectoryCard(props: {
   documents: Array<EmployeeDocument>;
@@ -43,28 +46,115 @@ export function DocumentsDirectoryCard(props: {
     Object.values(props.visibility).filter((value) => value !== false).length +
     1;
 
+  const { getHeaderProps, getResizeHandleProps } = useColumnResize('hrms-documents');
+
+  const { sortColumn, sortDirection, toggleSort, sortedData } = useTableSort<EmployeeDocument>(
+    'hrms-documents',
+    props.filteredDocuments
+  );
+
   return (
     <CustomTableContainer>
       <Table>
         <TableHeader>
           <TableRow>
             {props.isColumnVisible('sno') && (
-              <TableHead className="w-12 whitespace-nowrap">S. No.</TableHead>
+              <SortableTableHead
+                label="S. No."
+                columnId="sno"
+                sortColumn={sortColumn}
+                sortDirection={sortDirection}
+                onSort={toggleSort}
+                sortable={false}
+                className="relative w-12 whitespace-nowrap"
+                {...getHeaderProps('sno')}
+              >
+                <span className="col-resize-handle" {...getResizeHandleProps('sno')} />
+              </SortableTableHead>
             )}
             {props.isColumnVisible('document') && (
-              <TableHead>Document</TableHead>
+              <SortableTableHead
+                label="Document"
+                columnId="document"
+                sortKey="name"
+                sortColumn={sortColumn}
+                sortDirection={sortDirection}
+                onSort={toggleSort}
+                className="relative"
+                {...getHeaderProps('document')}
+              >
+                <span className="col-resize-handle" {...getResizeHandleProps('document')} />
+              </SortableTableHead>
             )}
             {props.isColumnVisible('employee') && (
-              <TableHead>Employee</TableHead>
+              <SortableTableHead
+                label="Employee"
+                columnId="employee"
+                sortKey="employee.first_name"
+                sortColumn={sortColumn}
+                sortDirection={sortDirection}
+                onSort={toggleSort}
+                className="relative"
+                {...getHeaderProps('employee')}
+              >
+                <span className="col-resize-handle" {...getResizeHandleProps('employee')} />
+              </SortableTableHead>
             )}
             {props.isColumnVisible('employee_code') && (
-              <TableHead>Employee Code</TableHead>
+              <SortableTableHead
+                label="Employee Code"
+                columnId="employee_code"
+                sortKey="employee.employee_code"
+                sortColumn={sortColumn}
+                sortDirection={sortDirection}
+                onSort={toggleSort}
+                className="relative"
+                {...getHeaderProps('employee_code')}
+              >
+                <span className="col-resize-handle" {...getResizeHandleProps('employee_code')} />
+              </SortableTableHead>
             )}
             {props.isColumnVisible('uploaded') && (
-              <TableHead>Uploaded</TableHead>
+              <SortableTableHead
+                label="Uploaded"
+                columnId="uploaded"
+                sortKey="uploaded_at"
+                sortColumn={sortColumn}
+                sortDirection={sortDirection}
+                onSort={toggleSort}
+                className="relative"
+                {...getHeaderProps('uploaded')}
+              >
+                <span className="col-resize-handle" {...getResizeHandleProps('uploaded')} />
+              </SortableTableHead>
             )}
-            {props.isColumnVisible('status') && <TableHead>Status</TableHead>}
-            {props.isColumnVisible('view') && <TableHead>View</TableHead>}
+            {props.isColumnVisible('status') && (
+              <SortableTableHead
+                label="Status"
+                columnId="status"
+                sortColumn={sortColumn}
+                sortDirection={sortDirection}
+                onSort={toggleSort}
+                className="relative"
+                {...getHeaderProps('status')}
+              >
+                <span className="col-resize-handle" {...getResizeHandleProps('status')} />
+              </SortableTableHead>
+            )}
+            {props.isColumnVisible('view') && (
+              <SortableTableHead
+                label="View"
+                columnId="view"
+                sortColumn={sortColumn}
+                sortDirection={sortDirection}
+                onSort={toggleSort}
+                sortable={false}
+                className="relative"
+                {...getHeaderProps('view')}
+              >
+                <span className="col-resize-handle" {...getResizeHandleProps('view')} />
+              </SortableTableHead>
+            )}
             <TableHead className="sticky right-0 px-4 text-right">
               Actions
             </TableHead>
@@ -103,7 +193,7 @@ export function DocumentsDirectoryCard(props: {
           ) : null}
 
           {!props.isLoading &&
-            props.filteredDocuments.map((document, index) => (
+            sortedData.map((document, index) => (
               <TableRow key={document.id} className="hover:bg-muted/50">
                 {props.isColumnVisible('sno') && (
                   <TableCell className="text-muted-foreground w-12">
@@ -172,7 +262,7 @@ export function DocumentsDirectoryCard(props: {
                           variant="ghost"
                           aria-label="Document actions"
                         >
-                          <MoreHorizontal className="h-4 w-4" />
+                          <MoreVertical className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
 
