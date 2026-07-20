@@ -50,12 +50,6 @@ import {
   getServiceCloudTicketLookupsService,
 } from '../../services';
 import {
-  type ServiceCloudRecord,
-  createServiceCloudResourceService,
-  getServiceCloudResourceService,
-  getServiceCloudTicketLookupsService,
-} from '../../services';
-import {
   SERVICE_CLOUD_FEATURE_KEYS,
   SERVICE_CLOUD_MODULE_KEYS,
   useServiceCloudPermissions,
@@ -166,10 +160,10 @@ export function ServiceCloudCustomersPage({
           ? 'All members'
           : selectedCreatedByIds.length === 1
             ? ((
-                (Array.isArray(teamMembers) ? teamMembers : []).find(
-                  (m: any) => m?.user_id === selectedCreatedByIds[0],
-                ) as any
-              )?.user?.user_metadata?.full_name ?? '1 selected')
+              (Array.isArray(teamMembers) ? teamMembers : []).find(
+                (m: any) => m?.user_id === selectedCreatedByIds[0],
+              ) as any
+            )?.user?.user_metadata?.full_name ?? '1 selected')
             : `${selectedCreatedByIds.length} selected`,
       options: (Array.isArray(teamMembers) ? teamMembers : [])
         .filter((m: any) => m?.user_id)
