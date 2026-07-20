@@ -57,7 +57,7 @@ import { useTeamMembers } from '~/lib/hooks/use-team-members';
 import { useLocalization } from '~/lib/localization/localization-provider';
 import { ModuleGuard } from '~/lib/rbac/module-guard';
 import { useModuleRoles, useRBAC } from '~/lib/rbac/rbac-provider';
-import { Account, getAccountsService } from '~/services/accounts.service';
+import { Account, getAccountsService, importAccountsService } from '~/services/accounts.service';
 
 import { DeleteEntityDialog } from '../_components/delete-entity-dialog';
 import { EntityActionsDropdown } from '../_components/entity-actions-dropdown';
@@ -543,21 +543,11 @@ export default function AccountsPage() {
 
   const importMutation = useMutation({
     mutationFn: async (payload: any[]) => {
-      const res = await fetch('/api/accounts/import', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          workspaceId: workspace?.id,
-          data: payload,
-        }),
+      if (!workspace?.id) throw new Error('Workspace ID is required');
+      return await importAccountsService({
+        workspaceId: workspace.id,
+        data: payload,
       });
-
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.message || 'Failed to import accounts');
-      }
-
-      return res.json();
     },
     onSuccess: (data, variables) => {
       toast.success(`Imported ${variables.length} accounts successfully`);
