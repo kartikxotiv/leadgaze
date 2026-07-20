@@ -11,6 +11,7 @@ import { ColumnEditModal } from '@kit/ui/column-edit-modal';
 import type { ColumnEditFieldShape } from '@kit/ui/column-edit-modal';
 import { CsvImportDialog } from '@kit/ui/csv-import-dialog';
 import { filterExportColumns, filterImportColumns } from '~/lib/field-permission';
+import { importTicketsService } from '~/services/tickets.service';
 
 import {
   type EntityField,
@@ -48,21 +49,11 @@ export default function ServiceCloudTicketsRoute() {
 
   const importMutation = useMutation({
     mutationFn: async (payload: any[]) => {
-      const res = await fetch('/api/services/tickets/import', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          workspaceId: workspaceId,
-          data: payload,
-        }),
+      if (!workspaceId) throw new Error('Workspace ID is required');
+      return await importTicketsService({
+        workspaceId,
+        data: payload,
       });
-
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.message || 'Failed to import tickets');
-      }
-
-      return res.json();
     },
     onSuccess: (data) => {
       toast.success(`Imported ${data.count || 0} tickets successfully`);

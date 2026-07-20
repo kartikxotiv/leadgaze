@@ -162,6 +162,13 @@ const deleteAccountTypeService = asyncHandlerClient(async (id: string) => {
   return response.data?.data;
 });
 
+const importAccountsService = asyncHandlerClient(
+  async (payload: { workspaceId: string; data: any[] }) => {
+    const response = await ApiClient.post('/accounts/import', payload);
+    return response.data;
+  },
+);
+
 export {
   getAccountsService,
   getAccountByIdService,
@@ -172,4 +179,5 @@ export {
   createAccountTypeService,
   updateAccountTypeService,
   deleteAccountTypeService,
+  importAccountsService,
 };
