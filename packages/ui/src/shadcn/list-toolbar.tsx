@@ -105,6 +105,7 @@ export interface ListToolBarProps {
   onClearFilters?: () => void;
   actions?: ToolbarAction[];
   columnVisibilitySlot?: React.ReactNode;
+  exportSlot?: React.ReactNode;
   statusSlot?: React.ReactNode;
   align?: 'left' | 'right' | 'full';
   className?: string;
@@ -135,6 +136,7 @@ export const ListToolBar: React.FC<ListToolBarProps> = ({
   onClearFilters,
   actions = [],
   columnVisibilitySlot,
+  exportSlot,
   statusSlot,
   align,
   className,
@@ -398,7 +400,7 @@ export const ListToolBar: React.FC<ListToolBarProps> = ({
                 )}
                 aria-label="Open filters"
               >
-                <Filter className="h-4 w-4 text-gray-500 dark:text-white" />
+                <Filter className="h-4 w-4 border-light-gray primary-text-medium text-leadgaze-dark dark:text-white" />
                 {activeFilterCount > 0 && (
                   <span className="ml-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#4eacff] text-[10px] font-bold text-white">
                     {activeFilterCount}
@@ -629,36 +631,41 @@ export const ListToolBar: React.FC<ListToolBarProps> = ({
         {/* ── Status filter slot ────────────────────────────────────────────── */}
         {statusSlot}
 
-        {/* ── Action buttons ───────────────────────────────────────────────── */}
+        {/* ── Action buttons & Export slot ─────────────────────────────────── */}
+        {!visibleActions.some((a) => a.key === 'import') && exportSlot}
         {visibleActions.map((action) => {
           const Icon = action.icon;
           const isIconOnly = action.variant === 'icon';
           const btnVariant = action.buttonVariant ?? 'outline';
+          const iconKey = action.key;
 
           return (
-            <Tooltip key={action.key}>
-              <TooltipTrigger asChild>
-                <Button
-                  onClick={action.onClick}
-                  variant={btnVariant}
-                  size={isIconOnly ? 'icon' : 'default'}
-                  className={cn(
-                    'shrink-0',
-                    !isIconOnly && 'gap-1.5',
-                    action.pillClassName,
-                    action.className,
-                    'primary-text-medium dark:text-white',
-                    'h-9',
-                  )}
-                  aria-label={action.label}
-                >
-                  <Icon className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">
-                <span>{action.label}</span>
-              </TooltipContent>
-            </Tooltip>
+            <React.Fragment key={action.key}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    onClick={action.onClick}
+                    variant={btnVariant}
+                    size={isIconOnly ? 'icon' : 'default'}
+                    className={cn(
+                      'shrink-0',
+                      !isIconOnly && 'gap-1.5',
+                      action.pillClassName,
+                      action.className,
+                      'primary-text-medium dark:text-white',
+                      'h-9',
+                    )}
+                    aria-label={action.label}
+                  >
+                    <Icon className={`h-4 w-4 ${iconKey === 'import' && 'border-light-gray primary-text-medium text-leadgaze-dark dark:text-white'}`} />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  <span>{action.label}</span>
+                </TooltipContent>
+              </Tooltip>
+              {action.key === 'import' && exportSlot}
+            </React.Fragment>
           );
         })}
 

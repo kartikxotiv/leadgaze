@@ -4,18 +4,20 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { usePathname, useRouter } from 'next/navigation';
 
-import { useQuery } from '@tanstack/react-query';
-import { FileUp, Loader2, Plus, Settings2 } from 'lucide-react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { FileDown, FileUp, Loader2, Plus, Settings2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { AddColumnModal } from '@kit/ui/add-column-modal';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { Card, CardContent } from '@kit/ui/card';
+import { Checkbox } from '@kit/ui/checkbox';
 import { ColumnEditModal } from '@kit/ui/column-edit-modal';
 import type { ColumnEditFieldShape } from '@kit/ui/column-edit-modal';
 import { ColumnHeader } from '@kit/ui/column-header';
 import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
+import { CsvExportButton } from '@kit/ui/csv-export-button';
 import { CsvImportDialog } from '@kit/ui/csv-import-dialog';
 import { CustomTableContainer } from '@kit/ui/custom-table-container';
 import { ListToolBar } from '@kit/ui/list-toolbar';
@@ -32,11 +34,12 @@ import {
 import { TablePagination } from '@kit/ui/table-pagination';
 import { useColumnResize } from '@kit/ui/use-column-resize';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
+import { useCsvExport } from '@kit/ui/use-csv-export';
 import { useDateRangeFilter } from '@kit/ui/use-date-range-filter';
 import { useTableSort } from '@kit/ui/use-table-sort';
 import { cn } from '@kit/ui/utils';
 
-import { filterExportColumns } from '~/lib/field-permission';
+import { filterExportColumns, filterImportColumns } from '~/lib/field-permission';
 import { useDebounce } from '~/lib/hooks/use-debounce';
 import {
   type AccessType,
@@ -62,6 +65,7 @@ import {
   getLeadStatusesService,
   getLeadsService,
   updateLeadService,
+  importLeadsService,
 } from '~/services/leads.service';
 import { Lead } from '~/services/leads.service';
 
@@ -69,7 +73,7 @@ import { DeleteEntityDialog } from '../_components/delete-entity-dialog';
 import { EntityActionsDropdown } from '../_components/entity-actions-dropdown';
 import { LeadsKanbanBoard } from './components/kanban/leads-kanban-board';
 import CreateLeadDialog from './components/create-lead-dialog';
-import { ViewToggle, type ViewMode } from './components/view-toggle';
+import { ViewToggle, type ViewMode } from '@kit/ui/view-toggle';
 
 // System fields that exist in the database
 const SYSTEM_FIELDS: Array<{
@@ -177,9 +181,40 @@ const DEFAULT_VISIBILITY: Record<string, boolean> = {
   updated_by: true,
 };
 
+// ---------------------------------------------------------------------------
+// Export column definitions — ALL fields, regardless of visibility
+// ---------------------------------------------------------------------------
+const EXPORT_COLUMNS = [
+  { key: 'first_name',           label: 'First Name' },
+  { key: 'last_name',            label: 'Last Name' },
+  { key: 'email',                label: 'Email' },
+  { key: 'alt_email',            label: 'Alt Email' },
+  { key: 'phone_number',         label: 'Phone' },
+  { key: 'mobile_number',        label: 'Mobile' },
+  { key: 'company_name',         label: 'Company' },
+  { key: 'company_website',      label: 'Company Website' },
+  { key: 'company_linkedin_url', label: 'Company LinkedIn' },
+  { key: 'linkedin_url',         label: 'LinkedIn' },
+  { key: 'job_title',            label: 'Job Title' },
+  { key: 'department',           label: 'Department' },
+  { key: 'industry',             label: 'Industry' },
+  { key: 'company_size',         label: 'Company Size' },
+  { key: 'location',             label: 'Location' },
+  { key: 'timezone',             label: 'Timezone' },
+  { key: 'status',               label: 'Status' },
+  { key: 'source',               label: 'Source' },
+  { key: 'trigger',              label: 'Trigger' },
+  { key: 'notes',                label: 'Notes' },
+  { key: 'score',                label: 'Score' },
+  { key: 'created_by',           label: 'Created By' },
+  { key: 'created_at',           label: 'Created On' },
+  { key: 'updated_by',           label: 'Last Updated By' },
+];
+
 export default function LeadsPage() {
   const router = useRouter();
   const pathname = usePathname();
+  const queryClient = useQueryClient();
   const productKey = useMemo(
     () => getModuleKeyFromPath(pathname ?? '/home/sales'),
     [pathname],
@@ -198,6 +233,10 @@ export default function LeadsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(15);
   const [addColumnModalOpen, setAddColumnModalOpen] = useState(false);
+
+  // Row selection state (for CSV export)
+  const [selectedLeadIds, setSelectedLeadIds] = useState<Set<string>>(new Set());
+  const [isExporting, setIsExporting] = useState(false);
 
   // View mode: 'table' | 'kanban' — persisted in localStorage
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
@@ -303,7 +342,7 @@ export default function LeadsPage() {
     } as EntityField);
   };
 
-  const trailingColumnCount = 1;
+  const trailingColumnCount = 2; // +1 for actions, +1 for checkbox column
 
   // Check if current user is admin
   const isAdmin = useMemo(() => {
@@ -354,7 +393,7 @@ export default function LeadsPage() {
   ];
 
   // Import columns for CSV import
-  const importColumns = useMemo(() => {
+  const { importColumns, missingRequiredImportFields } = useMemo(() => {
     const cols = [
       { key: 'first_name', label: 'First Name', required: true },
       { key: 'last_name', label: 'Last Name' },
@@ -376,11 +415,22 @@ export default function LeadsPage() {
       { key: 'source_id', label: 'Source' },
       { key: 'trigger', label: 'Trigger' },
       { key: 'notes', label: 'Notes' },
+      { key: 'owner_id', label: 'Owner ID' },
+      { key: 'tags', label: 'Tags' },
+      { key: 'annual_revenue', label: 'Annual Revenue' },
+      { key: 'lead_score', label: 'Score' },
+      ...customFields.map((field) => ({
+        key: field.field_key,
+        label: field.field_label,
+        required: false,
+      })),
     ];
-    return fieldPermissionCtx
-      ? filterExportColumns(cols, fieldPermissionCtx)
-      : cols;
-  }, [fieldPermissionCtx]);
+    if (fieldPermissionCtx) {
+      const { allowedColumns, missingRequired } = filterImportColumns(cols, fieldPermissionCtx);
+      return { importColumns: allowedColumns, missingRequiredImportFields: missingRequired };
+    }
+    return { importColumns: cols, missingRequiredImportFields: [] };
+  }, [fieldPermissionCtx, customFields]);
 
   // Initialize column visibility (merged with DB preferences when available)
   const { visibility, toggleVisibility, isVisible, reset, mergeNewColumns } =
@@ -524,6 +574,24 @@ export default function LeadsPage() {
   const totalCount = leadsData.count;
   const kanbanLeads = kanbanLeadsData.data;
 
+  const importMutation = useMutation({
+    mutationFn: async (payload: any[]) => {
+      if (!workspace?.id) throw new Error('Workspace ID is required');
+      return await importLeadsService({
+        workspaceId: workspace.id,
+        data: payload,
+      });
+    },
+    onSuccess: (data, variables) => {
+      toast.success(`Imported ${variables.length} leads successfully`);
+      queryClient.invalidateQueries({ queryKey: ['leads'] });
+      refetch();
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'An error occurred during import');
+    },
+  });
+
   // Client-side filter for created-by
   const filteredLeads = useMemo(() => {
     let result = leads;
@@ -535,9 +603,10 @@ export default function LeadsPage() {
     return result;
   }, [leads, selectedCreatedByIds]);
 
-  // Reset to first page when filters change
+  // Reset to first page + selection when filters change
   React.useEffect(() => {
     setCurrentPage(1);
+    setSelectedLeadIds(new Set());
   }, [
     debouncedSearchTerm,
     selectedStatuses,
@@ -545,10 +614,241 @@ export default function LeadsPage() {
     pageSize,
     createdOnRange,
     updatedOnRange,
+    viewMode,
   ]);
+
+  // Also clear selection when page changes
+  React.useEffect(() => {
+    setSelectedLeadIds(new Set());
+  }, [currentPage]);
 
   const paginatedLeads = filteredLeads;
   const totalPages = Math.ceil(totalCount / itemsPerPage);
+
+  // ---------------------------------------------------------------------------
+  // Row selection (checkbox) logic
+  // ---------------------------------------------------------------------------
+  const allVisibleIds = paginatedLeads.map((l: Lead) => l.id);
+
+  const isAllSelected =
+    allVisibleIds.length > 0 &&
+    allVisibleIds.every((id: string) => selectedLeadIds.has(id));
+
+  const isIndeterminate =
+    !isAllSelected && allVisibleIds.some((id: string) => selectedLeadIds.has(id));
+
+  const handleSelectAll = useCallback(() => {
+    if (isAllSelected) {
+      setSelectedLeadIds((prev) => {
+        const next = new Set(prev);
+        allVisibleIds.forEach((id: string) => next.delete(id));
+        return next;
+      });
+    } else {
+      setSelectedLeadIds((prev) => {
+        const next = new Set(prev);
+        allVisibleIds.forEach((id: string) => next.add(id));
+        return next;
+      });
+    }
+  }, [isAllSelected, allVisibleIds]);
+
+  const handleSelectRow = useCallback((id: string) => {
+    setSelectedLeadIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  // ---------------------------------------------------------------------------
+  // CSV Export
+  // ---------------------------------------------------------------------------
+
+  /** Flattens a Lead object into a plain { key: string } record for CSV serialisation */
+  const serializeLeadRow = useCallback(
+    (lead: Lead): Record<string, string> => {
+      const score = calculateLeadScore({
+        first_name: lead.first_name,
+        last_name: lead.last_name,
+        company_name: lead.company_name,
+        industry_id: lead.industry_id || (lead.industry as any)?.id,
+        company_size: lead.company_size,
+        location: lead.location,
+        timezone: lead.timezone,
+        job_title: lead.job_title,
+        contacted_count: lead.contacted_count,
+        status_key: lead.status?.status_key,
+        custom_fields: lead.custom_fields || {},
+        source_id: lead.source_id,
+      }).totalScore;
+
+      const base: Record<string, string> = {
+        first_name:           lead.first_name ?? '',
+        last_name:            lead.last_name ?? '',
+        email:                lead.email ?? '',
+        alt_email:            lead.alt_email ?? '',
+        phone_number:         lead.phone_number ?? '',
+        mobile_number:        lead.mobile_number ?? '',
+        company_name:         lead.company_name ?? '',
+        company_website:      lead.company_website ?? '',
+        company_linkedin_url: lead.company_linkedin_url ?? '',
+        linkedin_url:         lead.linkedin_url ?? '',
+        job_title:            lead.job_title ?? '',
+        department:           lead.department ?? '',
+        industry:             lead.industry?.industry_name ?? '',
+        company_size:         lead.company_size ?? '',
+        location:             lead.location ?? '',
+        timezone:             lead.timezone ?? '',
+        status:               lead.status?.status_name ?? '',
+        source:               lead.source?.source_name ?? '',
+        trigger:              lead.trigger ?? '',
+        notes:                lead.notes ?? '',
+        score:                String(score),
+        created_by:           lead.created_by_account?.name ?? lead.created_by ?? '',
+        created_at:           lead.created_at ? formatDate(lead.created_at) : '',
+        updated_by:           lead.updated_by_account?.name ?? lead.updated_by ?? '',
+      };
+
+      // Append custom fields
+      customFields.forEach((cf) => {
+        base[cf.field_key] = String(
+          (lead as any).custom_fields?.[cf.field_key] ?? '',
+        );
+      });
+
+      return base;
+    },
+    [customFields, formatDate],
+  );
+
+  /** Full columns list: system + custom (for export header row) */
+  const exportColumns = useMemo(() => {
+    const cols = [
+      ...EXPORT_COLUMNS,
+      ...customFields.map((cf) => ({ key: cf.field_key, label: cf.field_label })),
+    ];
+    return fieldPermissionCtx
+      ? filterExportColumns(cols, fieldPermissionCtx)
+      : cols;
+  }, [customFields, fieldPermissionCtx]);
+
+  const { exportToCsv: triggerExport } = useCsvExport<Lead>({
+    filename: 'leads_export',
+    columns: exportColumns,
+    // getRows is overridden per-call via the handlers below
+    getRows: () => paginatedLeads as Lead[],
+    serializeRow: serializeLeadRow as (row: Lead) => Record<string, string>,
+  });
+
+  /** Export All — fetches ALL matching leads (across pages) then downloads */
+  const handleExportAll = useCallback(async () => {
+    if (!workspace?.id) return;
+    try {
+      setIsExporting(true);
+      // Fetch all leads without pagination (large limit)
+      const allLeadsResult = await getLeadsService({
+        workspaceId: workspace.id,
+        page: 1,
+        limit: 10000,
+        searchTerm: debouncedSearchTerm,
+        statusId: selectedStatuses.length > 0 ? selectedStatuses : defaultStatusIds,
+        sortColumn: sortColumn ?? undefined,
+        sortDirection: sortDirection ?? undefined,
+        createdAtFrom: computedCreatedOnDates?.from ?? undefined,
+        createdAtTo: computedCreatedOnDates?.to ?? undefined,
+        updatedAtFrom: computedUpdatedOnDates?.from ?? undefined,
+        updatedAtTo: computedUpdatedOnDates?.to ?? undefined,
+      });
+
+      const allLeads = allLeadsResult.data as Lead[];
+
+      if (allLeads.length === 0) {
+        toast.info('No leads to export.');
+        return;
+      }
+
+      const { exportToCsv } = {
+        exportToCsv: async () => {
+          const { stringifyCsv } = await import('@kit/ui/csv-utils');
+          const headerRow = exportColumns.map((c) => c.label);
+          const dataRows = allLeads.map((lead) => {
+            const flat = serializeLeadRow(lead);
+            return exportColumns.map((c) => flat[c.key] ?? '');
+          });
+          const csvText = stringifyCsv([headerRow, ...dataRows]);
+          const blob = new Blob([csvText], { type: 'text/csv;charset=utf-8;' });
+          const url = URL.createObjectURL(blob);
+          const dateSuffix = new Date().toISOString().slice(0, 10);
+          const anchor = document.createElement('a');
+          anchor.href = url;
+          anchor.download = `leads_export_${dateSuffix}.csv`;
+          document.body.appendChild(anchor);
+          anchor.click();
+          document.body.removeChild(anchor);
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
+        },
+      };
+      await exportToCsv();
+      toast.success(`Exported ${allLeads.length} leads successfully.`);
+    } catch (err) {
+      toast.error('Failed to export leads. Please try again.');
+      console.error('Export All error:', err);
+    } finally {
+      setIsExporting(false);
+    }
+  }, [
+    workspace?.id,
+    debouncedSearchTerm,
+    selectedStatuses,
+    defaultStatusIds,
+    sortColumn,
+    sortDirection,
+    computedCreatedOnDates,
+    computedUpdatedOnDates,
+    exportColumns,
+    serializeLeadRow,
+  ]);
+
+  /** Export Selected — exports only the checked rows from the current page */
+  const handleExportSelected = useCallback(async () => {
+    const selectedRows = paginatedLeads.filter((l: Lead) =>
+      selectedLeadIds.has(l.id),
+    ) as Lead[];
+
+    if (selectedRows.length === 0) {
+      toast.info('No rows selected.');
+      return;
+    }
+
+    try {
+      setIsExporting(true);
+      const { stringifyCsv } = await import('@kit/ui/csv-utils');
+      const headerRow = exportColumns.map((c) => c.label);
+      const dataRows = selectedRows.map((lead) => {
+        const flat = serializeLeadRow(lead);
+        return exportColumns.map((c) => flat[c.key] ?? '');
+      });
+      const csvText = stringifyCsv([headerRow, ...dataRows]);
+      const blob = new Blob([csvText], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const dateSuffix = new Date().toISOString().slice(0, 10);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `leads_export_selected_${dateSuffix}.csv`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      toast.success(`Exported ${selectedRows.length} selected lead${selectedRows.length > 1 ? 's' : ''} successfully.`);
+    } catch (err) {
+      toast.error('Failed to export selected leads.');
+      console.error('Export Selected error:', err);
+    } finally {
+      setIsExporting(false);
+    }
+  }, [paginatedLeads, selectedLeadIds, exportColumns, serializeLeadRow]);
 
   const handleCreateSuccess = () => {
     setIsCreateDialogOpen(false);
@@ -774,14 +1074,14 @@ export default function LeadsPage() {
             clearUpdatedOnRange();
           }}
           actions={[
-            // {
-            //   key: 'import',
-            //   label: 'Import',
-            //   icon: FileUp,
-            //   onClick: () => setIsImportDialogOpen(true),
-            //   show: canAccess('leads', 'import'),
-            //   buttonVariant: 'outline',
-            // },
+            {
+              key: 'import',
+              label: 'Import',
+              icon: FileUp,
+              onClick: () => setIsImportDialogOpen(true),
+              show: canAccess('leads', 'import'),
+              buttonVariant: 'outline',
+            },
             {
               key: 'add',
               label: 'New Lead',
@@ -796,6 +1096,16 @@ export default function LeadsPage() {
               view={viewMode}
               onChange={handleViewModeChange}
             />
+          }
+          exportSlot={
+            canAccess('leads', 'read') ? (
+              <CsvExportButton
+                selectedCount={selectedLeadIds.size}
+                onExportAll={handleExportAll}
+                onExportSelected={handleExportSelected}
+                isExporting={isExporting}
+              />
+            ) : null
           }
           columnVisibilitySlot={
             viewMode === 'table' ? (
@@ -833,57 +1143,73 @@ export default function LeadsPage() {
         ) : (
           /* ── Table View ───────────────────────────────────────────────── */
           <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 gap-0">
-            <CustomTableContainer
-              pagination={
-                <TablePagination
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  totalCount={totalCount}
-                  pageSize={pageSize}
-                  onPageChange={setCurrentPage}
-                  onPageSizeChange={(val) => {
-                    setPageSize(val);
-                    setCurrentPage(1);
-                  }}
-                  entityLabel="entries"
-                />
-              }
-            >
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    {/* System columns */}
-                    {SYSTEM_FIELDS.map((field) => {
-                      if (!showColumn(field.id)) return null;
-                      const config = getSystemFieldConfig(field.id);
-                      return (
-                        <ColumnHeader
-                          key={field.id}
-                          label={
-                            getEntityFieldByKey(field.key)?.field_label ??
-                            field.label
-                          }
-                          columnId={field.id}
-                          sortKey={field.sortKey ?? null}
-                          sortColumn={sortColumn}
-                          sortDirection={sortDirection}
-                          onSort={toggleSort}
-                          sortable={config?.sortable !== false}
-                          className={cn('relative', config?.width)}
-                          isAdmin={isAdmin}
-                          field={getEntityFieldByKey(field.key)}
-                          onEditClick={
-                            isAdmin ? () => openColumnEdit(field.key) : undefined
-                          }
-                          {...getHeaderProps(field.id)}
-                        >
-                          <span
-                            className="col-resize-handle"
-                            {...getResizeHandleProps(field.id)}
-                          />
-                        </ColumnHeader>
-                      );
-                    })}
+          <CustomTableContainer
+            pagination={
+              <TablePagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalCount={totalCount}
+                pageSize={pageSize}
+                onPageChange={setCurrentPage}
+                onPageSizeChange={(val) => {
+                  setPageSize(val);
+                  setCurrentPage(1);
+                }}
+                entityLabel="entries"
+              />
+            }
+          >
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  {/* Checkbox column */}
+                  <TableHead className="w-10 px-3">
+                    <Checkbox
+                      checked={
+                        isAllSelected
+                          ? true
+                          : isIndeterminate
+                            ? 'indeterminate'
+                            : false
+                      }
+                      onCheckedChange={handleSelectAll}
+                      aria-label="Select all rows"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </TableHead>
+
+                  {/* System columns */}
+                  {SYSTEM_FIELDS.map((field) => {
+                    if (!showColumn(field.id)) return null;
+                    const config = getSystemFieldConfig(field.id);
+                    return (
+                      <ColumnHeader
+                        key={field.id}
+                        label={
+                          getEntityFieldByKey(field.key)?.field_label ??
+                          field.label
+                        }
+                        columnId={field.id}
+                        sortKey={field.sortKey ?? null}
+                        sortColumn={sortColumn}
+                        sortDirection={sortDirection}
+                        onSort={toggleSort}
+                        sortable={config?.sortable !== false}
+                        className={cn('relative', config?.width)}
+                        isAdmin={isAdmin}
+                        field={getEntityFieldByKey(field.key)}
+                        onEditClick={
+                          isAdmin ? () => openColumnEdit(field.key) : undefined
+                        }
+                        {...getHeaderProps(field.id)}
+                      >
+                        <span
+                          className="col-resize-handle"
+                          {...getResizeHandleProps(field.id)}
+                        />
+                      </ColumnHeader>
+                    );
+                  })}
 
                     {/* Custom field columns with hover edit */}
                     {customFields.map((field) => {
@@ -946,219 +1272,231 @@ export default function LeadsPage() {
                                 ? Object.values(visibility).filter(
                                   (v) => v !== false,
                                 ).length + trailingColumnCount
-                                : 7
-                            }
-                          >
-                            <Skeleton className="h-7 w-full rounded-md" />
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </>
-                  ) : paginatedLeads.length === 0 ? (
-                    <TableRow>
-                      <TableCell
-                        colSpan={
-                          visibility
-                            ? Object.values(visibility).filter((v) => v !== false)
+                              : 8
+                          }
+                        >
+                          <Skeleton className="h-7 w-full rounded-md" />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </>
+                ) : paginatedLeads.length === 0 ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={
+                        visibility
+                          ? Object.values(visibility).filter((v) => v !== false)
                               .length + trailingColumnCount
-                            : 7
-                        }
-                        className="h-24 text-center"
+                          : 8
+                      }
+                      className="h-24 text-center"
+                    >
+                      <div className="text-gray-500">
+                        {searchTerm ||
+                        selectedStatuses.length > 0 ||
+                        selectedCreatedByIds.length > 0
+                          ? 'No leads match your search'
+                          : 'No leads yet. Create one to get started!'}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  paginatedLeads.map((lead: Lead, index: number) => (
+                    <TableRow
+                      key={lead.id}
+                      className="group hover:bg-muted/50 cursor-pointer"
+                      onClick={() =>
+                        router.push(`/home/sales/leads/${lead.id}`)
+                      }
+                    >
+                      {/* Checkbox */}
+                      <TableCell
+                        className="w-10 px-3"
+                        onClick={(e) => e.stopPropagation()}
                       >
-                        <div className="text-gray-500">
-                          {searchTerm ||
-                            selectedStatuses.length > 0 ||
-                            selectedCreatedByIds.length > 0
-                            ? 'No leads match your search'
-                            : 'No leads yet. Create one to get started!'}
-                        </div>
+                        <Checkbox
+                          checked={selectedLeadIds.has(lead.id)}
+                          onCheckedChange={() => handleSelectRow(lead.id)}
+                          aria-label={`Select lead ${lead.first_name}`}
+                        />
                       </TableCell>
-                    </TableRow>
-                  ) : (
-                    paginatedLeads.map((lead: Lead, index: number) => (
-                      <TableRow
-                        key={lead.id}
-                        className="group hover:bg-muted/50 cursor-pointer"
-                        onClick={() =>
-                          router.push(`/home/sales/leads/${lead.id}`)
-                        }
-                      >
-                        {/* System columns */}
-                        {showColumn('sno') && (
-                          <TableCell className="text-muted-foreground w-12">
-                            {(currentPage - 1) * itemsPerPage + index + 1}
-                          </TableCell>
-                        )}
-                        {showColumn('name') && (
-                          <TableCell className="primary-text-medium text-leadgaze-primary dark:text-leadgaze-primary">
-                            <span>
-                              {lead.first_name} {lead.last_name || ''}
-                            </span>
-                          </TableCell>
-                        )}
-                        {showColumn('first_name') && (
-                          <TableCell>{lead.first_name || '-'}</TableCell>
-                        )}
-                        {showColumn('last_name') && (
-                          <TableCell>{lead.last_name || '-'}</TableCell>
-                        )}
-                        {showColumn('job_title') && (
-                          <TableCell>{lead.job_title || '-'}</TableCell>
-                        )}
-                        {showColumn('email') && (
-                          <TableCell className="text-muted-foreground">
-                            {lead.email || '-'}
-                          </TableCell>
-                        )}
-                        {showColumn('alt_email') && (
-                          <TableCell className="text-muted-foreground">
-                            {lead.alt_email || '-'}
-                          </TableCell>
-                        )}
-                        {showColumn('phone') && (
-                          <TableCell>{lead.phone_number || '-'}</TableCell>
-                        )}
-                        {showColumn('mobile') && (
-                          <TableCell>{lead.mobile_number || '-'}</TableCell>
-                        )}
-                        {showColumn('company') && (
-                          <TableCell>{lead.company_name || '-'}</TableCell>
-                        )}
-                        {showColumn('company_website') && (
-                          <TableCell>{lead.company_website || '-'}</TableCell>
-                        )}
-                        {showColumn('company_linkedin') && (
-                          <TableCell className="max-w-[150px] truncate">
-                            {lead.company_linkedin_url || '-'}
-                          </TableCell>
-                        )}
-                        {showColumn('linkedin') && (
-                          <TableCell className="max-w-[150px] truncate">
-                            {lead.linkedin_url || '-'}
-                          </TableCell>
-                        )}
-                        {showColumn('department') && (
-                          <TableCell>{lead.department || '-'}</TableCell>
-                        )}
-                        {showColumn('industry') && (
-                          <TableCell>
-                            {lead.industry?.industry_name || '-'}
-                          </TableCell>
-                        )}
-                        {showColumn('company_size') && (
-                          <TableCell>{lead.company_size || '-'}</TableCell>
-                        )}
-                        {showColumn('location') && (
-                          <TableCell>{lead.location || '-'}</TableCell>
-                        )}
-                        {showColumn('timezone') && (
-                          <TableCell>{lead.timezone || '-'}</TableCell>
-                        )}
-                        {showColumn('status') && (
-                          <TableCell>
-                            {lead.status && (
-                              <Badge
-                                variant="secondary"
-                                className="gap-1"
-                                style={{
-                                  backgroundColor: `${lead.status.color}20`,
-                                  color: lead.status.color,
-                                  borderColor: `${lead.status.color}40`,
-                                }}
-                              >
-                                {lead.status.status_name}
-                              </Badge>
-                            )}
-                          </TableCell>
-                        )}
-                        {showColumn('source') && (
-                          <TableCell>{lead.source?.source_name || '-'}</TableCell>
-                        )}
-                        {showColumn('trigger') && (
-                          <TableCell>{lead.trigger || '-'}</TableCell>
-                        )}
-                        {showColumn('notes') && (
-                          <TableCell className="max-w-[200px] truncate">
-                            {lead.notes || '-'}
-                          </TableCell>
-                        )}
-                        {showColumn('score') && (
-                          <TableCell>
-                            <div className="flex items-center gap-1">
-                              <div className="bg-secondary h-2 w-16 overflow-hidden rounded-full">
-                                <div
-                                  className="bg-primary h-full transition-all"
-                                  style={{
-                                    width: `${Math.min(
-                                      calculateLeadScore({
-                                        first_name: lead.first_name,
-                                        last_name: lead.last_name,
-                                        company_name: lead.company_name,
-                                        industry_id:
-                                          lead.industry_id || lead.industry?.id,
-                                        company_size: lead.company_size,
-                                        location: lead.location,
-                                        timezone: lead.timezone,
-                                        job_title: lead.job_title,
-                                        contacted_count: lead.contacted_count,
-                                        status_key: lead.status?.status_key,
-                                        custom_fields: lead.custom_fields || {},
-                                        source_id: lead.source_id,
-                                      }).totalScore,
-                                      100,
-                                    )}%`,
-                                  }}
-                                />
-                              </div>
-                              <span className="w-8 text-right text-sm">
-                                {
-                                  calculateLeadScore({
-                                    first_name: lead.first_name,
-                                    last_name: lead.last_name,
-                                    company_name: lead.company_name,
-                                    industry_id:
-                                      lead.industry_id || lead.industry?.id,
-                                    company_size: lead.company_size,
-                                    location: lead.location,
-                                    timezone: lead.timezone,
-                                    job_title: lead.job_title,
-                                    contacted_count: lead.contacted_count,
-                                    status_key: lead.status?.status_key,
-                                    custom_fields: lead.custom_fields || {},
-                                    source_id: lead.source_id,
-                                  }).totalScore
-                                }
-                              </span>
-                            </div>
-                          </TableCell>
-                        )}
-                        {showColumn('created_by') && (
-                          <TableCell>
-                            {lead.created_by_account?.name ||
-                              lead.created_by ||
-                              '-'}
-                          </TableCell>
-                        )}
-                        {showColumn('created_at') && (
-                          <TableCell className="whitespace-nowrap">
-                            {lead.created_at ? formatDate(lead.created_at) : '-'}
-                          </TableCell>
-                        )}
-                        {showColumn('updated_by') && (
-                          <TableCell>
-                            {lead.updated_by_account?.name ||
-                              lead.updated_by ||
-                              '-'}
-                          </TableCell>
-                        )}
 
-                        {/* Custom field cells */}
-                        {customFields.map((field) =>
-                          showColumn(field.field_key) ? (
-                            <TableCell key={field.id}>
-                              {(lead as any).custom_fields?.[field.field_key] ??
-                                '-'}
-                            </TableCell>
+                      {/* System columns */}
+                      {showColumn('sno') && (
+                        <TableCell className="text-muted-foreground w-12">
+                          {(currentPage - 1) * itemsPerPage + index + 1}
+                        </TableCell>
+                      )}
+                      {showColumn('name') && (
+                        <TableCell className="primary-text-medium text-leadgaze-primary dark:text-leadgaze-primary">
+                          <span>
+                            {lead.first_name} {lead.last_name || ''}
+                          </span>
+                        </TableCell>
+                      )}
+                      {showColumn('first_name') && (
+                        <TableCell>{lead.first_name || '-'}</TableCell>
+                      )}
+                      {showColumn('last_name') && (
+                        <TableCell>{lead.last_name || '-'}</TableCell>
+                      )}
+                      {showColumn('job_title') && (
+                        <TableCell>{lead.job_title || '-'}</TableCell>
+                      )}
+                      {showColumn('email') && (
+                        <TableCell className="text-muted-foreground">
+                          {lead.email || '-'}
+                        </TableCell>
+                      )}
+                      {showColumn('alt_email') && (
+                        <TableCell className="text-muted-foreground">
+                          {lead.alt_email || '-'}
+                        </TableCell>
+                      )}
+                      {showColumn('phone') && (
+                        <TableCell>{lead.phone_number || '-'}</TableCell>
+                      )}
+                      {showColumn('mobile') && (
+                        <TableCell>{lead.mobile_number || '-'}</TableCell>
+                      )}
+                      {showColumn('company') && (
+                        <TableCell>{lead.company_name || '-'}</TableCell>
+                      )}
+                      {showColumn('company_website') && (
+                        <TableCell>{lead.company_website || '-'}</TableCell>
+                      )}
+                      {showColumn('company_linkedin') && (
+                        <TableCell className="max-w-[150px] truncate">
+                          {lead.company_linkedin_url || '-'}
+                        </TableCell>
+                      )}
+                      {showColumn('linkedin') && (
+                        <TableCell className="max-w-[150px] truncate">
+                          {lead.linkedin_url || '-'}
+                        </TableCell>
+                      )}
+                      {showColumn('department') && (
+                        <TableCell>{lead.department || '-'}</TableCell>
+                      )}
+                      {showColumn('industry') && (
+                        <TableCell>
+                          {lead.industry?.industry_name || '-'}
+                        </TableCell>
+                      )}
+                      {showColumn('company_size') && (
+                        <TableCell>{lead.company_size || '-'}</TableCell>
+                      )}
+                      {showColumn('location') && (
+                        <TableCell>{lead.location || '-'}</TableCell>
+                      )}
+                      {showColumn('timezone') && (
+                        <TableCell>{lead.timezone || '-'}</TableCell>
+                      )}
+                      {showColumn('status') && (
+                        <TableCell>
+                          {lead.status && (
+                            <Badge
+                              variant="secondary"
+                              className="gap-1"
+                              style={{
+                                backgroundColor: `${lead.status.color}20`,
+                                color: lead.status.color,
+                                borderColor: `${lead.status.color}40`,
+                              }}
+                            >
+                              {lead.status.status_name}
+                            </Badge>
+                          )}
+                        </TableCell>
+                      )}
+                      {showColumn('source') && (
+                        <TableCell>{lead.source?.source_name || '-'}</TableCell>
+                      )}
+                      {showColumn('trigger') && (
+                        <TableCell>{lead.trigger || '-'}</TableCell>
+                      )}
+                      {showColumn('notes') && (
+                        <TableCell className="max-w-[200px] truncate">
+                          {lead.notes || '-'}
+                        </TableCell>
+                      )}
+                      {showColumn('score') && (
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <div className="bg-secondary h-2 w-16 overflow-hidden rounded-full">
+                              <div
+                                className="bg-primary h-full transition-all"
+                                style={{
+                                  width: `${Math.min(
+                                    calculateLeadScore({
+                                      first_name: lead.first_name,
+                                      last_name: lead.last_name,
+                                      company_name: lead.company_name,
+                                      industry_id:
+                                        lead.industry_id || lead.industry?.id,
+                                      company_size: lead.company_size,
+                                      location: lead.location,
+                                      timezone: lead.timezone,
+                                      job_title: lead.job_title,
+                                      contacted_count: lead.contacted_count,
+                                      status_key: lead.status?.status_key,
+                                      custom_fields: lead.custom_fields || {},
+                                      source_id: lead.source_id,
+                                    }).totalScore,
+                                    100,
+                                  )}%`,
+                                }}
+                              />
+                            </div>
+                            <span className="w-8 text-right text-sm">
+                              {
+                                calculateLeadScore({
+                                  first_name: lead.first_name,
+                                  last_name: lead.last_name,
+                                  company_name: lead.company_name,
+                                  industry_id:
+                                    lead.industry_id || lead.industry?.id,
+                                  company_size: lead.company_size,
+                                  location: lead.location,
+                                  timezone: lead.timezone,
+                                  job_title: lead.job_title,
+                                  contacted_count: lead.contacted_count,
+                                  status_key: lead.status?.status_key,
+                                  custom_fields: lead.custom_fields || {},
+                                  source_id: lead.source_id,
+                                }).totalScore
+                              }
+                            </span>
+                          </div>
+                        </TableCell>
+                      )}
+                      {showColumn('created_by') && (
+                        <TableCell>
+                          {lead.created_by_account?.name ||
+                            lead.created_by ||
+                            '-'}
+                        </TableCell>
+                      )}
+                      {showColumn('created_at') && (
+                        <TableCell className="whitespace-nowrap">
+                          {lead.created_at ? formatDate(lead.created_at) : '-'}
+                        </TableCell>
+                      )}
+                      {showColumn('updated_by') && (
+                        <TableCell>
+                          {lead.updated_by_account?.name ||
+                            lead.updated_by ||
+                            '-'}
+                        </TableCell>
+                      )}
+
+                      {/* Custom field cells */}
+                      {customFields.map((field) =>
+                        showColumn(field.field_key) ? (
+                          <TableCell key={field.id}>
+                            {(lead as any).custom_fields?.[field.field_key] ??
+                              '-'}
+                          </TableCell>
                           ) : null,
                         )}
 
@@ -1198,11 +1536,36 @@ export default function LeadsPage() {
           title="Import Leads from CSV"
           description="Upload a CSV, match each header to a database column, and save the adjusted file before the API upload step."
           columns={importColumns}
-          onUpload={async ({ formData, file }) => {
-            console.log('CSV ready for upload', {
-              fileName: file.name,
-              formData,
+          disabledReason={
+            missingRequiredImportFields.length > 0
+              ? `You do not have permission to edit mandatory fields required for import: ${missingRequiredImportFields.join(', ')}. Please contact your administrator.`
+              : null
+          }
+          onUpload={async ({ headers, rows }) => {
+            const customFieldKeys = new Set(customFields.map((cf) => cf.field_key));
+
+            const payload = rows.map((row) => {
+              const obj: any = { custom_fields: {} };
+              headers.forEach((header, index) => {
+                if (!header) return;
+                const val = row[index];
+                if (val === undefined || val === '') return;
+
+                if (customFieldKeys.has(header)) {
+                  obj.custom_fields[header] = val;
+                } else {
+                  obj[header] = val;
+                }
+              });
+              return obj;
             });
+
+            try {
+              await importMutation.mutateAsync(payload);
+              setIsImportDialogOpen(false);
+            } catch (error: any) {
+              // error is already handled by onError in mutation
+            }
           }}
         />
 
