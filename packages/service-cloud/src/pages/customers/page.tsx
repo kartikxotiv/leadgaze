@@ -41,6 +41,14 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@kit/ui/tooltip';
 import { useColumnResize } from '@kit/ui/use-column-resize';
 import { useDateRangeFilter } from '@kit/ui/use-date-range-filter';
 
+import { formatDate } from '@kit/shared/utils';
+
+import {
+  type ServiceCloudRecord,
+  createServiceCloudResourceService,
+  getServiceCloudResourceService,
+  getServiceCloudTicketLookupsService,
+} from '../../services';
 import {
   type ServiceCloudRecord,
   createServiceCloudResourceService,
