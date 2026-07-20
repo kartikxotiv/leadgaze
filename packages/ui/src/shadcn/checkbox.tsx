@@ -18,7 +18,7 @@ const Checkbox: React.FC<CheckboxProps> = ({ className, isRadio, ...props }) => 
       'peer focus-visible:ring-ring shrink-0 border shadow-xs focus-visible:ring-1 focus-visible:outline-hidden disabled:cursor-not-allowed disabled:opacity-50',
       isRadio
         ? 'h-[16px] w-[16px] rounded-full border-[#18181B]'
-        : 'border-[#E9E9E9] data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground h-[18px] w-[18px] rounded-[4px]',
+        : 'border-[#8A8A8A] data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground h-[18px] w-[18px] rounded-[4px]',
       className,
     )}
     {...props}

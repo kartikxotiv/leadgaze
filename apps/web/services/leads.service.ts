@@ -300,6 +300,13 @@ const sendLeadEmailService = asyncHandlerClient(
   },
 );
 
+const importLeadsService = asyncHandlerClient(
+  async (payload: { workspaceId: string; data: any[] }) => {
+    const response = await ApiClient.post('/leads/import', payload);
+    return response.data;
+  },
+);
+
 export {
   getLeadsService,
   getLeadByIdService,
@@ -314,4 +321,5 @@ export {
   updateLeadService,
   deleteLeadService,
   sendLeadEmailService,
+  importLeadsService,
 };

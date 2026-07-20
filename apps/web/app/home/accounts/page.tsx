@@ -1,19 +1,23 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 
 import { useRouter } from 'next/navigation';
 
-import { useQuery } from '@tanstack/react-query';
-import { Plus } from 'lucide-react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { FileDown, FileUp, Plus } from 'lucide-react';
+import { toast } from 'sonner';
 
 import { useUser } from '@kit/supabase/hooks/use-user';
 import { AddColumnModal } from '@kit/ui/add-column-modal';
 import { Button } from '@kit/ui/button';
 import { Card, CardContent } from '@kit/ui/card';
+import { Checkbox } from '@kit/ui/checkbox';
 import { ColumnEditModal } from '@kit/ui/column-edit-modal';
 import type { ColumnEditFieldShape } from '@kit/ui/column-edit-modal';
 import { ColumnHeader } from '@kit/ui/column-header';
+import { CsvExportButton } from '@kit/ui/csv-export-button';
+import { CsvImportDialog } from '@kit/ui/csv-import-dialog';
 import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
 import CustomTableContainer from '@kit/ui/custom-table-container';
 import { ListToolBar } from '@kit/ui/list-toolbar';
@@ -30,10 +34,12 @@ import {
 import { TablePagination } from '@kit/ui/table-pagination';
 import { useColumnResize } from '@kit/ui/use-column-resize';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
+import { useCsvExport } from '@kit/ui/use-csv-export';
 import { useDateRangeFilter } from '@kit/ui/use-date-range-filter';
 import { useTableSort } from '@kit/ui/use-table-sort';
 import { cn } from '@kit/ui/utils';
 
+import { filterExportColumns, filterImportColumns } from '~/lib/field-permission';
 import { useDebounce } from '~/lib/hooks/use-debounce';
 import {
   useCreateField,
@@ -51,7 +57,7 @@ import { useTeamMembers } from '~/lib/hooks/use-team-members';
 import { useLocalization } from '~/lib/localization/localization-provider';
 import { ModuleGuard } from '~/lib/rbac/module-guard';
 import { useModuleRoles, useRBAC } from '~/lib/rbac/rbac-provider';
-import { Account, getAccountsService } from '~/services/accounts.service';
+import { Account, getAccountsService, importAccountsService } from '~/services/accounts.service';
 
 import { DeleteEntityDialog } from '../_components/delete-entity-dialog';
 import { EntityActionsDropdown } from '../_components/entity-actions-dropdown';
@@ -117,6 +123,7 @@ function AccountsPageSkeleton() {
 
 export default function AccountsPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { currentWorkspace: workspace, canAccess } = useRBAC();
   const { formatDate } = useLocalization();
   const [searchTerm, setSearchTerm] = useState('');
@@ -124,12 +131,17 @@ export default function AccountsPage() {
     [],
   );
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [accountToDelete, setAccountToDelete] = useState<Account | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(15);
   const itemsPerPage = pageSize;
   const { data: user } = useUser();
+
+  // Row selection state (for CSV export)
+  const [selectedAccountIds, setSelectedAccountIds] = useState<Set<string>>(new Set());
+  const [isExporting, setIsExporting] = useState(false);
   const {
     dateRange: createdOnRange,
     setDateRange: setCreatedOnRange,
@@ -202,6 +214,30 @@ export default function AccountsPage() {
         label: 'Last Updated By',
         sortKey: 'updated_by_account.name',
       },
+    ],
+    [],
+  );
+
+  // ---------------------------------------------------------------------------
+  // Export column definitions — ALL fields
+  // ---------------------------------------------------------------------------
+  const EXPORT_COLUMNS = useMemo(
+    () => [
+      { key: 'account_name', label: 'Account Name' },
+      { key: 'website', label: 'Website' },
+      { key: 'industry', label: 'Industry' },
+      { key: 'phone_number', label: 'Phone' },
+      { key: 'company_size', label: 'Size' },
+      { key: 'billing_street', label: 'Street' },
+      { key: 'billing_city', label: 'City' },
+      { key: 'billing_state', label: 'State' },
+      { key: 'billing_postal_code', label: 'Postal Code' },
+      { key: 'billing_country', label: 'Country' },
+      { key: 'description', label: 'Description' },
+      { key: 'owner', label: 'Owner' },
+      { key: 'created_by', label: 'Created By' },
+      { key: 'created_at', label: 'Created On' },
+      { key: 'updated_by', label: 'Last Updated By' },
     ],
     [],
   );
@@ -283,6 +319,35 @@ export default function AccountsPage() {
       required: false,
     })),
   ];
+
+  const { importColumns, missingRequiredImportFields } = useMemo(() => {
+    const cols = [
+      { key: 'account_name', label: 'Account Name', required: true },
+      { key: 'website', label: 'Website' },
+      { key: 'phone_number', label: 'Phone Number' },
+      { key: 'industry_id', label: 'Industry' },
+      { key: 'company_size', label: 'Company Size' },
+      { key: 'account_type', label: 'Account Type' },
+      { key: 'billing_street', label: 'Street Address' },
+      { key: 'billing_city', label: 'City' },
+      { key: 'billing_state', label: 'State/Province' },
+      { key: 'billing_postal_code', label: 'Postal Code' },
+      { key: 'billing_country', label: 'Country' },
+      { key: 'description', label: 'Description' },
+      { key: 'owner_id', label: 'Owner ID' },
+      { key: 'tags', label: 'Tags' },
+      ...customFields.map((field) => ({
+        key: field.field_key,
+        label: field.field_label,
+        required: false,
+      })),
+    ];
+    if (_fieldPermissionCtx) {
+      const { allowedColumns, missingRequired } = filterImportColumns(cols, _fieldPermissionCtx);
+      return { importColumns: allowedColumns, missingRequiredImportFields: missingRequired };
+    }
+    return { importColumns: cols, missingRequiredImportFields: [] };
+  }, [_fieldPermissionCtx, customFields]);
 
   const { visibility, toggleVisibility, isVisible, reset, mergeNewColumns } =
     useColumnVisibility('accounts', mergedDefaults);
@@ -475,16 +540,222 @@ export default function AccountsPage() {
   });
 
   const accounts = accountsData.data;
+
+  const importMutation = useMutation({
+    mutationFn: async (payload: any[]) => {
+      if (!workspace?.id) throw new Error('Workspace ID is required');
+      return await importAccountsService({
+        workspaceId: workspace.id,
+        data: payload,
+      });
+    },
+    onSuccess: (data, variables) => {
+      toast.success(`Imported ${variables.length} accounts successfully`);
+      queryClient.invalidateQueries({ queryKey: ['accounts'] });
+      refetch();
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'An error occurred during import');
+    },
+  });
   const totalCount = accountsData.count;
 
-  // Reset to first page when search changes
+  // Reset to first page + selection when filters change
   React.useEffect(() => {
     setCurrentPage(1);
+    setSelectedAccountIds(new Set());
   }, [debouncedSearchTerm, selectedCreatedByIds, pageSize, createdOnRange, updatedOnRange]);
+
+  // Clear selection when page changes
+  React.useEffect(() => {
+    setSelectedAccountIds(new Set());
+  }, [currentPage]);
 
   // Pagination Logic
   const totalPages = Math.ceil(totalCount / itemsPerPage);
   const paginatedAccounts = accounts; // Data is already paginated from server
+
+  // ---------------------------------------------------------------------------
+  // Row selection (checkbox) logic
+  // ---------------------------------------------------------------------------
+  const allVisibleIds = paginatedAccounts.map((a: Account) => a.id);
+
+  const isAllSelected =
+    allVisibleIds.length > 0 &&
+    allVisibleIds.every((id: string) => selectedAccountIds.has(id));
+
+  const isIndeterminate =
+    !isAllSelected && allVisibleIds.some((id: string) => selectedAccountIds.has(id));
+
+  const handleSelectAll = useCallback(() => {
+    if (isAllSelected) {
+      setSelectedAccountIds((prev) => {
+        const next = new Set(prev);
+        allVisibleIds.forEach((id: string) => next.delete(id));
+        return next;
+      });
+    } else {
+      setSelectedAccountIds((prev) => {
+        const next = new Set(prev);
+        allVisibleIds.forEach((id: string) => next.add(id));
+        return next;
+      });
+    }
+  }, [isAllSelected, allVisibleIds]);
+
+  const handleSelectRow = useCallback((id: string) => {
+    setSelectedAccountIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  // ---------------------------------------------------------------------------
+  // CSV Export
+  // ---------------------------------------------------------------------------
+
+  const serializeAccountRow = useCallback(
+    (account: Account): Record<string, string> => {
+      const base: Record<string, string> = {
+        account_name:        account.account_name ?? '',
+        website:             account.website ?? '',
+        industry:            account.industry?.industry_name ?? '',
+        phone_number:        account.phone_number ?? '',
+        company_size:        account.company_size ?? '',
+        billing_street:      account.billing_street ?? '',
+        billing_city:        account.billing_city ?? '',
+        billing_state:       account.billing_state ?? '',
+        billing_postal_code: account.billing_postal_code ?? '',
+        billing_country:     account.billing_country ?? '',
+        description:         (account as any).description ?? '',
+        owner:               account.owner?.name ?? '',
+        created_by:          account.created_by_account?.name ?? account.created_by ?? '',
+        created_at:          account.created_at ? formatDate(account.created_at) : '',
+        updated_by:          account.updated_by_account?.name ?? account.updated_by ?? '',
+      };
+
+      // Append custom fields
+      customFields.forEach((cf) => {
+        base[cf.field_key] = String(
+          (account as any).custom_fields?.[cf.field_key] ?? '',
+        );
+      });
+
+      return base;
+    },
+    [customFields, formatDate],
+  );
+
+  const exportColumns = useMemo(() => {
+    const cols = [
+      ...EXPORT_COLUMNS,
+      ...customFields.map((cf) => ({ key: cf.field_key, label: cf.field_label })),
+    ];
+    return _fieldPermissionCtx
+      ? filterExportColumns(cols, _fieldPermissionCtx)
+      : cols;
+  }, [customFields, EXPORT_COLUMNS, _fieldPermissionCtx]);
+
+  const handleExportAll = useCallback(async () => {
+    if (!workspace?.id) return;
+    try {
+      setIsExporting(true);
+      const allAccountsResult = await getAccountsService({
+        workspaceId: workspace.id,
+        page: 1,
+        limit: 10000,
+        searchTerm: debouncedSearchTerm,
+        sortColumn: sortColumn ?? undefined,
+        sortDirection: sortDirection ?? undefined,
+        createdAtFrom: computedCreatedOnDates?.from ?? undefined,
+        createdAtTo: computedCreatedOnDates?.to ?? undefined,
+        updatedAtFrom: computedUpdatedOnDates?.from ?? undefined,
+        updatedAtTo: computedUpdatedOnDates?.to ?? undefined,
+        createdByIds: selectedCreatedByIds.length > 0 ? selectedCreatedByIds : undefined,
+      });
+
+      const allAccounts = allAccountsResult.data as Account[];
+
+      if (allAccounts.length === 0) {
+        toast.info('No accounts to export.');
+        return;
+      }
+
+      const { stringifyCsv } = await import('@kit/ui/csv-utils');
+      const headerRow = exportColumns.map((c) => c.label);
+      const dataRows = allAccounts.map((account) => {
+        const flat = serializeAccountRow(account);
+        return exportColumns.map((c) => flat[c.key] ?? '');
+      });
+      const csvText = stringifyCsv([headerRow, ...dataRows]);
+      const blob = new Blob([csvText], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const dateSuffix = new Date().toISOString().slice(0, 10);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `accounts_export_${dateSuffix}.csv`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      toast.success(`Exported ${allAccounts.length} accounts successfully.`);
+    } catch (err) {
+      toast.error('Failed to export accounts.');
+      console.error('Export All error:', err);
+    } finally {
+      setIsExporting(false);
+    }
+  }, [
+    workspace?.id,
+    debouncedSearchTerm,
+    sortColumn,
+    sortDirection,
+    computedCreatedOnDates,
+    computedUpdatedOnDates,
+    selectedCreatedByIds,
+    exportColumns,
+    serializeAccountRow,
+  ]);
+
+  const handleExportSelected = useCallback(async () => {
+    const selectedRows = paginatedAccounts.filter((a: Account) =>
+      selectedAccountIds.has(a.id),
+    ) as Account[];
+
+    if (selectedRows.length === 0) {
+      toast.info('No rows selected.');
+      return;
+    }
+
+    try {
+      setIsExporting(true);
+      const { stringifyCsv } = await import('@kit/ui/csv-utils');
+      const headerRow = exportColumns.map((c) => c.label);
+      const dataRows = selectedRows.map((account) => {
+        const flat = serializeAccountRow(account);
+        return exportColumns.map((c) => flat[c.key] ?? '');
+      });
+      const csvText = stringifyCsv([headerRow, ...dataRows]);
+      const blob = new Blob([csvText], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const dateSuffix = new Date().toISOString().slice(0, 10);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `accounts_export_selected_${dateSuffix}.csv`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      toast.success(`Exported ${selectedRows.length} selected account${selectedRows.length > 1 ? 's' : ''} successfully.`);
+    } catch (err) {
+      toast.error('Failed to export selected accounts.');
+      console.error('Export Selected error:', err);
+    } finally {
+      setIsExporting(false);
+    }
+  }, [paginatedAccounts, selectedAccountIds, exportColumns, serializeAccountRow]);
 
   if (!workspace) {
     return <AccountsPageSkeleton />;
@@ -589,6 +860,14 @@ export default function AccountsPage() {
           }}
           actions={[
             {
+              key: 'import',
+              label: 'Import',
+              icon: FileUp,
+              onClick: () => setIsImportDialogOpen(true),
+              show: canAccess('accounts', 'import'),
+              buttonVariant: 'outline',
+            },
+            {
               key: 'add',
               label: 'New Account',
               icon: Plus,
@@ -597,6 +876,16 @@ export default function AccountsPage() {
               buttonVariant: 'default',
             },
           ]}
+          exportSlot={
+            canAccess('accounts', 'read') ? (
+              <CsvExportButton
+                selectedCount={selectedAccountIds.size}
+                onExportAll={handleExportAll}
+                onExportSelected={handleExportSelected}
+                isExporting={isExporting}
+              />
+            ) : null
+          }
           columnVisibilitySlot={
             <ColumnVisibilitySelector
               columns={columns}
@@ -629,6 +918,22 @@ export default function AccountsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  {/* Checkbox column */}
+                  <TableHead className="w-10 px-3">
+                    <Checkbox
+                      checked={
+                        isAllSelected
+                          ? true
+                          : isIndeterminate
+                            ? 'indeterminate'
+                            : false
+                      }
+                      onCheckedChange={handleSelectAll}
+                      aria-label="Select all rows"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </TableHead>
+
                   {SYSTEM_FIELDS.map((field) => {
                     if (!showColumn(field.id)) return null;
                     const entityField = getEntityFieldByKey(field.key);
@@ -721,8 +1026,8 @@ export default function AccountsPage() {
                             visibility
                               ? Object.values(visibility).filter(
                                   (v) => v !== false,
-                                ).length + 1
-                              : 6
+                                ).length + 2
+                              : 7
                           }
                         >
                           <Skeleton className="h-7 w-full" />
@@ -739,8 +1044,8 @@ export default function AccountsPage() {
                       colSpan={
                         visibility
                           ? Object.values(visibility).filter((v) => v !== false)
-                              .length + 1
-                          : 6
+                              .length + 2
+                          : 7
                       }
                       className="h-24 text-center"
                     >
@@ -760,6 +1065,18 @@ export default function AccountsPage() {
                         router.push(`/home/sales/accounts/${account.id}`)
                       }
                     >
+                      {/* Checkbox */}
+                      <TableCell
+                        className="w-10 px-3"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Checkbox
+                          checked={selectedAccountIds.has(account.id)}
+                          onCheckedChange={() => handleSelectRow(account.id)}
+                          aria-label={`Select account ${account.account_name}`}
+                        />
+                      </TableCell>
+
                       {showColumn('sno') && (
                         <TableCell className="text-muted-foreground w-12">
                           {(currentPage - 1) * itemsPerPage + index + 1}
@@ -900,6 +1217,45 @@ export default function AccountsPage() {
           open={createDialogOpen}
           onOpenChange={setCreateDialogOpen}
           onSuccess={() => refetch()}
+        />
+
+        <CsvImportDialog
+          open={isImportDialogOpen}
+          onOpenChange={setIsImportDialogOpen}
+          title="Import Accounts from CSV"
+          description="Upload a CSV, match each header to a database column, and save the adjusted file before the API upload step."
+          columns={importColumns}
+          disabledReason={
+            missingRequiredImportFields.length > 0
+              ? `You do not have permission to edit mandatory fields required for import: ${missingRequiredImportFields.join(', ')}. Please contact your administrator.`
+              : null
+          }
+          onUpload={async ({ headers, rows }) => {
+            const customFieldKeys = new Set(customFields.map((cf) => cf.field_key));
+
+            const payload = rows.map((row) => {
+              const obj: any = { custom_fields: {} };
+              headers.forEach((header, index) => {
+                if (!header) return;
+                const val = row[index];
+                if (val === undefined || val === '') return;
+
+                if (customFieldKeys.has(header)) {
+                  obj.custom_fields[header] = val;
+                } else {
+                  obj[header] = val;
+                }
+              });
+              return obj;
+            });
+
+            try {
+              await importMutation.mutateAsync(payload);
+              setIsImportDialogOpen(false);
+            } catch (error: any) {
+              // error is already handled by onError in mutation
+            }
+          }}
         />
 
         <AddColumnModal
