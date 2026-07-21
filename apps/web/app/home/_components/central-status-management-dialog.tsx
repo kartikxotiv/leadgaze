@@ -347,7 +347,7 @@ function StatusList({
                   className={`h-2.5 w-2.5 rounded-full shrink-0 ${!status.is_active ? 'opacity-40' : ''}`}
                   style={{ backgroundColor: status.color }}
                 />
-                <p className={`text-sm font-medium ${!status.is_active ? 'text-muted-foreground line-through' : ''}`}>
+                <p className={`text-sm primary-text-medium ${!status.is_active ? 'text-muted-foreground line-through' : ''}`}>
                   {status.status_name}
                 </p>
               </div>
