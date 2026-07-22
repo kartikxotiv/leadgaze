@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
 
-import { catchAsync } from '../../../../utils/response-handler';
+import { ApiError, catchAsync } from '../../../../utils/response-handler';
 
 /**
  * GET /api/subscriptions/products
@@ -39,14 +39,8 @@ export const getProducts = catchAsync(
       .eq('is_public', true)
       .order('display_name');
 
-    if (error) {
-      console.error('Get products error:', error);
-      return NextResponse.json(
-        { success: false, message: error.message },
-        { status: 500 },
-      );
-    }
+    if (error) throw new ApiError(error.message, 500);
 
-    return NextResponse.json({ success: true, data: products || [] });
+    return NextResponse.json({ success: true, data: products ?? [] });
   },
 );

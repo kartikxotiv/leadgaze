@@ -90,6 +90,7 @@ import {
   getWorkspaceEntitlementsService,
 } from '~/services/subscription.service';
 import { getTeamsService } from '~/services/teams.service';
+import { recordUserInterestService } from '~/services/user-interests.service';
 
 import {
   type AnyDropdownLabel,
@@ -1605,12 +1606,7 @@ export function HomeMenuNavigation() {
                 if (!selectedComingSoonModule) return;
                 setIsSubmittingInterest(true);
                 try {
-                  const res = await fetch('/api/user-interests', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ moduleId: selectedComingSoonModule.id }),
-                  });
-                  if (!res.ok) throw new Error('Failed to record interest');
+                  await recordUserInterestService(selectedComingSoonModule.id);
                   toast.success('We have got your response. Thank you!');
                   setInterestModalOpen(false);
                 } catch (error) {

@@ -1,10 +1,8 @@
-import { NextRequest } from 'next/server';
+import { enhanceRouteHandler } from '@kit/next/routes';
 
 import { reassignOpportunityStage } from '../../../controller';
 
-export const PATCH = (
-  request: NextRequest,
-  { params }: { params: { id: string } },
-) => {
-  return reassignOpportunityStage({ request, params });
-};
+export const PATCH = enhanceRouteHandler(reassignOpportunityStage, {
+  auth: false,
+});
+

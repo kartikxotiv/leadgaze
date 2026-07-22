@@ -1,10 +1,8 @@
-import { NextRequest } from 'next/server';
+import { enhanceRouteHandler } from '@kit/next/routes';
 
 import { reassignAccountType } from '../../../controller';
 
-export const PATCH = (
-  request: NextRequest,
-  { params }: { params: { id: string } },
-) => {
-  return reassignAccountType({ request, params });
-};
+export const PATCH = enhanceRouteHandler(reassignAccountType, {
+  auth: false,
+});
+

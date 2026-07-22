@@ -1,10 +1,8 @@
-import { NextRequest } from 'next/server';
+import { enhanceRouteHandler } from '@kit/next/routes';
 
 import { getAffectedOpportunities } from '../../../controller';
 
-export const GET = (
-  request: NextRequest,
-  { params }: { params: { id: string } },
-) => {
-  return getAffectedOpportunities({ request, params });
-};
+export const GET = enhanceRouteHandler(getAffectedOpportunities, {
+  auth: false,
+});
+

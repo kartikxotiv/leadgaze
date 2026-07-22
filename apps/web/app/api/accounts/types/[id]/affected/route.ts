@@ -1,10 +1,8 @@
-import { NextRequest } from 'next/server';
+import { enhanceRouteHandler } from '@kit/next/routes';
 
 import { getAffectedAccounts } from '../../../controller';
 
-export const GET = (
-  request: NextRequest,
-  { params }: { params: { id: string } },
-) => {
-  return getAffectedAccounts({ request, params });
-};
+export const GET = enhanceRouteHandler(getAffectedAccounts, {
+  auth: false,
+});
+

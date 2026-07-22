@@ -1,10 +1,8 @@
-import { NextRequest } from 'next/server';
+import { enhanceRouteHandler } from '@kit/next/routes';
 
 import { reassignLeadStatus } from '../../../controller';
 
-export const PATCH = (
-  request: NextRequest,
-  { params }: { params: { id: string } },
-) => {
-  return reassignLeadStatus({ request, params });
-};
+export const PATCH = enhanceRouteHandler(reassignLeadStatus, {
+  auth: false,
+});
+
