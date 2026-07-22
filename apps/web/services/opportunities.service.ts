@@ -122,11 +122,32 @@ const createOpportunityService = asyncHandlerClient(
 );
 
 const getOpportunityStatusesService = asyncHandlerClient(
-  async (workspaceId: string) => {
-    const response = await ApiClient.get(
-      `/opportunities/statuses?workspaceId=${workspaceId}`,
-    );
+  async (params: { workspaceId: string; includeInactive?: boolean }) => {
+    const { workspaceId, includeInactive = false } = params;
+    const url = `/opportunities/statuses?workspaceId=${workspaceId}${includeInactive ? '&includeInactive=true' : ''}`;
+    const response = await ApiClient.get(url);
     return response.data?.data || [];
+  },
+);
+
+const getAffectedOpportunitiesForStageService = asyncHandlerClient(
+  async (params: { stageId: string; workspaceId: string; limit?: number; offset?: number }) => {
+    const { stageId, workspaceId, limit = 10, offset = 0 } = params;
+    const response = await ApiClient.get(
+      `/opportunities/statuses/${stageId}/affected?workspaceId=${workspaceId}&limit=${limit}&offset=${offset}`,
+    );
+    return response.data?.data as { total_count: number; records: { id: string; name: string }[] };
+  },
+);
+
+const reassignOpportunityStageService = asyncHandlerClient(
+  async (params: { stageId: string; new_status_id: string; workspace_id: string }) => {
+    const { stageId, new_status_id, workspace_id } = params;
+    const response = await ApiClient.patch(`/opportunities/statuses/${stageId}/reassign`, {
+      new_status_id,
+      workspace_id,
+    });
+    return response.data?.data as { reassigned_count: number; disabled_status_id: string };
   },
 );
 
@@ -184,6 +205,8 @@ export {
   updateOpportunityService,
   createOpportunityService,
   getOpportunityStatusesService,
+  getAffectedOpportunitiesForStageService,
+  reassignOpportunityStageService,
   createOpportunityStageService,
   updateOpportunityStageService,
   deleteOpportunityStageService,
