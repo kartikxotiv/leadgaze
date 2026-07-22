@@ -308,6 +308,14 @@ export function CsvImportDialog({
 
         {/* ── Scrollable Body ── */}
         <div className="min-h-0 flex-1 overflow-y-auto">
+          {/* ── Error ── */}
+          {errorMessage && (
+            <div className="mx-6 mt-4 flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-rose-700 dark:border-rose-900 dark:bg-rose-950/30 dark:text-rose-200">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              <p className="text-sm">{errorMessage}</p>
+            </div>
+          )}
+
           {!selectedFile ? (
             /* ── Drop Zone ── */
             <div className="p-6">
@@ -426,13 +434,6 @@ export function CsvImportDialog({
                 </div>
               )}
 
-              {/* ── Error ── */}
-              {errorMessage && (
-                <div className="mx-6 mt-4 flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-rose-700 dark:border-rose-900 dark:bg-rose-950/30 dark:text-rose-200">
-                  <AlertCircle className="h-4 w-4 shrink-0" />
-                  <p className="text-sm">{errorMessage}</p>
-                </div>
-              )}
 
               {/* ── Spreadsheet-style mapping table ── */}
               <div className="overflow-x-auto">
