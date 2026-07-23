@@ -47,7 +47,21 @@ export default function HomePage() {
       // Title
       doc.setFontSize(18);
       doc.setTextColor(40, 40, 40);
-      doc.text('Sales and Service Dashboard Report', 14, 22);
+      
+      const getPortalName = (key?: string | null) => {
+        switch (key) {
+          case 'sales':
+          case 'leadgaze': return 'Sales';
+          case 'service_cloud': return 'Service Cloud';
+          case 'hrms': return 'HRMS';
+          case 'funds': return 'Funds';
+          case 'inventory': return 'Inventory';
+          default: return key ? key.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : 'Sales';
+        }
+      };
+      
+      const portalName = getPortalName(currentWorkspace?.currentProductKey);
+      doc.text(`${portalName} Dashboard Report`, 14, 22);
 
       // Filter Details
       doc.setFontSize(11);
