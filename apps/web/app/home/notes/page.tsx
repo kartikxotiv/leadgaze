@@ -598,6 +598,7 @@ export default function NotesPage() {
                     >
                       <span
                         className="col-resize-handle"
+                        data-min-width={30}
                         {...getResizeHandleProps('sno')}
                       />
                     </SortableTableHead>

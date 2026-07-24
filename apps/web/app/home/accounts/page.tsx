@@ -163,6 +163,7 @@ export default function AccountsPage() {
         label: 'S. No.',
         sortable: false,
         width: 'w-12',
+        minWidth: 30,
       },
       {
         id: 'name',
@@ -959,6 +960,7 @@ export default function AccountsPage() {
                       >
                         <span
                           className="col-resize-handle"
+                          data-min-width={(field as any).minWidth}
                           {...getResizeHandleProps(field.id)}
                         />
                       </ColumnHeader>

@@ -223,6 +223,7 @@ export default function OpportunitiesPage() {
         label: 'S. No.',
         sortable: false,
         width: 'w-12',
+        minWidth: 30,
       },
       { id: 'name', key: 'name', label: 'Name', sortKey: 'opportunity_name' },
       {
@@ -1278,6 +1279,7 @@ export default function OpportunitiesPage() {
                       >
                         <span
                           className="col-resize-handle"
+                          data-min-width={(field as any).minWidth}
                           {...getResizeHandleProps(field.id)}
                         />
                       </ColumnHeader>

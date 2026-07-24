@@ -736,6 +736,7 @@ export default function RemindersPage() {
                     >
                       <span
                         className="col-resize-handle"
+                        data-min-width={30}
                         {...getResizeHandleProps('sno')}
                       />
                     </SortableTableHead>

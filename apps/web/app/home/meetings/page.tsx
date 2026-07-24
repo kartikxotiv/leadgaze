@@ -2476,6 +2476,7 @@ export default function MeetingsPage() {
                     >
                       <span
                         className="col-resize-handle"
+                        data-min-width={30}
                         {...getResizeHandleProps('sno')}
                       />
                     </SortableTableHead>
