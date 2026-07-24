@@ -136,6 +136,9 @@ export function ColumnHeader({
   // Determine if this is a custom (non-system) field
   const isDynamicField = !!field && !field.is_system;
 
+  // Identify frontend-only columns that shouldn't have edit/lock icons
+  const isFrontendOnly = columnId === 'sno' || columnId === 'actions';
+
   const resolvedEditClick =
     onEditClick ??
     (onUpdateField && field ? () => onUpdateField(field.id, {}) : undefined);
@@ -183,7 +186,7 @@ export function ColumnHeader({
         )}
         <span className="flex min-w-0 flex-1 items-center gap-1 truncate">
           <span className="truncate">{label}</span>
-          {isRestricted && (
+          {isRestricted && !isFrontendOnly && (
             <Lock
               className="text-muted-foreground h-3 w-3"
               aria-label="Restricted field"
@@ -200,7 +203,7 @@ export function ColumnHeader({
             )}
           />
         )}
-        {(isAdmin || isDynamicField) && resolvedEditClick && (
+        {(isAdmin || isDynamicField) && resolvedEditClick && !isFrontendOnly && (
           <Button
             variant="ghost"
             size="sm"

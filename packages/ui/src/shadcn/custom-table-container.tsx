@@ -41,7 +41,7 @@ export const CustomTableContainer: React.FC<CustomTableContainerProps> = ({
           <div className={cn(containerClass, "flex-1")}>{children}</div>
         </CardContent>
       </Card>
-      {pagination && <div className="mt-2">{pagination}</div>}
+      {pagination && <div className="mt-1">{pagination}</div>}
       {footerExtras && <div className="mt-1">{footerExtras}</div>}
     </div>
   );

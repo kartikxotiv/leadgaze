@@ -88,7 +88,7 @@ export const TablePagination: React.FC<TablePaginationProps> = ({
   const end = Math.min(currentPage * pageSize, totalCount);
 
   return (
-    <div className="primary-text-regular text-leadgaze-muted bg-sidebar sticky bottom-0 z-10 -mx-4 flex shrink-0 items-center justify-between border-t px-4 py-1.5 lg:-mx-8 lg:px-8 flex-wrap sm:flex-nowrap">
+    <div className="primary-text-regular text-leadgaze-muted bg-sidebar sticky bottom-0 z-10 -mx-4 flex shrink-0 items-center justify-between border-t px-4 py-1 lg:-mx-8 lg:px-8 flex-wrap sm:flex-nowrap">
       <div className="flex items-center gap-1">
         Showing{' '}
         <span className="primary-text-regular text-leadgaze-muted">

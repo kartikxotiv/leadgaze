@@ -132,7 +132,7 @@ export const SortableTableHead: React.FC<SortableTableHeadProps> = ({
       }
       {...props}
     >
-      <div className="flex items-center gap-1.5 pr-4">
+      <div className="flex items-center gap-1.5 pr-1">
         <span className="flex-1 truncate">{label}</span>
         {sortable && (
           <SortIcon
