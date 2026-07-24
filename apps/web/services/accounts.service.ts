@@ -138,10 +138,33 @@ export interface AccountType {
   is_system?: boolean;
 }
 
-const getAccountTypesService = asyncHandlerClient(async (workspaceId: string) => {
-  const response = await ApiClient.get(`/accounts/types?workspaceId=${workspaceId}`);
+const getAccountTypesService = asyncHandlerClient(async (params: { workspaceId: string; includeInactive?: boolean }) => {
+  const { workspaceId, includeInactive = false } = params;
+  const url = `/accounts/types?workspaceId=${workspaceId}${includeInactive ? '&includeInactive=true' : ''}`;
+  const response = await ApiClient.get(url);
   return (response.data?.data || []) as AccountType[];
 });
+
+const getAffectedAccountsForTypeService = asyncHandlerClient(
+  async (params: { typeId: string; workspaceId: string; limit?: number; offset?: number }) => {
+    const { typeId, workspaceId, limit = 10, offset = 0 } = params;
+    const response = await ApiClient.get(
+      `/accounts/types/${typeId}/affected?workspaceId=${workspaceId}&limit=${limit}&offset=${offset}`,
+    );
+    return response.data?.data as { total_count: number; records: { id: string; name: string }[] };
+  },
+);
+
+const reassignAccountTypeService = asyncHandlerClient(
+  async (params: { typeId: string; new_status_id: string; workspace_id: string }) => {
+    const { typeId, new_status_id, workspace_id } = params;
+    const response = await ApiClient.patch(`/accounts/types/${typeId}/reassign`, {
+      new_status_id,
+      workspace_id,
+    });
+    return response.data?.data as { reassigned_count: number; disabled_status_id: string };
+  },
+);
 
 const createAccountTypeService = asyncHandlerClient(
   async (payload: Partial<Record<string, any>>) => {
@@ -176,6 +199,8 @@ export {
   updateAccountService,
   deleteAccountService,
   getAccountTypesService,
+  getAffectedAccountsForTypeService,
+  reassignAccountTypeService,
   createAccountTypeService,
   updateAccountTypeService,
   deleteAccountTypeService,

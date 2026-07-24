@@ -56,12 +56,12 @@ export function ManageableStatusSelect({
     queryKey,
     queryFn: () =>
       moduleKey === 'leads'
-        ? (getLeadStatusesService(workspaceId) as Promise<StatusItem[]>)
+        ? (getLeadStatusesService({ workspaceId }) as Promise<StatusItem[]>)
         : moduleKey === 'opportunities'
-          ? (getOpportunityStatusesService(workspaceId) as Promise<
+          ? (getOpportunityStatusesService({ workspaceId }) as Promise<
               StatusItem[]
             >)
-          : (getAccountTypesService(workspaceId) as Promise<StatusItem[]>),
+          : (getAccountTypesService({ workspaceId }) as Promise<StatusItem[]>),
     enabled: !!workspaceId,
   });
 

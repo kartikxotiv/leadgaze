@@ -122,7 +122,7 @@ export default function CreateLeadDialog({
       if (!workspace?.id) {
         return Promise.resolve([]);
       }
-      return getLeadStatusesService(workspace.id).catch((error) => {
+      return getLeadStatusesService({ workspaceId: workspace.id }).catch((error) => {
         console.error('❌ Error fetching statuses:', error);
         return [];
       });

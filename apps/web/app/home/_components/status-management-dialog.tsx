@@ -49,6 +49,9 @@ export interface StatusItem {
   icon?: string;
   is_closed?: boolean;
   is_system?: boolean;
+  is_default?: boolean;
+  is_active?: boolean;
+  sort_order?: number;
 }
 
 export type StatusModuleKey = 'leads' | 'opportunities' | 'accounts';
@@ -220,7 +223,7 @@ export function StatusManagementDialog({
         </DialogHeader>
 
         <form id="status-form" onSubmit={handleSubmit}>
-          <div className="space-y-4 px-6 py-4">
+          <div className="space-y-4 px-6 py-0">
             {/* Name */}
             <div className="space-y-2">
               <Label htmlFor="status_name">
@@ -273,24 +276,39 @@ export function StatusManagementDialog({
             </div>
 
             {/* Is Closed */}
-            <div className="flex items-center gap-3">
-              <input
-                id="is_closed"
-                type="checkbox"
-                checked={isClosed}
-                onChange={(e) => setIsClosed(e.target.checked)}
-                disabled={isPending}
-                className="h-4 w-4 rounded border-gray-300"
-              />
-              <Label htmlFor="is_closed" className="cursor-pointer">
-                Mark as closed / terminal state
-              </Label>
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center gap-3">
+                <input
+                  id="is_closed"
+                  type="checkbox"
+                  checked={isClosed}
+                  onChange={(e) => setIsClosed(e.target.checked)}
+                  disabled={isPending || existingStatus?.is_default}
+                  className="h-4 w-4 rounded border-gray-300 disabled:opacity-50"
+                />
+                <Label 
+                  htmlFor="is_closed" 
+                  className={existingStatus?.is_default ? "opacity-60 cursor-not-allowed" : "cursor-pointer"}
+                >
+                  Mark as closed / terminal state
+                </Label>
+              </div>
+              {existingStatus?.is_default && (
+                <p className="text-[11px] text-muted-foreground ml-7">
+                  The default status cannot be marked as closed.
+                </p>
+              )}
             </div>
 
             {/* Delete confirm section */}
-            {isEditMode && existingStatus && !existingStatus.is_system && (
-              <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3">
-                {showDeleteConfirm ? (
+            {isEditMode && existingStatus && (
+              <div className="rounded-md border border-destructive/30 bg-[#FFDAD6] p-3">
+                {existingStatus.is_system || existingStatus.is_default ? (
+                  <div className="flex items-center gap-2 text-[#93000A] text-sm font-medium">
+                    <AlertTriangle className="h-4 w-4" />
+                    Cannot delete {existingStatus.is_default ? 'default' : 'system'} status.
+                  </div>
+                ) : showDeleteConfirm ? (
                   <div className="space-y-3">
                     <div className="flex items-center gap-2 text-destructive text-sm font-medium">
                       <AlertTriangle className="h-4 w-4" />

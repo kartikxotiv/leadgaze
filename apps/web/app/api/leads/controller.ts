@@ -576,6 +576,7 @@ const getLeadSources = catchAsync(
 /**
  * GET /api/leads/statuses
  * Fetch all lead statuses for a workspace
+ * Supports ?includeInactive=true to return all statuses (for management dialog)
  */
 const getLeadStatuses = catchAsync(
   async ({
@@ -587,6 +588,7 @@ const getLeadStatuses = catchAsync(
     const supabase = getSupabaseServerClient();
     const url = new URL(request.url);
     const workspaceId = url.searchParams.get('workspaceId');
+    const includeInactive = url.searchParams.get('includeInactive') === 'true';
 
     if (!workspaceId) {
       return NextResponse.json(
@@ -609,12 +611,18 @@ const getLeadStatuses = catchAsync(
       );
     }
 
-    const { data: statuses, error } = await supabase
+    let query = supabase
       .from('entity_statuses')
-      .select('id, status_name, status_key, color, icon, is_closed, sort_order')
+      .select('id, status_name, status_key, color, icon, is_closed, is_active, is_system, is_default, sort_order')
       .eq('workspace_id', workspaceId)
-      .eq('module_id', module?.id)
+      .eq('module_id', module.id)
       .order('sort_order', { ascending: true });
+
+    if (!includeInactive) {
+      query = query.eq('is_active', true);
+    }
+
+    const { data: statuses, error } = await query;
 
     if (error) {
       console.error('Get statuses error:', error);
@@ -625,6 +633,140 @@ const getLeadStatuses = catchAsync(
       'Statuses retrieved successfully',
       statuses || [],
     );
+  },
+);
+
+/**
+ * GET /api/leads/statuses/[id]/affected
+ * Get count + first N leads using this status (for pre-disable confirmation modal)
+ */
+const getAffectedLeads = catchAsync(
+  async ({
+    request,
+    params,
+  }: {
+    request: NextRequest;
+    params?: Record<string, string>;
+  }) => {
+    const adminClient = getSupabaseServerAdminClient<Database>();
+    const url = new URL(request.url);
+    const workspaceId = url.searchParams.get('workspaceId');
+    const limit = parseInt(url.searchParams.get('limit') || '10', 10);
+    const offset = parseInt(url.searchParams.get('offset') || '0', 10);
+    const statusId = params?.id;
+
+    if (!workspaceId || !statusId) {
+      return NextResponse.json(
+        { message: 'workspaceId and status id are required' },
+        { status: 400 },
+      );
+    }
+
+    const { data: records, error, count } = await adminClient
+      .from('crm_leads')
+      .select('id, first_name, last_name, email', { count: 'exact' })
+      .eq('workspace_id', workspaceId)
+      .eq('status_id', statusId)
+      .eq('is_deleted', false)
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (error) {
+      console.error('Get affected leads error:', error);
+      throw error;
+    }
+
+    const mapped = (records || []).map((r: any) => ({
+      id: r.id,
+      name: [r.first_name, r.last_name].filter(Boolean).join(' '),
+      email: r.email || null,
+    }));
+
+    return successDataResponse('Affected leads retrieved successfully', {
+      total_count: count ?? 0,
+      records: mapped,
+    });
+  },
+);
+
+/**
+ * PATCH /api/leads/statuses/[id]/reassign
+ * Bulk-reassign all leads from old status to new status, then disable old status.
+ * Body: { new_status_id: string, workspace_id: string }
+ */
+const reassignLeadStatus = catchAsync(
+  async ({
+    request,
+    params,
+  }: {
+    request: NextRequest;
+    params?: Record<string, string>;
+  }) => {
+    const supabase = getSupabaseServerClient();
+    const adminClient = getSupabaseServerAdminClient<Database>();
+    const oldStatusId = params?.id;
+    const body = await request.json();
+    const { new_status_id, workspace_id } = body;
+
+    if (!oldStatusId || !new_status_id || !workspace_id) {
+      return NextResponse.json(
+        { message: 'id, new_status_id, and workspace_id are required' },
+        { status: 400 },
+      );
+    }
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Validate new status is active and belongs to the same workspace
+    const { data: newStatus } = await adminClient
+      .from('entity_statuses')
+      .select('id, is_active')
+      .eq('id', new_status_id)
+      .eq('workspace_id', workspace_id)
+      .eq('is_active', true)
+      .single();
+
+    if (!newStatus) {
+      return NextResponse.json(
+        { message: 'New status not found or is not active' },
+        { status: 400 },
+      );
+    }
+
+    // Bulk update all affected leads
+    const { count: reassignedCount, error: updateError } = await adminClient
+      .from('crm_leads')
+      .update({ status_id: new_status_id, updated_by: user.id, updated_at: new Date().toISOString() })
+      .eq('workspace_id', workspace_id)
+      .eq('status_id', oldStatusId)
+      .eq('is_deleted', false);
+
+    if (updateError) {
+      console.error('Reassign leads error:', updateError);
+      throw updateError;
+    }
+
+    // Now disable the old status
+    const { error: disableError } = await adminClient
+      .from('entity_statuses')
+      .update({ is_active: false, updated_by: user.id, updated_at: new Date().toISOString() })
+      .eq('id', oldStatusId);
+
+    if (disableError) {
+      console.error('Disable status error:', disableError);
+      throw disableError;
+    }
+
+    return successDataResponse('Leads reassigned and status disabled successfully', {
+      reassigned_count: reassignedCount ?? 0,
+      disabled_status_id: oldStatusId,
+    });
   },
 );
 
@@ -909,6 +1051,8 @@ export {
   createLead,
   getLeadSources,
   getLeadStatuses,
+  getAffectedLeads,
+  reassignLeadStatus,
   createLeadSource,
   createLeadStatus,
   updateLeadStatus,
