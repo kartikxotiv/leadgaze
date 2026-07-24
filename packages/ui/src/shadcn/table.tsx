@@ -63,7 +63,7 @@ const TableHead: React.FC<React.ThHTMLAttributes<HTMLTableCellElement>> = ({
 }) => (
   <th
     className={cn(
-      'table-header-border table-row-border primary-text-medium text-leadgaze-dark dark:text-white first:border-l-0 last:border-r-0 h-[42px] px-4 text-left align-middle [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px] dark:dark-black-light-bg',
+      'table-header-border table-row-border primary-text-medium text-leadgaze-dark dark:text-white first:border-l-0 last:border-r-0 h-[42px] px-2 text-left align-middle [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px] dark:dark-black-light-bg',
       className,
     )}
     {...props}

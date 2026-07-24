@@ -248,7 +248,7 @@ function CoreVariableDialog({
             <Input value={value} onChange={(event) => setValue(event.target.value)} placeholder="123 Main St" />
           </div>
           </div>
-          <DialogFooter className="border-t border-gray-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
+          <DialogFooter className="border-t border-gray-200 bg-white p-2 dark:border-slate-800 dark:bg-slate-950">
             <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSaving}>Cancel</Button>
             <Button onClick={handleSave} disabled={isSaving}>
               {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}

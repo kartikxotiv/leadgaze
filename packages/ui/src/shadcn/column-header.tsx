@@ -173,7 +173,7 @@ export function ColumnHeader({
       style={style}
       onClick={handleClick}
     >
-      <div className="flex items-center gap-1.5 pr-6">
+      <div className="flex items-center gap-1.5 pr-1">
         {/* Custom field indicator dot */}
         {isDynamicField && (
           <span
@@ -181,7 +181,7 @@ export function ColumnHeader({
             title="Custom Field"
           />
         )}
-        <span className="flex min-w-0 flex-1 items-center gap-2 truncate">
+        <span className="flex min-w-0 flex-1 items-center gap-1 truncate">
           <span className="truncate">{label}</span>
           {isRestricted && (
             <Lock
