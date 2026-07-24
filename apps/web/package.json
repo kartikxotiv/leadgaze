@@ -47,6 +47,7 @@
     "@kit/integration-google-ads": "workspace:*",
     "@kit/integration-meta-ads": "workspace:*",
     "@kit/integration-website": "workspace:*",
+    "@kit/integration-whatsapp": "workspace:*",
     "@kit/integration-zapier": "workspace:*",
     "@kit/integration-zoom": "workspace:*",
     "@kit/inventory": "workspace:*",

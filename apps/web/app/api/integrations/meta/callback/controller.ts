@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 import { catchAsync } from '~/utils/response-handler';
 import { handleMetaAdsCallback } from '@kit/integration-meta-ads';
+import { handleWhatsAppCallback } from '@kit/integration-whatsapp';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,7 +18,7 @@ export const metaAdsCallback = catchAsync(
     const state = searchParams.get('state');
     const error = searchParams.get('error');
 
-    const fallbackRedirect = '/home/sales/workspace-settings/integrations/meta-ads';
+    const fallbackRedirect = '/home/sales/workspace-settings/integrations';
 
     if (error) {
       return NextResponse.redirect(
@@ -31,8 +32,25 @@ export const metaAdsCallback = catchAsync(
       );
     }
 
+    let parsedState: Record<string, string> = {};
+    try {
+      parsedState = JSON.parse(Buffer.from(state, 'base64').toString('utf-8'));
+    } catch {
+      // invalid state
+    }
+
+    const type = parsedState.type ?? 'ads';
     const supabase = getSupabaseServerClient();
-    const { redirectUrl } = await handleMetaAdsCallback(code, state, supabase);
+
+    let redirectUrl = fallbackRedirect;
+
+    if (type === 'whatsapp') {
+      const result = await handleWhatsAppCallback(code, state, supabase);
+      redirectUrl = result.redirectUrl;
+    } else {
+      const result = await handleMetaAdsCallback(code, state, supabase);
+      redirectUrl = result.redirectUrl;
+    }
 
     return NextResponse.redirect(new URL(redirectUrl, request.url));
   },

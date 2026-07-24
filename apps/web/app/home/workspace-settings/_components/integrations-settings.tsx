@@ -73,31 +73,35 @@ export function WorkspaceIntegrationsSettings({ workspace }: WorkspaceIntegratio
       path: `/home/sales/workspace-settings/integrations/meta-ads`,
       connected: true,
     },
+    {
+      id: 'whatsapp',
+      name: 'WhatsApp Business',
+      description: 'Receive WhatsApp messages in a shared inbox and capture leads from conversations.',
+      icon: <MessageSquare className="h-6 w-6 text-green-500" />,
+      badge: 'Available',
+      badgeVariant: 'default' as const,
+      path: `/home/sales/workspace-settings/integrations/whatsapp`,
+      connected: true,
+    },
   ];
 
   const comingSoonIntegrations = [
 
-    {
-      id: 'linkedin-ads',
-      name: 'LinkedIn Lead Forms',
-      description: 'Capture high-intent B2B leads from LinkedIn Campaign Manager.',
-      icon: <Sparkles className="h-6 w-6 text-blue-700" />,
-      badge: 'Coming Soon',
-    },
-    {
-      id: 'whatsapp',
-      name: 'WhatsApp Business',
-      description: 'Convert WhatsApp chat interactions into CRM leads and support cases.',
-      icon: <MessageSquare className="h-6 w-6 text-green-500" />,
-      badge: 'Planned',
-    },
-    {
-      id: 'calendly',
-      name: 'Calendly Integration',
-      description: 'Automatically route scheduled meetings to assigned lead or ticket owners.',
-      icon: <Calendar className="h-6 w-6 text-blue-400" />,
-      badge: 'Planned',
-    }
+    // {
+    //   id: 'linkedin-ads',
+    //   name: 'LinkedIn Lead Forms',
+    //   description: 'Capture high-intent B2B leads from LinkedIn Campaign Manager.',
+    //   icon: <Sparkles className="h-6 w-6 text-blue-700" />,
+    //   badge: 'Coming Soon',
+    // },
+
+    // {
+    //   id: 'calendly',
+    //   name: 'Calendly Integration',
+    //   description: 'Automatically route scheduled meetings to assigned lead or ticket owners.',
+    //   icon: <Calendar className="h-6 w-6 text-blue-400" />,
+    //   badge: 'Planned',
+    // }
   ];
 
   return (
