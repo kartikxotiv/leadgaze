@@ -47,6 +47,83 @@ export async function loadImageAsBase64(url: string): Promise<string | null> {
 }
 
 /**
+ * Extracts a Lucide icon rendered in the DOM to a PNG base64 string.
+ */
+export async function getIconAsBase64(id: string): Promise<string | null> {
+  if (typeof document === 'undefined') return null;
+  const el = document.getElementById(id);
+  if (!el) return null;
+  const svg = el.outerHTML;
+  const svgWithXmlns = svg.includes('xmlns=') ? svg : svg.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"');
+  const blob = new Blob([svgWithXmlns], { type: 'image/svg+xml;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 24;
+      canvas.height = 24;
+      const ctx = canvas.getContext('2d');
+      if (ctx) ctx.drawImage(img, 0, 0);
+      resolve(canvas.toDataURL('image/png'));
+      URL.revokeObjectURL(url);
+    };
+    img.onerror = () => resolve(null);
+    img.src = url;
+  });
+}
+
+/**
+ * Generates a donut chart as a PNG base64 string.
+ */
+export function generateDonutChartBase64(data: { value: number; color: string }[], size = 200, holeRatio = 0.6): string {
+  if (typeof document === 'undefined') return '';
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return '';
+
+  const cx = size / 2;
+  const cy = size / 2;
+  const radius = size / 2;
+  const holeRadius = radius * holeRatio;
+  const total = data.reduce((sum, d) => sum + d.value, 0);
+
+  if (total === 0) {
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, 0, 2 * Math.PI);
+    ctx.fillStyle = '#EBEFFF';
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(cx, cy, holeRadius, 0, 2 * Math.PI);
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fill();
+    return canvas.toDataURL('image/png');
+  }
+
+  let startAngle = -Math.PI / 2;
+  for (const d of data) {
+    if (d.value === 0) continue;
+    const sliceAngle = (d.value / total) * 2 * Math.PI;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, radius, startAngle, startAngle + sliceAngle);
+    ctx.fillStyle = d.color;
+    ctx.fill();
+    startAngle += sliceAngle;
+  }
+
+  ctx.beginPath();
+  ctx.arc(cx, cy, holeRadius, 0, 2 * Math.PI);
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fill();
+
+  return canvas.toDataURL('image/png');
+}
+
+/**
  * Draws the branded header on the current page.
  * Returns the Y position after the header so content can start below it.
  */
