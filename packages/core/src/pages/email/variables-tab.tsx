@@ -76,7 +76,7 @@ export function CoreEmailVariablesTab({ workspaceId }: { workspaceId: string }) 
   };
 
   return (
-    <div className="space-y-2">
+    <div className="flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col space-y-2">
       {/* Full-width search / filter / actions toolbar */}
                           <div className="w-full max-w-full min-w-0 shrink-0 border-b">
                             <ListToolBar

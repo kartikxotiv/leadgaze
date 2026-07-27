@@ -286,7 +286,7 @@ export function CoreEmailSettingsPage({
           description="Connect shared Core email accounts for sending, inbox sync, and module-level replies."
         />
       ) : null}
-      <BodyComponent className="grid gap-6">
+      <BodyComponent className={embedded ? "flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col" : "grid gap-6"}>
         {!workspaceId ? (
           <div className="text-muted-foreground flex h-48 items-center justify-center rounded-lg border-2 border-dashed">
             Select a workspace to configure email.
@@ -300,8 +300,8 @@ export function CoreEmailSettingsPage({
             </AlertDescription>
           </Alert>
         ) : (
-          <Tabs defaultValue={settingsTabs[0]!.value} className="space-y-6">
-            <TabsList className="mb-0">
+          <Tabs defaultValue={settingsTabs[0]!.value} className="flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col space-y-6">
+            <TabsList className="mb-0 shrink-0 w-fit self-start">
               {settingsTabs.map((tab) => (
                 <TabsTrigger key={tab.value} value={tab.value}>
                   {tab.label}
@@ -310,8 +310,14 @@ export function CoreEmailSettingsPage({
             </TabsList>
 
             {canManageAccounts ? (
-              <TabsContent value="accounts">
-                <CardWidgetContainer title="Email Accounts" desc="Connect Gmail or SMTP/IMAP accounts for Core email." icon2={<Dialog
+              <TabsContent
+                value="accounts"
+                className="mt-0 flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col data-[state=active]:flex data-[state=active]:flex-1 data-[state=active]:flex-col data-[state=active]:min-h-0"
+              >
+                <CardWidgetContainer
+                  className="flex-1 min-h-0"
+                  title="Email Accounts"
+                  desc="Connect Gmail or SMTP/IMAP accounts for Core email." icon2={<Dialog
                       open={isConnectDialogOpen}
                       onOpenChange={(open) => {
                         setIsConnectDialogOpen(open);
@@ -758,13 +764,19 @@ export function CoreEmailSettingsPage({
             ) : null}
 
             {canManageTemplates ? (
-              <TabsContent value="templates">
+              <TabsContent
+                value="templates"
+                className="mt-0 flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col data-[state=active]:flex data-[state=active]:flex-1 data-[state=active]:flex-col data-[state=active]:min-h-0"
+              >
                 <CoreEmailTemplatesTab workspaceId={workspaceId} />
               </TabsContent>
             ) : null}
 
             {canManageVariables ? (
-              <TabsContent value="variables">
+              <TabsContent
+                value="variables"
+                className="mt-0 flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col data-[state=active]:flex data-[state=active]:flex-1 data-[state=active]:flex-col data-[state=active]:min-h-0"
+              >
                 <CoreEmailVariablesTab workspaceId={workspaceId} />
               </TabsContent>
             ) : null}
