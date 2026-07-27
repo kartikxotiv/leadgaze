@@ -6,7 +6,7 @@ import { getSupabaseServerClient } from '@kit/supabase/server-client';
 import INVITE_MEMBER_TEMPLATE from '~/constants/email.templates/member-invite.template';
 import { transporter } from '~/utils/send-mail';
 
-import { Database } from '../../../lib/database.types';
+import { Database } from '@kit/supabase/database';
 import {
   catchAsync,
   successDataResponse,

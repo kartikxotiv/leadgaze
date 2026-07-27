@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-import type { Database } from '~/lib/database.types';
+import type { Database } from '@kit/supabase/database';
 
 /**
  * Access tables in the `core` Postgres schema.
