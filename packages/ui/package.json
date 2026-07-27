@@ -152,6 +152,7 @@
     "./multi-step-form": "./src/makerkit/multi-step-form.tsx",
     "./app-breadcrumbs": "./src/makerkit/app-breadcrumbs.tsx",
     "./empty-state": "./src/makerkit/empty-state.tsx",
+    "./download-report-button": "./src/shadcn/download-report-button.tsx",
     "./marketing": "./src/makerkit/marketing/index.tsx"
   },
   "typesVersions": {
