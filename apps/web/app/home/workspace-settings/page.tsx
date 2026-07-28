@@ -215,7 +215,10 @@ export default function WorkspaceSettingsPage() {
         description="Manage your workspace configuration, email accounts, meeting accounts, and templates."
       />
       <PageBody className="sticky flex min-w-0 flex-1 shrink-0 flex-col overflow-hidden">
-        <Tabs defaultValue={defaultTab} className="space-y-6 overflow-auto">
+        <Tabs
+          defaultValue={defaultTab}
+          className="flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col space-y-6"
+        >
           <TabsList className="mb-1 h-auto w-full justify-start gap-8 rounded-none border-b bg-transparent p-0">
             {canViewGeneralSettings && (
               <TabsTrigger
@@ -274,20 +277,29 @@ export default function WorkspaceSettingsPage() {
           </TabsList>
 
           {canViewGeneralSettings && workspace?.id && (
-            <TabsContent value="general">
+            <TabsContent
+              value="general"
+              className="mt-0 flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col data-[state=active]:flex data-[state=active]:flex-1 data-[state=active]:flex-col data-[state=active]:min-h-0"
+            >
               {/* <WorkspaceManagement currentWorkspace={workspace} /> */}
               <WorkspaceGeneralSettings workspaceId={workspace.id} />
             </TabsContent>
           )}
 
           {canViewSettings && workspace?.id && (
-            <TabsContent value="localization">
+            <TabsContent
+              value="localization"
+              className="mt-0 flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col data-[state=active]:flex data-[state=active]:flex-1 data-[state=active]:flex-col data-[state=active]:min-h-0"
+            >
               <WorkspaceLocalizationSettings workspaceId={workspace.id} />
             </TabsContent>
           )}
 
           {canViewSubscription && (
-            <TabsContent value="billing">
+            <TabsContent
+              value="billing"
+              className="mt-0 flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col data-[state=active]:flex data-[state=active]:flex-1 data-[state=active]:flex-col data-[state=active]:min-h-0"
+            >
               <OrgSubscriptionPage
                 canManageSubscription={canManageSubscription}
               />
@@ -295,7 +307,10 @@ export default function WorkspaceSettingsPage() {
           )}
 
           {canManageEmail && (
-            <TabsContent value="emails">
+            <TabsContent
+              value="emails"
+              className="mt-0 flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col data-[state=active]:flex data-[state=active]:flex-1 data-[state=active]:flex-col data-[state=active]:min-h-0"
+            >
               {/* {shouldUseWebEmailSettings ? (
               <EmailAccountsSettings workspace={workspace} />
             ) : ( */}
@@ -315,13 +330,19 @@ export default function WorkspaceSettingsPage() {
           )}
 
           {showMeetingsTab && (
-            <TabsContent value="meetings">
+            <TabsContent
+              value="meetings"
+              className="mt-0 flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col data-[state=active]:flex data-[state=active]:flex-1 data-[state=active]:flex-col data-[state=active]:min-h-0"
+            >
               <MeetingAccountsSettings workspace={workspace} />
             </TabsContent>
           )}
 
           {isSalesModule && (
-            <TabsContent value="integrations">
+            <TabsContent
+              value="integrations"
+              className="mt-0 flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col data-[state=active]:flex data-[state=active]:flex-1 data-[state=active]:flex-col data-[state=active]:min-h-0"
+            >
               <WorkspaceIntegrationsSettings workspace={workspace} />
             </TabsContent>
           )}

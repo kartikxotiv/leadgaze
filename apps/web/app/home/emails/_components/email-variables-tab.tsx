@@ -111,7 +111,7 @@ export function EmailVariablesTab() {
             {isLoadingVariables ? (
               [...Array(5)].map((_, i) => (
                 <TableRow key={i}>
-                  <TableCell className="h-[52px] px-4 py-2" colSpan={2}>
+                  <TableCell className="h-[32px] px-4 py-2" colSpan={2}>
                     <Skeleton className="h-7 w-full" />
                   </TableCell>
                   {canManage && (

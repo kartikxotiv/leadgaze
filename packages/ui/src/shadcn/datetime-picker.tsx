@@ -244,6 +244,14 @@ export function DateTimePicker({
     setDate(value);
   }, [value]);
 
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      // Revert to original value when closed without saving
+      setDate(value);
+    }
+    setIsOpen(open);
+  };
+
   const handleDateSelect = (selectedDate: Date | undefined) => {
     if (selectedDate) {
       const newDate = date
@@ -260,15 +268,8 @@ export function DateTimePicker({
             milliseconds: 0,
           });
       setDate(newDate);
-      if (actualMode === 'date') {
-        onChange?.(newDate);
-        setIsOpen(false);
-      } else {
-        onChange?.(newDate);
-      }
     } else {
       setDate(undefined);
-      onChange?.(undefined);
     }
   };
 
@@ -297,7 +298,6 @@ export function DateTimePicker({
     }
 
     setDate(newDate);
-    onChange?.(newDate);
   };
 
   const hours = React.useMemo(() => {
@@ -329,7 +329,7 @@ export function DateTimePicker({
   };
 
   return (
-    <Popover open={isOpen} onOpenChange={setIsOpen}>
+    <Popover open={isOpen} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
@@ -435,30 +435,41 @@ export function DateTimePicker({
           )}
         </div>
         <div className="flex items-center justify-between border-t p-3">
+          <div className="flex gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setDate(undefined);
+                onChange?.(undefined);
+                setIsOpen(false);
+              }}
+            >
+              Clear
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                const now = new Date();
+                setDate(now);
+                onChange?.(now);
+                if (actualMode === 'date') {
+                  setIsOpen(false);
+                }
+              }}
+            >
+              Today
+            </Button>
+          </div>
           <Button
-            variant="ghost"
             size="sm"
             onClick={() => {
-              setDate(undefined);
-              onChange?.(undefined);
+              onChange?.(date);
               setIsOpen(false);
             }}
           >
-            Clear
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              const now = new Date();
-              setDate(now);
-              onChange?.(now);
-              if (actualMode === 'date') {
-                setIsOpen(false);
-              }
-            }}
-          >
-            Today
+            Ok
           </Button>
         </div>
       </PopoverContent>

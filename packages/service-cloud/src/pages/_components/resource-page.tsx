@@ -681,7 +681,7 @@ export function ServiceCloudResourcePage({
                       )}
                       <TableCell
                         colSpan={visibleColumns.length}
-                        className="h-[52px] px-4 py-2"
+                        className="h-[32px] px-4 py-2"
                       >
                         <Skeleton className="h-7 w-full" />
                       </TableCell>
@@ -744,7 +744,7 @@ export function ServiceCloudResourcePage({
                             {canDelete ? (
                               <Button
                                 variant="ghost"
-                                size="icon"
+                                size="sm"                                
                                 onClick={() => setDeletingRecord(record)}
                               >
                                 <Trash2 className="text-muted-foreground h-4 w-4" />

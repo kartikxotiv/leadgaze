@@ -1009,7 +1009,7 @@ export function ServiceCloudTicketsPage({
               </div>
             </div>
 
-            <DialogFooter className="border-t border-gray-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
+            <DialogFooter className="border-t border-gray-200 bg-white p-2 dark:border-slate-800 dark:bg-slate-950">
               <Button
                 className="mb-2"
                 variant="outline"

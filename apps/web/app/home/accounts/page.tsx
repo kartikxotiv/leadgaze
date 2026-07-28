@@ -102,7 +102,7 @@ function AccountsPageSkeleton() {
                   <TableBody>
                     {[...Array(12)].map((_, i) => (
                       <TableRow key={i}>
-                        <TableCell className="h-[52px] px-4 py-2" colSpan={5}>
+                        <TableCell className="h-[32px] px-4 py-2" colSpan={5}>
                           <Skeleton className="h-7 w-full" />
                         </TableCell>
                         <TableCell className="bg-card right-0 px-4 text-right">
@@ -163,6 +163,7 @@ export default function AccountsPage() {
         label: 'S. No.',
         sortable: false,
         width: 'w-12',
+        minWidth: 30,
       },
       {
         id: 'name',
@@ -959,6 +960,7 @@ export default function AccountsPage() {
                       >
                         <span
                           className="col-resize-handle"
+                          data-min-width={(field as any).minWidth}
                           {...getResizeHandleProps(field.id)}
                         />
                       </ColumnHeader>
@@ -1021,7 +1023,7 @@ export default function AccountsPage() {
                     {[...Array(12)].map((_, i) => (
                       <TableRow key={i}>
                         <TableCell
-                          className="h-[52px] px-4 py-2"
+                          className="h-[32px] px-4 py-2"
                           colSpan={
                             visibility
                               ? Object.values(visibility).filter(
