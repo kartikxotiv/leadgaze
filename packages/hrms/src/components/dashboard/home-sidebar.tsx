@@ -11,7 +11,7 @@ import { cn } from '@kit/ui/utils';
 import { AppLogo } from '~/components/app-logo';
 import { ProfileAccountDropdownContainer } from '~/components/personal-account-dropdown-container';
 import { navigationConfig } from '~/config/navigation.config';
-import { Tables } from '~/lib/database.types';
+import { Tables } from '@kit/supabase/database';
 import { getCurrentUserOrganizationId } from '~/lib/server/organizations';
 import { getRbacSnapshot } from '~/lib/server/rbac';
 

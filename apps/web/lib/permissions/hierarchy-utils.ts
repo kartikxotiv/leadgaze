@@ -1,6 +1,6 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 
-import { Database } from '../database.types';
+import { Database } from '@kit/supabase/database';
 
 export type HierarchyFilter =
   | { type: 'all' }
