@@ -1144,7 +1144,7 @@ export default function OpportunitiesPage() {
       </div>
 
       {/* Full-width search / filter / actions toolbar */}
-      <div className="w-full max-w-full min-w-0 shrink-0 border-b pb-2">
+      <div className="w-full max-w-full min-w-0 shrink-0 border-b">
         <ListToolBar
           showSearch
           searchPlaceholder="Search by name or account..."

@@ -296,7 +296,7 @@ export default function RolesPage() {
       </div>
 
       {/* Toolbar with search, type filter, actions */}
-      <div className="w-full max-w-full min-w-0 shrink-0 border-b pb-2">
+      <div className="w-full max-w-full min-w-0 shrink-0 border-b">
         <ListToolBar
           filterGroups={filterGroups}
           showFilter

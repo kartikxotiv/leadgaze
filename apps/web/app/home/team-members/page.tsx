@@ -442,7 +442,7 @@ export default function TeamMembersPage() {
       </div>
 
       {/* Toolbar with search, filter, and actions */}
-      <div className="w-full max-w-full min-w-0 shrink-0 border-b pb-2">
+      <div className="w-full max-w-full min-w-0 shrink-0 border-b">
         <ListToolBar
           showFilter
           filterLabel="Show Filters"

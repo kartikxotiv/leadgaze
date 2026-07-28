@@ -980,13 +980,12 @@ export default function LeadsPage() {
     <ModuleGuard module="leads">
       <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden">
         <PageHeader
-          title={`Leads (${totalCount})`}
-          description="Manage and track your sales leads"
+          title={`Leads (${totalCount})`}          
         />
       </div>
 
       {/* Status filter dropdown + toolbar */}
-      <div className="w-full max-w-full min-w-0 shrink-0 border-b pb-2">
+      <div className="w-full max-w-full min-w-0 shrink-0 border-b">
         <ListToolBar
           showSearch
           searchPlaceholder="Search leads..."

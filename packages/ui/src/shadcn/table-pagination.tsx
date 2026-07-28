@@ -88,18 +88,18 @@ export const TablePagination: React.FC<TablePaginationProps> = ({
   const end = Math.min(currentPage * pageSize, totalCount);
 
   return (
-    <div className="primary-text-regular text-leadgaze-muted bg-sidebar sticky bottom-0 z-10 -mx-4 flex shrink-0 items-center justify-between border-t px-4 py-1 lg:-mx-8 lg:px-8 flex-wrap sm:flex-nowrap">
-      <div className="flex items-center gap-1">
+    <div className="secondary-text-small-regular text-leadgaze-muted bg-sidebar sticky bottom-0 z-10 -mx-4 flex shrink-0 items-center justify-between border-t py-[5px] px-6 flex-wrap sm:flex-nowrap">
+      <div className="flex items-center gap-1 secondary-text-small-regular">
         Showing{' '}
-        <span className="primary-text-regular text-leadgaze-muted">
+        <span className="text-leadgaze-muted secondary-text-small-regular">
           {start}
         </span>{' '}
         to{' '}
-        <span className="primary-text-regular text-leadgaze-muted">
+        <span className="text-leadgaze-muted secondary-text-small-regular">
           {end}
         </span>{' '}
         of{' '}
-        <span className="primary-text-regular text-leadgaze-muted">
+        <span className="text-leadgaze-muted secondary-text-small-regular">
           {totalCount}
         </span>{' '}
         {entityLabel}

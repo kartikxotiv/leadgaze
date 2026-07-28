@@ -56,7 +56,7 @@ function LogoImage({
       <Image
         src={companyLogoUrl}
         height={32}
-        width={180}
+        width={140}
         alt="company logo"
         className={cn('h-6 w-auto object-contain max-w-[120px]', className)}
         priority
