@@ -1166,16 +1166,6 @@ export default function LeadsPage() {
               />
             ) : null
           }
-          columnVisibilitySlot={
-            viewMode === 'table' ? (
-              <ColumnVisibilitySelector
-                columns={columns}
-                visibility={visibility}
-                onToggle={toggleVisibility}
-                onReset={reset}
-              />
-            ) : null
-          }
         />
       </div>
 
@@ -1650,6 +1640,10 @@ export default function LeadsPage() {
           teamMembers={teamMembersForModal}
           isAdmin={canAddColumn}
           isSubmitting={createField.isPending}
+          columns={columns}
+          visibility={visibility}
+          onToggleColumn={toggleVisibility}
+          onResetColumns={reset}
           onSubmit={async (payload) => {
             await createField.mutateAsync({
               ...payload,

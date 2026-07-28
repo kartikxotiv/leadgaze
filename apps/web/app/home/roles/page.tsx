@@ -15,6 +15,7 @@ import {
 import { toast } from 'sonner';
 
 import { Badge } from '@kit/ui/badge';
+import { AddColumnModal } from '@kit/ui/add-column-modal';
 import { Button } from '@kit/ui/button';
 import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
 import CustomTableContainer from '@kit/ui/custom-table-container';
@@ -51,6 +52,7 @@ import { EditRoleDialog } from './components/edit-role-dialog';
 const EMPTY_ROLES: Role[] = [];
 
 export default function RolesPage() {
+  const [addColumnModalOpen, setAddColumnModalOpen] = useState(false);
   const queryClient = useQueryClient();
   const { currentWorkspace, canAccess } = useRBAC();
   const pathname = usePathname();
@@ -348,9 +350,17 @@ export default function RolesPage() {
                       )}
                       {isVisible('type') && <TableHead>Type</TableHead>}
                       {isVisible('status') && <TableHead>Status</TableHead>}
-                      <TableHead className="sticky right-0 px-4 text-right">
-                        Actions
-                      </TableHead>
+                      <TableHead className="sticky-right-header bg-background z-10 w-12 px-1 text-center">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="mx-auto flex h-8 w-8 items-center justify-center border-dashed"
+                      onClick={() => setAddColumnModalOpen(true)}
+                      title="Toggle Columns"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -449,9 +459,17 @@ export default function RolesPage() {
     <span className="col-resize-handle" {...getResizeHandleProps('status')} />
   </SortableTableHead>
 )}
-                    <TableHead className="sticky-right-header text-right">
-                      Actions
-                    </TableHead>
+                    <TableHead className="sticky-right-header bg-background z-10 w-12 px-1 text-center">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="mx-auto flex h-8 w-8 items-center justify-center border-dashed"
+                      onClick={() => setAddColumnModalOpen(true)}
+                      title="Toggle Columns"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -575,6 +593,15 @@ export default function RolesPage() {
             onSuccess={() => setEditingRole(null)}
           />
         )}
+      
+      <AddColumnModal
+        open={addColumnModalOpen}
+        onOpenChange={setAddColumnModalOpen}
+        columns={columns}
+        visibility={visibility}
+        onToggleColumn={toggleVisibility}
+        onResetColumns={reset}
+      />
       </PageBody>
     </ModuleGuard>
   );

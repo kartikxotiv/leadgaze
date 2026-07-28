@@ -23,7 +23,7 @@ export function ViewToggle({ view, onChange, className }: ViewToggleProps) {
   return (
     <div
       className={cn(
-        'flex items-center rounded-md border bg-background overflow-hidden',
+        'flex items-center rounded-md border bg-background overflow-hidden h-[28px]',
         className,
       )}
     >

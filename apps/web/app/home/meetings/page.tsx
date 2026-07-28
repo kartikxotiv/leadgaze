@@ -44,6 +44,7 @@ import {
 } from '@kit/core/services';
 import { useSupabase } from '@kit/supabase/hooks/use-supabase';
 import { Badge } from '@kit/ui/badge';
+import { AddColumnModal } from '@kit/ui/add-column-modal';
 import { Button } from '@kit/ui/button';
 import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
 import { CustomTableContainer } from '@kit/ui/custom-table-container';
@@ -1993,6 +1994,7 @@ export function MeetingDetailsDialog({
 // =============================================================================
 
 export default function MeetingsPage() {
+  const [addColumnModalOpen, setAddColumnModalOpen] = useState(false);
   const { currentWorkspace: workspace, user } = useRBAC();
   const queryClient = useQueryClient();
   const supabase = useSupabase();
@@ -2597,8 +2599,16 @@ export default function MeetingsPage() {
                       />
                     </SortableTableHead>
                   )}
-                  <TableHead className="sticky right-0 text-right">
-                    Actions
+                  <TableHead className="sticky-right-header bg-background z-10 w-12 px-1 text-center">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="mx-auto flex h-8 w-8 items-center justify-center border-dashed"
+                      onClick={() => setAddColumnModalOpen(true)}
+                      title="Toggle Columns"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
                   </TableHead>
                 </TableRow>
               </TableHeader>
@@ -2860,6 +2870,15 @@ export default function MeetingsPage() {
             }
           />
         )}
+      
+      <AddColumnModal
+        open={addColumnModalOpen}
+        onOpenChange={setAddColumnModalOpen}
+        columns={columns}
+        visibility={visibility}
+        onToggleColumn={toggleVisibility}
+        onResetColumns={reset}
+      />
       </PageBody>
     </>
   );

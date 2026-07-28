@@ -4,9 +4,10 @@ import React, { useEffect, useMemo, useState } from 'react';
 
 import { useQuery } from '@tanstack/react-query';
 import { usePathname } from 'next/navigation';
-import { Eye } from 'lucide-react';
+import {  Eye , Plus } from 'lucide-react';
 
 import { Badge } from '@kit/ui/badge';
+import { AddColumnModal } from '@kit/ui/add-column-modal';
 import { Button } from '@kit/ui/button';
 import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
 import CustomTableContainer from '@kit/ui/custom-table-container';
@@ -44,6 +45,7 @@ import { useColumnVisibility } from '@kit/ui/use-column-visibility';
 import { useDateRangeFilter } from '@kit/ui/use-date-range-filter';
 
 export default function AuditLogsPage() {
+  const [addColumnModalOpen, setAddColumnModalOpen] = useState(false);
   const { currentWorkspace: workspace } = useRBAC();
   const { formatDate, formatDateTime } = useLocalization();
   const [page, setPage] = useState(1);
@@ -348,8 +350,16 @@ export default function AuditLogsPage() {
                             <span className="col-resize-handle" {...getResizeHandleProps('entity')} />
                           </SortableTableHead>
                         )}
-                        <TableHead className="sticky-right-header w-[80px] h-11 text-xs uppercase tracking-wider font-semibold text-right whitespace-nowrap">
-                          Details
+                        <TableHead className="sticky-right-header bg-background z-10 w-12 px-1 text-center">
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="mx-auto flex h-8 w-8 items-center justify-center border-dashed"
+                            onClick={() => setAddColumnModalOpen(true)}
+                            title="Toggle Columns"
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
                         </TableHead>
                       </TableRow>
                     </TableHeader>
@@ -601,6 +611,15 @@ export default function AuditLogsPage() {
           )}
         </SheetContent>
       </Sheet>
+      
+      <AddColumnModal
+        open={addColumnModalOpen}
+        onOpenChange={setAddColumnModalOpen}
+        columns={columns}
+        visibility={visibility}
+        onToggleColumn={toggleVisibility}
+        onResetColumns={reset}
+      />
       </PageBody>
     </ModuleGuard>
   );

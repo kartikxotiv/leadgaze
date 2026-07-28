@@ -680,9 +680,6 @@ export const ListToolBar: React.FC<ListToolBarProps> = ({
             </React.Fragment>
           );
         })}
-
-        {/* ── Column visibility slot ───────────────────────────────────────── */}
-        {columnVisibilitySlot}
       </div>
 
       {/* ── Portal-rendered value dropdown (escapes PopoverContent overflow) ── */}
