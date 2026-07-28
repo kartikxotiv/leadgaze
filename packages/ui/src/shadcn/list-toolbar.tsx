@@ -109,6 +109,7 @@ export interface ListToolBarProps {
   statusSlot?: React.ReactNode;
   align?: 'left' | 'right' | 'full';
   className?: string;
+  expandableSearch?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -140,8 +141,10 @@ export const ListToolBar: React.FC<ListToolBarProps> = ({
   statusSlot,
   align,
   className,
+  expandableSearch = false,
 }) => {
   const [isFilterOpen, setIsFilterOpen] = React.useState(false);
+  const [isSearchFocused, setIsSearchFocused] = React.useState(false);
 
   // ── Filter rows ──────────────────────────────────────────────────────────
   const [filterRows, setFilterRows] = React.useState<FilterRow[]>([]);
@@ -377,13 +380,21 @@ export const ListToolBar: React.FC<ListToolBarProps> = ({
       >
         {/* ── Search ────────────────────────────────────────────────────────── */}
         {showSearch && (
-          <div className="relative min-w-0 flex-1">
+          <div className={cn("relative min-w-0", !expandableSearch && "flex-1")}>
             <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
             <Input
               placeholder={searchPlaceholder}
               value={searchValue}
               onChange={(e) => onSearchChange?.(e.target.value)}
-              className="h-9 w-full pl-9"
+              onFocus={() => setIsSearchFocused(true)}
+              onBlur={() => setIsSearchFocused(false)}
+              className={cn(
+                "h-[28px] pl-[32px]",
+                expandableSearch 
+                  ? "transition-all duration-300 ease-in-out w-[120px] focus:w-[220px]" 
+                  : "w-full",
+                (expandableSearch && (isSearchFocused || searchValue.length > 0)) && "w-[200px]"
+              )}
             />
           </div>
         )}
@@ -397,10 +408,11 @@ export const ListToolBar: React.FC<ListToolBarProps> = ({
                 className={cn(
                   'relative shrink-0 gap-1.5',
                   isFilterOpen && 'bg-accent',
+                  'h-[28px] px-2'
                 )}
                 aria-label="Open filters"
               >
-                <Filter className="h-4 w-4 border-light-gray primary-text-medium text-leadgaze-dark dark:text-white" />
+                <Filter className="h-4 w-4 border-light-gray primary-text-medium text-leadgaze-dark dark:text-white" /> <span className='secondary-text-small-bold'>Filters</span>
                 {activeFilterCount > 0 && (
                   <span className="ml-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#4eacff] text-[10px] font-bold text-white">
                     {activeFilterCount}
@@ -648,16 +660,16 @@ export const ListToolBar: React.FC<ListToolBarProps> = ({
                     variant={btnVariant}
                     size={isIconOnly ? 'icon' : 'default'}
                     className={cn(
-                      'shrink-0',
-                      !isIconOnly && 'gap-1.5',
+                      'shrink-0 gap-1.5',
                       action.pillClassName,
                       action.className,
                       'primary-text-medium dark:text-white',
-                      'h-9',
+                      'h-[28px] px-2',
                     )}
                     aria-label={action.label}
                   >
-                    <Icon className={`h-4 w-4 ${iconKey === 'import' && 'border-light-gray primary-text-medium text-leadgaze-dark dark:text-white'}`} />
+                    <Icon className={cn(`h-4 w-4`, iconKey === 'import' && 'border-light-gray secondary-text-small-bold text-leadgaze-dark dark:text-white rotate-180')} />
+                    {!isIconOnly && <span className="secondary-text-small-bold">{action.label}</span>}
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="bottom">

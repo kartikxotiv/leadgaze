@@ -144,3 +144,10 @@
 @utility dark-black-light-bg{
   background-color: #262626 !important;
 }
+
+@utility border-top-bottom-gray{
+  border-top-color: var(--card-border) !important;
+  border-bottom-color: var(--card-border) !important;
+  border-top-width: 1px;
+  border-bottom-width: 1px;
+}

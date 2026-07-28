@@ -32,7 +32,7 @@ export function ViewToggle({ view, onChange, className }: ViewToggleProps) {
         variant="ghost"
         size="sm"
         className={cn(
-          'h-9 w-9 rounded-none border-0 p-0 transition-colors',
+          'h-[28px] w-[28px] rounded-none border-0 p-0 transition-colors',
           view === 'table'
             ? 'bg-primary text-primary-foreground hover:bg-primary/90'
             : 'text-muted-foreground hover:text-foreground',
@@ -50,7 +50,7 @@ export function ViewToggle({ view, onChange, className }: ViewToggleProps) {
         variant="ghost"
         size="sm"
         className={cn(
-          'h-9 w-9 rounded-none border-0 border-l p-0 transition-colors',
+          'h-[28px] w-[28px] rounded-none border-0 border-l p-0 transition-colors',
           view === 'kanban'
             ? 'bg-primary text-primary-foreground hover:bg-primary/90'
             : 'text-muted-foreground hover:text-foreground',
