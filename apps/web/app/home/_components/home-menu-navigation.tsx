@@ -1174,8 +1174,8 @@ export function HomeMenuNavigation() {
   return (
     <div className="flex w-full flex-1 items-center justify-between">
       {/* Left side: Logo & App Launcher & Navigation Items */}
-      <div className="flex min-w-0 flex-1 items-center space-x-3 overflow-hidden md:space-x-4 lg:space-x-6">
-        <div className="flex shrink-0 items-center space-x-2 md:space-x-3 lg:space-x-4">
+      <div className="flex min-w-0 flex-1 items-center space-x-3 overflow-hidden md:space-x-4">
+        <div className="flex shrink-0 items-center space-x-2 md:space-x-3">
           <AppLogo className="max-h-8 w-auto" />
           {!isOrgRoute && (
             <div className="hidden h-6 w-px bg-white/25 md:block" />
@@ -1185,9 +1185,9 @@ export function HomeMenuNavigation() {
           {!isOrgRoute && (
             <Dialog open={isLauncherOpen} onOpenChange={setIsLauncherOpen}>
               <DialogTrigger asChild>
-                <button className="flex cursor-pointer items-center space-x-2 bg-transparent px-3 py-1.5 text-white transition-colors hover:bg-transparent">
-                  <Grip className="h-5 w-5" />
-                  <span className="primary-heading-big sm:text-md smfont-medium">
+                <button className="flex cursor-pointer items-center space-x-2 bg-transparent px-0 py-1.5 text-white transition-colors hover:bg-transparent">
+                  <Grip className="h-[14x] w-[14px]" />
+                  <span className="primary-heading-big-regular sm:text-md smfont-medium">
                     {currentAppName}
                   </span>
                 </button>
@@ -1196,7 +1196,7 @@ export function HomeMenuNavigation() {
               <DialogContent className="flex max-h-[90vh] max-w-4xl flex-col overflow-hidden rounded-lg border border-zinc-200 bg-white p-0 shadow-2xl dark:border-zinc-800 dark:bg-zinc-950">
                 <DialogHeader className="shrink-0 border-b p-6 pb-4">
                   <DialogTitle className="flex items-center gap-2 text-xl font-bold text-zinc-900 dark:text-white">
-                    <Grip className="h-5 w-5 text-blue-600" />
+                    <Grip className="h-[14px] w-[14px] text-blue-600" />
                     App Launcher
                   </DialogTitle>
                 </DialogHeader>
@@ -1467,7 +1467,7 @@ export function HomeMenuNavigation() {
       </div>
 
       {/* Right side: Mobile Menu, Settings, Profile */}
-      <div className="flex shrink-0 items-center space-x-2 md:space-x-3 lg:space-x-4">
+      <div className="flex shrink-0 items-center space-x-2 md:space-x-3">
         {/* Mobile hamburger navigation menu */}
         {!isOrgRoute && allMainRoutes.length > 0 && (
           <DropdownMenu>

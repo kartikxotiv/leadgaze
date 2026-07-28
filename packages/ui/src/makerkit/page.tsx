@@ -92,7 +92,7 @@ function PageWithHeader(props: PageProps) {
           {/* ── Sticky Header ── */}
           <div
             className={cn(
-              'bg-leadgaze-primary text-white flex h-16 shrink-0 items-center justify-between border-b border-header-primary/20 px-6 justify-start',
+              'bg-leadgaze-primary text-white flex h-8 shrink-0 items-center justify-between border-b border-header-primary/20 px-6 justify-start',
               {
                 'sticky top-0 z-50 backdrop-blur-md': props.sticky ?? true,
               },
