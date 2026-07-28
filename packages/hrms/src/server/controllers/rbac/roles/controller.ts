@@ -2,7 +2,7 @@
 import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
-import { Database } from '~/lib/database.types';
+import { Database } from '@kit/supabase/database';
 import { getCurrentUserOrganizationId } from '~/lib/server/organizations';
 import {
   ApiError,

@@ -13,7 +13,8 @@
     ".": "./src/index.ts",
     "./server": "./src/i18n.server.ts",
     "./client": "./src/i18n.client.ts",
-    "./provider": "./src/i18n-provider.tsx"
+    "./provider": "./src/i18n-provider.tsx",
+    "./resolver": "./src/i18n.resolver.ts"
   },
   "devDependencies": {
     "@kit/eslint-config": "workspace:*",
