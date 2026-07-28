@@ -582,7 +582,7 @@ export function CoreEmailSettingsPage({
                         {isLoading ? (
                           [...Array(5)].map((_, i) => (
                             <TableRow key={i}>
-                              <TableCell className="h-[52px] px-4 py-2" colSpan={7}>
+                              <TableCell className="h-[32px] px-4 py-2" colSpan={7}>
                                 <Skeleton className="h-7 w-full" />
                               </TableCell>
                               <TableCell className="bg-card px-4 text-right">

@@ -310,7 +310,7 @@ export function EmployeesDirectoryCard(props: {
             ? [...Array(10)].map((_, index) => (
                 <TableRow key={index}>
                   <TableCell
-                    className="h-[52px] px-4 py-2"
+                    className="h-[32px] px-4 py-2"
                     colSpan={visibleColumnCount}
                   >
                     <Skeleton className="h-7 w-full rounded-md" />

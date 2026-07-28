@@ -372,7 +372,7 @@ function MeetingsPageSkeleton({ colSpan = 7 }: { colSpan?: number }) {
     <>
       {[...Array(8)].map((_, i) => (
         <TableRow key={i}>
-          <TableCell className="h-[52px] px-4 py-2" colSpan={colSpan}>
+          <TableCell className="h-[32px] px-4 py-2" colSpan={colSpan}>
             <Skeleton className="h-7 w-full rounded-md" />
           </TableCell>
         </TableRow>
