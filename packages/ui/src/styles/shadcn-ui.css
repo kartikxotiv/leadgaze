@@ -113,3 +113,27 @@
     filter: invert(1);
   }
 }
+
+/* ─── Column Resize Handle ─────────────────────────────────────────────────── */
+.col-resize-handle {
+  position: absolute;
+  right: 0;
+  top: 0;
+  height: 100%;
+  width: 5px;
+  cursor: col-resize;
+  background: transparent;
+  transition: background-color 0.15s ease;
+  z-index: 2;
+  touch-action: none;
+  user-select: none;
+}
+
+.col-resize-handle:hover {
+  background-color: color-mix(in srgb, var(--primary) 35%, transparent);
+}
+
+.col-resize-handle:active {
+  background-color: color-mix(in srgb, var(--primary) 65%, transparent);
+}
+
