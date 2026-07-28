@@ -11,6 +11,7 @@ import {
   Lock,
   Building2,
   BarChart3,
+  Share2,
 } from 'lucide-react';
 
 import { Button } from '@kit/ui/button';
@@ -62,38 +63,45 @@ export function WorkspaceIntegrationsSettings({ workspace }: WorkspaceIntegratio
       path: `/home/sales/workspace-settings/integrations/google-ads`,
       connected: true,
     },
-  ];
-
-  const comingSoonIntegrations = [
-
     {
       id: 'meta-ads',
       name: 'Meta Lead Ads',
-      description: 'Automatically import Facebook and Instagram leads in real-time.',
-      icon: <Sparkles className="h-6 w-6 text-blue-500" />,
-      badge: 'Coming Soon',
-    },
-    {
-      id: 'linkedin-ads',
-      name: 'LinkedIn Lead Forms',
-      description: 'Capture high-intent B2B leads from LinkedIn Campaign Manager.',
-      icon: <Sparkles className="h-6 w-6 text-blue-700" />,
-      badge: 'Coming Soon',
+      description: 'Automatically import Facebook and Instagram leads in real-time via webhooks.',
+      icon: <Share2 className="h-6 w-6 text-blue-600" />,
+      badge: 'Available',
+      badgeVariant: 'default' as const,
+      path: `/home/sales/workspace-settings/integrations/meta-ads`,
+      connected: true,
     },
     {
       id: 'whatsapp',
       name: 'WhatsApp Business',
-      description: 'Convert WhatsApp chat interactions into CRM leads and support cases.',
+      description: 'Receive WhatsApp messages in a shared inbox and capture leads from conversations.',
       icon: <MessageSquare className="h-6 w-6 text-green-500" />,
-      badge: 'Planned',
+      badge: 'Available',
+      badgeVariant: 'default' as const,
+      path: `/home/sales/workspace-settings/integrations/whatsapp`,
+      connected: true,
     },
-    {
-      id: 'calendly',
-      name: 'Calendly Integration',
-      description: 'Automatically route scheduled meetings to assigned lead or ticket owners.',
-      icon: <Calendar className="h-6 w-6 text-blue-400" />,
-      badge: 'Planned',
-    }
+  ];
+
+  const comingSoonIntegrations = [
+
+    // {
+    //   id: 'linkedin-ads',
+    //   name: 'LinkedIn Lead Forms',
+    //   description: 'Capture high-intent B2B leads from LinkedIn Campaign Manager.',
+    //   icon: <Sparkles className="h-6 w-6 text-blue-700" />,
+    //   badge: 'Coming Soon',
+    // },
+
+    // {
+    //   id: 'calendly',
+    //   name: 'Calendly Integration',
+    //   description: 'Automatically route scheduled meetings to assigned lead or ticket owners.',
+    //   icon: <Calendar className="h-6 w-6 text-blue-400" />,
+    //   badge: 'Planned',
+    // }
   ];
 
   return (

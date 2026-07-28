@@ -542,7 +542,7 @@ export function AddColumnModal({
           )}
         </div>
 
-        <DialogFooter className="mt-auto flex justify-between border-t p-6">
+        <DialogFooter className="mt-auto flex justify-between border-t p-2">
           <Button variant="outline" onClick={() => { resetForm(); onOpenChange(false); }}>
             Cancel
           </Button>

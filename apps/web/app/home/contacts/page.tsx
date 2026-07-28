@@ -182,6 +182,7 @@ export default function ContactsPage() {
         label: 'S. No.',
         sortable: false,
         width: 'w-12',
+        minWidth: 30,
       },
       { id: 'name', key: 'name', label: 'Name', sortKey: 'first_name' },
       { id: 'first_name', key: 'first_name', label: 'First Name' },
@@ -932,6 +933,7 @@ export default function ContactsPage() {
                       >
                         <span
                           className="col-resize-handle"
+                          data-min-width={(field as any).minWidth}
                           {...getResizeHandleProps(field.id)}
                         />
                       </ColumnHeader>
@@ -994,7 +996,7 @@ export default function ContactsPage() {
                     {[...Array(12)].map((_, i) => (
                       <TableRow key={i}>
                         <TableCell
-                          className="h-[52px] px-4 py-2"
+                          className="h-[32px] px-4 py-2"
                           colSpan={
                             visibility
                               ? Object.values(visibility).filter(

@@ -486,12 +486,10 @@ function UpcomingTasks({ tasks }: { tasks: DashboardTask[] }) {
                 return (
                   <div
                     key={task.id}
-                    className="flex items-center justify-between p-5 transition-colors hover:bg-slate-50/30 xl:p-3 2xl:p-5 dark:hover:bg-zinc-800/30 border-b border-gray-300 last:border-0"
+                    className="flex items-center justify-between px-6 py-2 transition-colors hover:bg-slate-50/30 dark:hover:bg-zinc-800/30 border-b border-gray-300 last:border-0 xl:px-4 2xl:px-6"
                   >
                     <div className="flex items-start gap-4">
-                      <div className="mt-0.5">
-                        <input type="checkbox" className="h-4 w-4 rounded border-gray-300 text-leadgaze-primary focus:ring-leadgaze-primary" />
-                      </div>
+
                       <div className="flex flex-col gap-0.5">
                         <span className="primary-text-medium text-leadgaze-dark dark:text-zinc-200">
                           {task.title}
@@ -757,8 +755,7 @@ function SalesDashboardSkeleton() {
                 className="flex items-center justify-between p-5 xl:p-3 2xl:p-5"
               >
                 <div className="flex items-start gap-4">
-                  {/* Checkbox placeholder */}
-                  <Skeleton className="mt-0.5 h-4 w-4 rounded" />
+
                   <div className="flex flex-col gap-1.5">
                     <Skeleton className={`h-4 ${i === 1 ? 'w-48' : i === 2 ? 'w-40' : 'w-52'}`} />
                     <Skeleton className="h-3 w-16" />

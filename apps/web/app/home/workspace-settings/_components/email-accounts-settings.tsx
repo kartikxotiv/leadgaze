@@ -408,7 +408,7 @@ export function EmailAccountsSettings({ workspace }: { workspace: any }) {
                     </div>
                   </Tabs>
                   {connectTab === 'smtp' ? (
-                  <DialogFooter className="border-t border-gray-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
+                  <DialogFooter className="border-t border-gray-200 bg-white p-2 dark:border-slate-800 dark:bg-slate-950">
                     <Button
                       onClick={handleSubmitSmtp}
                       disabled={isSubmitting}
@@ -459,7 +459,7 @@ export function EmailAccountsSettings({ workspace }: { workspace: any }) {
                   {isLoading ? (
                     [...Array(5)].map((_, i) => (
                       <TableRow key={i}>
-                        <TableCell className="h-[52px] px-4 py-2" colSpan={6}>
+                        <TableCell className="h-[32px] px-4 py-2" colSpan={6}>
                           <Skeleton className="h-7 w-full" />
                         </TableCell>
                         <TableCell className="bg-card px-4 text-right">

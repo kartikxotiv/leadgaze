@@ -113,7 +113,7 @@ export function VariableDialog({
         </div>
 
         
-      <DialogFooter className="border-t p-6 mt-auto">
+      <DialogFooter className="border-t p-2 mt-auto">
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSaving}>
             Cancel
           </Button>

@@ -5,12 +5,37 @@ import * as React from 'react';
 import {
   Pagination,
   PaginationContent,
+  PaginationEllipsis,
   PaginationItem,
   PaginationLink,
   PaginationNext,
   PaginationPrevious,
 } from './pagination';
 import { PageSizeSelector } from './page-size-selector';
+
+// ---------------------------------------------------------------------------
+// Helper
+// ---------------------------------------------------------------------------
+
+const getPaginationItems = (currentPage: number, totalPages: number) => {
+  // If there are 5 or fewer pages, just show them all
+  if (totalPages <= 5) {
+    return Array.from({ length: totalPages }).map((_, i) => i + 1);
+  }
+
+  // If we are near the beginning (pages 1, 2, or 3)
+  if (currentPage <= 3) {
+    return [1, 2, 3, '...', totalPages];
+  }
+
+  // If we are near the end
+  if (currentPage >= totalPages - 2) {
+    return [1, '...', totalPages - 2, totalPages - 1, totalPages];
+  }
+
+  // If we are somewhere in the middle
+  return [1, '...', currentPage, '...', totalPages];
+};
 
 // ---------------------------------------------------------------------------
 // Types
@@ -63,7 +88,7 @@ export const TablePagination: React.FC<TablePaginationProps> = ({
   const end = Math.min(currentPage * pageSize, totalCount);
 
   return (
-    <div className="primary-text-regular text-leadgaze-muted bg-sidebar sticky bottom-0 z-10 -mx-4 flex shrink-0 items-center justify-between border-t px-4 py-1.5 lg:-mx-8 lg:px-8 flex-wrap sm:flex-nowrap">
+    <div className="primary-text-regular text-leadgaze-muted bg-sidebar sticky bottom-0 z-10 -mx-4 flex shrink-0 items-center justify-between border-t px-4 py-1 lg:-mx-8 lg:px-8 flex-wrap sm:flex-nowrap">
       <div className="flex items-center gap-1">
         Showing{' '}
         <span className="primary-text-regular text-leadgaze-muted">
@@ -97,15 +122,19 @@ export const TablePagination: React.FC<TablePaginationProps> = ({
               onClick={() => onPageChange(Math.max(currentPage - 1, 1))}
             />
           </PaginationItem>
-          {Array.from({ length: totalPages }).map((_, i) => (
+          {getPaginationItems(currentPage, totalPages).map((item, i) => (
             <PaginationItem key={i}>
-              <PaginationLink
-                isActive={currentPage === i + 1}
-                onClick={() => onPageChange(i + 1)}
-                className="cursor-pointer"
-              >
-                {i + 1}
-              </PaginationLink>
+              {item === '...' ? (
+                <PaginationEllipsis />
+              ) : (
+                <PaginationLink
+                  isActive={currentPage === item}
+                  onClick={() => onPageChange(item as number)}
+                  className="cursor-pointer"
+                >
+                  {item}
+                </PaginationLink>
+              )}
             </PaginationItem>
           ))}
           <PaginationItem>

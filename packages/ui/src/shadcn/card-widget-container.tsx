@@ -12,6 +12,7 @@ interface CardWidgetContainerProps
   headerClassName?: string;
   contentClassName?: string;
   desc?: string;
+  hideBorderBottom?: boolean;
 }
 
 export function CardWidgetContainer({
@@ -25,11 +26,13 @@ export function CardWidgetContainer({
   children,
   className,
   desc,
+  hideBorderBottom = false,
   ...props
 }: CardWidgetContainerProps) {
   return (
     <div
       className={cn(
+        hideBorderBottom && 'border-b-0',
         'card-container flex flex-col overflow-hidden rounded-xl bg-white dark:bg-zinc-900',
         className,
       )}

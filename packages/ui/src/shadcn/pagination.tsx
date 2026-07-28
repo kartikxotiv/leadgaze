@@ -1,6 +1,6 @@
 import * as React from 'react';
 
-import { MoreHorizontal } from 'lucide-react';
+import { ChevronLeft, ChevronRight, MoreHorizontal } from 'lucide-react';
 
 import { cn } from '../lib/utils';
 import { ButtonProps, buttonVariants } from './button';
@@ -67,11 +67,11 @@ const PaginationPrevious = ({
   <PaginationLink
     aria-label="Go to previous page"
     size="default"
-    className={cn('gap-1 pl-4', className)}
+    className={cn('gap-1 px-2 sm:pl-4 sm:pr-2', className)}
     {...props}
   >
-    {/* <ChevronLeft className="h-4 w-4" /> */}
-    <span>Previous</span>
+    <ChevronLeft className="h-4 w-4" />
+    <span className="hidden sm:inline">Previous</span>
   </PaginationLink>
 );
 PaginationPrevious.displayName = 'PaginationPrevious';
@@ -83,11 +83,11 @@ const PaginationNext = ({
   <PaginationLink
     aria-label="Go to next page"
     size="default"
-    className={cn('gap-1 pr-4', className)}
+    className={cn('gap-1 px-2 sm:pl-2 sm:pr-4', className)}
     {...props}
   >
-    <span>Next</span>
-    {/* <ChevronRight className="h-4 w-4" /> */}
+    <span className="hidden sm:inline">Next</span>
+    <ChevronRight className="h-4 w-4" />
   </PaginationLink>
 );
 PaginationNext.displayName = 'PaginationNext';

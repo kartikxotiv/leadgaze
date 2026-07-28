@@ -76,7 +76,7 @@ export function CoreEmailVariablesTab({ workspaceId }: { workspaceId: string }) 
   };
 
   return (
-    <div className="space-y-2">
+    <div className="flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col space-y-2">
       {/* Full-width search / filter / actions toolbar */}
                           <div className="w-full max-w-full min-w-0 shrink-0 border-b">
                             <ListToolBar
@@ -131,7 +131,7 @@ export function CoreEmailVariablesTab({ workspaceId }: { workspaceId: string }) 
                   {isLoading ? (
                     [...Array(5)].map((_, i) => (
                       <TableRow key={i}>
-                        <TableCell className="h-[52px] px-4 py-2" colSpan={2}>
+                        <TableCell className="h-[32px] px-4 py-2" colSpan={2}>
                           <Skeleton className="h-7 w-full" />
                         </TableCell>
                         <TableCell className="bg-card px-4 text-right">
@@ -248,7 +248,7 @@ function CoreVariableDialog({
             <Input value={value} onChange={(event) => setValue(event.target.value)} placeholder="123 Main St" />
           </div>
           </div>
-          <DialogFooter className="border-t border-gray-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
+          <DialogFooter className="border-t border-gray-200 bg-white p-2 dark:border-slate-800 dark:bg-slate-950">
             <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSaving}>Cancel</Button>
             <Button onClick={handleSave} disabled={isSaving}>
               {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}

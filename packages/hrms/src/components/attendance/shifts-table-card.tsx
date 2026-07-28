@@ -51,7 +51,7 @@ export function ShiftsTableCard(props: {
           {props.isLoading
             ? [...Array(6)].map((_, index) => (
                 <TableRow key={index}>
-                  <TableCell className="h-[52px] px-4 py-2" colSpan={6}>
+                  <TableCell className="h-[32px] px-4 py-2" colSpan={6}>
                     <Skeleton className="h-7 w-full rounded-md" />
                   </TableCell>
                 </TableRow>
