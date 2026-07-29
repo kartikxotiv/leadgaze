@@ -789,8 +789,7 @@ export default function AccountsPage() {
     <ModuleGuard module="accounts">
       <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden">
         <PageHeader
-          title={`Accounts (${totalCount})`}
-          description="Manage your client accounts and organizations"
+          title={`Accounts (${totalCount})`}          
         />
       </div>
 

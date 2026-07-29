@@ -69,6 +69,7 @@ import { useColumnResize } from '@kit/ui/use-column-resize';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
 import { useDateRangeFilter } from '@kit/ui/use-date-range-filter';
 import { useTableSort } from '@kit/ui/use-table-sort';
+import { cn } from '@kit/ui/utils';
 
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { useDebounce } from '~/lib/hooks/use-debounce';
@@ -664,15 +665,65 @@ export default function RemindersPage() {
     <>
       <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden">
         <PageHeader
-          title={`Reminders (${reminders.length})`}
-          description="Keep track of your important tasks and reminders"
-        />
+          title={`Reminders (${reminders.length})`}          
+        >
+          <Button
+            onClick={() => {
+              setFormData({
+                title: '',
+                description: '',
+                due_date: '',
+                priority: 'medium',
+                entity_type: 'lead',
+                entityId: '',
+              });
+              setIsCreateDialogOpen(true);
+            }}
+            className="bg-blue-600 hover:bg-blue-700 text-white gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            New Reminder
+          </Button>
+        </PageHeader>
       </div>
 
       {/* Full-width search / filter / actions toolbar */}
-      <div className="w-full max-w-full min-w-0 shrink-0 border-b pt-2 pb-2">
+      <div className="flex w-full max-w-full min-w-0 shrink-0 items-center justify-between border-top-bottom-gray">
+        <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide">
+          {[
+            { id: 'all', label: 'All Reminders' },
+            { id: 'pending', label: 'Pending' },
+            { id: 'completed', label: 'Completed' }
+          ].map((status) => {
+            const isSelected = statusFilter === status.id;
+            return (
+              <button
+                key={status.id}
+                onClick={() => {
+                  setStatusFilter(status.id);
+                  setCurrentPage(1);
+                }}
+                className={cn(
+                  "flex items-center gap-1 whitespace-nowrap border-b-2 px-3 py-1 primary-text-medium",
+                  isSelected
+                    ? "border-blue-600 text-blue-600"
+                    : "border-transparent text-gray-500 hover:text-gray-700"
+                )}
+              >
+                {status.id === 'all' && (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                )}
+                {status.label}
+              </button>
+            );
+          })}
+        </div>
+
         <ListToolBar
+          align="right"
+          className="border-none bg-transparent p-0"
           showSearch
+          expandableSearch
           searchPlaceholder="Search by task title..."
           searchValue={searchTerm}
           onSearchChange={setSearchTerm}
@@ -681,26 +732,7 @@ export default function RemindersPage() {
           filterGroups={filterGroups}
           activeFilterCount={activeFilterCount}
           onClearFilters={handleClearFilters}
-          actions={[
-            {
-              key: 'add',
-              label: 'New Reminder',
-              icon: Plus,
-              onClick: () => {
-                setFormData({
-                  title: '',
-                  description: '',
-                  due_date: '',
-                  priority: 'medium',
-                  entity_type: 'lead',
-                  entityId: '',
-                });
-                setIsCreateDialogOpen(true);
-              },
-              show: true,
-              buttonVariant: 'default',
-            },
-          ]}
+          actions={[]}
           columnVisibilitySlot={
             <ColumnVisibilitySelector
               columns={reminderColumns}

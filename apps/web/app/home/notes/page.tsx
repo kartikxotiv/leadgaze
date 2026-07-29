@@ -519,8 +519,7 @@ export default function NotesPage() {
     <>
       <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden">
         <PageHeader
-          title={`Notes (${notes.length})`}
-          description="Capture and organize your important thoughts and information"
+          title={`Notes (${notes.length})`}          
         />
       </div>
 

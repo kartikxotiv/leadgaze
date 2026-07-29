@@ -763,8 +763,7 @@ export default function ContactsPage() {
     <ModuleGuard module="contacts">
       <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden">
         <PageHeader
-          title={`Contacts (${totalCount})`}
-          description="Manage your contacts (People)"
+          title={`Contacts (${totalCount})`}          
         />
       </div>
 

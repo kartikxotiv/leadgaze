@@ -2297,8 +2297,7 @@ export default function MeetingsPage() {
     <>
       <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden">
         <PageHeader
-          title={`Meetings (${totalCount})`}
-          description="Manage and track your synced calendar events"
+          title={`Meetings (${totalCount})`}          
         />
       </div>
 
