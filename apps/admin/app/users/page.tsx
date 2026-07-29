@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 
 import { useQuery } from '@tanstack/react-query';
 import {
   Edit,
   Key,
-  Mail,
+  Loader2,
   MoreVertical,
   Plus,
   Shield,
@@ -48,8 +48,19 @@ import { useCsvExport } from '@kit/ui/use-csv-export';
 import { useDateRangeFilter } from '@kit/ui/use-date-range-filter';
 import { useTableSort } from '@kit/ui/use-table-sort';
 
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@kit/ui/dialog';
+import { Label } from '@kit/ui/label';
+import { Textarea } from '@kit/ui/textarea';
+
 import { AdminNavbar } from '~/components/admin-navbar';
 import { useDebounce } from '~/lib/hooks/use-debounce';
+import { startImpersonationService } from '~/services/impersonation.service';
 import { getUsersService, UserItem } from '~/services/users.service';
 
 export interface UserRecord extends Record<string, unknown> {
@@ -70,15 +81,15 @@ const SYSTEM_FIELDS: Array<{
   sortable?: boolean;
   width?: string;
 }> = [
-  { id: 'sno', key: 'sno', label: 'S. No.', sortable: false, width: 'w-12' },
-  { id: 'full_name', key: 'full_name', label: 'Full Name', sortable: true },
-  { id: 'email', key: 'email', label: 'Email Address', sortable: true },
-  { id: 'role', key: 'role', label: 'Role', sortable: true },
-  { id: 'status', key: 'status', label: 'Status', sortable: true },
-  { id: 'workspaces_count', key: 'workspaces_count', label: 'Workspaces', sortable: true },
-  { id: 'last_login', key: 'last_login', label: 'Last Login', sortable: true },
-  { id: 'created_at', key: 'created_at', label: 'Joined On', sortable: true },
-];
+    { id: 'sno', key: 'sno', label: 'S. No.', sortable: false, width: 'w-12' },
+    { id: 'full_name', key: 'full_name', label: 'Full Name', sortable: true },
+    { id: 'email', key: 'email', label: 'Email Address', sortable: true },
+    { id: 'role', key: 'role', label: 'Role', sortable: true },
+    { id: 'status', key: 'status', label: 'Status', sortable: true },
+    { id: 'workspaces_count', key: 'workspaces_count', label: 'Workspaces', sortable: true },
+    { id: 'last_login', key: 'last_login', label: 'Last Login', sortable: true },
+    { id: 'created_at', key: 'created_at', label: 'Joined On', sortable: true },
+  ];
 
 const DEFAULT_VISIBILITY: Record<string, boolean> = {
   sno: true,
@@ -111,6 +122,12 @@ export default function AdminUsersPage() {
     new Set(),
   );
   const [isExporting, setIsExporting] = useState(false);
+
+  // Impersonation state
+  const [impersonateTarget, setImpersonateTarget] = useState<UserRecord | null>(null);
+  const [impersonateReason, setImpersonateReason] = useState('');
+  const [isImpersonating, setIsImpersonating] = useState(false);
+  const impersonateReasonRef = useRef<HTMLTextAreaElement>(null);
 
   const debouncedSearchTerm = useDebounce(searchTerm, 400);
 
@@ -264,6 +281,93 @@ export default function AdminUsersPage() {
     (dateRange ? 1 : 0);
 
   const trailingColumnCount = 2; // +1 for checkbox, +1 for actions
+
+  // Open the impersonation reason dialog for a given user
+  const handleOpenImpersonate = useCallback((user: UserRecord) => {
+    setImpersonateTarget(user);
+    setImpersonateReason('');
+  }, []);
+
+  const handleImpersonateSubmit = useCallback(async () => {
+    if (!impersonateTarget) return;
+    const trimmedReason = impersonateReason.trim();
+    if (!trimmedReason) {
+      toast.error('Please provide a reason for impersonation');
+      impersonateReasonRef.current?.focus();
+      return;
+    }
+
+    setIsImpersonating(true);
+    try {
+      const webOrigin =
+        process.env.NEXT_PUBLIC_WEB_APP_URL || 'http://localhost:3000';
+
+      // Check if web portal already has an active logged-in session
+      try {
+        const checkResp = await fetch(`${webOrigin}/api/user-context`, {
+          method: 'GET',
+          credentials: 'include',
+        });
+
+        if (checkResp.ok) {
+          const checkData = await checkResp.json();
+          if (checkData?.authenticated && checkData?.user?.email) {
+            toast.error(
+              `You are already logged in to the web portal as ${checkData.user.email}. Please sign out from the web portal first, then try impersonating again.`,
+              { duration: 8000 },
+            );
+            setIsImpersonating(false);
+            return;
+          }
+        }
+      } catch (err) {
+        // If check fails (e.g. network issue), log warning and continue
+        console.warn('Could not check web portal session state:', err);
+      }
+
+      // Web portal is logged out — create impersonation session
+      const result = await startImpersonationService({
+        target_user_id: impersonateTarget.id,
+        workspace_id: '00000000-0000-0000-0000-000000000000',
+        reason: trimmedReason,
+      });
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const resObj = (result as any)?.data ?? result;
+      const sessionId = resObj?.session_id;
+      const tokenHash = resObj?.token_hash;
+
+      if (!sessionId || !tokenHash) {
+        console.error('Impersonation payload missing session_id or token_hash:', result);
+        toast.error('Failed to generate valid impersonation credentials');
+        setIsImpersonating(false);
+        return;
+      }
+
+      toast.success(
+        `Impersonation session started for ${impersonateTarget.full_name}. Redirecting to web app...`,
+      );
+      setImpersonateTarget(null);
+
+      const impersonateCallbackUrl = `${webOrigin}/api/impersonate?session_id=${encodeURIComponent(sessionId)}`;
+
+      const callbackParams = new URLSearchParams({
+        token_hash: tokenHash,
+        type: 'magiclink',
+        next: impersonateCallbackUrl,
+      });
+
+      setTimeout(() => {
+        window.location.href = `${webOrigin}/auth/callback?${callbackParams.toString()}`;
+      }, 800);
+    } catch (err: unknown) {
+      const message =
+        (err as { message?: string })?.message ?? 'Failed to start impersonation';
+      toast.error(message);
+    } finally {
+      setIsImpersonating(false);
+    }
+  }, [impersonateTarget, impersonateReason]);
 
   return (
     <AppShell navbar={<AdminNavbar />}>
@@ -582,8 +686,8 @@ export default function AdminUsersPage() {
                                   u.status === 'Active'
                                     ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400 hover:bg-emerald-50'
                                     : u.status === 'Invited'
-                                    ? 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-400 hover:bg-blue-50'
-                                    : 'bg-rose-50 text-rose-700 dark:bg-rose-950 dark:text-rose-400 hover:bg-rose-50'
+                                      ? 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-400 hover:bg-blue-50'
+                                      : 'bg-rose-50 text-rose-700 dark:bg-rose-950 dark:text-rose-400 hover:bg-rose-50'
                                 }
                               >
                                 {u.status}
@@ -633,6 +737,13 @@ export default function AdminUsersPage() {
                                   <Shield className="h-3.5 w-3.5" />
                                   Manage Permissions
                                 </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  className="gap-2 text-amber-600 focus:text-amber-600"
+                                  onSelect={() => handleOpenImpersonate(u)}
+                                >
+                                  <UserCheck className="h-3.5 w-3.5" />
+                                  Impersonate User
+                                </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem className="gap-2 text-rose-600 focus:text-rose-600">
                                   <Trash2 className="h-3.5 w-3.5" />
@@ -651,6 +762,76 @@ export default function AdminUsersPage() {
           </div>
         </div>
       </PageBody>
+
+      {/* Impersonation Reason Dialog */}
+      <Dialog
+        open={!!impersonateTarget}
+        onOpenChange={(open) => { if (!open) setImpersonateTarget(null); }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserCheck className="h-4 w-4 text-amber-600" />
+              Impersonate User
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            {impersonateTarget && (
+              <p className="text-sm text-muted-foreground">
+                You are about to start an impersonation session for{' '}
+                <span className="font-semibold text-foreground">
+                  {impersonateTarget.full_name}
+                </span>{' '}
+                ({impersonateTarget.email}). This session will expire in 30 minutes.
+              </p>
+            )}
+
+            <div className="space-y-2">
+              <Label htmlFor="impersonate-reason">
+                Reason for Access <span className="text-rose-500">*</span>
+              </Label>
+              <Textarea
+                id="impersonate-reason"
+                ref={impersonateReasonRef}
+                placeholder="e.g. Customer Support, Bug Investigation, Data Verification…"
+                value={impersonateReason}
+                onChange={(e) => setImpersonateReason(e.target.value)}
+                rows={3}
+                className="resize-none"
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setImpersonateTarget(null)}
+              disabled={isImpersonating}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="default"
+              className="gap-2 bg-amber-600 hover:bg-amber-700"
+              onClick={handleImpersonateSubmit}
+              disabled={isImpersonating || !impersonateReason.trim()}
+            >
+              {isImpersonating ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  Starting…
+                </>
+              ) : (
+                <>
+                  <UserCheck className="h-3.5 w-3.5" />
+                  Start Session
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AppShell>
   );
 }
