@@ -519,7 +519,7 @@ export default function NotesPage() {
     <>
       <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden border-b">
         <PageHeader
-          title={`Notes (${notes.length})`}          
+          title={`Notes`}          
         >
           <div className="p-[2px]">
             <ListToolBar
@@ -527,7 +527,7 @@ export default function NotesPage() {
               className="border-none bg-transparent p-0"
               showSearch
               expandableSearch
-              searchPlaceholder="Search notes..."
+              searchPlaceholder="Search"
               searchValue={searchTerm}
           onSearchChange={setSearchTerm}
           showFilter

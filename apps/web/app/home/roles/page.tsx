@@ -292,8 +292,9 @@ export default function RolesPage() {
     <ModuleGuard module="roles">
       <div className="flex shrink-0 flex-col gap-2 overflow-hidden">
         <PageHeader
-          title={`Roles Management (${roles.length})`}
-          description="Create and manage workspace roles with custom permissions"
+          title={`Roles Management`}
+          //  (${roles.length})
+          // description="Create and manage workspace roles with custom permissions"
         />
       </div>
 

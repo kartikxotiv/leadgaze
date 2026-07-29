@@ -593,7 +593,7 @@ export default function DocumentPage() {
     <>
       <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden border-b">
         <PageHeader
-          title={`Documents (${documents.length})`}          
+          title={`Documents`}          
         >
           <div className="p-[2px]">
             <ListToolBar
@@ -601,7 +601,7 @@ export default function DocumentPage() {
               className="border-none bg-transparent p-0"
               showSearch
               expandableSearch
-              searchPlaceholder="Search documents..."
+              searchPlaceholder="Search"
               searchValue={searchTerm}
           onSearchChange={setSearchTerm}
           showFilter

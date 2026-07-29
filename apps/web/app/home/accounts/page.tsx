@@ -789,7 +789,7 @@ export default function AccountsPage() {
     <ModuleGuard module="accounts">
       <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden border-b">
         <PageHeader
-          title={`Accounts (${totalCount})`}          
+          title={`Accounts`}          
         >
           <div className="p-[2px]">
             <ListToolBar
@@ -797,7 +797,7 @@ export default function AccountsPage() {
               className="border-none bg-transparent p-0"
               showSearch
               expandableSearch
-          searchPlaceholder="Search by account name..."
+          searchPlaceholder="Search"
           searchValue={searchTerm}
           onSearchChange={setSearchTerm}
           showFilter

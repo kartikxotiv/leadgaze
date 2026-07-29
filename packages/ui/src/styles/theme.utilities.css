@@ -99,13 +99,13 @@
 @utility table-row-border {
   border-bottom-width: 0.6px;
   border-bottom-style: solid;
-  border-bottom-color: var(--card-border);
+  border-bottom-color: var(--table-custom-border);
 }
 
 @utility table-header-border{
   border-left-width: 0.6px;
   border-style: solid;
-  border-color: var(--card-border);
+  border-color: var(--table-custom-border);
 }
 
 @utility sticky-right-header{
@@ -146,8 +146,8 @@
 }
 
 @utility border-top-bottom-gray{
-  border-top-color: var(--card-border) !important;
-  border-bottom-color: var(--card-border) !important;
+  border-top-color: var(--table-custom-border) !important;
+  border-bottom-color: var(--table-custom-border) !important;
   border-top-width: 1px;
   border-bottom-width: 1px;
 }

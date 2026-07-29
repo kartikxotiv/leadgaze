@@ -411,14 +411,14 @@ export default function TeamMembersPage() {
     <ModuleGuard module="team_members">
       <div className="flex shrink-0 flex-col gap-2 overflow-hidden">
         <PageHeader
-          title={`Members (${unifiedList.length})`}
-          description={
-            statusFilter === 'pending'
-              ? 'Showing pending invitations only'
-              : statusFilter === 'all'
-                ? 'Showing all members'
-                : 'Showing active members only'
-          }
+          title={`Members`}
+          // description={
+          //   statusFilter === 'pending'
+          //     ? 'Showing pending invitations only'
+          //     : statusFilter === 'all'
+          //       ? 'Showing all members'
+          //       : 'Showing active members only'
+          // }
         >
           <div className="flex">
             {currentModule && (
@@ -622,7 +622,7 @@ export default function TeamMembersPage() {
                           {isVisible('member') && (
                             <TableCell>
                               <div className="flex items-center gap-3">
-                                <div className="bg-secondary flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold">
+                                <div className="bg-secondary flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold">
                                   {(
                                     member.user?.email?.charAt(0) || 'M'
                                   ).toUpperCase()}
@@ -738,7 +738,7 @@ export default function TeamMembersPage() {
                           {isVisible('member') && (
                             <TableCell>
                               <div className="flex items-center gap-3">
-                                <div className="bg-secondary flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold">
+                                <div className="bg-secondary flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold">
                                   {invitation.email.charAt(0).toUpperCase()}
                                 </div>
                                 <span className="primary-text-medium text-leadgaze-primary dark:text-leadgaze-primary">

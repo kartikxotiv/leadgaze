@@ -177,6 +177,7 @@ type ResourcePageProps = {
   serializeRow?: (record: ServiceCloudRecord) => Record<string, string>;
   exportColumns?: Array<{ key: string; label: string }>;
   actions?: React.ComponentProps<typeof ListToolBar>['actions'];
+  tabsSlot?: React.ReactNode;
 };
 
 function getInitialForm(
@@ -230,6 +231,7 @@ export function ServiceCloudResourcePage({
   serializeRow,
   exportColumns,
   actions,
+  tabsSlot,
 }: ResourcePageProps) {
   const [internalSelectedIds, setInternalSelectedIds] = useState<Set<string>>(new Set());
   const [isExporting, setIsExporting] = useState(false);
@@ -548,8 +550,18 @@ export function ServiceCloudResourcePage({
 
   return (
     <>
-      <div className="flex w-full min-w-0 max-w-full shrink-0 items-center justify-end border-b pb-2">
-        <div className="p-[2px] w-full">
+      <div
+        className={cn(
+          'flex w-full min-w-0 max-w-full shrink-0 items-center justify-between',
+          resource === 'tickets' ? 'border-top-bottom-gray' : 'border-b pb-2'
+        )}
+      >
+        {tabsSlot ? (
+          <div className="shrink-0 flex items-center pr-4">
+            {tabsSlot}
+          </div>
+        ) : null}
+        <div className="p-[2px] flex flex-1 justify-end min-w-0">
           <ListToolBar
             align="right"
             className="border-none bg-transparent p-0"

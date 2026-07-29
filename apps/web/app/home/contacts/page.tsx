@@ -763,7 +763,7 @@ export default function ContactsPage() {
     <ModuleGuard module="contacts">
       <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden border-b">
         <PageHeader
-          title={`Contacts (${totalCount})`}          
+          title={`Contacts`}          
         >
           <div className="p-[2px]">
             <ListToolBar
@@ -771,7 +771,7 @@ export default function ContactsPage() {
             className="border-none bg-transparent p-0"
             showSearch
             expandableSearch
-            searchPlaceholder="Search by name, email, or account..."
+            searchPlaceholder="Search"
           searchValue={searchTerm}
           onSearchChange={setSearchTerm}
           showFilter
