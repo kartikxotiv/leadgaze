@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
-import { Database } from '~/lib/database.types';
+import { Database } from '@kit/supabase/database';
 import { coreDb } from '~/lib/field-permission/core-client';
 import { loadEntityFields } from '~/lib/field-permission/field-permission.server';
 import { catchAsync, successDataResponse } from '~/utils/response-handler';

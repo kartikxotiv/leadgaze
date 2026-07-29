@@ -153,7 +153,14 @@
     "./app-breadcrumbs": "./src/makerkit/app-breadcrumbs.tsx",
     "./empty-state": "./src/makerkit/empty-state.tsx",
     "./download-report-button": "./src/shadcn/download-report-button.tsx",
-    "./marketing": "./src/makerkit/marketing/index.tsx"
+    "./marketing": "./src/makerkit/marketing/index.tsx",
+    "./app-shell": "./src/layouts/app-shell/app-shell.tsx",
+    "./app-navbar": "./src/navigation/app-navbar/app-navbar.tsx",
+    "./mobile-navbar": "./src/navigation/mobile-navbar/mobile-navbar.tsx",
+    "./workspace-switcher": "./src/navigation/workspace-switcher/workspace-switcher.tsx",
+    "./module-switcher": "./src/navigation/module-switcher/module-switcher.tsx",
+    "./profile-dropdown": "./src/navigation/profile-dropdown/profile-dropdown.tsx",
+    "./navigation-types": "./src/navigation/navigation-types/index.ts"
   },
   "typesVersions": {
     "*": {

@@ -26,11 +26,12 @@
     "update": "pnpm update -r",
     "syncpack:list": "pnpm dlx syncpack list-mismatches",
     "syncpack:fix": "pnpm dlx syncpack fix-mismatches",
-    "supabase:web:start": "pnpm --filter web supabase:start",
-    "supabase:web:stop": "pnpm --filter web supabase:stop",
-    "supabase:web:typegen": "pnpm --filter web supabase:typegen",
-    "supabase:web:apply": "pnpm --filter web supabase migration repair <migration-file> --status applied",
-    "supabase:web:reset": "pnpm --filter web supabase:reset"
+    "supabase:start": "supabase status || supabase start",
+    "supabase:stop": "supabase stop",
+    "supabase:status": "supabase status",
+    "supabase:reset": "supabase db reset",
+    "supabase:migration:new": "supabase migration new",
+    "supabase:typegen": "supabase gen types typescript --project-id carwrljcvuzabktofqmt --schema public --schema hrms --schema core --schema service_cloud > packages/supabase/src/database.types.ts"
   },
   "prettier": "@kit/prettier-config",
   "packageManager": "pnpm@10.18.2",
@@ -44,6 +45,7 @@
     "@turbo/gen": "^2.5.8",
     "cross-env": "^10.1.0",
     "prettier": "^3.6.2",
+    "supabase": "^2.48.3",
     "turbo": "2.5.8",
     "typescript": "^5.9.3"
   }
