@@ -54,6 +54,8 @@ import { CardWidgetContainer } from '@kit/ui/card-widget-container';
 import { CardWidgetList, CardWidgetListItem } from '@kit/ui/card-widget-list';
 import { DetailHeader } from '@kit/ui/detail-header';
 import { DetailInfoList, DetailInfoRow } from '@kit/ui/detail-info-row';
+import { InlineEditableValue } from '@kit/ui/inline-editable-value';
+import { Input } from '@kit/ui/input';
 import { PageBody } from '@kit/ui/page';
 import { Skeleton } from '@kit/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@kit/ui/tabs';
@@ -66,6 +68,7 @@ import {
 import { cn } from '@kit/ui/utils';
 
 import { CreateContactDialog } from '~/home/contacts/components/create-contact-dialog';
+import { ManageableStatusSelect } from '../../_components/manageable-status-select';
 import { useDynamicColumns } from '~/lib/hooks/use-dynamic-columns';
 import { useFieldPermissions } from '~/lib/hooks/use-field-permissions';
 import { useLocalization } from '~/lib/localization/localization-provider';
@@ -79,7 +82,7 @@ import {
   assignAccountToUser,
   getAccountAssignees,
 } from '~/services/account-assignees.service';
-import { getAccountByIdService } from '~/services/accounts.service';
+import { getAccountByIdService, updateAccountService } from '~/services/accounts.service';
 import { type Contact, getContactsService } from '~/services/contacts.service';
 import { getOpportunitiesService } from '~/services/opportunities.service';
 
@@ -174,6 +177,8 @@ export default function AccountDetailsPage() {
   const [isLogCallDialogOpen, setIsLogCallDialogOpen] = useState(false);
   const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
   const [openAccordion, setOpenAccordion] = useState<string>('');
+  const [isEditingAccountType, setIsEditingAccountType] = useState(false);
+  const [isEditingRevenue, setIsEditingRevenue] = useState(false);
 
   const { currentWorkspace: workspace, canAccess } = useRBAC();
   const canManageEmail = canAccess('emails', 'manage_email');
@@ -184,11 +189,78 @@ export default function AccountDetailsPage() {
     data: account,
     isLoading,
     error,
+    refetch,
   } = useQuery({
     queryKey: ['account', id],
     queryFn: () => getAccountByIdService(id),
     enabled: !!id,
   });
+
+  const accountUpdateMutation = useMutation({
+    mutationFn: async (params: {
+      field?: string;
+      value?: any;
+      fields?: Record<string, any>;
+    }) => {
+      if (!account) {
+        throw new Error('Account is not available for updates');
+      }
+
+      const payload = {
+        account_name: account.account_name,
+        website: account.website,
+        phone_number: account.phone_number,
+        industry_id: account.industry_id,
+        company_size: account.company_size,
+        annual_revenue: account.annual_revenue,
+        employee_count: account.employee_count,
+        account_type: account.account_type,
+        billing_street: account.billing_street,
+        billing_city: account.billing_city,
+        billing_state: account.billing_state,
+        billing_postal_code: account.billing_postal_code,
+        billing_country: account.billing_country,
+        shipping_street: account.shipping_street,
+        shipping_city: account.shipping_city,
+        shipping_state: account.shipping_state,
+        shipping_postal_code: account.shipping_postal_code,
+        shipping_country: account.shipping_country,
+        linkedin_url: account.linkedin_url,
+        twitter_handle: account.twitter_handle,
+        description: account.description,
+        status_id: account.status_id,
+        owner_id: account.owner_id,
+        custom_fields: account.custom_fields,
+      };
+
+      if (params.fields) {
+        Object.assign(payload, params.fields);
+      } else if (params.field) {
+        payload[params.field as keyof typeof payload] = params.value;
+      }
+
+      return updateAccountService(id, payload);
+    },
+    onSuccess: async () => {
+      toast.success('Account updated successfully');
+      await refetch();
+    },
+    onError: (error: unknown) => {
+      const message =
+        error instanceof Error ? error.message : 'Failed to update account';
+      toast.error(message);
+    },
+  });
+
+  const commitAccountField = async (
+    field: string,
+    value: any,
+  ) => {
+    await accountUpdateMutation.mutateAsync({
+      field,
+      value: typeof value === 'string' ? value.trim() || null : value,
+    });
+  };
 
   const { canView } = useFieldPermissions({
     entityType: 'accounts',
@@ -375,25 +447,27 @@ export default function AccountDetailsPage() {
     );
   }
 
-  const billingAddress = [
-    account.billing_street,
-    account.billing_city,
-    account.billing_state,
-    account.billing_postal_code,
-    account.billing_country,
-  ]
-    .filter(Boolean)
-    .join(', ');
+  const billingParts = [
+    account.billing_street ?? '',
+    account.billing_city ?? '',
+    account.billing_state ?? '',
+    account.billing_postal_code ?? '',
+    account.billing_country ?? '',
+  ];
+  const billingAddress = billingParts.some(Boolean)
+    ? billingParts.join(', ')
+    : '';
 
-  const shippingAddress = [
-    account.shipping_street,
-    account.shipping_city,
-    account.shipping_state,
-    account.shipping_postal_code,
-    account.shipping_country,
-  ]
-    .filter(Boolean)
-    .join(', ');
+  const shippingParts = [
+    account.shipping_street ?? '',
+    account.shipping_city ?? '',
+    account.shipping_state ?? '',
+    account.shipping_postal_code ?? '',
+    account.shipping_country ?? '',
+  ];
+  const shippingAddress = shippingParts.some(Boolean)
+    ? shippingParts.join(', ')
+    : '';
 
   return (
     <ModuleGuard module="accounts">
@@ -774,111 +848,305 @@ export default function AccountDetailsPage() {
                 <AccordionContent className="px-4 pb-4">
                   <DetailInfoList>
                     {canView('phone') && (
-                      <DetailInfoRow
-                        icon={<Phone className="h-5 w-5" />}
-                        label="Phone"
-                        value={
-                          account.phone_number ? (
-                            <a
-                              href={`tel:${account.phone_number}`}
-                              className="text-blue-600 hover:underline dark:text-blue-400"
-                            >
-                              {account.phone_number}
-                            </a>
-                          ) : (
-                            '-'
-                          )
-                        }
-                      />
+                      <div className="flex items-center justify-between gap-2 py-2.5">
+                        <div className="flex items-center gap-2">
+                          <Phone className="text-muted-foreground h-5 w-5 shrink-0" />
+                          <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
+                            Phone
+                          </span>
+                        </div>
+                        <div className="min-w-0 flex-1 text-right">
+                          <InlineEditableValue
+                            value={account.phone_number || ''}
+                            disabled={!canEdit}
+                            placeholder="-"
+                            className="justify-end"
+                            displayClassName="truncate text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                            inputClassName="text-right"
+                            onCommit={async (nextValue) => {
+                              await commitAccountField('phone_number', nextValue);
+                            }}
+                          />
+                        </div>
+                      </div>
                     )}
 
                     {canView('employee_count') && (
-                      <DetailInfoRow
-                        icon={<Users className="h-5 w-5" />}
-                        label="Employees"
-                        value={
-                          account.company_size || account.employee_count
-                            ? account.company_size || account.employee_count
-                            : '-'
-                        }
-                      />
+                      <>
+                        <div className="flex items-center justify-between gap-2 py-2.5">
+                          <div className="flex items-center gap-2">
+                            <Users className="text-muted-foreground h-5 w-5 shrink-0" />
+                            <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
+                              Employees
+                            </span>
+                          </div>
+                          <div className="min-w-0 flex-1 text-right">
+                            <InlineEditableValue
+                              value={account.employee_count ? String(account.employee_count) : ''}
+                              disabled={!canEdit}
+                              placeholder="-"
+                              type="number"
+                              className="justify-end"
+                              displayClassName="truncate text-sm text-gray-900 dark:text-white"
+                              inputClassName="text-right"
+                              onCommit={async (nextValue) => {
+                                const val = nextValue.trim() ? parseInt(nextValue) : null;
+                                await commitAccountField('employee_count', val);
+                              }}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between gap-2 py-2.5">
+                          <div className="flex items-center gap-2">
+                            <Users className="text-muted-foreground h-5 w-5 shrink-0" />
+                            <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
+                              Company Size
+                            </span>
+                          </div>
+                          <div className="min-w-0 flex-1 text-right">
+                            <InlineEditableValue
+                              value={account.company_size || ''}
+                              disabled={!canEdit}
+                              placeholder="-"
+                              className="justify-end"
+                              displayClassName="truncate text-sm text-gray-900 dark:text-white"
+                              inputClassName="text-right"
+                              onCommit={async (nextValue) => {
+                                await commitAccountField('company_size', nextValue);
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </>
                     )}
 
                     {canView('annual_revenue') && (
-                      <DetailInfoRow
-                        icon={<DollarSign className="h-5 w-5" />}
-                        label="Revenue"
-                        value={(() => {
-                          const workspaceCurrency =
-                            currenciesData?.find((c) => c.is_default)
-                              ?.currency_code || 'USD';
-                          return formatWorkspaceCurrency(
-                            account.annual_revenue || 0,
-                            workspaceCurrency,
-                          );
-                        })()}
-                      />
+                      <div className="flex items-center justify-between gap-2 py-2.5">
+                        <div className="flex items-center gap-2">
+                          <DollarSign className="text-muted-foreground h-5 w-5 shrink-0" />
+                          <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
+                            Revenue
+                          </span>
+                        </div>
+                        <div className="min-w-0 flex-1 text-right">
+                          {isEditingRevenue ? (
+                            <Input
+                              type="number"
+                              className="ml-auto w-[220px] text-right animate-in fade-in duration-200"
+                              defaultValue={account.annual_revenue || ''}
+                              disabled={!canEdit}
+                              onBlur={async (e) => {
+                                const val = e.target.value.trim() ? parseFloat(e.target.value) : null;
+                                await commitAccountField('annual_revenue', val);
+                                setIsEditingRevenue(false);
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.currentTarget.blur();
+                                } else if (e.key === 'Escape') {
+                                  setIsEditingRevenue(false);
+                                }
+                              }}
+                              autoFocus
+                            />
+                          ) : (
+                            <button
+                              type="button"
+                              disabled={!canEdit}
+                              onClick={() => setIsEditingRevenue(true)}
+                              className={cn(
+                                'group inline-flex w-full items-center justify-end rounded-[4px] text-right outline-none transition-colors',
+                                {
+                                  'cursor-text': canEdit,
+                                  'hover:bg-accent/20': canEdit,
+                                },
+                              )}
+                            >
+                              <span className="block w-full rounded-[4px] px-0 py-0 text-right text-sm text-gray-900 dark:text-white transition-colors group-hover:text-foreground">
+                                {(() => {
+                                  const workspaceCurrency =
+                                    currenciesData?.find((c) => c.is_default)
+                                      ?.currency_code || 'USD';
+                                  return formatWorkspaceCurrency(
+                                    account.annual_revenue || 0,
+                                    workspaceCurrency,
+                                  );
+                                })()}
+                              </span>
+                            </button>
+                          )}
+                        </div>
+                      </div>
                     )}
 
                     {canView('account_type') && (
-                      <DetailInfoRow
-                        icon={<Tag className="h-5 w-5" />}
-                        label="Type"
-                        value={
-                          account.account_type ? (
-                            <span className="capitalize">
-                              {account.account_type_relation.status_name}
-                            </span>
+                      <div className="flex items-center justify-between gap-2 py-2.5">
+                        <div className="flex items-center gap-2">
+                          <Tag className="text-muted-foreground h-5 w-5 shrink-0" />
+                          <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
+                            Type
+                          </span>
+                        </div>
+                        <div className="min-w-0 flex-1 text-right">
+                          {isEditingAccountType ? (
+                            <div className="ml-auto w-[220px]">
+                              <ManageableStatusSelect
+                                moduleKey="accounts"
+                                workspaceId={workspace?.id ?? ''}
+                                value={account.account_type ?? ''}
+                                onValueChange={async (value) => {
+                                  await commitAccountField('account_type', value || null);
+                                  setIsEditingAccountType(false);
+                                }}
+                                open={isEditingAccountType}
+                                onOpenChange={(open) => {
+                                  if (!open) setIsEditingAccountType(false);
+                                }}
+                                disabled={!canEdit}
+                                triggerClassName="text-right justify-end"
+                              />
+                            </div>
                           ) : (
-                            '-'
-                          )
-                        }
-                      />
+                            <button
+                              type="button"
+                              disabled={!canEdit}
+                              onClick={() => setIsEditingAccountType(true)}
+                              className={cn(
+                                'group inline-flex w-full items-center justify-end rounded-[4px] text-right outline-none transition-colors',
+                                {
+                                  'cursor-text': canEdit,
+                                  'text-muted-foreground': !account.account_type,
+                                  'hover:bg-accent/20': canEdit,
+                                },
+                              )}
+                            >
+                              <span className="block w-full rounded-[4px] px-0 py-0 text-right text-sm text-gray-900 dark:text-white transition-colors group-hover:text-foreground">
+                                {account.account_type ? (
+                                  <span className="capitalize">
+                                    {account.account_type_relation?.status_name || account.account_type}
+                                  </span>
+                                ) : (
+                                  '-'
+                                )}
+                              </span>
+                            </button>
+                          )}
+                        </div>
+                      </div>
                     )}
 
                     {canView('linkedin') && (
-                      <DetailInfoRow
-                        icon={<Linkedin className="h-5 w-5" />}
-                        label="LinkedIn"
-                        value={
-                          account.linkedin_url ? (
-                            <a
-                              href={account.linkedin_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-blue-600 hover:underline dark:text-blue-400"
-                            >
-                              {account.linkedin_url}
-                            </a>
-                          ) : (
-                            '-'
-                          )
-                        }
-                      />
+                      <div className="flex items-center justify-between gap-2 py-2.5">
+                        <div className="flex items-center gap-2">
+                          <Linkedin className="text-muted-foreground h-5 w-5 shrink-0" />
+                          <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
+                            LinkedIn
+                          </span>
+                        </div>
+                        <div className="min-w-0 flex-1 text-right">
+                          <InlineEditableValue
+                            value={account.linkedin_url || ''}
+                            disabled={!canEdit}
+                            placeholder="-"
+                            className="justify-end"
+                            displayClassName="truncate text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                            inputClassName="text-right"
+                            onCommit={async (nextValue) => {
+                              await commitAccountField('linkedin_url', nextValue);
+                            }}
+                          />
+                        </div>
+                      </div>
                     )}
 
                     {canView('description') && (
-                      <DetailInfoRow
-                        icon={<FileText className="h-5 w-5" />}
-                        label="Description"
-                        value={account.description || '-'}
-                      />
+                      <div className="flex items-center justify-between gap-2 py-2.5">
+                        <div className="flex items-center gap-2">
+                          <FileText className="text-muted-foreground h-5 w-5 shrink-0" />
+                          <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
+                            Description
+                          </span>
+                        </div>
+                        <div className="min-w-0 flex-1 text-right">
+                          <InlineEditableValue
+                            value={account.description || ''}
+                            disabled={!canEdit}
+                            placeholder="-"
+                            className="justify-end"
+                            displayClassName="truncate text-sm text-gray-900 dark:text-white"
+                            inputClassName="text-right"
+                            multiline
+                            onCommit={async (nextValue) => {
+                              await commitAccountField('description', nextValue);
+                            }}
+                          />
+                        </div>
+                      </div>
                     )}
 
                     {canView('billing_street') && (
-                      <DetailInfoRow
-                        icon={<MapPin className="h-5 w-5" />}
-                        label="Billing"
-                        value={billingAddress || '-'}
-                      />
+                      <div className="flex items-center justify-between gap-2 py-2.5">
+                        <div className="flex items-center gap-2">
+                          <MapPin className="text-muted-foreground h-5 w-5 shrink-0" />
+                          <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
+                            Billing
+                          </span>
+                        </div>
+                        <div className="min-w-0 flex-1 text-right">
+                          <InlineEditableValue
+                            value={billingAddress || ''}
+                            disabled={!canEdit}
+                            placeholder="-"
+                            className="justify-end"
+                            displayClassName="truncate text-sm text-gray-900 dark:text-white"
+                            inputClassName="text-right"
+                            onCommit={async (nextValue) => {
+                              const parts = nextValue.split(',').map((p) => p.trim());
+                              const fields = {
+                                billing_street: parts[0] || null,
+                                billing_city: parts[1] || null,
+                                billing_state: parts[2] || null,
+                                billing_postal_code: parts[3] || null,
+                                billing_country: parts[4] || null,
+                              };
+                              await accountUpdateMutation.mutateAsync({ fields });
+                            }}
+                          />
+                        </div>
+                      </div>
                     )}
 
                     {canView('shipping_street') && (
-                      <DetailInfoRow
-                        icon={<MapPin className="h-5 w-5" />}
-                        label="Shipping"
-                        value={shippingAddress || '-'}
-                      />
+                      <div className="flex items-center justify-between gap-2 py-2.5">
+                        <div className="flex items-center gap-2">
+                          <MapPin className="text-muted-foreground h-5 w-5 shrink-0" />
+                          <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
+                            Shipping
+                          </span>
+                        </div>
+                        <div className="min-w-0 flex-1 text-right">
+                          <InlineEditableValue
+                            value={shippingAddress || ''}
+                            disabled={!canEdit}
+                            placeholder="-"
+                            className="justify-end"
+                            displayClassName="truncate text-sm text-gray-900 dark:text-white"
+                            inputClassName="text-right"
+                            onCommit={async (nextValue) => {
+                              const parts = nextValue.split(',').map((p) => p.trim());
+                              const fields = {
+                                shipping_street: parts[0] || null,
+                                shipping_city: parts[1] || null,
+                                shipping_state: parts[2] || null,
+                                shipping_postal_code: parts[3] || null,
+                                shipping_country: parts[4] || null,
+                              };
+                              await accountUpdateMutation.mutateAsync({ fields });
+                            }}
+                          />
+                        </div>
+                      </div>
                     )}
                   </DetailInfoList>
                 </AccordionContent>
@@ -1206,45 +1474,65 @@ export default function AccountDetailsPage() {
                       }
                     />
 
-                    <DetailInfoRow
-                      icon={<Globe className="h-5 w-5" />}
-                      label="Twitter"
-                      value={
-                        account.twitter_handle ? (
-                          <a
-                            href={`https://twitter.com/${account.twitter_handle.replace('@', '')}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-600 hover:underline dark:text-blue-400"
-                          >
-                            @{account.twitter_handle.replace('@', '')}
-                          </a>
-                        ) : (
-                          '-'
-                        )
-                      }
-                    />
-                    <DetailInfoRow
-                      icon={<FileText className="h-5 w-5" />}
-                      label="Tags"
-                      value={
-                        account.tags && account.tags.length > 0 ? (
-                          <div className="flex flex-wrap gap-1">
-                            {account.tags.map((tag: string) => (
-                              <Badge
-                                key={tag}
-                                variant="outline"
-                                className="text-[10px]"
-                              >
-                                {tag}
-                              </Badge>
-                            ))}
-                          </div>
-                        ) : (
-                          '-'
-                        )
-                      }
-                    />
+                    <div className="flex items-center justify-between gap-2 py-2.5">
+                      <div className="flex items-center gap-2">
+                        <Globe className="text-muted-foreground h-5 w-5 shrink-0" />
+                        <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
+                          Twitter
+                        </span>
+                      </div>
+                      <div className="min-w-0 flex-1 text-right">
+                        <InlineEditableValue
+                          value={account.twitter_handle || ''}
+                          disabled={!canEdit}
+                          placeholder="-"
+                          className="justify-end"
+                          displayClassName="truncate text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                          inputClassName="text-right"
+                          onCommit={async (nextValue) => {
+                            await commitAccountField('twitter_handle', nextValue || null);
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between gap-2 py-2.5">
+                      <div className="flex items-center gap-2">
+                        <FileText className="text-muted-foreground h-5 w-5 shrink-0" />
+                        <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
+                          Tags
+                        </span>
+                      </div>
+                      <div className="min-w-0 flex-1 text-right">
+                        <InlineEditableValue
+                          value={account.tags && account.tags.length > 0 ? account.tags.join(', ') : ''}
+                          disabled={!canEdit}
+                          placeholder="-"
+                          className="justify-end"
+                          displayClassName="truncate text-sm text-gray-900 dark:text-white"
+                          inputClassName="text-right"
+                          renderDisplay={(val) =>
+                            val ? (
+                              <div className="flex flex-wrap justify-end gap-1">
+                                {val.split(',').map((t) => t.trim()).filter(Boolean).map((tag) => (
+                                  <Badge key={tag} variant="outline" className="text-[10px]">
+                                    {tag}
+                                  </Badge>
+                                ))}
+                              </div>
+                            ) : (
+                              <span className="text-sm text-gray-900 dark:text-white">-</span>
+                            )
+                          }
+                          onCommit={async (nextValue) => {
+                            const tags = nextValue
+                              ? nextValue.split(',').map((t) => t.trim()).filter(Boolean)
+                              : [];
+                            await commitAccountField('tags', tags.length > 0 ? tags : null);
+                          }}
+                        />
+                      </div>
+                    </div>
                   </DetailInfoList>
                 </AccordionContent>
               </AccordionItem>

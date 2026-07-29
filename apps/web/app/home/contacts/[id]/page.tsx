@@ -43,6 +43,7 @@ import { Button } from '@kit/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@kit/ui/card';
 import { DetailHeader } from '@kit/ui/detail-header';
 import { DetailInfoList, DetailInfoRow } from '@kit/ui/detail-info-row';
+import { InlineEditableValue } from '@kit/ui/inline-editable-value';
 import { PageBody } from '@kit/ui/page';
 import { Skeleton } from '@kit/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@kit/ui/tabs';
@@ -66,7 +67,10 @@ import {
   assignContactToUser,
   getContactAssignees,
 } from '~/services/contact-assignees.service';
-import { getContactByIdService } from '~/services/contacts.service';
+import {
+  getContactByIdService,
+  updateContactService,
+} from '~/services/contacts.service';
 
 import { DeleteEntityDialog } from '../../_components/delete-entity-dialog';
 import {
@@ -83,6 +87,20 @@ import { LogCallDialog } from '../../leads/components/log-call-dialog';
 import { ContactAssignees } from '../components/contact-assignees';
 import { EditContactDialog } from '../components/edit-contact-dialog';
 import { CardWidgetContainer } from '@kit/ui/card-widget-container';
+
+type ContactInlineEditableField =
+  | 'email'
+  | 'alt_email'
+  | 'phone_number'
+  | 'mobile_number'
+  | 'alt_phone'
+  | 'language'
+  | 'location'
+  | 'timezone'
+  | 'department'
+  | 'linkedin_url'
+  | 'notes'
+  | 'twitter_handle';
 
 function ContactDetailsSkeleton() {
   return (
@@ -236,8 +254,72 @@ export default function ContactDetailsPage() {
     },
   });
 
+  const contactUpdateMutation = useMutation({
+    mutationFn: async (params: {
+      field: ContactInlineEditableField;
+      value: string | null;
+    }) => {
+      if (!contact) {
+        throw new Error('Contact is not available for updates');
+      }
+
+      const payload: Record<string, any> = {
+        first_name: contact.first_name,
+        last_name: contact.last_name,
+        email: contact.email,
+        alt_email: contact.alt_email,
+        phone_number: contact.phone_number,
+        mobile_number: contact.mobile_number,
+        alt_phone: contact.alt_phone,
+        job_title: contact.job_title,
+        department: contact.department,
+        location: contact.location,
+        timezone: contact.timezone,
+        language: contact.language,
+        preferred_contact_method: contact.preferred_contact_method,
+        do_not_call: contact.do_not_call,
+        do_not_email: contact.do_not_email,
+        linkedin_url: contact.linkedin_url,
+        twitter_handle: contact.twitter_handle,
+        status_id: contact.status_id,
+        owner_id: contact.owner_id,
+        created_by: contact.created_by,
+        notes: contact.notes,
+        custom_fields: contact.custom_fields,
+      };
+
+      payload[params.field] = params.value;
+
+      return updateContactService(contact.id, payload);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['contact', id] });
+      toast.success('Contact updated');
+    },
+    onError: (error: unknown) => {
+      const response = (
+        error as { response?: { data?: { message?: unknown } } }
+      )?.response;
+      const message =
+        typeof response?.data?.message === 'string'
+          ? response.data.message
+          : 'Failed to update contact';
+      toast.error(message);
+    },
+  });
+
   const editPermission = usePermissionDetail('contacts', 'edit');
   const canEdit = useCanAccessData(editPermission, contact?.owner_id, user?.id);
+
+  const commitContactField = async (
+    field: ContactInlineEditableField,
+    value: string,
+  ) => {
+    await contactUpdateMutation.mutateAsync({
+      field,
+      value: value.trim() || null,
+    });
+  };
 
   const { data: coreEmailAccounts = [] } = useQuery({
     queryKey: ['core-email-accounts', workspace?.id],
@@ -655,111 +737,289 @@ export default function ContactDetailsPage() {
                 </AccordionTrigger>
                 <AccordionContent className="px-4 pb-4">
                   <DetailInfoList>
+                    {canView('email') && (
+                      <div className="flex items-center justify-between gap-2 py-2.5">
+                        <div className="flex items-center gap-2">
+                          <Mail className="text-muted-foreground h-5 w-5 shrink-0" />
+                          <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
+                            Email
+                          </span>
+                        </div>
 
-                    {canView('email') && <DetailInfoRow
-                      icon={<Mail className="h-5 w-5" />}
-                      label="Email"
-                      value={
-                        contact.email ? (<a
-                          href={`mailto:${contact.email}`}
-                          className="text-blue-600 hover:underline dark:text-blue-400"
-                        >
-                          {contact.email}
-                        </a>) : '-'
-                      }
-                    />}
+                        <div className="min-w-0 flex-1 text-right">
+                          <InlineEditableValue
+                            value={contact.email || ''}
+                            disabled={!canEdit}
+                            placeholder="-"
+                            className="justify-end"
+                            displayClassName="truncate text-sm text-blue-600 dark:text-blue-400"
+                            inputClassName="text-right"
+                            onCommit={async (nextValue) => {
+                              await commitContactField('email', nextValue);
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
 
-                    {canView('alt_email') && <DetailInfoRow
-                      icon={<Mail className="h-5 w-5" />}
-                      label="Alt Email"
-                      value={
-                        contact.alt_email ? (<a
-                          href={`mailto:${contact.alt_email}`}
-                          className="text-blue-600 hover:underline dark:text-blue-400"
-                        >
-                          {contact.alt_email}
-                        </a>) : '-'
-                      }
-                    />}
+                    {canView('alt_email') && (
+                      <div className="flex items-center justify-between gap-2 py-2.5">
+                        <div className="flex items-center gap-2">
+                          <Mail className="text-muted-foreground h-5 w-5 shrink-0" />
+                          <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
+                            Alt Email
+                          </span>
+                        </div>
 
-                    {canView('phone') && <DetailInfoRow
-                      icon={<Phone className="h-5 w-5" />}
-                      label="Phone"
-                      value={
-                        contact.phone_number ? (<a
-                          href={`tel:${contact.phone_number}`}
-                          className="text-blue-600 hover:underline dark:text-blue-400"
-                        >
-                          {contact.phone_number}
-                        </a>) : '-'
-                      }
-                    />}
+                        <div className="min-w-0 flex-1 text-right">
+                          <InlineEditableValue
+                            value={contact.alt_email || ''}
+                            disabled={!canEdit}
+                            placeholder="-"
+                            className="justify-end"
+                            displayClassName="truncate text-sm text-blue-600 dark:text-blue-400"
+                            inputClassName="text-right"
+                            onCommit={async (nextValue) => {
+                              await commitContactField('alt_email', nextValue);
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
 
-                    {canView('mobile') && <DetailInfoRow
-                      icon={<Phone className="h-5 w-5" />}
-                      label="Mobile"
-                      value={
-                        contact.mobile_number ? (<a
-                          href={`tel:${contact.mobile_number}`}
-                          className="text-blue-600 hover:underline dark:text-blue-400"
-                        >
-                          {contact.mobile_number}
-                        </a>) : '-'
-                      }
-                    />}
+                    {canView('phone') && (
+                      <div className="flex items-center justify-between gap-2 py-2.5">
+                        <div className="flex items-center gap-2">
+                          <Phone className="text-muted-foreground h-5 w-5 shrink-0" />
+                          <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
+                            Phone
+                          </span>
+                        </div>
 
-                    {canView('alt_phone') && <DetailInfoRow
-                      icon={<Phone className="h-5 w-5" />}
-                      label="Alt Phone"
-                      value={
-                        contact.alt_phone ? (<a
-                          href={`tel:${contact.alt_phone}`}
-                          className="text-blue-600 hover:underline dark:text-blue-400"
-                        >
-                          {contact.alt_phone}
-                        </a>) : '-'
-                      }
-                    />}
+                        <div className="min-w-0 flex-1 text-right">
+                          <InlineEditableValue
+                            value={contact.phone_number || ''}
+                            disabled={!canEdit}
+                            placeholder="-"
+                            className="justify-end"
+                            displayClassName="truncate text-sm text-blue-600 dark:text-blue-400"
+                            inputClassName="text-right"
+                            onCommit={async (nextValue) => {
+                              await commitContactField(
+                                'phone_number',
+                                nextValue,
+                              );
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
 
-                    {canView('language') && <DetailInfoRow
-                      icon={<Globe className="h-5 w-5" />}
-                      label="Language"
-                      value={contact.language || '-'}
-                    />}
+                    {canView('mobile') && (
+                      <div className="flex items-center justify-between gap-2 py-2.5">
+                        <div className="flex items-center gap-2">
+                          <Phone className="text-muted-foreground h-5 w-5 shrink-0" />
+                          <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
+                            Mobile
+                          </span>
+                        </div>
 
+                        <div className="min-w-0 flex-1 text-right">
+                          <InlineEditableValue
+                            value={contact.mobile_number || ''}
+                            disabled={!canEdit}
+                            placeholder="-"
+                            className="justify-end"
+                            displayClassName="truncate text-sm text-blue-600 dark:text-blue-400"
+                            inputClassName="text-right"
+                            onCommit={async (nextValue) => {
+                              await commitContactField(
+                                'mobile_number',
+                                nextValue,
+                              );
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
 
-                    {(canView('location') || canView('timezone')) && <DetailInfoRow
-                      icon={<MapPin className="h-5 w-5" />}
-                      label="Location"
-                      value={(contact.location || contact.timezone) ? ([contact.location, contact.timezone]
-                        .filter(Boolean)
-                        .join(' • ')) : '-'}
-                    />}
+                    {canView('alt_phone') && (
+                      <div className="flex items-center justify-between gap-2 py-2.5">
+                        <div className="flex items-center gap-2">
+                          <Phone className="text-muted-foreground h-5 w-5 shrink-0" />
+                          <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
+                            Alt Phone
+                          </span>
+                        </div>
 
-                    {canView('department') && <DetailInfoRow
-                      icon={<FileText className="h-5 w-5" />}
-                      label="Department"
-                      value={contact.department || '-'}
-                    />}
-                    {canView('linkedin') && <DetailInfoRow
-                      icon={<Linkedin className="h-5 w-5" />}
-                      label="LinkedIn"
-                      value={
-                        contact.linkedin_url ? (<a
-                          href={contact.linkedin_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:underline dark:text-blue-400"
-                        >
-                          {contact.linkedin_url}
-                        </a>) : '-'}
-                    />}
+                        <div className="min-w-0 flex-1 text-right">
+                          <InlineEditableValue
+                            value={contact.alt_phone || ''}
+                            disabled={!canEdit}
+                            placeholder="-"
+                            className="justify-end"
+                            displayClassName="truncate text-sm text-blue-600 dark:text-blue-400"
+                            inputClassName="text-right"
+                            onCommit={async (nextValue) => {
+                              await commitContactField('alt_phone', nextValue);
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
 
-                    {canView('notes') && <DetailInfoRow
-                      icon={<FileText className="h-5 w-5" />}
-                      label="Notes"
-                      value={contact.notes || '-'}
-                    />}
+                    {canView('language') && (
+                      <div className="flex items-center justify-between gap-2 py-2.5">
+                        <div className="flex items-center gap-2">
+                          <Globe className="text-muted-foreground h-5 w-5 shrink-0" />
+                          <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
+                            Language
+                          </span>
+                        </div>
+
+                        <div className="min-w-0 flex-1 text-right">
+                          <InlineEditableValue
+                            value={contact.language || ''}
+                            disabled={!canEdit}
+                            placeholder="-"
+                            className="justify-end"
+                            displayClassName="truncate text-sm text-gray-900 dark:text-white"
+                            inputClassName="text-right"
+                            onCommit={async (nextValue) => {
+                              await commitContactField('language', nextValue);
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {canView('location') && (
+                      <div className="flex items-center justify-between gap-2 py-2.5">
+                        <div className="flex items-center gap-2">
+                          <MapPin className="text-muted-foreground h-5 w-5 shrink-0" />
+                          <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
+                            Location
+                          </span>
+                        </div>
+
+                        <div className="min-w-0 flex-1 text-right">
+                          <InlineEditableValue
+                            value={contact.location || ''}
+                            disabled={!canEdit}
+                            placeholder="-"
+                            className="justify-end"
+                            displayClassName="truncate text-sm text-gray-900 dark:text-white"
+                            inputClassName="text-right"
+                            onCommit={async (nextValue) => {
+                              await commitContactField('location', nextValue);
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {canView('timezone') && (
+                      <div className="flex items-center justify-between gap-2 py-2.5">
+                        <div className="flex items-center gap-2">
+                          <Clock className="text-muted-foreground h-5 w-5 shrink-0" />
+                          <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
+                            Timezone
+                          </span>
+                        </div>
+
+                        <div className="min-w-0 flex-1 text-right">
+                          <InlineEditableValue
+                            value={contact.timezone || ''}
+                            disabled={!canEdit}
+                            placeholder="-"
+                            className="justify-end"
+                            displayClassName="truncate text-sm text-gray-900 dark:text-white"
+                            inputClassName="text-right"
+                            onCommit={async (nextValue) => {
+                              await commitContactField('timezone', nextValue);
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {canView('department') && (
+                      <div className="flex items-center justify-between gap-2 py-2.5">
+                        <div className="flex items-center gap-2">
+                          <FileText className="text-muted-foreground h-5 w-5 shrink-0" />
+                          <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
+                            Department
+                          </span>
+                        </div>
+
+                        <div className="min-w-0 flex-1 text-right">
+                          <InlineEditableValue
+                            value={contact.department || ''}
+                            disabled={!canEdit}
+                            placeholder="-"
+                            className="justify-end"
+                            displayClassName="truncate text-sm text-gray-900 dark:text-white"
+                            inputClassName="text-right"
+                            onCommit={async (nextValue) => {
+                              await commitContactField('department', nextValue);
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {canView('linkedin') && (
+                      <div className="flex items-center justify-between gap-2 py-2.5">
+                        <div className="flex items-center gap-2">
+                          <Linkedin className="text-muted-foreground h-5 w-5 shrink-0" />
+                          <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
+                            LinkedIn
+                          </span>
+                        </div>
+
+                        <div className="min-w-0 flex-1 text-right">
+                          <InlineEditableValue
+                            value={contact.linkedin_url || ''}
+                            disabled={!canEdit}
+                            placeholder="-"
+                            className="justify-end"
+                            displayClassName="truncate text-sm text-blue-600 dark:text-blue-400"
+                            inputClassName="text-right"
+                            onCommit={async (nextValue) => {
+                              await commitContactField(
+                                'linkedin_url',
+                                nextValue,
+                              );
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {canView('notes') && (
+                      <div className="flex items-center justify-between gap-2 py-2.5">
+                        <div className="flex items-center gap-2">
+                          <FileText className="text-muted-foreground h-5 w-5 shrink-0" />
+                          <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
+                            Notes
+                          </span>
+                        </div>
+
+                        <div className="min-w-0 flex-1 text-right">
+                          <InlineEditableValue
+                            value={contact.notes || ''}
+                            disabled={!canEdit}
+                            placeholder="-"
+                            className="justify-end"
+                            displayClassName="truncate text-sm text-gray-900 dark:text-white"
+                            inputClassName="text-right"
+                            onCommit={async (nextValue) => {
+                              await commitContactField('notes', nextValue);
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
                   </DetailInfoList>
                 </AccordionContent>
               </AccordionItem>
@@ -814,8 +1074,7 @@ export default function ContactDetailsPage() {
                           <DetailInfoRow
                             key={field.id}
                             label={field.field_label}
-                            value={val === true ? 'Yes' : val === false ? 'No' : String(val ?? '-')}
-                          />
+                            value={val === true ? 'Yes' : val === false ? 'No' : String(val ?? '-')} icon={undefined} />
                         );
                       })}
                     </DetailInfoList>
@@ -871,40 +1130,74 @@ export default function ContactDetailsPage() {
                 </AccordionTrigger>
                 <AccordionContent className="px-4 pb-4">
                   <DetailInfoList>
-                    <DetailInfoRow
-                      icon={<User className="h-5 w-5" />}
-                      label="Owner"
-                      value={contact.owner?.name || '-'}
-                    />
-                    <DetailInfoRow
-                      icon={<Calendar className="h-5 w-5" />}
-                      label="Created At"
-                      value={formatDate(contact.created_at)}
-                    />
-                    <DetailInfoRow
-                      icon={<User className="h-5 w-5" />}
-                      label="Created By"
-                      value={
-                        contact.created_by_account?.name ||
-                        contact.created_by ||
-                        '-'
-                      }
-                    />
-                    {contact.twitter_handle && (
-                      <DetailInfoRow
-                        icon={<Globe className="h-5 w-5" />}
-                        label="Twitter"
-                        value={
-                          <a
-                            href={`https://twitter.com/${contact.twitter_handle.replace('@', '')}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-600 hover:underline dark:text-blue-400"
-                          >
-                            @{contact.twitter_handle.replace('@', '')}
-                          </a>
-                        }
-                      />
+                    <div className="flex items-center justify-between gap-2 py-2.5">
+                      <div className="flex items-center gap-2">
+                        <User className="text-muted-foreground h-5 w-5 shrink-0" />
+                        <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
+                          Owner
+                        </span>
+                      </div>
+
+                      <span className="truncate text-sm text-gray-900 dark:text-white">
+                        {contact.owner?.name || '-'}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-2 py-2.5">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="text-muted-foreground h-5 w-5 shrink-0" />
+                        <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
+                          Created At
+                        </span>
+                      </div>
+
+                      <span className="truncate text-sm text-gray-900 dark:text-white">
+                        {formatDate(contact.created_at)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-2 py-2.5">
+                      <div className="flex items-center gap-2">
+                        <User className="text-muted-foreground h-5 w-5 shrink-0" />
+                        <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
+                          Created By
+                        </span>
+                      </div>
+
+                      <span className="truncate text-sm text-gray-900 dark:text-white">
+                        {contact.created_by_account?.name ||
+                          contact.created_by ||
+                          '-'}
+                      </span>
+                    </div>
+                    {canView('twitter') && (
+                      <div className="flex items-center justify-between gap-2 py-2.5">
+                        <div className="flex items-center gap-2">
+                          <Globe className="text-muted-foreground h-5 w-5 shrink-0" />
+                          <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
+                            Twitter
+                          </span>
+                        </div>
+
+                        <div className="min-w-0 flex-1 text-right">
+                          <InlineEditableValue
+                            value={
+                              contact.twitter_handle
+                                ? `@${contact.twitter_handle.replace('@', '')}`
+                                : ''
+                            }
+                            disabled={!canEdit}
+                            placeholder="-"
+                            className="justify-end"
+                            displayClassName="truncate text-sm text-blue-600 dark:text-blue-400"
+                            inputClassName="text-right"
+                            onCommit={async (nextValue) => {
+                              await commitContactField(
+                                'twitter_handle',
+                                nextValue.trim().replace(/^@/, ''),
+                              );
+                            }}
+                          />
+                        </div>
+                      </div>
                     )}
                   </DetailInfoList>
                 </AccordionContent>
