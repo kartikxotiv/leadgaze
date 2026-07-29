@@ -5,7 +5,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { FileUp, Plus } from 'lucide-react';
+import { Download, FileUp, Plus } from 'lucide-react';
 
 import { convertFromUSD, findLatestRateToUsd } from '@kit/shared/currency';
 import type { ExchangeRateRecord } from '@kit/shared/currency';
@@ -1159,7 +1159,7 @@ export default function OpportunitiesPage() {
             {
               key: 'import',
               label: 'Import',
-              icon: FileUp,
+              icon: Download,
               onClick: () => setIsImportDialogOpen(true),
               show: canAccess('opportunities', 'import'),
               buttonVariant: 'outline',

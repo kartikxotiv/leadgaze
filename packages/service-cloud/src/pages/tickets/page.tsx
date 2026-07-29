@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { Check, FileUp, Loader2, Plus, User } from 'lucide-react';
+import { Check, Download, FileUp, Loader2, Plus, User } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { useLocalization } from '@kit/shared/localization';
@@ -660,7 +660,7 @@ export function ServiceCloudTicketsPage({
                 {
                   key: 'import',
                   label: 'Import',
-                  icon: FileUp,
+                  icon: Download,
                   onClick: onImportClick,
                   buttonVariant: 'outline' as const,
                 },

@@ -5,7 +5,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { FileDown, FileUp, Plus } from 'lucide-react';
+import { Download, FileDown, FileUp, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@kit/ui/button';
@@ -836,7 +836,7 @@ export default function ContactsPage() {
             {
               key: 'import',
               label: 'Import',
-              icon: FileUp,
+              icon: Download,
               onClick: () => setIsImportDialogOpen(true),
               show: canAccess('contacts', 'import'),
               buttonVariant: 'outline',

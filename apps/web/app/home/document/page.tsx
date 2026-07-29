@@ -20,7 +20,8 @@ import {
   Trash2,
   User,
   Users,
-  Plus
+  Plus,
+  Download
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -613,7 +614,7 @@ export default function DocumentPage() {
             {
               key: 'add',
               label: 'Upload File',
-              icon: FileUp,
+              icon: Download,
               onClick: () => {
                 setFile(null);
                 setEntityType('lead');
