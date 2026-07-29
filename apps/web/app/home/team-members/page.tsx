@@ -409,7 +409,7 @@ export default function TeamMembersPage() {
 
   return (
     <ModuleGuard module="team_members">
-      <div className="flex shrink-0 flex-col gap-2 overflow-hidden">
+      <div className="flex shrink-0 flex-col gap-2 overflow-hidden border-b">
         <PageHeader
           title={`Members`}
           // description={
@@ -420,18 +420,20 @@ export default function TeamMembersPage() {
           //       : 'Showing active members only'
           // }
         >
-          <div className="flex">
+          
+          <div className="p-[2px] flex gap-2">
+            <div className="flex">
             {currentModule && (
               <Card
                 className={cn(
                   'hover:border-primary/50 bg-card rounded-sm-card inline-flex w-auto shrink-0 cursor-pointer transition-all',
                 )}
               >
-                <CardContent className={cn('flex items-center px-3 py-2')}>
+                <CardContent className={cn('flex items-center px-1 py-1')}>
                   <div className="flex items-center gap-2 whitespace-nowrap">
                     <span
                       className={cn(
-                        'primary-text-medium text-leadgaze-dark uppercase dark:text-white',
+                        'secondary-text-small-bold text-leadgaze-dark uppercase dark:text-white',
                       )}
                     >
                       Seats: {currentModule.used_seats} /{' '}
@@ -448,44 +450,42 @@ export default function TeamMembersPage() {
               </Card>
             )}
           </div>
-        </PageHeader>
-      </div>
-
-      {/* Toolbar with search, filter, and actions */}
-      <div className="w-full max-w-full min-w-0 shrink-0 border-b">
-        <ListToolBar
-          showFilter
-          filterLabel="Show Filters"
-          filterGroups={filterGroups}
-          activeFilterCount={statusFilter ? 1 : 0}
-          onClearFilters={() => setStatusFilter('')}
-          showSearch
-          searchPlaceholder="Search members..."
-          searchValue={searchTerm}
-          onSearchChange={setSearchTerm}
-          actions={[
-            ...(canAccess('team_members', 'create')
-              ? [
-                  {
-                    key: 'invite',
-                    label: 'Invite Member',
-                    icon: Plus,
-                    onClick: () => setInviteDialogOpen(true),
-                    show: true,
-                    buttonVariant: 'default' as const,
-                  },
-                ]
-              : []),
-          ]}
-          columnVisibilitySlot={
-            <ColumnVisibilitySelector
-              columns={columns}
-              visibility={visibility}
-              onToggle={toggleVisibility}
-              onReset={reset}
+            <ListToolBar
+              className="border-none bg-transparent p-0"
+              showFilter
+              filterLabel="Show Filters"
+              filterGroups={filterGroups}
+              activeFilterCount={statusFilter ? 1 : 0}
+              onClearFilters={() => setStatusFilter('')}
+              showSearch
+              searchPlaceholder="Search members..."
+              searchValue={searchTerm}
+              onSearchChange={setSearchTerm}
+              actions={[
+                ...(canAccess('team_members', 'create')
+                  ? [
+                      {
+                        key: 'invite',
+                        label: 'Invite Member',
+                        icon: Plus,
+                        onClick: () => setInviteDialogOpen(true),
+                        show: true,
+                        buttonVariant: 'default' as const,
+                      },
+                    ]
+                  : []),
+              ]}
+              columnVisibilitySlot={
+                <ColumnVisibilitySelector
+                  columns={columns}
+                  visibility={visibility}
+                  onToggle={toggleVisibility}
+                  onReset={reset}
+                />
+              }
             />
-          }
-        />
+          </div>
+        </PageHeader>
       </div>
 
       <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden">

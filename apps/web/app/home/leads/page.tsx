@@ -985,7 +985,7 @@ export default function LeadsPage() {
           {canAccess('leads', 'create') && (
             <Button 
               onClick={() => setIsCreateDialogOpen(true)} 
-              className="bg-leadgaze-primary hover:bg-leadgaze-primary text-white gap-2"
+              className="bg-leadgaze-primary hover:bg-leadgaze-primary text-white gap-2 secondary-text-small-bold"
             >
               <Plus className="h-4 w-4" />
               New Lead

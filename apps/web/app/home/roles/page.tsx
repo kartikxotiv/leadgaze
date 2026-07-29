@@ -290,49 +290,49 @@ export default function RolesPage() {
 
   return (
     <ModuleGuard module="roles">
-      <div className="flex shrink-0 flex-col gap-2 overflow-hidden">
+      <div className="flex shrink-0 flex-col gap-2 overflow-hidden border-b">
         <PageHeader
           title={`Roles Management`}
           //  (${roles.length})
           // description="Create and manage workspace roles with custom permissions"
-        />
-      </div>
-
-      {/* Toolbar with search, type filter, actions */}
-      <div className="w-full max-w-full min-w-0 shrink-0 border-b">
-        <ListToolBar
-          filterGroups={filterGroups}
-          showFilter
-          filterLabel="Show Filters"
-          activeFilterCount={activeFilterCount}
-          onClearFilters={handleClearFilters}
-          showSearch
-          searchPlaceholder="Search roles..."
-          searchValue={searchTerm}
-          onSearchChange={setSearchTerm}
-          actions={[
-            ...(canAccess('roles', 'create')
-              ? [
-                  {
-                    key: 'add',
-                    label: 'New Role',
-                    icon: Plus,
-                    onClick: () => setCreateDialogOpen(true),
-                    show: true,
-                    buttonVariant: 'default' as const,
-                  },
-                ]
-              : []),
-          ]}
-          columnVisibilitySlot={
-            <ColumnVisibilitySelector
-              columns={columns}
-              visibility={visibility}
-              onToggle={toggleVisibility}
-              onReset={reset}
+        >
+          <div className="p-[2px]">
+            <ListToolBar
+              className="border-none bg-transparent p-0"
+              filterGroups={filterGroups}
+              showFilter
+              filterLabel="Show Filters"
+              activeFilterCount={activeFilterCount}
+              onClearFilters={handleClearFilters}
+              showSearch
+              searchPlaceholder="Search roles..."
+              searchValue={searchTerm}
+              onSearchChange={setSearchTerm}
+              actions={[
+                ...(canAccess('roles', 'create')
+                  ? [
+                      {
+                        key: 'add',
+                        label: 'New Role',
+                        icon: Plus,
+                        onClick: () => setCreateDialogOpen(true),
+                        show: true,
+                        buttonVariant: 'default' as const,
+                      },
+                    ]
+                  : []),
+              ]}
+              columnVisibilitySlot={
+                <ColumnVisibilitySelector
+                  columns={columns}
+                  visibility={visibility}
+                  onToggle={toggleVisibility}
+                  onReset={reset}
+                />
+              }
             />
-          }
-        />
+          </div>
+        </PageHeader>
       </div>
       <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden">
         <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 gap-0">

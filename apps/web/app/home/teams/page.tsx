@@ -172,41 +172,39 @@ export default function TeamsPage() {
 
   return (
     <ModuleGuard module="team_members">
-      <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden">
+      <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden border-b">
         <PageHeader
           title={`Teams`}
           // description="Manage your workspace teams and their members"
-        />
-      </div>
-
-     
-
-      {/* Toolbar with status filter, search, actions, and column visibility */}
-      <div className="w-full max-w-full min-w-0 shrink-0 border-b">
-        <ListToolBar          
-          showSearch
-          searchPlaceholder="Search teams..."
-          searchValue={searchTerm}
-          onSearchChange={setSearchTerm}
-          actions={[
-            {
-              key: 'add',
-              label: 'New Team',
-              icon: Plus,
-              onClick: () => setCreateDialogOpen(true),
-              show: canAccess('team_members', 'create'),
-              buttonVariant: 'default',
-            },
-          ]}
-          columnVisibilitySlot={
-            <ColumnVisibilitySelector
-              columns={columns}
-              visibility={visibility}
-              onToggle={toggleVisibility}
-              onReset={reset}
+        >
+          <div className="p-[2px]">
+            <ListToolBar
+              className="border-none bg-transparent p-0"
+              showSearch
+              searchPlaceholder="Search teams..."
+              searchValue={searchTerm}
+              onSearchChange={setSearchTerm}
+              actions={[
+                {
+                  key: 'add',
+                  label: 'New Team',
+                  icon: Plus,
+                  onClick: () => setCreateDialogOpen(true),
+                  show: canAccess('team_members', 'create'),
+                  buttonVariant: 'default',
+                },
+              ]}
+              columnVisibilitySlot={
+                <ColumnVisibilitySelector
+                  columns={columns}
+                  visibility={visibility}
+                  onToggle={toggleVisibility}
+                  onReset={reset}
+                />
+              }
             />
-          }
-        />
+          </div>
+        </PageHeader>
       </div>
 
       <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden">

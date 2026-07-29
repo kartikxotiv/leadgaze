@@ -276,12 +276,13 @@ export default function ServiceCloudDashboardRoute() {
     <>
       <PageHeader
         title="Service Cloud"
-        description="Support operations, tickets, customers, inboxes, and performance."
+        // description="Support operations, tickets, customers, inboxes, and performance."
       >
         <PageHeaderActions>
           <DownloadReportButton 
             onDownload={handleDownload} 
             isGenerating={isGenerating} 
+            text="Download Report"
           />
           <ListToolBar
             className="border-none bg-transparent shadow-none p-0"
