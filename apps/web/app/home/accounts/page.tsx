@@ -787,16 +787,16 @@ export default function AccountsPage() {
 
   return (
     <ModuleGuard module="accounts">
-      <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden">
+      <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden border-b">
         <PageHeader
           title={`Accounts (${totalCount})`}          
-        />
-      </div>
-
-      {/* Full-width search / filter / actions toolbar */}
-      <div className="w-full max-w-full min-w-0 shrink-0 border-b pt-2 pb-2">
-        <ListToolBar
-          showSearch
+        >
+          <div className="p-[2px]">
+            <ListToolBar
+              align="right"
+              className="border-none bg-transparent p-0"
+              showSearch
+              expandableSearch
           searchPlaceholder="Search by account name..."
           searchValue={searchTerm}
           onSearchChange={setSearchTerm}
@@ -891,10 +891,11 @@ export default function AccountsPage() {
               columns={columns}
               visibility={visibility}
               onToggle={toggleVisibility}
-              onReset={reset}
             />
           }
         />
+          </div>
+        </PageHeader>
       </div>
 
       <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden">

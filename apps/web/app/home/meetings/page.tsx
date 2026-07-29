@@ -2295,17 +2295,18 @@ export default function MeetingsPage() {
 
   return (
     <>
-      <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden">
+      <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden border-b">
         <PageHeader
           title={`Meetings (${totalCount})`}          
-        />
-      </div>
-
-      <div className="w-full max-w-full min-w-0 shrink-0 border-b">
-        <ListToolBar
-          showSearch
-          searchPlaceholder="Search meetings..."
-          searchValue={searchTerm}
+        >
+          <div className="p-[2px]">
+            <ListToolBar
+              align="right"
+              className="border-none bg-transparent p-0"
+              showSearch
+              expandableSearch
+              searchPlaceholder="Search meetings..."
+              searchValue={searchTerm}
           onSearchChange={setSearchTerm}
           showFilter
           filterGroups={[
@@ -2441,6 +2442,8 @@ export default function MeetingsPage() {
             />
           }
         />
+          </div>
+        </PageHeader>
       </div>
 
       <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden">
