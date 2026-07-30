@@ -32,7 +32,10 @@ function DashboardFallback() {
   );
 }
 
-export const DashboardDemo = dynamic(() => import('./dashboard-demo-charts'), {
-  ssr: false,
-  loading: () => <DashboardFallback />,
-});
+export const DashboardDemo = dynamic(
+  () => import('./dashboard-demo-charts'),
+  {
+    ssr: false,
+    loading: () => <DashboardFallback />,
+  },
+);

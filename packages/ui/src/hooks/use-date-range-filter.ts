@@ -1,8 +1,25 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { DateRangeValue } from '../shadcn/list-toolbar';
 
-export function useDateRangeFilter() {
+export function useDateRangeFilter(paramPrefix: string = 'timeframe') {
+  const searchParams = useSearchParams();
   const [dateRange, setDateRange] = useState<DateRangeValue | null>(null);
+  const [initialized, setInitialized] = useState(false);
+
+  useEffect(() => {
+    if (!initialized && searchParams) {
+      const preset = searchParams.get(`${paramPrefix}Preset`) as DateRangeValue['preset'];
+      if (preset) {
+        setDateRange({
+          preset,
+          from: searchParams.get(`${paramPrefix}From`) || null,
+          to: searchParams.get(`${paramPrefix}To`) || null,
+        });
+      }
+      setInitialized(true);
+    }
+  }, [searchParams, initialized, paramPrefix]);
 
   const computedDates = useMemo(() => {
     if (!dateRange) return null;
@@ -17,41 +34,44 @@ export function useDateRangeFilter() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const formatISODate = (date: Date) => {
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
+    const getStartOfDayUTC = (date: Date) => {
+      const start = new Date(date);
+      start.setHours(0, 0, 0, 0);
+      return start.toISOString();
+    };
+
+    const getEndOfDayUTC = (date: Date) => {
+      const end = new Date(date);
+      end.setHours(23, 59, 59, 999);
+      return end.toISOString();
     };
 
     const getDates = () => {
       switch (dateRange.preset) {
         case 'today': {
-          const from = formatISODate(today);
-          return { from, to: from };
+          return { from: getStartOfDayUTC(today), to: getEndOfDayUTC(today) };
         }
         case 'yesterday': {
           const yesterday = new Date(today);
           yesterday.setDate(today.getDate() - 1);
-          const from = formatISODate(yesterday);
-          return { from, to: from };
+          return { from: getStartOfDayUTC(yesterday), to: getEndOfDayUTC(yesterday) };
         }
         case 'last_7_days': {
           const last7 = new Date(today);
           last7.setDate(today.getDate() - 6); // 6 days before + today = 7 days
-          return { from: formatISODate(last7), to: formatISODate(today) };
+          return { from: getStartOfDayUTC(last7), to: getEndOfDayUTC(today) };
         }
         case 'this_week': {
           const dayOfWeek = today.getDay(); // 0 = Sunday
           const daysToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
           const monday = new Date(today);
           monday.setDate(today.getDate() + daysToMonday);
-          return { from: formatISODate(monday), to: formatISODate(today) };
+          return { from: getStartOfDayUTC(monday), to: getEndOfDayUTC(today) };
         }
         case 'this_month': {
           const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
           const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-          return { from: formatISODate(firstDay), to: formatISODate(lastDay) };
+          return { from: getStartOfDayUTC(firstDay), to: getEndOfDayUTC(lastDay) };
         }
         case 'this_quarter': {
           const currentMonth = today.getMonth(); // 0-11
@@ -60,7 +80,7 @@ export function useDateRangeFilter() {
           const firstDay = new Date(today.getFullYear(), firstMonthOfQuarter, 1);
           const lastMonthOfQuarter = firstMonthOfQuarter + 2;
           const lastDay = new Date(today.getFullYear(), lastMonthOfQuarter + 1, 0);
-          return { from: formatISODate(firstDay), to: formatISODate(lastDay) };
+          return { from: getStartOfDayUTC(firstDay), to: getEndOfDayUTC(lastDay) };
         }
         case 'last_quarter': {
           const currentMonth = today.getMonth(); // 0-11
@@ -71,23 +91,28 @@ export function useDateRangeFilter() {
           const firstDay = new Date(lastYear, firstMonthOfQuarter, 1);
           const lastMonthOfQuarter = firstMonthOfQuarter + 2;
           const lastDay = new Date(lastYear, lastMonthOfQuarter + 1, 0);
-          return { from: formatISODate(firstDay), to: formatISODate(lastDay) };
+          return { from: getStartOfDayUTC(firstDay), to: getEndOfDayUTC(lastDay) };
         }
         case 'last_month': {
           const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
           const lastDay = new Date(today.getFullYear(), today.getMonth(), 0);
-          return { from: formatISODate(lastMonth), to: formatISODate(lastDay) };
+          return { from: getStartOfDayUTC(lastMonth), to: getEndOfDayUTC(lastDay) };
+        }
+        case 'last_six_months': {
+          const firstDay = new Date(today.getFullYear(), today.getMonth() - 5, 1);
+          const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+          return { from: getStartOfDayUTC(firstDay), to: getEndOfDayUTC(lastDay) };
         }
         case 'this_year': {
           const firstDay = new Date(today.getFullYear(), 0, 1);
           const lastDay = new Date(today.getFullYear(), 11, 31);
-          return { from: formatISODate(firstDay), to: formatISODate(lastDay) };
+          return { from: getStartOfDayUTC(firstDay), to: getEndOfDayUTC(lastDay) };
         }
         case 'last_year': {
           const lastYear = today.getFullYear() - 1;
           const firstDay = new Date(lastYear, 0, 1);
           const lastDay = new Date(lastYear, 11, 31);
-          return { from: formatISODate(firstDay), to: formatISODate(lastDay) };
+          return { from: getStartOfDayUTC(firstDay), to: getEndOfDayUTC(lastDay) };
         }
         default:
           return null;

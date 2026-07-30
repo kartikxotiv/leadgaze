@@ -207,7 +207,7 @@ export default function LeadsPage() {
     setDateRange: setUpdatedOnRange,
     computedDates: computedUpdatedOnDates,
     clearDateRange: clearUpdatedOnRange,
-  } = useDateRangeFilter();
+  } = useDateRangeFilter('updated');
 
   const {
     canViewColumn,
@@ -429,7 +429,7 @@ export default function LeadsPage() {
 
   const defaultStatusIds = useMemo(() => {
     return statuses
-      .filter((s: any) => s.status_key !== 'unqualified')
+      .filter((s: any) => !s.is_closed)
       .map((s: any) => s.id);
   }, [statuses]);
 
@@ -629,7 +629,7 @@ export default function LeadsPage() {
                 label: s.status_name,
                 color: s.color,
                 badge:
-                  s.status_key === 'unqualified' ? (
+                  s.is_closed ? (
                     <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold tracking-wider text-amber-700 uppercase dark:bg-amber-900/20 dark:text-amber-400">
                       Closed
                     </span>

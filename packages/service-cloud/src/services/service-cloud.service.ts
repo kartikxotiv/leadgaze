@@ -46,10 +46,15 @@ export const deleteServiceCloudResourceService = asyncHandlerClient(
 );
 
 export const getServiceCloudDashboardService = asyncHandlerClient(
-  async (workspaceId: string) => {
-    const res = await ServiceCloudApiClient.get(
-      `/dashboard?workspaceId=${workspaceId}`,
-    );
+  async (
+    workspaceId: string,
+    dateFilter?: { from: string | null; to: string | null } | null,
+  ) => {
+    let url = `/dashboard?workspaceId=${workspaceId}`;
+    if (dateFilter?.from) url += `&from=${dateFilter.from}`;
+    if (dateFilter?.to) url += `&to=${dateFilter.to}`;
+
+    const res = await ServiceCloudApiClient.get(url);
     return res.data?.data;
   },
 );
