@@ -409,7 +409,7 @@ export default function TeamMembersPage() {
 
   return (
     <ModuleGuard module="team_members">
-      <div className="flex shrink-0 flex-col gap-2 overflow-hidden border-b">
+      <div className="flex shrink-0 flex-col gap-2 overflow-hidden border-top-bottom-gray">
         <PageHeader
           title={`Members`}
           // description={

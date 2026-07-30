@@ -172,7 +172,7 @@ export default function TeamsPage() {
 
   return (
     <ModuleGuard module="team_members">
-      <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden border-b">
+      <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden border-top-bottom-gray">
         <PageHeader
           title={`Teams`}
           // description="Manage your workspace teams and their members"
