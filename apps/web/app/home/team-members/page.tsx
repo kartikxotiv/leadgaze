@@ -451,6 +451,7 @@ export default function TeamMembersPage() {
             )}
           </div>
             <ListToolBar
+              align="right"
               className="border-none bg-transparent p-0"
               showFilter
               filterLabel="Show Filters"
@@ -458,7 +459,7 @@ export default function TeamMembersPage() {
               activeFilterCount={statusFilter ? 1 : 0}
               onClearFilters={() => setStatusFilter('')}
               showSearch
-              searchPlaceholder="Search members..."
+              searchPlaceholder="Search"
               searchValue={searchTerm}
               onSearchChange={setSearchTerm}
               actions={[

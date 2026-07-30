@@ -141,7 +141,7 @@ export const ListToolBar: React.FC<ListToolBarProps> = ({
   statusSlot,
   align,
   className,
-  expandableSearch = false,
+  expandableSearch = true,
 }) => {
   const [isFilterOpen, setIsFilterOpen] = React.useState(false);
   const [isSearchFocused, setIsSearchFocused] = React.useState(false);
@@ -365,7 +365,7 @@ export const ListToolBar: React.FC<ListToolBarProps> = ({
 
   const visibleActions = actions.filter((a) => a.show !== false);
 
-  const isFullWidth = align === 'full' || (!align && showSearch);
+  const isFullWidth = align === 'full' || (!align && showSearch && !expandableSearch);
   const isRightAligned = align === 'right';
 
   return (
@@ -393,7 +393,7 @@ export const ListToolBar: React.FC<ListToolBarProps> = ({
                 expandableSearch 
                   ? "transition-all duration-300 ease-in-out w-[120px] focus:w-[220px]" 
                   : "w-full",
-                (expandableSearch && (isSearchFocused || searchValue.length > 0)) && "w-[200px]"
+                (expandableSearch && (isSearchFocused || searchValue.length > 0)) && "w-[220px]"
               )}
             />
           </div>

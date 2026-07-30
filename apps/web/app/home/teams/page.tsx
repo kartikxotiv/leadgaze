@@ -179,6 +179,7 @@ export default function TeamsPage() {
         >
           <div className="p-[2px]">
             <ListToolBar
+              align="right"
               className="border-none bg-transparent p-0"
               showSearch
               searchPlaceholder="Search teams..."

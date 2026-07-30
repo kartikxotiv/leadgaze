@@ -298,6 +298,7 @@ export default function RolesPage() {
         >
           <div className="p-[2px]">
             <ListToolBar
+              align="right"
               className="border-none bg-transparent p-0"
               filterGroups={filterGroups}
               showFilter
@@ -305,7 +306,7 @@ export default function RolesPage() {
               activeFilterCount={activeFilterCount}
               onClearFilters={handleClearFilters}
               showSearch
-              searchPlaceholder="Search roles..."
+              searchPlaceholder="Search"
               searchValue={searchTerm}
               onSearchChange={setSearchTerm}
               actions={[

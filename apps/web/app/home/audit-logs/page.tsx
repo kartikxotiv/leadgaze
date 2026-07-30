@@ -233,9 +233,10 @@ export default function AuditLogsPage() {
         >
           <div className="p-[2px]">
             <ListToolBar
+              align="right"
               className="border-none bg-transparent p-0"
               showSearch
-              searchPlaceholder="Search logs..."
+              searchPlaceholder="Search"
               searchValue={searchTerm}
               onSearchChange={setSearchTerm}
               showFilter
@@ -427,7 +428,7 @@ export default function AuditLogsPage() {
                             {isVisible('actor') && (
                               <TableCell className="align-middle">
                                 <div className="flex items-center gap-3">
-                                  <div className="bg-primary/10 text-primary flex h-5 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold ring-1 ring-primary/20">
+                                  <div className="bg-primary/10 text-primary flex h-6 w-6 shrink-0 items-center justify-center rounded-full secondary-text-small ring-1 ring-primary/20">
                                     {log.actor?.name?.[0] ||
                                       log.actor?.email?.[0] ||
                                       '?'}
@@ -446,7 +447,7 @@ export default function AuditLogsPage() {
                             {isVisible('module') && (
                               <TableCell className="align-middle">
                                 <div className="flex items-center gap-2">
-                                  <div className="h-1.5 w-1.5 rounded-full bg-slate-400 dark:bg-slate-600"></div>
+                                  <div className="h-[6px] w-[6px] min-h-[6px] min-w-[6px] rounded-full bg-slate-400 dark:bg-slate-600"></div>
                                   <span className="text-sm font-medium text-foreground/80">
                                     {getModuleLabel(log.module)}
                                   </span>

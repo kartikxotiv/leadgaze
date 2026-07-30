@@ -566,7 +566,7 @@ export function ServiceCloudResourcePage({
             align="right"
             className="border-none bg-transparent p-0"
             showSearch
-            searchPlaceholder={`Search ${title.toLowerCase()}...`}
+            searchPlaceholder={`Search`}
             searchValue={searchTerm}
             onSearchChange={setSearchTerm}
             showFilter={!!filterGroups && filterGroups.length > 0}
