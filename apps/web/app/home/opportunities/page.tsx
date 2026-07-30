@@ -1379,19 +1379,19 @@ export default function OpportunitiesPage() {
                   })}
 
                   {canAddColumn ? (
-                    <TableHead className="sticky-right-header bg-background z-10 w-12 px-1 text-center">
+                    <TableHead className="sticky-right-header z-10 w-12 px-1 text-center">
                       <Button
-                        variant="outline"
+                        type="button"
                         size="icon"
-                        className="mx-auto flex h-8 w-8 items-center justify-center border-dashed"
+                        className="mx-auto flex h-5 w-5 items-center justify-center rounded-full bg-leadgaze-primary text-white hover:bg-leadgaze-primary/90 border-0 p-0 shadow-xs"
                         onClick={() => setAddColumnModalOpen(true)}
                         title="Add Column"
                       >
-                        <Plus className="h-4 w-4" />
+                        <Plus className="h-3.5 w-3.5 stroke-[2.5]" />
                       </Button>
                     </TableHead>
                   ) : (
-                    <TableHead className="sticky-right-header bg-background z-10 w-12" />
+                    <TableHead className="sticky-right-header z-10 w-12" />
                   )}
                 </TableRow>
               </TableHeader>

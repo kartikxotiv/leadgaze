@@ -42,7 +42,7 @@ export function ServiceCloudSettingsPage({
     return <ServiceCloudAccessDenied label="Service Cloud settings" />;
 
   const tabsSlot = (
-    <TabsList className="mb-0 shrink-0 w-fit self-start pl-0">
+    <TabsList className="mb-0 shrink-0 w-fit self-start pl-0 h-9">
       <TabsTrigger value="statuses">Statuses</TabsTrigger>
       <TabsTrigger value="priorities">Priorities</TabsTrigger>
       <TabsTrigger value="categories">Categories</TabsTrigger>
@@ -56,7 +56,7 @@ export function ServiceCloudSettingsPage({
     >
       <TabsContent
         value="statuses"
-        className="mt-0 flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col data-[state=active]:flex data-[state=active]:flex-1 data-[state=active]:flex-col data-[state=active]:min-h-0"
+        className="mt-0 flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col data-[state=active]:flex data-[state=active]:flex-1 data-[state=active]:flex-col data-[state=active]:min-h-0 gap-2"
       >
         <ServiceCloudResourcePage
           workspaceId={workspaceId}

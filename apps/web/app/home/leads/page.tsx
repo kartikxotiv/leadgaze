@@ -250,6 +250,8 @@ export default function LeadsPage() {
     if (typeof window !== 'undefined') {
       localStorage.setItem('leadgaze-view-mode-leads', mode);
     }
+    queryClient.invalidateQueries({ queryKey: ['leads'] });
+    queryClient.invalidateQueries({ queryKey: ['leads-kanban'] });
   };
 
   const itemsPerPage = pageSize;
@@ -501,6 +503,10 @@ export default function LeadsPage() {
       .map((s: any) => s.id);
   }, [statuses]);
 
+  const allStatusIds = useMemo(() => {
+    return statuses.map((s: any) => s.id);
+  }, [statuses]);
+
   // Fetch leads data (table view — paginated)
   const {
     data: leadsData = { data: [], count: 0, statusBreakdown: {} },
@@ -539,7 +545,7 @@ export default function LeadsPage() {
     enabled: !!workspace?.id && isStatusesLoaded && viewMode === 'table',
   });
 
-  // Fetch ALL leads for kanban view (no pagination, excludes unqualified via defaultStatusIds)
+  // Fetch ALL leads for kanban view (no pagination, includes all statuses including unqualified by default unless filtered)
   const {
     data: kanbanLeadsData = { data: [], count: 0, statusBreakdown: {} },
     isLoading: kanbanIsLoading,
@@ -553,7 +559,7 @@ export default function LeadsPage() {
       selectedCreatedByIds,
       computedCreatedOnDates,
       computedUpdatedOnDates,
-      defaultStatusIds,
+      allStatusIds,
     ],
     queryFn: () =>
       getLeadsService({
@@ -562,7 +568,7 @@ export default function LeadsPage() {
         limit: 500,
         searchTerm: debouncedSearchTerm,
         statusId:
-          selectedStatuses.length > 0 ? selectedStatuses : defaultStatusIds,
+          selectedStatuses.length > 0 ? selectedStatuses : allStatusIds,
         createdAtFrom: computedCreatedOnDates?.from ?? undefined,
         createdAtTo: computedCreatedOnDates?.to ?? undefined,
         updatedAtFrom: computedUpdatedOnDates?.from ?? undefined,
@@ -853,6 +859,8 @@ export default function LeadsPage() {
 
   const handleCreateSuccess = () => {
     setIsCreateDialogOpen(false);
+    queryClient.invalidateQueries({ queryKey: ['leads'] });
+    queryClient.invalidateQueries({ queryKey: ['leads-kanban'] });
     refetch();
     refetchKanban();
   };
@@ -886,7 +894,10 @@ export default function LeadsPage() {
       lead_score: totalScore,
     });
     toast.success('Lead status updated');
+    queryClient.invalidateQueries({ queryKey: ['leads'] });
+    queryClient.invalidateQueries({ queryKey: ['leads-kanban'] });
     refetchKanban();
+    refetch();
   };
 
   // Handle update field (access type, permissions)
@@ -1297,15 +1308,15 @@ export default function LeadsPage() {
                     })}
 
                     {/* Add Column — last header column (replaces Actions header) */}
-                    <TableHead className="sticky-right-header bg-background z-10 w-12 px-1 text-center">
+                    <TableHead className="sticky-right-header z-10 w-12 px-1 text-center">
                       <Button
-                        variant="outline"
+                        type="button"
                         size="icon"
-                        className="mx-auto flex h-8 w-8 items-center justify-center border-dashed"
+                        className="mx-auto flex h-5 w-5 items-center justify-center rounded-full bg-leadgaze-primary text-white hover:bg-leadgaze-primary/90 border-0 p-0 shadow-xs"
                         onClick={() => setAddColumnModalOpen(true)}
                         title="Add Column"
                       >
-                        <Plus className="h-4 w-4" />
+                        <Plus className="h-3.5 w-3.5 stroke-[2.5]" />
                       </Button>
                     </TableHead>
                   </TableRow>
@@ -1627,7 +1638,10 @@ export default function LeadsPage() {
           entityName={`${leadToDelete?.first_name} ${leadToDelete?.last_name || ''}`}
           onSuccess={() => {
             setLeadToDelete(null);
+            queryClient.invalidateQueries({ queryKey: ['leads'] });
+            queryClient.invalidateQueries({ queryKey: ['leads-kanban'] });
             refetch();
+            refetchKanban();
           }}
         />
 

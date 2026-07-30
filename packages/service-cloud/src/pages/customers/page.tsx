@@ -402,7 +402,7 @@ export function ServiceCloudCustomersPage({
       ?.field_label ?? fallback;
 
   const tabsSlot = (
-    <TabsList className="mb-0 shrink-0 w-fit self-start pl-0">
+    <TabsList className="mb-0 shrink-0 w-fit self-start pl-0 h-9">
       <TabsTrigger value="customers">Customers</TabsTrigger>
       <TabsTrigger value="organizations">Organizations</TabsTrigger>
     </TabsList>
@@ -417,7 +417,7 @@ export function ServiceCloudCustomersPage({
       >
         <TabsContent
           value="customers"
-          className="mt-0 flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col data-[state=active]:flex data-[state=active]:flex-1 data-[state=active]:flex-col data-[state=active]:min-h-0"
+          className="mt-0 flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col data-[state=active]:flex data-[state=active]:flex-1 data-[state=active]:flex-col data-[state=active]:min-h-0 gap-2"
         >
           <ServiceCloudResourcePage
             workspaceId={workspaceId}

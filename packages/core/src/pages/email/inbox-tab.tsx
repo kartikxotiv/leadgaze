@@ -150,7 +150,7 @@ export function CoreInboxTab({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex w-full min-w-0 max-w-full shrink-0 items-center justify-between border-b pb-2">
+      <div className="flex w-full min-w-0 max-w-full shrink-0 items-center justify-between border-top-bottom-gray">
         <div className="shrink-0 flex items-center pr-4 gap-3">
           <div className="flex items-center gap-2">
             {(['all', 'inbound', 'outbound'] as const).map((value) => (
