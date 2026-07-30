@@ -381,9 +381,10 @@ export function ServiceCloudCustomersPage({
           type="button"
           onClick={openDialog}
           variant="default"
-          className="shrink-0 gap-1.5 px-2"
+          className="secondary-text-small-bold shrink-0 gap-1.5 px-2"
         >
           <TicketIcon className="h-4 w-4" />
+          New Ticket
         </Button>
       </TooltipTrigger>
       <TooltipContent side="bottom">

@@ -1143,7 +1143,7 @@ export default function OpportunitiesPage() {
           {canAccess('opportunities', 'create') && (
             <Button
               onClick={() => setIsCreateDialogOpen(true)}
-              className="bg-leadgaze-primary hover:bg-leadgaze-primary text-white gap-2"
+              className="secondary-text-small-bold gap-1.5 px-2 bg-leadgaze-primary hover:bg-leadgaze-primary text-white"
             >
               <Plus className="h-4 w-4" />
               New Opportunity
