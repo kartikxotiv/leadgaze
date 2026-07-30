@@ -21,8 +21,8 @@ const PRESETS = [
   { label: 'This Week', value: 'this_week' },
   { label: 'This Month', value: 'this_month' },
   { label: 'This Quarter', value: 'this_quarter' },
-  { label: 'Last Quarter', value: 'last_quarter' },
   { label: 'Last Month', value: 'last_month' },
+  { label: 'Last Six Months', value: 'last_six_months' },
   { label: 'This Year', value: 'this_year' },
   { label: 'Last Year', value: 'last_year' },
 ] as const;
@@ -52,11 +52,20 @@ export function DateRangePickerPanel({
 
   const handleApplyCustom = () => {
     if (tempRange?.from) {
-      const formatLocalDate = (date: Date) => 
-        `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+      const getStartOfDayUTC = (date: Date) => {
+        const start = new Date(date);
+        start.setHours(0, 0, 0, 0);
+        return start.toISOString();
+      };
 
-      const from = formatLocalDate(tempRange.from);
-      const to = tempRange.to ? formatLocalDate(tempRange.to) : from;
+      const getEndOfDayUTC = (date: Date) => {
+        const end = new Date(date);
+        end.setHours(23, 59, 59, 999);
+        return end.toISOString();
+      };
+
+      const from = getStartOfDayUTC(tempRange.from);
+      const to = tempRange.to ? getEndOfDayUTC(tempRange.to) : getEndOfDayUTC(tempRange.from);
       
       onChange({
         preset: 'custom',

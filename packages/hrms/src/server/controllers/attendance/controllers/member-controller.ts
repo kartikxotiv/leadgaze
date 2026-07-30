@@ -73,8 +73,8 @@ const myAttendanceController = catchAsync(async ({ request, user }) => {
     .select('id, punch_type, punch_time, source')
     .eq('workspace_id', organizationId)
     .eq('employee_id', employee.id)
-    .gte('punch_time', `${date}T00:00:00.000Z`)
-    .lt('punch_time', `${date}T23:59:59.999Z`)
+    .gte('punch_time', (date.includes('T') ? date : `${date}T00:00:00.000Z`))
+    .lt('punch_time', (date.includes('T') ? date : `${date}T23:59:59.999Z`))
     .order('punch_time', { ascending: false });
   const attendanceSettings = await getAttendanceSettings({ organizationId });
 

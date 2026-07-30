@@ -196,16 +196,16 @@ export const getServiceCloudResourceController = catchAsync(
     const updatedAtTo = url.searchParams.get('updatedAtTo');
 
     if (createdAtFrom) {
-      query = query.gte('created_at', `${createdAtFrom}T00:00:00.000Z`);
+      query = query.gte('created_at', (createdAtFrom.includes('T') ? createdAtFrom : `${createdAtFrom}T00:00:00.000Z`));
     }
     if (createdAtTo) {
-      query = query.lte('created_at', `${createdAtTo}T23:59:59.999Z`);
+      query = query.lte('created_at', (createdAtTo.includes('T') ? createdAtTo : `${createdAtTo}T23:59:59.999Z`));
     }
     if (updatedAtFrom) {
-      query = query.gte('updated_at', `${updatedAtFrom}T00:00:00.000Z`);
+      query = query.gte('updated_at', (updatedAtFrom.includes('T') ? updatedAtFrom : `${updatedAtFrom}T00:00:00.000Z`));
     }
     if (updatedAtTo) {
-      query = query.lte('updated_at', `${updatedAtTo}T23:59:59.999Z`);
+      query = query.lte('updated_at', (updatedAtTo.includes('T') ? updatedAtTo : `${updatedAtTo}T23:59:59.999Z`));
     }
 
     if (id) {
@@ -608,6 +608,9 @@ export const getServiceCloudDashboardController = catchAsync(
     const workspaceId =
       url.searchParams.get('workspaceId') ??
       url.searchParams.get('workspace_id');
+    const from = url.searchParams.get('from');
+    const to = url.searchParams.get('to');
+
     if (!workspaceId)
       return NextResponse.json(
         { success: false, message: 'workspaceId is required' },
@@ -624,6 +627,8 @@ export const getServiceCloudDashboardController = catchAsync(
       supabase as any
     ).rpc('get_service_cloud_dashboard_stats' as any, {
       p_workspace_id: workspaceId,
+      p_date_from: from || null,
+      p_date_to: to || null,
     });
     /* eslint-enable @typescript-eslint/no-explicit-any */
 
