@@ -471,14 +471,14 @@ function UpcomingTasks({ tasks }: { tasks: DashboardTask[] }) {
   const latestTasks = useMemo(() => tasks ?? [], [tasks]);
 
   return (
-    <div className="max-h-[400px] overflow-y-auto xl:max-h-[430px] 2xl:max-h-[440px] overflow-auto">
+    <div className="">
       {latestTasks.length === 0 ? (
             <div className="flex h-40 flex-col items-center justify-center text-slate-400">
               <FileText className="mb-2 h-8 w-8 opacity-20" />
               <p className="text-sm">No upcoming tasks</p>
             </div>
           ) : (
-            <div className="divide-y dark:divide-zinc-800">
+            <div className="divide-y dark:divide-zinc-800 max-h-[300px] overflow-y-auto xl:max-h-[300px] 2xl:max-h-[300px] overflow-auto">
               {latestTasks.map((task) => {
                 const relativeDate = formatDueDateShort(task.dueDate);
                 const priority = getTaskPriority(task);
