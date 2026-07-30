@@ -44,6 +44,7 @@ const routesWithOwnHeader = [
   '/team-members',
   '/workspace-teams',
   '/roles',
+  '/tickets',
 ];
 
 export default function ServiceCloudLayout({
@@ -72,7 +73,7 @@ export default function ServiceCloudLayout({
 
   return (
     <ModuleAccessGuardWrapper moduleKey="service_cloud">
-      <PageHeader title={header.title} description={header.description} />
+      <PageHeader title={header.title} />
       {children}
     </ModuleAccessGuardWrapper>
   );

@@ -7,6 +7,7 @@ import { Edit2, Plus, Trash2, Users, UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@kit/ui/button';
+import { AddColumnModal } from '@kit/ui/add-column-modal';
 import {
   Card,
   CardContent,
@@ -47,6 +48,7 @@ import CustomTableContainer from '@kit/ui/custom-table-container';
 
 
 export default function TeamsPage() {
+  const [addColumnModalOpen, setAddColumnModalOpen] = useState(false);
   const queryClient = useQueryClient();
   const { currentWorkspace, canAccess } = useRBAC();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -170,41 +172,40 @@ export default function TeamsPage() {
 
   return (
     <ModuleGuard module="team_members">
-      <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden">
+      <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden border-b">
         <PageHeader
-          title={`Teams (${teams.length})`}
-          description="Manage your workspace teams and their members"
-        />
-      </div>
-
-     
-
-      {/* Toolbar with status filter, search, actions, and column visibility */}
-      <div className="w-full max-w-full min-w-0 shrink-0 border-b pb-2">
-        <ListToolBar          
-          showSearch
-          searchPlaceholder="Search teams..."
-          searchValue={searchTerm}
-          onSearchChange={setSearchTerm}
-          actions={[
-            {
-              key: 'add',
-              label: 'New Team',
-              icon: Plus,
-              onClick: () => setCreateDialogOpen(true),
-              show: canAccess('team_members', 'create'),
-              buttonVariant: 'default',
-            },
-          ]}
-          columnVisibilitySlot={
-            <ColumnVisibilitySelector
-              columns={columns}
-              visibility={visibility}
-              onToggle={toggleVisibility}
-              onReset={reset}
+          title={`Teams`}
+          // description="Manage your workspace teams and their members"
+        >
+          <div className="p-[2px]">
+            <ListToolBar
+              align="right"
+              className="border-none bg-transparent p-0"
+              showSearch
+              searchPlaceholder="Search teams..."
+              searchValue={searchTerm}
+              onSearchChange={setSearchTerm}
+              actions={[
+                {
+                  key: 'add',
+                  label: 'New Team',
+                  icon: Plus,
+                  onClick: () => setCreateDialogOpen(true),
+                  show: canAccess('team_members', 'create'),
+                  buttonVariant: 'default',
+                },
+              ]}
+              columnVisibilitySlot={
+                <ColumnVisibilitySelector
+                  columns={columns}
+                  visibility={visibility}
+                  onToggle={toggleVisibility}
+                  onReset={reset}
+                />
+              }
             />
-          }
-        />
+          </div>
+        </PageHeader>
       </div>
 
       <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden">
@@ -218,7 +219,17 @@ export default function TeamsPage() {
                       <TableHead>Team Name</TableHead>
                       <TableHead>Description</TableHead>
                       <TableHead>Members</TableHead>
-                      <TableHead className="sticky-right-header text-right">Actions</TableHead>
+                      <TableHead className="sticky-right-header bg-background z-10 w-12 px-1 text-center">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="mx-auto flex h-8 w-8 items-center justify-center border-dashed"
+                      onClick={() => setAddColumnModalOpen(true)}
+                      title="Toggle Columns"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -305,9 +316,17 @@ export default function TeamsPage() {
     <span className="col-resize-handle" {...getResizeHandleProps('members')} />
   </SortableTableHead>
 )}
-                    <TableHead className="sticky-right-header text-right">
-                      Actions
-                    </TableHead>
+                    <TableHead className="sticky-right-header bg-background z-10 w-12 px-1 text-center">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="mx-auto flex h-8 w-8 items-center justify-center border-dashed"
+                      onClick={() => setAddColumnModalOpen(true)}
+                      title="Toggle Columns"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -394,6 +413,15 @@ export default function TeamsPage() {
             onOpenChange={(open) => !open && setManagingMembersTeam(null)}
           />
         )}
+      
+      <AddColumnModal
+        open={addColumnModalOpen}
+        onOpenChange={setAddColumnModalOpen}
+        columns={columns}
+        visibility={visibility}
+        onToggleColumn={toggleVisibility}
+        onResetColumns={reset}
+      />
       </PageBody>
     </ModuleGuard>
   );

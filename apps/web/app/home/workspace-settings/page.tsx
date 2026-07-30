@@ -194,9 +194,9 @@ export default function WorkspaceSettingsPage() {
     return (
       <>
         <PageHeader
-          title="Workspace"
-          description="Manage your workspace configuration, email accounts, meeting accounts, and templates."
+          title="Workspace"          
         />
+        {/* description="Manage your workspace configuration, email accounts, meeting accounts, and templates." */}
         <PageBody className="flex min-w-0 flex-1 shrink-0 flex-col">
           <Card>
             <CardContent className="text-muted-foreground p-6 text-sm">
@@ -211,9 +211,9 @@ export default function WorkspaceSettingsPage() {
   return (
     <>
       <PageHeader
-        title="Workspace"
-        description="Manage your workspace configuration, email accounts, meeting accounts, and templates."
+        title="Workspace"        
       />
+      {/* description="Manage your workspace configuration, email accounts, meeting accounts, and templates." */}
       <PageBody className="sticky flex min-w-0 flex-1 shrink-0 flex-col overflow-hidden">
         <Tabs
           defaultValue={defaultTab}

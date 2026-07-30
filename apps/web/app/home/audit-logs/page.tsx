@@ -4,9 +4,10 @@ import React, { useEffect, useMemo, useState } from 'react';
 
 import { useQuery } from '@tanstack/react-query';
 import { usePathname } from 'next/navigation';
-import { Eye } from 'lucide-react';
+import {  Eye , Plus } from 'lucide-react';
 
 import { Badge } from '@kit/ui/badge';
+import { AddColumnModal } from '@kit/ui/add-column-modal';
 import { Button } from '@kit/ui/button';
 import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
 import CustomTableContainer from '@kit/ui/custom-table-container';
@@ -44,6 +45,7 @@ import { useColumnVisibility } from '@kit/ui/use-column-visibility';
 import { useDateRangeFilter } from '@kit/ui/use-date-range-filter';
 
 export default function AuditLogsPage() {
+  const [addColumnModalOpen, setAddColumnModalOpen] = useState(false);
   const { currentWorkspace: workspace } = useRBAC();
   const { formatDate, formatDateTime } = useLocalization();
   const [page, setPage] = useState(1);
@@ -223,41 +225,43 @@ export default function AuditLogsPage() {
 
   return (
     <ModuleGuard module="audit_logs">
-      <div className="flex shrink-0 flex-col gap-2 overflow-hidden">
+      <div className="flex shrink-0 flex-col gap-2 overflow-hidden border-b">
         <PageHeader
-          title={`Audit Logs (${count})`}
-          description="Track all activities and changes within your workspace"
-        />
-      </div>
-
-      {/* Toolbar with search, filters, column visibility */}
-      <div className="w-full max-w-full min-w-0 shrink-0 border-b pb-2">
-        <ListToolBar
-          showSearch
-          searchPlaceholder="Search logs..."
-          searchValue={searchTerm}
-          onSearchChange={setSearchTerm}
-          showFilter
-          filterGroups={filterGroups}
-          activeFilterCount={activeFilterCount}
-          onClearFilters={() => {
-            setSelectedModule('all');
-            setSelectedAction('all');
-            if (!contextProductKey) setSelectedProduct('all');
-            clearCreatedOnRange();
-          }}
-          columnVisibilitySlot={
-            <ColumnVisibilitySelector
-              columns={columns}
-              visibility={visibility}
-              onToggle={toggleVisibility}
-              onReset={reset}
+          title={`Audit Logs`}
+          // (${count})
+          // description="Track all activities and changes within your workspace"
+        >
+          <div className="p-[2px]">
+            <ListToolBar
+              align="right"
+              className="border-none bg-transparent p-0"
+              showSearch
+              searchPlaceholder="Search"
+              searchValue={searchTerm}
+              onSearchChange={setSearchTerm}
+              showFilter
+              filterGroups={filterGroups}
+              activeFilterCount={activeFilterCount}
+              onClearFilters={() => {
+                setSelectedModule('all');
+                setSelectedAction('all');
+                if (!contextProductKey) setSelectedProduct('all');
+                clearCreatedOnRange();
+              }}
+              columnVisibilitySlot={
+                <ColumnVisibilitySelector
+                  columns={columns}
+                  visibility={visibility}
+                  onToggle={toggleVisibility}
+                  onReset={reset}
+                />
+              }
             />
-          }
-        />
+          </div>
+        </PageHeader>
       </div>
 
-        <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden pt-2">
+        <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden">
             <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 gap-0">
               <CustomTableContainer pagination={
                 <TablePagination
@@ -284,7 +288,7 @@ export default function AuditLogsPage() {
                             sortColumn={sortColumn}
                             sortDirection={sortDirection}
                             onSort={toggleSort}
-                            className="relative w-[160px] h-11 text-xs uppercase tracking-wider font-semibold whitespace-nowrap"
+                            className="relative w-[160px] primary-text-medium tracking-wider font-semibold whitespace-nowrap"
                             {...getHeaderProps('date_time')}
                           >
                             <span className="col-resize-handle" {...getResizeHandleProps('date_time')} />
@@ -299,7 +303,7 @@ export default function AuditLogsPage() {
                             sortDirection={sortDirection}
                             onSort={toggleSort}
                             sortable={false}
-                            className="relative w-[200px] h-11 text-xs uppercase tracking-wider font-semibold whitespace-nowrap"
+                            className="relative w-[200px] primary-text-medium tracking-wider font-semibold whitespace-nowrap"
                             {...getHeaderProps('actor')}
                           >
                             <span className="col-resize-handle" {...getResizeHandleProps('actor')} />
@@ -313,7 +317,7 @@ export default function AuditLogsPage() {
                             sortDirection={sortDirection}
                             onSort={toggleSort}
                             sortable={false}
-                            className="relative w-[140px] h-11 text-xs uppercase tracking-wider font-semibold whitespace-nowrap"
+                            className="relative w-[140px] primary-text-medium tracking-wider font-semibold whitespace-nowrap"
                             {...getHeaderProps('module')}
                           >
                             <span className="col-resize-handle" {...getResizeHandleProps('module')} />
@@ -327,7 +331,7 @@ export default function AuditLogsPage() {
                             sortDirection={sortDirection}
                             onSort={toggleSort}
                             sortable={false}
-                            className="relative w-[120px] h-11 text-xs uppercase tracking-wider font-semibold whitespace-nowrap"
+                            className="relative w-[120px] primary-text-medium tracking-wider font-semibold whitespace-nowrap"
                             {...getHeaderProps('action')}
                           >
                             <span className="col-resize-handle" {...getResizeHandleProps('action')} />
@@ -342,14 +346,22 @@ export default function AuditLogsPage() {
                             sortDirection={sortDirection}
                             onSort={toggleSort}
                             sortable={false}
-                            className="relative w-full h-11 text-xs uppercase tracking-wider font-semibold whitespace-nowrap"
+                            className="relative w-fullprimary-text-medium tracking-wider font-semibold whitespace-nowrap"
                             {...getHeaderProps('entity')}
                           >
                             <span className="col-resize-handle" {...getResizeHandleProps('entity')} />
                           </SortableTableHead>
                         )}
-                        <TableHead className="sticky-right-header w-[80px] h-11 text-xs uppercase tracking-wider font-semibold text-right whitespace-nowrap">
-                          Details
+                        <TableHead className="sticky-right-header bg-background z-10 w-12 px-1 text-center">
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="mx-auto flex h-8 w-8 items-center justify-center border-dashed"
+                            onClick={() => setAddColumnModalOpen(true)}
+                            title="Toggle Columns"
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
                         </TableHead>
                       </TableRow>
                     </TableHeader>
@@ -397,7 +409,7 @@ export default function AuditLogsPage() {
                             className="group hover:bg-muted/30 transition-colors border-b last:border-0"
                           >
                             {isVisible('date_time') && (
-                              <TableCell className="py-2 align-middle">
+                              <TableCell className="align-middle">
                                 <div className="flex flex-col gap-0.5">
                                   <span className="text-sm font-medium">
                                     {formatDate(log.created_at)}
@@ -414,9 +426,9 @@ export default function AuditLogsPage() {
                               </TableCell>
                             )}
                             {isVisible('actor') && (
-                              <TableCell className="py-2 align-middle">
+                              <TableCell className="align-middle">
                                 <div className="flex items-center gap-3">
-                                  <div className="bg-primary/10 text-primary flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold ring-1 ring-primary/20">
+                                  <div className="bg-primary/10 text-primary flex h-6 w-6 shrink-0 items-center justify-center rounded-full secondary-text-small ring-1 ring-primary/20">
                                     {log.actor?.name?.[0] ||
                                       log.actor?.email?.[0] ||
                                       '?'}
@@ -433,9 +445,9 @@ export default function AuditLogsPage() {
                               </TableCell>
                             )}
                             {isVisible('module') && (
-                              <TableCell className="py-2 align-middle">
+                              <TableCell className="align-middle">
                                 <div className="flex items-center gap-2">
-                                  <div className="h-1.5 w-1.5 rounded-full bg-slate-400 dark:bg-slate-600"></div>
+                                  <div className="h-[6px] w-[6px] min-h-[6px] min-w-[6px] rounded-full bg-slate-400 dark:bg-slate-600"></div>
                                   <span className="text-sm font-medium text-foreground/80">
                                     {getModuleLabel(log.module)}
                                   </span>
@@ -443,7 +455,7 @@ export default function AuditLogsPage() {
                               </TableCell>
                             )}
                             {isVisible('action') && (
-                              <TableCell className="py-2 align-middle">
+                              <TableCell className="align-middle">
                                 {(() => {
                                   const styles = getActionStyles(log.action);
                                   return (
@@ -469,7 +481,7 @@ export default function AuditLogsPage() {
                                 </div>
                               </TableCell>
                             )}
-                            <TableCell className="bg-card sticky right-0 py-2 text-right align-middle">
+                            <TableCell className="bg-card sticky right-0 text-right align-middle">
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -601,6 +613,15 @@ export default function AuditLogsPage() {
           )}
         </SheetContent>
       </Sheet>
+      
+      <AddColumnModal
+        open={addColumnModalOpen}
+        onOpenChange={setAddColumnModalOpen}
+        columns={columns}
+        visibility={visibility}
+        onToggleColumn={toggleVisibility}
+        onResetColumns={reset}
+      />
       </PageBody>
     </ModuleGuard>
   );

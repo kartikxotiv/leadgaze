@@ -5,7 +5,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import {
+import { 
   Briefcase,
   Building2,
   Edit,
@@ -20,10 +20,13 @@ import {
   Trash2,
   User,
   Users,
+  Plus,
+  Download
 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@kit/ui/button';
+import { AddColumnModal } from '@kit/ui/add-column-modal';
 import { Badge } from '@kit/ui/badge';
 import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
 import CustomTableContainer from '@kit/ui/custom-table-container';
@@ -113,8 +116,16 @@ function DocumentPageSkeleton() {
                   <TableHead>Size</TableHead>
                   <TableHead>Uploaded By</TableHead>
                   <TableHead>Entity</TableHead>
-                  <TableHead className="sticky right-0 text-right">
-                    Actions
+                  <TableHead className="sticky-right-header bg-background z-10 w-12 px-1 text-center">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="mx-auto flex h-8 w-8 items-center justify-center border-dashed"
+                      onClick={() => setAddColumnModalOpen(true)}
+                      title="Toggle Columns"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
                   </TableHead>
                 </TableRow>
               </TableHeader>
@@ -136,6 +147,7 @@ function DocumentPageSkeleton() {
 }
 
 export default function DocumentPage() {
+  const [addColumnModalOpen, setAddColumnModalOpen] = useState(false);
   const { currentWorkspace: workspace } = useRBAC();
   const { formatDate } = useLocalization();
   const queryClient = useQueryClient();
@@ -579,19 +591,18 @@ export default function DocumentPage() {
 
   return (
     <>
-      <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden">
+      <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden border-b">
         <PageHeader
-          title={`Documents (${documents.length})`}
-          description="Manage and organize your files and documents"
-        />
-      </div>
-
-      {/* Full-width search / filter / actions toolbar */}
-      <div className="w-full max-w-full min-w-0 shrink-0 border-b pt-2 pb-2">
-        <ListToolBar
-          showSearch
-          searchPlaceholder="Search documents..."
-          searchValue={searchTerm}
+          title={`Documents`}          
+        >
+          <div className="p-[2px]">
+            <ListToolBar
+              align="right"
+              className="border-none bg-transparent p-0"
+              showSearch
+              expandableSearch
+              searchPlaceholder="Search"
+              searchValue={searchTerm}
           onSearchChange={setSearchTerm}
           showFilter
           filterLabel="Show Filters"
@@ -602,7 +613,7 @@ export default function DocumentPage() {
             {
               key: 'add',
               label: 'Upload File',
-              icon: FileUp,
+              icon: Download,
               onClick: () => {
                 setFile(null);
                 setEntityType('lead');
@@ -622,6 +633,8 @@ export default function DocumentPage() {
             />
           }
         />
+          </div>
+        </PageHeader>
       </div>
 
       <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden">
@@ -831,7 +844,17 @@ export default function DocumentPage() {
                       />
                     </SortableTableHead>
                   )}
-                  <TableHead className="sticky-right-header">Actions</TableHead>
+                  <TableHead className="sticky-right-header bg-background z-10 w-12 px-1 text-center">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="mx-auto flex h-8 w-8 items-center justify-center border-dashed"
+                      onClick={() => setAddColumnModalOpen(true)}
+                      title="Toggle Columns"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -990,6 +1013,15 @@ export default function DocumentPage() {
             </Table>
           </CustomTableContainer>
         </div>
+      
+      <AddColumnModal
+        open={addColumnModalOpen}
+        onOpenChange={setAddColumnModalOpen}
+        columns={documentColumns}
+        visibility={visibility}
+        onToggleColumn={toggleVisibility}
+        onResetColumns={reset}
+      />
       </PageBody>
 
       {/* Upload Dialog */}

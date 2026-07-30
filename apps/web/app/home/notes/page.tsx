@@ -23,6 +23,7 @@ import { toast } from 'sonner';
 
 import { useLocalization } from '@kit/shared/localization';
 import { Badge } from '@kit/ui/badge';
+import { AddColumnModal } from '@kit/ui/add-column-modal';
 import { Button } from '@kit/ui/button';
 import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
 import CustomTableContainer from '@kit/ui/custom-table-container';
@@ -111,8 +112,16 @@ function NotesPageSkeleton() {
                   <TableHead>Associate With</TableHead>
                   <TableHead>Note Content</TableHead>
                   <TableHead>Author</TableHead>
-                  <TableHead className="sticky right-0 text-right">
-                    Actions
+                  <TableHead className="sticky-right-header bg-background z-10 w-12 px-1 text-center">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="mx-auto flex h-8 w-8 items-center justify-center border-dashed"
+                      onClick={() => setAddColumnModalOpen(true)}
+                      title="Toggle Columns"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
                   </TableHead>
                 </TableRow>
               </TableHeader>
@@ -134,6 +143,7 @@ function NotesPageSkeleton() {
 }
 
 export default function NotesPage() {
+  const [addColumnModalOpen, setAddColumnModalOpen] = useState(false);
   const { currentWorkspace: workspace } = useRBAC();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
@@ -507,19 +517,18 @@ export default function NotesPage() {
 
   return (
     <>
-      <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden">
+      <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden border-b">
         <PageHeader
-          title={`Notes (${notes.length})`}
-          description="Capture and organize your important thoughts and information"
-        />
-      </div>
-
-      {/* Full-width search / filter / actions toolbar */}
-      <div className="w-full max-w-full min-w-0 shrink-0 border-b pt-2 pb-2">
-        <ListToolBar
-          showSearch
-          searchPlaceholder="Search notes..."
-          searchValue={searchTerm}
+          title={`Notes`}          
+        >
+          <div className="p-[2px]">
+            <ListToolBar
+              align="right"
+              className="border-none bg-transparent p-0"
+              showSearch
+              expandableSearch
+              searchPlaceholder="Search"
+              searchValue={searchTerm}
           onSearchChange={setSearchTerm}
           showFilter
           filterLabel="Show Filters"
@@ -562,6 +571,8 @@ export default function NotesPage() {
             />
           }
         />
+          </div>
+        </PageHeader>
       </div>
 
       <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden">
@@ -737,7 +748,17 @@ export default function NotesPage() {
                       />
                     </SortableTableHead>
                   )}
-                  <TableHead className="sticky-right-header">Actions</TableHead>
+                  <TableHead className="sticky-right-header bg-background z-10 w-12 px-1 text-center">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="mx-auto flex h-8 w-8 items-center justify-center border-dashed"
+                      onClick={() => setAddColumnModalOpen(true)}
+                      title="Toggle Columns"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -902,6 +923,15 @@ export default function NotesPage() {
             </Table>
           </CustomTableContainer>
         </div>
+      
+      <AddColumnModal
+        open={addColumnModalOpen}
+        onOpenChange={setAddColumnModalOpen}
+        columns={noteColumns}
+        visibility={visibility}
+        onToggleColumn={toggleVisibility}
+        onResetColumns={reset}
+      />
       </PageBody>
 
       {/* Create Dialog */}

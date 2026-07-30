@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { DateTimePicker } from '@kit/ui/datetime-picker';
+import { AddColumnModal } from '@kit/ui/add-column-modal';
 import { format } from 'date-fns';
 import { useLocalization } from '@kit/shared/localization';
 import { Badge } from '@kit/ui/badge';
@@ -68,6 +69,7 @@ import { useColumnResize } from '@kit/ui/use-column-resize';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
 import { useDateRangeFilter } from '@kit/ui/use-date-range-filter';
 import { useTableSort } from '@kit/ui/use-table-sort';
+import { cn } from '@kit/ui/utils';
 
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { useDebounce } from '~/lib/hooks/use-debounce';
@@ -114,8 +116,16 @@ function RemindersPageSkeleton() {
                   <TableHead>Priority</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Entity</TableHead>
-                  <TableHead className="sticky right-0 text-right">
-                    Actions
+                  <TableHead className="sticky-right-header bg-background z-10 w-12 px-1 text-center">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="mx-auto flex h-8 w-8 items-center justify-center border-dashed"
+                      onClick={() => setAddColumnModalOpen(true)}
+                      title="Toggle Columns"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
                   </TableHead>
                 </TableRow>
               </TableHeader>
@@ -137,6 +147,7 @@ function RemindersPageSkeleton() {
 }
 
 export default function RemindersPage() {
+  const [addColumnModalOpen, setAddColumnModalOpen] = useState(false);
   const { currentWorkspace: workspace } = useRBAC();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
@@ -654,16 +665,66 @@ export default function RemindersPage() {
     <>
       <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden">
         <PageHeader
-          title={`Reminders (${reminders.length})`}
-          description="Keep track of your important tasks and reminders"
-        />
+          title={`Reminders`}          
+        >
+          <Button
+            onClick={() => {
+              setFormData({
+                title: '',
+                description: '',
+                due_date: '',
+                priority: 'medium',
+                entity_type: 'lead',
+                entityId: '',
+              });
+              setIsCreateDialogOpen(true);
+            }}
+            className="secondary-text-small-bold gap-1.5 px-2 bg-leadgaze-primary hover:bg-leadgaze-primary text-white"
+          >
+            <Plus className="h-4 w-4" />
+            New Reminder
+          </Button>
+        </PageHeader>
       </div>
 
       {/* Full-width search / filter / actions toolbar */}
-      <div className="w-full max-w-full min-w-0 shrink-0 border-b pt-2 pb-2">
+      <div className="flex w-full max-w-full min-w-0 shrink-0 items-center justify-between border-top-bottom-gray">
+        <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide">
+          {[
+            { id: 'all', label: 'All Reminders' },
+            { id: 'pending', label: 'Pending' },
+            { id: 'completed', label: 'Completed' }
+          ].map((status) => {
+            const isSelected = statusFilter === status.id;
+            return (
+              <button
+                key={status.id}
+                onClick={() => {
+                  setStatusFilter(status.id);
+                  setCurrentPage(1);
+                }}
+                className={cn(
+                  "flex items-center gap-1 whitespace-nowrap border-b-2 px-3 py-1 primary-text-medium",
+                  isSelected
+                    ? "border-leadgaze-primary text-leadgaze-primary"
+                    : "border-transparent text-gray-500 hover:text-gray-700"
+                )}
+              >
+                {status.id === 'all' && (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                )}
+                {status.label}
+              </button>
+            );
+          })}
+        </div>
+
         <ListToolBar
+          align="right"
+          className="border-none bg-transparent p-0"
           showSearch
-          searchPlaceholder="Search by task title..."
+          expandableSearch
+          searchPlaceholder="Search"
           searchValue={searchTerm}
           onSearchChange={setSearchTerm}
           showFilter
@@ -671,26 +732,7 @@ export default function RemindersPage() {
           filterGroups={filterGroups}
           activeFilterCount={activeFilterCount}
           onClearFilters={handleClearFilters}
-          actions={[
-            {
-              key: 'add',
-              label: 'New Reminder',
-              icon: Plus,
-              onClick: () => {
-                setFormData({
-                  title: '',
-                  description: '',
-                  due_date: '',
-                  priority: 'medium',
-                  entity_type: 'lead',
-                  entityId: '',
-                });
-                setIsCreateDialogOpen(true);
-              },
-              show: true,
-              buttonVariant: 'default',
-            },
-          ]}
+          actions={[]}
           columnVisibilitySlot={
             <ColumnVisibilitySelector
               columns={reminderColumns}
@@ -907,7 +949,17 @@ export default function RemindersPage() {
                       />
                     </SortableTableHead>
                   )}
-                  <TableHead className="sticky-right-header">Actions</TableHead>
+                  <TableHead className="sticky-right-header bg-background z-10 w-12 px-1 text-center">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="mx-auto flex h-8 w-8 items-center justify-center border-dashed"
+                      onClick={() => setAddColumnModalOpen(true)}
+                      title="Toggle Columns"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -1064,6 +1116,15 @@ export default function RemindersPage() {
             </Table>
           </CustomTableContainer>
         </div>
+      
+      <AddColumnModal
+        open={addColumnModalOpen}
+        onOpenChange={setAddColumnModalOpen}
+        columns={reminderColumns}
+        visibility={visibility}
+        onToggleColumn={toggleVisibility}
+        onResetColumns={reset}
+      />
       </PageBody>
 
       {/* Create Dialog */}

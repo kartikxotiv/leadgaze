@@ -160,7 +160,7 @@ export function AppNavbar({
         {actions}
 
         {profileDropdown && (
-          <div className="shrink-0 border-l border-blue-500/20 pl-2 lg:pl-4">
+          <div className="shrink-0 border-l border-blue-500/20 pl-2">
             {profileDropdown}
           </div>
         )}

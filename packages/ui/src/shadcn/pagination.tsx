@@ -53,7 +53,7 @@ const PaginationLink = ({
         size: 'pagination',
       }),
       className,
-      isActive && "dark:text-white"
+      isActive && "dark:text-white", 'secondary-text-small-regular'
     )}
     {...props}
   />
@@ -70,7 +70,7 @@ const PaginationPrevious = ({
     className={cn('gap-1 px-2 sm:pl-4 sm:pr-2', className)}
     {...props}
   >
-    <ChevronLeft className="h-4 w-4" />
+    {/* <ChevronLeft className="h-4 w-4" /> */}
     <span className="hidden sm:inline">Previous</span>
   </PaginationLink>
 );
@@ -87,7 +87,7 @@ const PaginationNext = ({
     {...props}
   >
     <span className="hidden sm:inline">Next</span>
-    <ChevronRight className="h-4 w-4" />
+    {/* <ChevronRight className="h-4 w-4" /> */}
   </PaginationLink>
 );
 PaginationNext.displayName = 'PaginationNext';

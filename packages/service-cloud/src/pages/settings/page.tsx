@@ -41,16 +41,19 @@ export function ServiceCloudSettingsPage({
   if (!canManageStatuses && !canManagePriorities && !canManageCategories)
     return <ServiceCloudAccessDenied label="Service Cloud settings" />;
 
+  const tabsSlot = (
+    <TabsList className="mb-0 shrink-0 w-fit self-start pl-0">
+      <TabsTrigger value="statuses">Statuses</TabsTrigger>
+      <TabsTrigger value="priorities">Priorities</TabsTrigger>
+      <TabsTrigger value="categories">Categories</TabsTrigger>
+    </TabsList>
+  );
+
   return (
     <Tabs
       defaultValue="statuses"
       className="flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col space-y-4"
     >
-      <TabsList className="mb-0 shrink-0 w-fit self-start">
-        <TabsTrigger value="statuses">Statuses</TabsTrigger>
-        <TabsTrigger value="priorities">Priorities</TabsTrigger>
-        <TabsTrigger value="categories">Categories</TabsTrigger>
-      </TabsList>
       <TabsContent
         value="statuses"
         className="mt-0 flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col data-[state=active]:flex data-[state=active]:flex-1 data-[state=active]:flex-col data-[state=active]:min-h-0"
@@ -62,6 +65,7 @@ export function ServiceCloudSettingsPage({
           title="Ticket Statuses"
           createLabel="New Status"
           description="Configure support ticket workflow states."
+          tabsSlot={tabsSlot}
           canCreate={canManageStatuses}
           canEdit={canManageStatuses}
           canDelete={canManageStatuses}
@@ -121,6 +125,7 @@ export function ServiceCloudSettingsPage({
           title="Ticket Priorities"
           createLabel="New Priority"
           description="Configure urgency and SLA hints."
+          tabsSlot={tabsSlot}
           canCreate={canManagePriorities}
           canEdit={canManagePriorities}
           canDelete={canManagePriorities}
@@ -168,6 +173,7 @@ export function ServiceCloudSettingsPage({
           title="Ticket Categories"
           createLabel="New Category"
           description="Classify support issues for reporting and routing."
+          tabsSlot={tabsSlot}
           canCreate={canManageCategories}
           canEdit={canManageCategories}
           canDelete={canManageCategories}

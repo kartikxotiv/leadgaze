@@ -5,7 +5,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { FileDown, FileUp, Loader2, Plus, Settings2 } from 'lucide-react';
+import { Download, FileDown, FileUp, Loader2, Plus, Settings2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { AddColumnModal } from '@kit/ui/add-column-modal';
@@ -980,16 +980,82 @@ export default function LeadsPage() {
     <ModuleGuard module="leads">
       <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden">
         <PageHeader
-          title={`Leads (${totalCount})`}
-          description="Manage and track your sales leads"
-        />
+          title="Leads"      
+        >
+          {canAccess('leads', 'create') && (
+            <Button 
+              onClick={() => setIsCreateDialogOpen(true)} 
+              className="bg-leadgaze-primary hover:bg-leadgaze-primary text-white secondary-text-small-bold gap-1.5 px-2"
+            >
+              <Plus className="h-4 w-4" />
+              New Lead
+            </Button>
+          )}
+        </PageHeader>
       </div>
 
-      {/* Status filter dropdown + toolbar */}
-      <div className="w-full max-w-full min-w-0 shrink-0 border-b pb-2">
+      <div className="flex w-full max-w-full min-w-0 shrink-0 items-center justify-between border-top-bottom-gray">
+        <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide">
+          <button
+            onClick={() => {
+              setSelectedStatuses([]);
+              setCurrentPage(1);
+            }}
+            className={cn(
+              "flex items-center gap-1 whitespace-nowrap border-b-2 px-3 py-1 primary-text-medium",
+              selectedStatuses.length === 0
+                ? "border-leadgaze-primary text-leadgaze-primary"
+                : "border-transparent text-gray-500 hover:text-gray-700"
+            )}
+          >
+            <span className="flex items-center gap-1">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+              All leads
+            </span>
+            <span className={cn(
+              "ml-1 rounded-full px-2 py-0.5 text-xs border",
+              selectedStatuses.length === 0 ? "border-blue-200 bg-blue-50 text-leadgaze-primary" : "border-gray-200 bg-gray-50 text-gray-600"
+            )}>
+              {totalCount}
+            </span>
+          </button>
+          
+          {statuses.filter((s: any) => !s.is_closed).map((status: any) => {
+            const breakdown = leadsData.statusBreakdown?.[status.id] as { count: number } | undefined;
+            const count = breakdown?.count || 0;
+            const isSelected = selectedStatuses.length === 1 && selectedStatuses.includes(status.id);
+            return (
+              <button
+                key={status.id}
+                onClick={() => {
+                  setSelectedStatuses([status.id]);
+                  setCurrentPage(1);
+                }}
+                className={cn(
+                  "flex items-center gap-1 whitespace-nowrap border-b-2 px-3 py-1 primary-text-regular",
+                  isSelected
+                    ? "border-leadgaze-primary text-leadgaze-primary"
+                    : "border-transparent text-gray-500 hover:text-gray-700"
+                )}
+              >
+                {status.status_name}
+                <span className={cn(
+                  "ml-1 rounded-full px-2 py-0.5 text-xs border",
+                  isSelected ? "border-blue-200 bg-blue-50 text-leadgaze-primary" : "border-gray-200 bg-gray-50 text-gray-600"
+                )}>
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
         <ListToolBar
+          align="right"
+          className="border-none bg-transparent p-0"
           showSearch
-          searchPlaceholder="Search leads..."
+          expandableSearch
+          searchPlaceholder="Search"
           searchValue={searchTerm}
           onSearchChange={setSearchTerm}
           showFilter
@@ -1078,18 +1144,10 @@ export default function LeadsPage() {
             {
               key: 'import',
               label: 'Import',
-              icon: FileUp,
+              icon: Download,
               onClick: () => setIsImportDialogOpen(true),
               show: canAccess('leads', 'import'),
               buttonVariant: 'outline',
-            },
-            {
-              key: 'add',
-              label: 'New Lead',
-              icon: Plus,
-              onClick: () => setIsCreateDialogOpen(true),
-              show: canAccess('leads', 'create'),
-              buttonVariant: 'default',
             },
           ]}
           statusSlot={
@@ -1105,16 +1163,6 @@ export default function LeadsPage() {
                 onExportAll={handleExportAll}
                 onExportSelected={handleExportSelected}
                 isExporting={isExporting}
-              />
-            ) : null
-          }
-          columnVisibilitySlot={
-            viewMode === 'table' ? (
-              <ColumnVisibilitySelector
-                columns={columns}
-                visibility={visibility}
-                onToggle={toggleVisibility}
-                onReset={reset}
               />
             ) : null
           }
@@ -1592,6 +1640,10 @@ export default function LeadsPage() {
           teamMembers={teamMembersForModal}
           isAdmin={canAddColumn}
           isSubmitting={createField.isPending}
+          columns={columns}
+          visibility={visibility}
+          onToggleColumn={toggleVisibility}
+          onResetColumns={reset}
           onSubmit={async (payload) => {
             await createField.mutateAsync({
               ...payload,

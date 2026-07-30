@@ -24,6 +24,18 @@
   font-weight: 600 !important;
   line-height: 27px !important;
 }
+@utility primary-heading-extra {
+  font-family: var(--font-sans) !important;
+  font-size: 18px !important;
+  font-weight: 600 !important;
+  line-height: 27px !important;
+}
+@utility primary-text-big-regular {
+  font-family: var(--font-sans) !important;
+  font-size: 16px !important;
+  font-weight: 500 !important;
+  line-height: 20px !important;
+}
 
 @utility primary-text-medium {
   font-family: var(--font-sans) !important;
@@ -44,6 +56,18 @@
   font-size: 12px !important;
   font-weight: 400 !important;
   line-height: 16px !important;
+}
+@utility secondary-text-small-regular {
+  font-family: var(--font-sans) !important;
+  font-size: 12px !important;
+  font-weight: 400 !important;
+  line-height: 20px !important;
+}
+@utility secondary-text-small-bold {
+  font-family: var(--font-sans) !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  line-height: 20px !important;
 }
 
 @utility card-container {

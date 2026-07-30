@@ -422,7 +422,7 @@ function NavDropdown({
       {/* Wrapper keeps label + chevron visually grouped with shared active styling */}
       <div
         className={cn(
-          'flex items-center text-sm font-medium transition-colors',
+          'flex items-center secondary-text-small-bold 2xl:primary-text-medium transition-colors',
           active
             ? 'bg-header-primary !text-white'
             : '!text-blue-100 hover:bg-white/10 hover:text-white',
@@ -1174,8 +1174,8 @@ export function HomeMenuNavigation() {
   return (
     <div className="flex w-full flex-1 items-center justify-between">
       {/* Left side: Logo & App Launcher & Navigation Items */}
-      <div className="flex min-w-0 flex-1 items-center space-x-3 overflow-hidden md:space-x-4 lg:space-x-6">
-        <div className="flex shrink-0 items-center space-x-2 md:space-x-3 lg:space-x-4">
+      <div className="flex min-w-0 flex-1 items-center space-x-3 overflow-hidden md:space-x-4">
+        <div className="flex shrink-0 items-center space-x-2 md:space-x-3">
           <AppLogo className="max-h-8 w-auto" />
           {!isOrgRoute && (
             <div className="hidden h-6 w-px bg-white/25 md:block" />
@@ -1185,9 +1185,9 @@ export function HomeMenuNavigation() {
           {!isOrgRoute && (
             <Dialog open={isLauncherOpen} onOpenChange={setIsLauncherOpen}>
               <DialogTrigger asChild>
-                <button className="flex cursor-pointer items-center space-x-2 bg-transparent px-3 py-1.5 text-white transition-colors hover:bg-transparent">
-                  <Grip className="h-5 w-5" />
-                  <span className="primary-heading-big sm:text-md smfont-medium">
+                <button className="flex cursor-pointer items-center space-x-2 bg-transparent px-0 py-1.5 text-white transition-colors hover:bg-transparent">
+                  <Grip className="h-[14x] w-[14px]" />
+                  <span className="primary-text-big-regular 2xl:primary-heading-extra-new">
                     {currentAppName}
                   </span>
                 </button>
@@ -1196,7 +1196,7 @@ export function HomeMenuNavigation() {
               <DialogContent className="flex max-h-[90vh] max-w-4xl flex-col overflow-hidden rounded-lg border border-zinc-200 bg-white p-0 shadow-2xl dark:border-zinc-800 dark:bg-zinc-950">
                 <DialogHeader className="shrink-0 border-b p-6 pb-4">
                   <DialogTitle className="flex items-center gap-2 text-xl font-bold text-zinc-900 dark:text-white">
-                    <Grip className="h-5 w-5 text-blue-600" />
+                    <Grip className="h-[14px] w-[14px] text-blue-600" />
                     App Launcher
                   </DialogTitle>
                 </DialogHeader>
@@ -1420,7 +1420,7 @@ export function HomeMenuNavigation() {
                   key={item.path}
                   href={item.path}
                   className={cn(
-                    'flex items-center gap-1 px-3 py-1.5 text-sm font-medium transition-colors',
+                    'flex items-center gap-1 px-3 py-1.5 transition-colors secondary-text-small-bold 2xl:primary-text-medium',
                     active
                       ? 'bg-header-primary !text-white'
                       : '!text-blue-100 hover:bg-white/10 hover:text-white',
@@ -1440,7 +1440,7 @@ export function HomeMenuNavigation() {
             {moreRoutes.length > 0 && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="flex cursor-pointer items-center gap-1 rounded-md px-3 py-1.5 text-sm font-medium text-blue-100 transition-colors hover:bg-white/10 hover:text-white">
+                  <button className="flex cursor-pointer items-center gap-1 rounded-md px-3 py-1.5 secondary-text-small-bold 2xl:primary-text-medium text-blue-100 transition-colors hover:bg-white/10 hover:text-white">
                     <span>More</span>
                     <ChevronDown className="h-3.5 w-3.5 opacity-70" />
                   </button>
@@ -1452,7 +1452,7 @@ export function HomeMenuNavigation() {
                       <DropdownMenuItem key={item.path} asChild>
                         <Link
                           href={item.path}
-                          className="w-full cursor-pointer px-3 py-2"
+                          className="w-full cursor-pointer px-3 py-1 secondary-text-small-bold 2xl:primary-text-medium"
                         >
                           <Trans i18nKey={item.label} defaults={formatted} />
                         </Link>
@@ -1467,7 +1467,7 @@ export function HomeMenuNavigation() {
       </div>
 
       {/* Right side: Mobile Menu, Settings, Profile */}
-      <div className="flex shrink-0 items-center space-x-2 md:space-x-3 lg:space-x-4">
+      <div className="flex shrink-0 items-center space-x-2 md:space-x-3">
         {/* Mobile hamburger navigation menu */}
         {!isOrgRoute && allMainRoutes.length > 0 && (
           <DropdownMenu>
@@ -1558,7 +1558,7 @@ export function HomeMenuNavigation() {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="cursor-pointer rounded-full p-2 text-blue-100 transition-colors hover:bg-white/10 hover:text-white">
-                <Settings className="h-5 w-5" />
+                <Settings className="h-4 w-4" />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="mt-1 w-52">
@@ -1583,7 +1583,7 @@ export function HomeMenuNavigation() {
         )}
 
         {/* User avatar profile dropdown */}
-        <div className="shrink-0 border-l border-blue-500/20 pl-2 lg:pl-4">
+        <div className="shrink-0 border-l border-blue-500/20 pl-2">
           <ProfileAccountDropdownContainer showProfileName={false} />
         </div>
       </div>

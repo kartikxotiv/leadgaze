@@ -60,6 +60,7 @@
     --sidebar-ring: var(--color-blue-500);
     --card-border: #B0B0B0;
     --popover-foreground-custome: var(--custom-popover-foreground);
+    --table-custom-border: #E1E1E1;
   }
 
   .dark {
@@ -107,6 +108,7 @@
     --sidebar-ring: var(--color-blue-500);
     --card-border: #262626;
     --popover-foreground-custome: var(--color-white);
+    --table-custom-border: #262626;
   }
 
   .dark input::-webkit-calendar-picker-indicator {
