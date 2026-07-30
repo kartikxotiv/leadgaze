@@ -552,8 +552,7 @@ export function ServiceCloudResourcePage({
     <>
       <div
         className={cn(
-          'flex w-full min-w-0 max-w-full shrink-0 items-center justify-between',
-          resource === 'tickets' ? 'border-top-bottom-gray' : 'border-b pb-2'
+          'flex w-full min-w-0 max-w-full shrink-0 items-center justify-between border-top-bottom-gray'
         )}
       >
         {tabsSlot ? (
