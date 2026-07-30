@@ -1,0 +1,23 @@
+import { Roboto as SansFont } from 'next/font/google';
+
+/**
+ * @sans
+ * @description Define here the sans font.
+ * Uses the same Roboto font as the main web app.
+ */
+const sans = SansFont({
+  subsets: ['latin'],
+  variable: '--font-sans',
+  fallback: ['system-ui', 'Helvetica Neue', 'Helvetica', 'Arial'],
+  preload: true,
+  weight: ['300', '400', '500', '700'],
+});
+
+/**
+ * @heading
+ * @description Define here the heading font.
+ */
+const heading = sans;
+
+// we export these fonts into the root layout
+export { sans, heading };

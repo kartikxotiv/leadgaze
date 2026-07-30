@@ -1,0 +1,122 @@
+/*
+ * theme.utilities.css
+ *
+ * Leadgaze custom Tailwind @utility classes — shared across all apps via @kit/ui.
+ * Add any new global utility classes here.
+ */
+
+@utility container {
+  margin-inline: auto;
+
+  @apply xl:max-w-[80rem] px-8;
+}
+
+@utility primary-heading-number {
+  font-family: var(--font-sans) !important;
+  font-size: 24px !important;
+  font-weight: 600 !important;
+  line-height: 32px !important;
+}
+
+@utility primary-heading-big {
+  font-family: var(--font-sans) !important;
+  font-size: 22px !important;
+  font-weight: 500 !important;
+  line-height: 20px !important;
+}
+
+@utility primary-heading {
+  font-family: var(--font-sans) !important;
+  font-size: 18px !important;
+  font-weight: 600 !important;
+  line-height: 27px !important;
+}
+
+@utility primary-text-medium {
+  font-family: var(--font-sans) !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  line-height: 20px !important;
+}
+
+@utility primary-text-regular {
+  font-family: var(--font-sans) !important;
+  font-size: 14px !important;
+  font-weight: 400 !important;
+  line-height: 20px !important;
+}
+
+@utility secondary-text-small {
+  font-family: var(--font-sans) !important;
+  font-size: 12px !important;
+  font-weight: 400 !important;
+  line-height: 16px !important;
+}
+
+@utility card-container {
+  border: 0.6px solid var(--card-border);
+  border-radius: 0.7px !important;
+}
+
+@utility no-raidus {
+    border-radius: 0x !important;
+}
+
+@utility bar-bg {
+  background-color: #E6E6E6;
+}
+
+@utility card-seperator-border {
+  border-color: var(--card-border);
+}
+
+@utility table-row-border {
+  border-bottom-width: 0.6px;
+  border-bottom-style: solid;
+  border-bottom-color: var(--card-border);
+}
+
+@utility table-header-border{
+  border-left-width: 0.6px;
+  border-style: solid;
+  border-color: var(--card-border);
+}
+
+@utility sticky-right-header{
+  position: sticky;
+  right: 0;
+  text-align: right;
+  background-color: #F5F6F8;
+}
+
+@utility rounded-sm-card {
+  border-radius: 4px !important;
+}
+
+@utility table-status-select-bg{
+  background-color: #C2CAF8;
+}
+
+@utility dark-table-status-select-bg{
+  background-color: #3953E7;
+}
+
+@utility border-light-gray{
+  border-color: var(--card-border) !important;
+}
+
+@utility dark-theme-color{
+  background-color: #1E1E1E;
+}
+
+@utility dark-button-border-color{
+  border-color: #404040 !important;
+}
+
+@utility dark-background-color{
+  background-color: #171717 !important;
+}
+
+@utility dark-black-light-bg{
+  background-color: #262626 !important;
+}

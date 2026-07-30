@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
-import { Database } from '~/lib/database.types';
+import { Database } from '@kit/supabase/database';
 import { coreDb } from '~/lib/field-permission/core-client';
 import {
   catchAsync,

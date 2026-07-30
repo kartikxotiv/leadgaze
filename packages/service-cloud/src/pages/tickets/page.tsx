@@ -1,12 +1,12 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { Check, Loader2, Plus, User } from 'lucide-react';
+import { Check, FileUp, Loader2, Plus, User } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { useLocalization } from '@kit/shared/localization';
@@ -62,6 +62,10 @@ function assigneeInitials(assignee: any) {
     .join('');
 }
 
+import { useRouter } from 'next/navigation';
+import { ViewToggle } from '@kit/ui/view-toggle';
+import { TicketsKanbanBoard } from './components/kanban/tickets-kanban-board';
+
 function AssigneeStack({ assignees = [] }: { assignees?: any[] }) {
   if (assignees.length === 0) {
     return <span className="text-muted-foreground text-xs">Unassigned</span>;
@@ -108,6 +112,8 @@ export function ServiceCloudTicketsPage({
   canEditField,
   currentUserId,
   teamMembers = [],
+  canImport = false,
+  onImportClick,
 }: {
   workspaceId: string;
   isAdmin?: boolean;
@@ -121,10 +127,22 @@ export function ServiceCloudTicketsPage({
   canEditField?: (fieldKey: string) => boolean;
   currentUserId?: string;
   teamMembers?: any[];
+  canImport?: boolean;
+  onImportClick?: () => void;
 }) {
   const { formatDate } = useLocalization();
+  const router = useRouter();
   const [createOpen, setCreateOpen] = useState(false);
   const [assignedToMeOnly, setAssignedToMeOnly] = useState(false);
+  
+  const [viewMode, setViewMode] = useState<'table' | 'kanban'>(() => {
+    if (typeof window === 'undefined') return 'table';
+    return (localStorage.getItem('leadgaze-view-mode-tickets') as any) ?? 'table';
+  });
+  const handleViewModeChange = (mode: 'table' | 'kanban') => {
+    setViewMode(mode);
+    localStorage.setItem('leadgaze-view-mode-tickets', mode);
+  };
   const { canAccess, isLoading } = useServiceCloudPermissions(workspaceId);
   const getLabel = (key: string, fallback: string) =>
     systemFields.find((f: any) => f.field_key === key)?.field_label ?? fallback;
@@ -167,7 +185,7 @@ export function ServiceCloudTicketsPage({
   } = useDateRangeFilter('updated');
 
   // Optimized: single API call fetches statuses + priorities + categories in parallel on server
-  const { data: lookups } = useQuery({
+  const { data: lookups, isLoading: lookupsIsLoading } = useQuery({
     queryKey: ['service-cloud', 'ticket-lookups', workspaceId],
     queryFn: () => getServiceCloudTicketLookupsService(workspaceId),
     enabled: Boolean(workspaceId),
@@ -217,11 +235,82 @@ export function ServiceCloudTicketsPage({
     label: category.name,
     value: category.id,
   }));
-  const statusById = new Map<string, any>(
+  const statusById = useMemo(() => new Map<string, any>(
     allStatuses.map((status: any) => [status.id, status]),
-  );
-  const priorityById = new Map<string, any>(
+  ), [allStatuses]);
+  const priorityById = useMemo(() => new Map<string, any>(
     allPriorities.map((priority: any) => [priority.id, priority]),
+  ), [allPriorities]);
+  const categoryById = useMemo(() => new Map<string, any>(
+    allCategories.map((cat: any) => [cat.id, cat]),
+  ), [allCategories]);
+
+  // CSV Export fields config
+  const EXPORT_COLUMNS = useMemo(
+    () => [
+      { key: 'ticket_number', label: 'Ticket #' },
+      { key: 'subject', label: 'Subject' },
+      { key: 'description', label: 'Description' },
+      { key: 'status', label: 'Status' },
+      { key: 'priority', label: 'Priority' },
+      { key: 'category', label: 'Category' },
+      { key: 'customer_name', label: 'Customer Name' },
+      { key: 'customer_email', label: 'Customer Email' },
+      { key: 'organization', label: 'Organization' },
+      { key: 'assignees', label: 'Assignees' },
+      { key: 'source', label: 'Source' },
+      { key: 'created_at', label: 'Created At' },
+      { key: 'updated_at', label: 'Updated At' },
+    ],
+    [],
+  );
+
+  const exportColumns = useMemo(() => {
+    const cols = [
+      ...EXPORT_COLUMNS,
+      ...systemFields
+        .filter((f: any) => !f.is_system)
+        .map((f: any) => ({ key: f.field_key, label: f.field_label })),
+    ];
+    if (canViewColumn) {
+      return cols.filter((col) => canViewColumn(col.key));
+    }
+    return cols;
+  }, [EXPORT_COLUMNS, systemFields, canViewColumn]);
+
+  const serializeTicketRow = useCallback(
+    (ticket: any): Record<string, string> => {
+      const base: Record<string, string> = {
+        ticket_number: ticket.ticket_number ?? '',
+        subject: ticket.subject ?? '',
+        description: ticket.description ?? '',
+        status: statusById.get(ticket.status_id)?.name ?? '',
+        priority: priorityById.get(ticket.priority_id)?.name ?? '',
+        category: categoryById.get(ticket.category_id)?.name ?? '',
+        customer_name: ticket.customer?.name ?? '',
+        customer_email: ticket.customer?.email ?? '',
+        organization: ticket.organization?.name ?? '',
+        assignees: Array.isArray(ticket.assignees)
+          ? ticket.assignees
+              .map((a: any) => a.account?.name || a.account?.email || '')
+              .filter(Boolean)
+              .join(', ')
+          : '',
+        source: ticket.source ?? '',
+        created_at: ticket.created_at ? formatDate(ticket.created_at) : '',
+        updated_at: ticket.updated_at ? formatDate(ticket.updated_at) : '',
+      };
+
+      // Append custom fields
+      systemFields
+        .filter((f: any) => !f.is_system)
+        .forEach((cf: any) => {
+          base[cf.field_key] = String(ticket.custom_fields?.[cf.field_key] ?? '');
+        });
+
+      return base;
+    },
+    [statusById, priorityById, categoryById, formatDate, systemFields],
   );
 
   const activeFilterCount =
@@ -493,6 +582,26 @@ export function ServiceCloudTicketsPage({
     <>
       <ServiceCloudResourcePage
         workspaceId={workspaceId}
+        viewMode={viewMode}
+        kanbanSlot={(data, refetch) => (
+          <TicketsKanbanBoard
+            workspaceId={workspaceId}
+            tickets={data}
+            statuses={statuses}
+            priorities={priorities}
+            isLoading={lookupsIsLoading}
+            canUpdate={canEdit}
+            canCreate={canCreate}
+            canDelete={canDelete}
+            onClick={(id) => router.push(`/home/services/tickets/${id}`)}
+            onDelete={() => {}}
+            onCreateTicket={(statusId) => {
+              setTicketStatusId(statusId);
+              setCreateOpen(true);
+            }}
+            refetch={refetch}
+          />
+        )}
         resource="tickets"
         title="Tickets"
         description="Create, assign, and track support requests."
@@ -506,6 +615,9 @@ export function ServiceCloudTicketsPage({
         canEditField={canEditField}
         currentUserId={currentUserId}
         systemFields={systemFields}
+        enableExport={true}
+        serializeRow={serializeTicketRow}
+        exportColumns={exportColumns}
         queryParams={queryParams}
         filterGroups={filterGroups}
         activeFilterCount={activeFilterCount}
@@ -520,6 +632,7 @@ export function ServiceCloudTicketsPage({
         }}
         toolbar={
           <div className="flex items-center gap-2">
+            <ViewToggle view={viewMode} onChange={handleViewModeChange} />
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -539,25 +652,32 @@ export function ServiceCloudTicketsPage({
                 <span>Assigned to me</span>
               </TooltipContent>
             </Tooltip>
-            {canCreate ? (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    type="button"
-                    onClick={openCreateDialog}
-                    variant="default"
-                    className="h-9 shrink-0 gap-1.5"
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom">
-                  <span>New Ticket</span>
-                </TooltipContent>
-              </Tooltip>
-            ) : null}
           </div>
         }
+        actions={[
+          ...(canImport && onImportClick
+            ? [
+                {
+                  key: 'import',
+                  label: 'Import',
+                  icon: FileUp,
+                  onClick: onImportClick,
+                  buttonVariant: 'outline' as const,
+                },
+              ]
+            : []),
+          ...(canCreate
+            ? [
+                {
+                  key: 'create',
+                  label: 'New Ticket',
+                  icon: Plus,
+                  onClick: openCreateDialog,
+                  buttonVariant: 'default' as const,
+                },
+              ]
+            : []),
+        ]}
         fields={[
           {
             key: 'subject',
@@ -889,7 +1009,7 @@ export function ServiceCloudTicketsPage({
               </div>
             </div>
 
-            <DialogFooter className="border-t border-gray-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
+            <DialogFooter className="border-t border-gray-200 bg-white p-2 dark:border-slate-800 dark:bg-slate-950">
               <Button
                 className="mb-2"
                 variant="outline"

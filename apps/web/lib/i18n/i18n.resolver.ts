@@ -1,11 +1,12 @@
-/**
- * Resolves the translation file for a given language and namespace.
- *
- */
-export async function i18nResolver(language: string, namespace: string) {
-  const data = await import(
-    `../../public/locales/${language}/${namespace}.json`
-  );
+import { sharedI18nResolver } from '@kit/i18n/resolver';
 
-  return data as Record<string, string>;
+export async function i18nResolver(language: string, namespace: string) {
+  try {
+    const data = await import(
+      `../../public/locales/${language}/${namespace}.json`
+    );
+    return data.default || data;
+  } catch {
+    return sharedI18nResolver(language, namespace);
+  }
 }

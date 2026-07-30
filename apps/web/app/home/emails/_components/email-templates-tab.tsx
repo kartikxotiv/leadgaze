@@ -113,7 +113,7 @@ export function EmailTemplatesTab() {
             {isLoadingTemplates ? (
               [...Array(5)].map((_, i) => (
                 <TableRow key={i}>
-                  <TableCell className="h-[52px] px-4 py-2" colSpan={3}>
+                  <TableCell className="h-[32px] px-4 py-2" colSpan={3}>
                     <Skeleton className="h-7 w-full" />
                   </TableCell>
                   {canManage && (

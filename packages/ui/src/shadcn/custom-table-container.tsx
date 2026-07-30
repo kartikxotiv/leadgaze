@@ -29,19 +29,26 @@ export const CustomTableContainer: React.FC<CustomTableContainerProps> = ({
   children,
   pagination = null,
   className = '',
-  containerClass = 'listing-table-container card-container border-b-0 no-raidus min-w-0 overflow-x-auto overflow-y-auto pb-0 [&>div]:overflow-visible',
+  containerClass,
   headerActions,
   footerExtras,
 }) => {
   return (
     <div className={cn('flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col space-y-4', className)}>
       {headerActions && <div className="mb-2">{headerActions}</div>}
-      <Card className="flex min-h-0 w-full max-w-full min-w-0 flex-col border-none shadow-none mb-0">
-        <CardContent className="flex min-h-0 w-full max-w-full min-w-0 flex-col p-0">
-          <div className={cn(containerClass)}>{children}</div>
+      <Card className="flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col border-none shadow-none mb-0">
+        <CardContent className="flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col p-0">
+          <div
+            className={cn(
+              'listing-table-container card-container no-raidus min-w-0 overflow-x-auto overflow-y-auto pb-0 [&>div]:overflow-visible flex-1',
+              containerClass,
+            )}
+          >
+            {children}
+          </div>
         </CardContent>
       </Card>
-      {pagination && <div className="mt-2">{pagination}</div>}
+      {pagination && <div className="mt-1">{pagination}</div>}
       {footerExtras && <div className="mt-1">{footerExtras}</div>}
     </div>
   );

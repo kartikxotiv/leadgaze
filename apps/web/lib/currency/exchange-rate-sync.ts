@@ -25,7 +25,7 @@
 
 import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
 
-import type { Database } from '../../../lib/database.types';
+import type { Database } from '@kit/supabase/database';
 
 // =====================================================
 // CONFIGURATION

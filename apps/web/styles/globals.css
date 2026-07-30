@@ -1,23 +1,26 @@
 /*
-* global.css
-*
-* Global styles for the entire application
+ * globals.css
+ *
+ * Global styles for the web app.
+ * Shared design tokens and utilities come from @kit/ui — edit there to affect both apps.
  */
 
 /* Tailwind CSS */
 @import 'tailwindcss';
 
-/* local styles - update the below if you add a new style */
-@import './theme.css';
-@import './theme.utilities.css';
-@import './shadcn-ui.css';
-@import './markdoc.css';
-@import './makerkit.css';
+/* Shared design system from @kit/ui — single source of truth */
+@import '../../../packages/ui/src/styles/theme.css';
+@import '../../../packages/ui/src/styles/theme.utilities.css';
+@import '../../../packages/ui/src/styles/shadcn-ui.css';
+@import '../../../packages/ui/src/styles/makerkit.css';
 
-/* plugins - update the below if you add a new plugin */
+/* Web-only styles */
+@import './markdoc.css';
+
+/* plugins */
 @plugin "tailwindcss-animate";
 
-/* content sources - update the below if you add a new path */
+/* content sources */
 @source "../../../packages/*/src/**/*.{ts,tsx}";
 @source "../../../packages/features/*/src/**/*.{ts,tsx}";
 @source "../../../packages/billing/*/src/**/*.{ts,tsx}";

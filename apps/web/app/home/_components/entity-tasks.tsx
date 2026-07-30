@@ -68,6 +68,7 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
   // Time logging states
   const [timeLogTask, setTimeLogTask] = useState<Task | null>(null);
   const [isTimeLogOpen, setIsTimeLogOpen] = useState(false);
+  const [isCompletingTask, setIsCompletingTask] = useState(false);
   const getTodayDateString = () => new Date().toISOString().split('T')[0];
   const [timeLogData, setTimeLogData] = useState({
     hours: '',
@@ -170,7 +171,12 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
     },
     onSuccess: () => {
       toast.success('Time logged successfully');
+      invalidateTasks();
+      if (isCompletingTask && timeLogTask) {
+        toggleMutation.mutate(timeLogTask);
+      }
       setIsTimeLogOpen(false);
+      setIsCompletingTask(false);
       setTimeLogData({ hours: '', minutes: '', description: '', logged_at: getTodayDateString() });
       setTimeLogTask(null);
     },
@@ -213,7 +219,13 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
   };
 
   const toggleCompletion = (task: Task) => {
-    toggleMutation.mutate(task);
+    if (!task.is_completed) {
+      setTimeLogTask(task);
+      setIsCompletingTask(true);
+      setIsTimeLogOpen(true);
+    } else {
+      toggleMutation.mutate(task);
+    }
   };
 
   const totalLoggedMinutes = timeLogs.reduce((acc, curr) => acc + curr.duration_minutes, 0);
@@ -387,6 +399,7 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
                       variant="ghost"
                       onClick={() => {
                         setTimeLogTask(task);
+                        setIsCompletingTask(false);
                         setIsTimeLogOpen(true);
                       }}
                       className="h-7 w-7 text-gray-400 hover:text-green-500"
@@ -446,6 +459,7 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
           setIsTimeLogOpen(open);
           if (!open) {
             setTimeLogTask(null);
+            setIsCompletingTask(false);
             setTimeLogData({ hours: '', minutes: '', description: '', logged_at: getTodayDateString() });
           }
         }}
@@ -453,6 +467,14 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
         <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>
             <DialogTitle>Log Time for: {timeLogTask?.title}</DialogTitle>
+            {(timeLogTask?.total_logged_minutes ?? 0) > 0 && (
+              <p className="text-sm text-blue-500 mt-1 font-medium">
+                Total Logged Time: {Math.floor((timeLogTask?.total_logged_minutes ?? 0) / 60)}h {(timeLogTask?.total_logged_minutes ?? 0) % 60}m
+              </p>
+            )}
+            {isCompletingTask && (timeLogTask?.total_logged_minutes ?? 0) <= 0 && (
+              <p className="primary-text-regular text-red-500 mt-1">Please input time before closing this task</p>
+            )}
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="grid grid-cols-2 gap-4">
@@ -498,6 +520,18 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
           </div>
           <div className="flex justify-end gap-3">
             <Button variant="ghost" onClick={() => setIsTimeLogOpen(false)}>Cancel</Button>
+            {isCompletingTask && (
+              <Button
+                variant="outline"
+                disabled={(timeLogTask?.total_logged_minutes ?? 0) <= 0}
+                onClick={() => {
+                  if (timeLogTask) toggleMutation.mutate(timeLogTask);
+                  setIsTimeLogOpen(false);
+                }}
+              >
+                Skip
+              </Button>
+            )}
             <Button
               onClick={() => timeLogMutation.mutate()}
               disabled={(!timeLogData.hours && !timeLogData.minutes) || timeLogMutation.isPending}

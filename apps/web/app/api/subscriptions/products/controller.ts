@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
 
-import { catchAsync } from '../../../../utils/response-handler';
+import { ApiError, catchAsync } from '../../../../utils/response-handler';
 
 /**
  * GET /api/subscriptions/products
@@ -16,7 +16,16 @@ export const getProducts = catchAsync(
       .from('subscription_products')
       .select(
         `
-      *,
+      id,
+      product_key,
+      display_name,
+      description,
+      is_active,
+      is_public,
+      min_seats,
+      monthly_price_per_seat,
+      yearly_price_per_seat,
+      currency,
       product_module_map (
         crm_module_id,
         access_mode,
@@ -27,17 +36,11 @@ export const getProducts = catchAsync(
       )
     `,
       )
-      .eq('is_active', true)
+      .eq('is_public', true)
       .order('display_name');
 
-    if (error) {
-      console.error('Get products error:', error);
-      return NextResponse.json(
-        { success: false, message: error.message },
-        { status: 500 },
-      );
-    }
+    if (error) throw new ApiError(error.message, 500);
 
-    return NextResponse.json({ success: true, data: products || [] });
+    return NextResponse.json({ success: true, data: products ?? [] });
   },
 );

@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { getSupabaseBrowserClient } from '@kit/supabase/browser-client';
 
-import type { Database } from '~/lib/database.types';
+import type { Database } from '@kit/supabase/database';
 import {
   buildFieldPermissionContext,
   canEditField,

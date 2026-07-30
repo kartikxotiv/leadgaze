@@ -14,7 +14,7 @@ const NEXT_ACTION_HEADER = 'next-action';
 const TRUSTED_DEVICE_COOKIE = 'lg_trusted_device';
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|images|locales|assets|api/*).*)'],
+  matcher: ['/((?!_next/static|_next/image|images|locales|assets|api).*)'],
 };
 
 const getUser = (request: NextRequest, response: NextResponse) => {
