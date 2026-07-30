@@ -295,6 +295,16 @@ export default function LeadDetailsPage() {
     );
   }, [fields, canView, lead]);
 
+  const currentStatus = useMemo(() => {
+    if (!lead) return null;
+    return (
+      lead.status ||
+      statuses.find(
+        (s: any) => s.id === lead.status_id || s.id === lead.status?.id,
+      )
+    );
+  }, [lead, statuses]);
+
   if (!workspace) {
     // Workspace context still hydrating; show skeleton, same as isLoading.
     return (
@@ -310,6 +320,9 @@ export default function LeadDetailsPage() {
       await updateLeadService(leadId, { status_id: newStatusId });
       toast.success('Lead status updated successfully');
       setStatusModalOpen(false);
+      queryClient.invalidateQueries({ queryKey: ['lead', leadId] });
+      queryClient.invalidateQueries({ queryKey: ['leads'] });
+      queryClient.invalidateQueries({ queryKey: ['leads-kanban'] });
       await refetch();
     } catch (err: any) {
       console.error('Status update error:', err);
@@ -354,7 +367,7 @@ export default function LeadDetailsPage() {
   }
 
   const fullName = `${lead.first_name}${lead.last_name ? ` ${lead.last_name}` : ''}`;
-  const statusColor = lead.status?.color || '#3B82F6';
+  const statusColor = currentStatus?.color || lead.status?.color || '#3B82F6';
   const sourceColor = lead.source?.color || '#6B7280';
 
   const EditableField = ({
@@ -413,7 +426,10 @@ export default function LeadDetailsPage() {
                     className="gap-2"
                     disabled={isSaving}
                   >
-                    <Flag className="h-4 w-4" />
+                    <Flag
+                      className="h-4 w-4 shrink-0 transition-colors"
+                      style={{ color: statusColor, fill: statusColor }}
+                    />
                     <span className="hidden sm:inline">Change Status</span>
                   </Button>
                 </TooltipTrigger>
@@ -1181,7 +1197,12 @@ export default function LeadDetailsPage() {
         <ChangeStatusDialog
           open={statusModalOpen}
           onOpenChange={setStatusModalOpen}
-          onSuccess={() => refetch()}
+          onSuccess={() => {
+            queryClient.invalidateQueries({ queryKey: ['lead', leadId] });
+            queryClient.invalidateQueries({ queryKey: ['leads'] });
+            queryClient.invalidateQueries({ queryKey: ['leads-kanban'] });
+            refetch();
+          }}
           lead={lead}
           statuses={statuses}
         />
