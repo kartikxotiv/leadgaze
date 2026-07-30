@@ -468,8 +468,7 @@ function UpcomingTasks({ tasks }: { tasks: DashboardTask[] }) {
     return { label: 'low', bg: 'var(--color-status-neutral-bg)', text: 'var(--color-status-neutral-text)' };
   };
 
-  // Limit to latest 3 tasks
-  const latestTasks = useMemo(() => tasks.slice(0, 3), [tasks]);
+  const latestTasks = useMemo(() => tasks ?? [], [tasks]);
 
   return (
     <div className="max-h-[400px] overflow-y-auto xl:max-h-[430px] 2xl:max-h-[440px] overflow-auto">
