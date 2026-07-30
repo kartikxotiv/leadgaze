@@ -31,7 +31,7 @@ import {
 import { Input } from '@kit/ui/input';
 import { Label } from '@kit/ui/label';
 import { ListToolBar } from '@kit/ui/list-toolbar';
-import { PageBody } from '@kit/ui/page';
+import { PageBody, PageHeader } from '@kit/ui/page';
 import {
   Select,
   SelectContent,
@@ -53,6 +53,7 @@ import {
 import { TablePagination } from '@kit/ui/table-pagination';
 import { useColumnResize } from '@kit/ui/use-column-resize';
 import { useTableSort } from '@kit/ui/use-table-sort';
+import { formatDate } from '@kit/shared/utils';
 import { cn } from '@kit/ui/utils';
 
 import {
@@ -176,6 +177,7 @@ type ResourcePageProps = {
   serializeRow?: (record: ServiceCloudRecord) => Record<string, string>;
   exportColumns?: Array<{ key: string; label: string }>;
   actions?: React.ComponentProps<typeof ListToolBar>['actions'];
+  tabsSlot?: React.ReactNode;
 };
 
 function getInitialForm(
@@ -229,6 +231,7 @@ export function ServiceCloudResourcePage({
   serializeRow,
   exportColumns,
   actions,
+  tabsSlot,
 }: ResourcePageProps) {
   const [internalSelectedIds, setInternalSelectedIds] = useState<Set<string>>(new Set());
   const [isExporting, setIsExporting] = useState(false);
@@ -547,33 +550,47 @@ export function ServiceCloudResourcePage({
 
   return (
     <>
-      <div className="w-full min-w-0 max-w-full shrink-0 border-b pb-2">
-        <ListToolBar
-          showSearch
-          searchPlaceholder={`Search ${title.toLowerCase()}...`}
-          searchValue={searchTerm}
-          onSearchChange={setSearchTerm}
-          showFilter={!!filterGroups && filterGroups.length > 0}
-          filterGroups={filterGroups}
-          activeFilterCount={activeFilterCount}
-          onClearFilters={onClearFilters}
-          statusSlot={toolbar}
-          exportSlot={exportSlotFinal}
-          actions={
-            actions ||
-            (canCreate
-              ? [
-                  {
-                    key: 'create',
-                    label: createLabel || 'New',
-                    icon: Plus,
-                    onClick: openCreate,
-                    buttonVariant: 'default' as const,
-                  },
-                ]
-              : [])
-          }
-        />
+      <div
+        className={cn(
+          'flex w-full min-w-0 max-w-full shrink-0 items-center justify-between',
+          resource === 'tickets' ? 'border-top-bottom-gray' : 'border-b pb-2'
+        )}
+      >
+        {tabsSlot ? (
+          <div className="shrink-0 flex items-center pr-4">
+            {tabsSlot}
+          </div>
+        ) : null}
+        <div className="p-[2px] flex flex-1 justify-end min-w-0">
+          <ListToolBar
+            align="right"
+            className="border-none bg-transparent p-0"
+            showSearch
+            searchPlaceholder={`Search`}
+            searchValue={searchTerm}
+            onSearchChange={setSearchTerm}
+            showFilter={!!filterGroups && filterGroups.length > 0}
+            filterGroups={filterGroups}
+            activeFilterCount={activeFilterCount}
+            onClearFilters={onClearFilters}
+            statusSlot={toolbar}
+            exportSlot={exportSlotFinal}
+            actions={
+              actions ||
+              (canCreate
+                ? [
+                    {
+                      key: 'create',
+                      label: createLabel || 'New',
+                      icon: Plus,
+                      onClick: openCreate,
+                      buttonVariant: 'default' as const,
+                    },
+                  ]
+                : [])
+            }
+          />
+        </div>
       </div>
       <PageBody className="sticky flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col overflow-hidden">
         <div className="flex min-h-0 w-full min-w-0 max-w-full flex-1 gap-0">

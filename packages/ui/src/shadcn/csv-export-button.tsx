@@ -78,7 +78,7 @@ export const CsvExportButton: React.FC<CsvExportButtonProps> = ({
               variant="outline"
               disabled={disabled || isExporting}
               className={cn(
-                'relative h-9 shrink-0 gap-1.5 primary-text-medium dark:text-white',
+                'relative h-[28px] px-2 shrink-0 gap-1.5 primary-text-medium dark:text-white',
                 className,
               )}
               aria-label="Export data"
@@ -86,8 +86,9 @@ export const CsvExportButton: React.FC<CsvExportButtonProps> = ({
               {isExporting ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-                <FileDown className="h-4 w-4 border-light-gray primary-text-medium text-leadgaze-dark dark:text-white" />
+                <Download className="h-4 w-4 border-light-gray primary-text-medium text-leadgaze-dark dark:text-white" />
               )}
+              <span className="secondary-text-small-bold">Export</span>
 
               {/* Selected-count badge — shown when rows are selected */}
               {selectedCount > 0 && !isExporting && (

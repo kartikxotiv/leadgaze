@@ -5,7 +5,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { FileDown, FileUp, Plus } from 'lucide-react';
+import { Download, FileDown, FileUp, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@kit/ui/button';
@@ -761,18 +761,17 @@ export default function ContactsPage() {
 
   return (
     <ModuleGuard module="contacts">
-      <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden">
+      <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden border-b">
         <PageHeader
-          title={`Contacts (${totalCount})`}
-          description="Manage your contacts (People)"
-        />
-      </div>
-
-      {/* Full-width search / filter / actions toolbar */}
-      <div className="w-full max-w-full min-w-0 shrink-0 border-b pt-2 pb-2">
-        <ListToolBar
-          showSearch
-          searchPlaceholder="Search by name, email, or account..."
+          title={`Contacts`}          
+        >
+          <div className="p-[2px]">
+            <ListToolBar
+              align="right"
+            className="border-none bg-transparent p-0"
+            showSearch
+            expandableSearch
+            searchPlaceholder="Search"
           searchValue={searchTerm}
           onSearchChange={setSearchTerm}
           showFilter
@@ -836,7 +835,7 @@ export default function ContactsPage() {
             {
               key: 'import',
               label: 'Import',
-              icon: FileUp,
+              icon: Download,
               onClick: () => setIsImportDialogOpen(true),
               show: canAccess('contacts', 'import'),
               buttonVariant: 'outline',
@@ -860,15 +859,9 @@ export default function ContactsPage() {
               />
             ) : null
           }
-          columnVisibilitySlot={
-            <ColumnVisibilitySelector
-              columns={columns}
-              visibility={visibility}
-              onToggle={toggleVisibility}
-              onReset={reset}
-            />
-          }
         />
+          </div>
+        </PageHeader>
       </div>
 
       <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden">
@@ -1211,6 +1204,10 @@ export default function ContactsPage() {
           teamMembers={teamMembersForModal}
           isAdmin={canAddColumn}
           isSubmitting={createField.isPending}
+          columns={columns}
+          visibility={visibility}
+          onToggleColumn={toggleVisibility}
+          onResetColumns={reset}
           onSubmit={async (payload) => {
             await createField.mutateAsync({
               ...payload,

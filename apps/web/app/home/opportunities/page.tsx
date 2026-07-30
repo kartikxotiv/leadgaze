@@ -5,7 +5,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { FileUp, Plus } from 'lucide-react';
+import { Download, FileUp, Plus } from 'lucide-react';
 
 import { convertFromUSD, findLatestRateToUsd } from '@kit/shared/currency';
 import type { ExchangeRateRecord } from '@kit/shared/currency';
@@ -1138,16 +1138,83 @@ export default function OpportunitiesPage() {
     <ModuleGuard module="opportunities">
       <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden">
         <PageHeader
-          title={`Opportunities (${totalCount})`}
-          description="Manage your sales pipeline"
-        />
+          title={`Opportunities`}          
+        >
+          {canAccess('opportunities', 'create') && (
+            <Button
+              onClick={() => setIsCreateDialogOpen(true)}
+              className="secondary-text-small-bold gap-1.5 px-2 bg-leadgaze-primary hover:bg-leadgaze-primary text-white"
+            >
+              <Plus className="h-4 w-4" />
+              New Opportunity
+            </Button>
+          )}
+        </PageHeader>
       </div>
 
       {/* Full-width search / filter / actions toolbar */}
-      <div className="w-full max-w-full min-w-0 shrink-0 border-b pb-2">
+      <div className="flex w-full max-w-full min-w-0 shrink-0 items-center justify-between border-top-bottom-gray">
+        <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide">
+          <button
+            onClick={() => {
+              setSelectedStage('all');
+              setCurrentPage(1);
+            }}
+            className={cn(
+              "flex items-center gap-1 whitespace-nowrap border-b-2 px-3 py-1 primary-text-medium",
+              selectedStage === 'all'
+                ? "border-leadgaze-primary text-leadgaze-primary"
+                : "border-transparent text-gray-500 hover:text-gray-700"
+            )}
+          >
+            <span className="flex items-center gap-1">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+              All opportunities
+            </span>
+            <span className={cn(
+              "ml-1 rounded-full px-2 py-0.5 text-xs border",
+              selectedStage === 'all' ? "border-blue-200 bg-blue-50 text-leadgaze-primary" : "border-gray-200 bg-gray-50 text-gray-600"
+            )}>
+              {totalCount}
+            </span>
+          </button>
+          
+          {stages.map((stage: any) => {
+            const breakdown = opportunitiesData.stageBreakdown?.[stage.id] as { count: number } | undefined;
+            const count = breakdown?.count || 0;
+            const isSelected = selectedStage === stage.id;
+            return (
+              <button
+                key={stage.id}
+                onClick={() => {
+                  setSelectedStage(stage.id);
+                  setCurrentPage(1);
+                }}
+                className={cn(
+                  "flex items-center gap-1 whitespace-nowrap border-b-2 px-3 py-1 primary-text-regular",
+                  isSelected
+                    ? "border-leadgaze-primary text-leadgaze-primary"
+                    : "border-transparent text-gray-500 hover:text-gray-700"
+                )}
+              >
+                {stage.status_name}
+                <span className={cn(
+                  "ml-1 rounded-full px-2 py-0.5 text-xs border",
+                  isSelected ? "border-blue-200 bg-blue-50 text-leadgaze-primary" : "border-gray-200 bg-gray-50 text-gray-600"
+                )}>
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
         <ListToolBar
+          align="right"
+          className="border-none bg-transparent p-0"
           showSearch
-          searchPlaceholder="Search by name or account..."
+          expandableSearch
+          searchPlaceholder="Search"
           searchValue={searchTerm}
           onSearchChange={setSearchTerm}
           showFilter
@@ -1159,18 +1226,10 @@ export default function OpportunitiesPage() {
             {
               key: 'import',
               label: 'Import',
-              icon: FileUp,
+              icon: Download,
               onClick: () => setIsImportDialogOpen(true),
               show: canAccess('opportunities', 'import'),
               buttonVariant: 'outline',
-            },
-            {
-              key: 'add',
-              label: 'New Opportunity',
-              icon: Plus,
-              onClick: () => setIsCreateDialogOpen(true),
-              show: canAccess('opportunities', 'create'),
-              buttonVariant: 'default',
             },
           ]}
           exportSlot={
@@ -1598,6 +1657,10 @@ export default function OpportunitiesPage() {
           teamMembers={teamMembersForModal}
           isAdmin={canAddColumn}
           isSubmitting={createField.isPending}
+          columns={columns}
+          visibility={visibility}
+          onToggleColumn={toggleVisibility}
+          onResetColumns={reset}
           onSubmit={async (payload) => {
             await createField.mutateAsync({
               ...payload,

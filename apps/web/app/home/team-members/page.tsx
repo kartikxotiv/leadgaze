@@ -9,6 +9,7 @@ import { Check, Clock, Edit2, Plus, RotateCcw, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Badge } from '@kit/ui/badge';
+import { AddColumnModal } from '@kit/ui/add-column-modal';
 import { Button } from '@kit/ui/button';
 import { Card, CardContent } from '@kit/ui/card';
 import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
@@ -97,9 +98,17 @@ function TeamMembersPageSkeleton() {
                 <TableHead>Role</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Primary Contact</TableHead>
-                <TableHead className="sticky right-0 px-4 text-right">
-                  Actions
-                </TableHead>
+                <TableHead className="sticky-right-header bg-background z-10 w-12 px-1 text-center">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="mx-auto flex h-8 w-8 items-center justify-center border-dashed"
+                      onClick={() => setAddColumnModalOpen(true)}
+                      title="Toggle Columns"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -119,6 +128,7 @@ function TeamMembersPageSkeleton() {
 }
 
 export default function TeamMembersPage() {
+  const [addColumnModalOpen, setAddColumnModalOpen] = useState(false);
   const queryClient = useQueryClient();
   const { currentWorkspace, canAccess } = useRBAC();
   const pathname = usePathname();
@@ -399,29 +409,31 @@ export default function TeamMembersPage() {
 
   return (
     <ModuleGuard module="team_members">
-      <div className="flex shrink-0 flex-col gap-2 overflow-hidden">
+      <div className="flex shrink-0 flex-col gap-2 overflow-hidden border-b">
         <PageHeader
-          title={`Members (${unifiedList.length})`}
-          description={
-            statusFilter === 'pending'
-              ? 'Showing pending invitations only'
-              : statusFilter === 'all'
-                ? 'Showing all members'
-                : 'Showing active members only'
-          }
+          title={`Members`}
+          // description={
+          //   statusFilter === 'pending'
+          //     ? 'Showing pending invitations only'
+          //     : statusFilter === 'all'
+          //       ? 'Showing all members'
+          //       : 'Showing active members only'
+          // }
         >
-          <div className="flex">
+          
+          <div className="p-[2px] flex gap-2">
+            <div className="flex">
             {currentModule && (
               <Card
                 className={cn(
                   'hover:border-primary/50 bg-card rounded-sm-card inline-flex w-auto shrink-0 cursor-pointer transition-all',
                 )}
               >
-                <CardContent className={cn('flex items-center px-3 py-2')}>
+                <CardContent className={cn('flex items-center px-1 py-1')}>
                   <div className="flex items-center gap-2 whitespace-nowrap">
                     <span
                       className={cn(
-                        'primary-text-medium text-leadgaze-dark uppercase dark:text-white',
+                        'secondary-text-small-bold text-leadgaze-dark uppercase dark:text-white',
                       )}
                     >
                       Seats: {currentModule.used_seats} /{' '}
@@ -438,44 +450,43 @@ export default function TeamMembersPage() {
               </Card>
             )}
           </div>
-        </PageHeader>
-      </div>
-
-      {/* Toolbar with search, filter, and actions */}
-      <div className="w-full max-w-full min-w-0 shrink-0 border-b pb-2">
-        <ListToolBar
-          showFilter
-          filterLabel="Show Filters"
-          filterGroups={filterGroups}
-          activeFilterCount={statusFilter ? 1 : 0}
-          onClearFilters={() => setStatusFilter('')}
-          showSearch
-          searchPlaceholder="Search members..."
-          searchValue={searchTerm}
-          onSearchChange={setSearchTerm}
-          actions={[
-            ...(canAccess('team_members', 'create')
-              ? [
-                  {
-                    key: 'invite',
-                    label: 'Invite Member',
-                    icon: Plus,
-                    onClick: () => setInviteDialogOpen(true),
-                    show: true,
-                    buttonVariant: 'default' as const,
-                  },
-                ]
-              : []),
-          ]}
-          columnVisibilitySlot={
-            <ColumnVisibilitySelector
-              columns={columns}
-              visibility={visibility}
-              onToggle={toggleVisibility}
-              onReset={reset}
+            <ListToolBar
+              align="right"
+              className="border-none bg-transparent p-0"
+              showFilter
+              filterLabel="Show Filters"
+              filterGroups={filterGroups}
+              activeFilterCount={statusFilter ? 1 : 0}
+              onClearFilters={() => setStatusFilter('')}
+              showSearch
+              searchPlaceholder="Search"
+              searchValue={searchTerm}
+              onSearchChange={setSearchTerm}
+              actions={[
+                ...(canAccess('team_members', 'create')
+                  ? [
+                      {
+                        key: 'invite',
+                        label: 'Invite Member',
+                        icon: Plus,
+                        onClick: () => setInviteDialogOpen(true),
+                        show: true,
+                        buttonVariant: 'default' as const,
+                      },
+                    ]
+                  : []),
+              ]}
+              columnVisibilitySlot={
+                <ColumnVisibilitySelector
+                  columns={columns}
+                  visibility={visibility}
+                  onToggle={toggleVisibility}
+                  onReset={reset}
+                />
+              }
             />
-          }
-        />
+          </div>
+        </PageHeader>
       </div>
 
       <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden">
@@ -569,7 +580,17 @@ export default function TeamMembersPage() {
                       />
                     </SortableTableHead>
                   )}
-                  <TableHead className="sticky-right-header">Actions</TableHead>
+                  <TableHead className="sticky-right-header bg-background z-10 w-12 px-1 text-center">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="mx-auto flex h-8 w-8 items-center justify-center border-dashed"
+                      onClick={() => setAddColumnModalOpen(true)}
+                      title="Toggle Columns"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -602,7 +623,7 @@ export default function TeamMembersPage() {
                           {isVisible('member') && (
                             <TableCell>
                               <div className="flex items-center gap-3">
-                                <div className="bg-secondary flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold">
+                                <div className="bg-secondary flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold">
                                   {(
                                     member.user?.email?.charAt(0) || 'M'
                                   ).toUpperCase()}
@@ -718,7 +739,7 @@ export default function TeamMembersPage() {
                           {isVisible('member') && (
                             <TableCell>
                               <div className="flex items-center gap-3">
-                                <div className="bg-secondary flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold">
+                                <div className="bg-secondary flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold">
                                   {invitation.email.charAt(0).toUpperCase()}
                                 </div>
                                 <span className="primary-text-medium text-leadgaze-primary dark:text-leadgaze-primary">
@@ -832,6 +853,15 @@ export default function TeamMembersPage() {
             productKey={productKey}
           />
         )}
+      
+      <AddColumnModal
+        open={addColumnModalOpen}
+        onOpenChange={setAddColumnModalOpen}
+        columns={columns}
+        visibility={visibility}
+        onToggleColumn={toggleVisibility}
+        onResetColumns={reset}
+      />
       </PageBody>
     </ModuleGuard>
   );

@@ -381,9 +381,10 @@ export function ServiceCloudCustomersPage({
           type="button"
           onClick={openDialog}
           variant="default"
-          className="h-9 shrink-0 gap-1.5"
+          className="secondary-text-small-bold shrink-0 gap-1.5 px-2"
         >
           <TicketIcon className="h-4 w-4" />
+          New Ticket
         </Button>
       </TooltipTrigger>
       <TooltipContent side="bottom">
@@ -400,6 +401,13 @@ export function ServiceCloudCustomersPage({
     systemOrganizationFields.find((f: any) => f.field_key === key)
       ?.field_label ?? fallback;
 
+  const tabsSlot = (
+    <TabsList className="mb-0 shrink-0 w-fit self-start pl-0">
+      <TabsTrigger value="customers">Customers</TabsTrigger>
+      <TabsTrigger value="organizations">Organizations</TabsTrigger>
+    </TabsList>
+  );
+
   return (
     <>
       <Tabs
@@ -407,10 +415,6 @@ export function ServiceCloudCustomersPage({
         className="flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col space-y-4"
         onValueChange={(value) => router.push(`${pathname}?tab=${value}`)}
       >
-        <TabsList className="mb-0 shrink-0 w-fit self-start">
-          <TabsTrigger value="customers">Customers</TabsTrigger>
-          <TabsTrigger value="organizations">Organizations</TabsTrigger>
-        </TabsList>
         <TabsContent
           value="customers"
           className="mt-0 flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col data-[state=active]:flex data-[state=active]:flex-1 data-[state=active]:flex-col data-[state=active]:min-h-0"
@@ -447,6 +451,7 @@ export function ServiceCloudCustomersPage({
               clearUpdatedOnRange();
             }}
             toolbar={newTicketToolbar}
+            tabsSlot={tabsSlot}
             fields={[
               {
                 key: 'name',
@@ -525,6 +530,7 @@ export function ServiceCloudCustomersPage({
               clearCreatedOnRange();
               clearUpdatedOnRange();
             }}
+            tabsSlot={tabsSlot}
             fields={[
               {
                 key: 'name',

@@ -260,11 +260,14 @@ export default function HomePage() {
 
   return (
     <WorkspaceCheckWrapper>
-      <PageHeader title="Dashboard" description="Your SaaS at a glance">
+      <PageHeader title="Dashboard"
+      //  description="Your SaaS at a glance"
+       >
         <PageHeaderActions>
           <DownloadReportButton 
             onDownload={handleDownload} 
             isGenerating={isGenerating} 
+            text="Download Report"
           />
           <ListToolBar
             className="border-none bg-transparent shadow-none p-0"

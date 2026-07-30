@@ -150,44 +150,47 @@ export function CoreInboxTab({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="flex items-center gap-2">
-          {(['all', 'inbound', 'outbound'] as const).map((value) => (
-            <Button
-              key={value}
-              variant={filter === value ? 'default' : 'outline'}
-              className="h-[38px]"
-              onClick={() => setFilter(value)}
-            >
-              {value[0]!.toUpperCase() + value.slice(1)}
-            </Button>
-          ))}
+      <div className="flex w-full min-w-0 max-w-full shrink-0 items-center justify-between border-b pb-2">
+        <div className="shrink-0 flex items-center pr-4 gap-3">
+          <div className="flex items-center gap-2">
+            {(['all', 'inbound', 'outbound'] as const).map((value) => (
+              <Button
+                key={value}
+                variant={filter === value ? 'default' : 'outline'}
+                className="secondary-text-small-bold"
+                onClick={() => setFilter(value)}
+              >
+                {value[0]!.toUpperCase() + value.slice(1)}
+              </Button>
+            ))}
+          </div>
+
+          <Select
+            value={selectedInboxEmail}
+            onValueChange={setSelectedInboxEmail}
+          >
+            <SelectTrigger className="w-full h-[28px] sm:w-[200px] secondary-text-small-bold">
+              <SelectValue placeholder="Choose inbox" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All inboxes</SelectItem>
+              {inboxAccounts.map((account: CoreEmailAccount) => (
+                <SelectItem key={account.id} value={account.email} className='secondary-text-small-bold'>
+                  {account.email}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
-        <Select
-          value={selectedInboxEmail}
-          onValueChange={setSelectedInboxEmail}
-        >
-          <SelectTrigger className="w-full h-[38px] sm:w-[280px]">
-            <SelectValue placeholder="Choose inbox" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All inboxes</SelectItem>
-            {inboxAccounts.map((account: CoreEmailAccount) => (
-              <SelectItem key={account.id} value={account.email}>
-                {account.email}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <ListToolBar
-        showSearch
-        searchPlaceholder="Search emails..."
-        searchValue={searchTerm}
-        onSearchChange={setSearchTerm}
-        actions={[
+        <div className="p-[2px] flex flex-1 justify-end min-w-0">
+          <ListToolBar
+            className="border-none bg-transparent p-0"
+            showSearch
+            searchPlaceholder="Search"
+            searchValue={searchTerm}
+            onSearchChange={setSearchTerm}
+            actions={[
           ...(canReply
             ? [
                 {
@@ -226,6 +229,8 @@ export function CoreInboxTab({
           },
         ]}
       />
+        </div>
+      </div>
 
       <Card className="border-none bg-transparent shadow-none">
         <CardContent className="p-0">

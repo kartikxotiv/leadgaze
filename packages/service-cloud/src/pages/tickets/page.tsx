@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { Check, FileUp, Loader2, Plus, User } from 'lucide-react';
+import { Check, Download, FileUp, Loader2, Plus, User } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { useLocalization } from '@kit/shared/localization';
@@ -45,6 +45,7 @@ import {
   useServiceCloudPermissions,
 } from '../../utils';
 import { ServiceCloudAccessDenied } from '../_components/access-denied';
+import { PageHeader } from '@kit/ui/page';
 import {
   ServiceCloudResourcePage,
   StatusBadge,
@@ -578,8 +579,52 @@ export function ServiceCloudTicketsPage({
     );
   if (!canView) return <ServiceCloudAccessDenied label="tickets" />;
 
+  const tabsSlot = (
+    <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide shrink-0">
+      <button
+        onClick={() => setSelectedStatusIds([])}
+        className={`px-3 py-1 text-sm font-medium rounded-t-md border-b-2 whitespace-nowrap flex items-center gap-2 ${
+          selectedStatusIds.length === 0
+            ? 'border-leadgaze-primary text-leadgaze-primary'
+            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+        }`}
+      >
+        All tickets
+      </button>
+      {statuses.map((status: any) => {
+        const isSelected = selectedStatusIds.includes(status.id);
+        return (
+          <button
+            key={status.id}
+            onClick={() => setSelectedStatusIds([status.id])}
+            className={`px-3 py-1 text-sm font-medium rounded-t-md border-b-2 whitespace-nowrap flex items-center gap-2 ${
+              isSelected
+                ? 'border-leadgaze-primary text-leadgaze-primary'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            {status.name}
+          </button>
+        );
+      })}
+    </div>
+  );
+
   return (
-    <>
+    <div className="flex w-full min-w-0 max-w-full flex-1 flex-col overflow-hidden gap-2">
+      <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden">
+        <PageHeader title="Tickets">
+          {canCreate && (
+            <Button
+              onClick={openCreateDialog}
+              className="secondary-text-small-bold gap-1.5 px-2 bg-leadgaze-primary hover:bg-leadgaze-primary text-white"
+            >
+              <Plus className="h-4 w-4" />
+              New Ticket
+            </Button>
+          )}
+        </PageHeader>
+      </div>
       <ServiceCloudResourcePage
         workspaceId={workspaceId}
         viewMode={viewMode}
@@ -603,8 +648,9 @@ export function ServiceCloudTicketsPage({
           />
         )}
         resource="tickets"
-        title="Tickets"
-        description="Create, assign, and track support requests."
+        title=""
+        description=""
+        tabsSlot={tabsSlot}
         canCreate={false}
         canEdit={canEdit}
         canDelete={canDelete}
@@ -639,7 +685,7 @@ export function ServiceCloudTicketsPage({
                   type="button"
                   variant={assignedToMeOnly ? 'default' : 'outline'}
                   onClick={() => setAssignedToMeOnly((current) => !current)}
-                  className="h-9 shrink-0 gap-1.5"
+                  className="shrink-0 gap-1.5 px-2"
                 >
                   {assignedToMeOnly ? (
                     <Check className="h-4 w-4" />
@@ -660,20 +706,9 @@ export function ServiceCloudTicketsPage({
                 {
                   key: 'import',
                   label: 'Import',
-                  icon: FileUp,
+                  icon: Download,
                   onClick: onImportClick,
                   buttonVariant: 'outline' as const,
-                },
-              ]
-            : []),
-          ...(canCreate
-            ? [
-                {
-                  key: 'create',
-                  label: 'New Ticket',
-                  icon: Plus,
-                  onClick: openCreateDialog,
-                  buttonVariant: 'default' as const,
                 },
               ]
             : []),
@@ -1031,6 +1066,6 @@ export function ServiceCloudTicketsPage({
           </div>
         </DialogContent>
       </Dialog>
-    </>
+    </div>
   );
 }

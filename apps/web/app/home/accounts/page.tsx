@@ -5,7 +5,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { FileDown, FileUp, Plus } from 'lucide-react';
+import { Download, FileDown, FileUp, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { useUser } from '@kit/supabase/hooks/use-user';
@@ -787,18 +787,17 @@ export default function AccountsPage() {
 
   return (
     <ModuleGuard module="accounts">
-      <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden">
+      <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden border-b">
         <PageHeader
-          title={`Accounts (${totalCount})`}
-          description="Manage your client accounts and organizations"
-        />
-      </div>
-
-      {/* Full-width search / filter / actions toolbar */}
-      <div className="w-full max-w-full min-w-0 shrink-0 border-b pt-2 pb-2">
-        <ListToolBar
-          showSearch
-          searchPlaceholder="Search by account name..."
+          title={`Accounts`}          
+        >
+          <div className="p-[2px]">
+            <ListToolBar
+              align="right"
+              className="border-none bg-transparent p-0"
+              showSearch
+              expandableSearch
+          searchPlaceholder="Search"
           searchValue={searchTerm}
           onSearchChange={setSearchTerm}
           showFilter
@@ -863,7 +862,7 @@ export default function AccountsPage() {
             {
               key: 'import',
               label: 'Import',
-              icon: FileUp,
+              icon: Download,
               onClick: () => setIsImportDialogOpen(true),
               show: canAccess('accounts', 'import'),
               buttonVariant: 'outline',
@@ -892,10 +891,11 @@ export default function AccountsPage() {
               columns={columns}
               visibility={visibility}
               onToggle={toggleVisibility}
-              onReset={reset}
             />
           }
         />
+          </div>
+        </PageHeader>
       </div>
 
       <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden">
@@ -1268,6 +1268,10 @@ export default function AccountsPage() {
           teamMembers={teamMembersForModal}
           isAdmin={canAddColumn}
           isSubmitting={createField.isPending}
+          columns={columns}
+          visibility={visibility}
+          onToggleColumn={toggleVisibility}
+          onResetColumns={reset}
           onSubmit={async (payload) => {
             await createField.mutateAsync({
               ...payload,

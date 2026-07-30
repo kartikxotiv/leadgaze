@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 
-import { Plus, Shield, Users, X } from 'lucide-react';
+import { Plus, Shield, Users, X, Search, ChevronDown } from 'lucide-react';
 
 import { Button } from './button';
 import {
@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from './select';
 import { Switch } from './switch';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './tabs';
 import { cn } from '../lib/utils';
 
 // ─── Generic types (no app-specific imports) ──────────────────────────────────
@@ -73,8 +74,9 @@ export interface AddColumnModalProps {
 
   /**
    * The entity type label used in the description (e.g. 'leads', 'contacts').
+   * Optional for tables that only toggle existing columns and don't add new ones.
    */
-  entityType: string;
+  entityType?: string;
 
   /**
    * Roles available for role-based / custom access types.
@@ -102,9 +104,21 @@ export interface AddColumnModalProps {
 
   /**
    * Called when the user submits the form.
-   * The consuming page is responsible for calling the actual API.
+   * If omitted, the 'Create New' tab will not be shown.
    */
-  onSubmit: (payload: AddColumnPayload) => Promise<void> | void;
+  onSubmit?: (payload: AddColumnPayload) => Promise<void> | void;
+
+  /** The list of columns for the 'Add Existing' tab */
+  columns?: { id: string; label: string; required?: boolean }[];
+  
+  /** Visibility state for the columns */
+  visibility?: Record<string, boolean>;
+  
+  /** Callback when a column's visibility is toggled */
+  onToggleColumn?: (columnId: string) => void;
+  
+  /** Callback to reset column visibility */
+  onResetColumns?: () => void;
 }
 
 // ─── Field types ──────────────────────────────────────────────────────────────
@@ -161,7 +175,19 @@ export function AddColumnModal({
   isAdmin = false,
   isSubmitting = false,
   onSubmit,
+  columns = [],
+  visibility = {},
+  onToggleColumn,
+  onResetColumns,
 }: AddColumnModalProps) {
+  const [activeTab, setActiveTab] = useState<'create' | 'existing'>('existing');
+  
+  const hasExisting = columns && columns.length > 0;
+  const hasCreate = !!onSubmit;
+  const currentTab = activeTab === 'existing' && !hasExisting ? 'create' : activeTab === 'create' && !hasCreate ? 'existing' : activeTab;
+  
+  const [columnSearch, setColumnSearch] = useState('');
+  
   const [fieldLabel, setFieldLabel] = useState('');
   const [fieldKey, setFieldKey] = useState('');
   const [fieldType, setFieldType] = useState('text');
@@ -284,20 +310,70 @@ export function AddColumnModal({
 
   // ── Render ──────────────────────────────────────────────────────────────────
 
+  const filteredColumns = columns.filter(c => c.label.toLowerCase().includes(columnSearch.toLowerCase()));
+  const shownColumnsCount = columns.filter(c => visibility[c.id] !== false).length;
+
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) resetForm(); onOpenChange(v); }}>
-      <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-lg">
-        <DialogHeader className="border-b p-6 pb-4">
-          <DialogTitle className="flex items-center gap-2">
-            <Plus className="h-5 w-5" />
-            Add New Column
-          </DialogTitle>
-          <DialogDescription>
-            Create a new custom field for the {entityType} table
-          </DialogDescription>
+      <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-md gap-0">
+        <DialogHeader className="p-4 pb-0 flex flex-col gap-4 text-left">
+          <DialogTitle className="text-lg font-semibold">Toggle Columns</DialogTitle>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search Columns..."
+              value={columnSearch}
+              onChange={(e) => setColumnSearch(e.target.value)}
+              className="pl-9 h-10 w-full"
+            />
+          </div>
+
+          {hasCreate && hasExisting ? (
+            <Tabs value={currentTab} onValueChange={(v) => setActiveTab(v as 'create' | 'existing')} className="w-full">
+              <TabsList className="w-full justify-start rounded-none border-b bg-transparent p-0">
+                <TabsTrigger
+                  value="create"
+                  className="relative h-10 rounded-none border-b-2 border-b-transparent bg-transparent px-4 pb-3 pt-2 font-semibold text-muted-foreground shadow-none transition-none data-[state=active]:border-b-primary data-[state=active]:text-foreground data-[state=active]:shadow-none"
+                >
+                  Create New
+                </TabsTrigger>
+                <TabsTrigger
+                  value="existing"
+                  className="relative h-10 rounded-none border-b-2 border-b-transparent bg-transparent px-4 pb-3 pt-2 font-semibold text-muted-foreground shadow-none transition-none data-[state=active]:border-b-primary data-[state=active]:text-foreground data-[state=active]:shadow-none"
+                >
+                  Add Existing
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          ) : (
+            <div className="h-4" />
+          )}
         </DialogHeader>
 
-        <div className="flex-1 space-y-6 overflow-y-auto px-6 py-4">
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {currentTab === 'existing' ? (
+            <div className="p-6 space-y-6 flex-1 overflow-y-auto">
+              <div className="flex items-center justify-between text-xs font-semibold text-muted-foreground uppercase">
+                <div className="flex items-center gap-1">
+                  SHOWN <ChevronDown className="h-3 w-3" />
+                </div>
+                <span>{shownColumnsCount}</span>
+              </div>
+              <div className="space-y-4">
+                {filteredColumns.map(column => (
+                  <div key={column.id} className="flex items-center justify-between">
+                    <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">{column.label}</span>
+                    <Switch
+                      checked={visibility[column.id] !== false}
+                      onCheckedChange={() => onToggleColumn?.(column.id)}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col h-full overflow-hidden flex-1">
+              <div className="space-y-6 p-6 flex-1 overflow-y-auto">
           {/* Field Name */}
           <div className="space-y-2">
             <Label htmlFor="add-col-label">Column Name *</Label>
@@ -363,38 +439,34 @@ export function AddColumnModal({
           </div>
 
           {/* Access Type */}
-          <div className="space-y-2">
-            <Label>Visibility</Label>
-            <div className="grid grid-cols-1 gap-2">
-              {availableAccessTypes.map((type) => (
+          <div className="space-y-3">
+            <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Permission Schema</Label>
+            <div className="flex flex-col rounded-md border">
+              {availableAccessTypes.map((type, index) => (
                 <button
                   key={type}
                   type="button"
                   onClick={() => setAccessType(type)}
                   className={cn(
-                    'flex items-center gap-3 rounded-lg border px-3 py-2 text-left transition-colors',
-                    accessType === type
-                      ? 'border-primary bg-primary/5 text-primary'
-                      : 'border-border hover:bg-muted',
+                    'flex items-center gap-3 px-4 py-3 text-left transition-colors bg-card hover:bg-muted',
+                    index !== availableAccessTypes.length - 1 && 'border-b'
                   )}
                 >
                   <div
                     className={cn(
-                      'flex h-4 w-4 items-center justify-center rounded-full border-2',
+                      'flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border',
                       accessType === type
-                        ? 'border-primary bg-primary'
-                        : 'border-muted-foreground',
+                        ? 'border-primary'
+                        : 'border-input'
                     )}
                   >
                     {accessType === type && (
-                      <CheckIcon className="text-primary-foreground h-2.5 w-2.5" />
+                      <div className="h-2.5 w-2.5 rounded-full bg-primary" />
                     )}
                   </div>
-                  <div className="flex-1">
-                    <div className="text-sm font-medium">
-                      {ACCESS_TYPE_LABELS[type]}
-                    </div>
-                  </div>
+                  <span className="text-sm font-medium text-foreground">
+                    {ACCESS_TYPE_LABELS[type]}
+                  </span>
                 </button>
               ))}
             </div>
@@ -541,15 +613,17 @@ export function AddColumnModal({
             </div>
           )}
         </div>
-
-        <DialogFooter className="mt-auto flex justify-between border-t p-2">
-          <Button variant="outline" onClick={() => { resetForm(); onOpenChange(false); }}>
-            Cancel
-          </Button>
-          <Button onClick={handleSubmit} disabled={!isValid || isBusy}>
-            {isBusy ? 'Creating...' : 'Create Column'}
-          </Button>
-        </DialogFooter>
+              <DialogFooter className="mt-auto flex justify-between border-t p-2">
+                <Button variant="outline" onClick={() => { resetForm(); onOpenChange(false); }}>
+                  Cancel
+                </Button>
+                <Button onClick={handleSubmit} disabled={!isValid || isBusy}>
+                  {isBusy ? 'Creating...' : 'Create Column'}
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   );
