@@ -2646,26 +2646,26 @@ export default function MeetingsPage() {
                           }}
                         >
                           {isVisible('sno') && (
-                            <TableCell className="text-muted-foreground px-4 py-2">
+                            <TableCell className="text-muted-foreground py-0">
                               {sno}
                             </TableCell>
                           )}
                           {isVisible('title') && (
-                            <TableCell className="px-4 py-2">
-                              <div>
-                                <p className="text-sm font-medium">
+                            <TableCell className="px-4 py-0">
+                              <>
+                                <span className="text-sm font-medium">
                                   {meeting.title}
-                                </p>
+                                </span>
                                 {meeting.location && (
-                                  <p className="text-muted-foreground mt-0.5 text-xs">
+                                  <span className="text-muted-foreground mt-0.5 text-xs">
                                     {meeting.location}
-                                  </p>
+                                  </span>
                                 )}
-                              </div>
+                              </>
                             </TableCell>
                           )}
                           {isVisible('type') && (
-                            <TableCell className="px-4 py-2">
+                            <TableCell className="px-4 py-0">
                               <Badge
                                 variant="outline"
                                 className="h-5 py-0 text-xs"
@@ -2677,7 +2677,7 @@ export default function MeetingsPage() {
                             </TableCell>
                           )}
                           {isVisible('provider') && (
-                            <TableCell className="px-4 py-2">
+                            <TableCell className="px-4 py-0">
                               <Badge
                                 variant="outline"
                                 className={`h-5 gap-1.5 py-0 text-xs ${providerInfo.cls}`}
@@ -2688,8 +2688,8 @@ export default function MeetingsPage() {
                             </TableCell>
                           )}
                           {isVisible('date_time') && (
-                            <TableCell className="px-4 py-2">
-                              <div className="flex items-center gap-2 text-xs">
+                            <TableCell className="px-4 py-0">
+                              <span className="flex items-center gap-2 text-xs">
                                 <Clock className="text-muted-foreground h-3.5 w-3.5" />
                                 {formatMeetingTime(
                                   meeting.meeting_type === 'logged'
@@ -2701,11 +2701,11 @@ export default function MeetingsPage() {
                                   meeting.timezone,
                                   userTz,
                                 )}
-                              </div>
+                              </span>
                             </TableCell>
                           )}
                           {isVisible('status') && (
-                            <TableCell className="px-4 py-2">
+                            <TableCell className="px-4 py-0">
                               <Badge
                                 variant="outline"
                                 className="h-5 gap-1.5 py-0 text-xs"
@@ -2721,12 +2721,12 @@ export default function MeetingsPage() {
                             </TableCell>
                           )}
                           {isVisible('category') && (
-                            <TableCell className="px-4 py-2" onClick={(e) => e.stopPropagation()}>
+                            <TableCell className="px-4 py-0" onClick={(e) => e.stopPropagation()}>
                               {getCategoryBadge(meeting.entity_type)}
                             </TableCell>
                           )}
                           {isVisible('associate') && (
-                            <TableCell className="px-4 py-2" onClick={(e) => e.stopPropagation()}>
+                            <TableCell className="px-4 py-0" onClick={(e) => e.stopPropagation()}>
                               {meeting.entity_name && (
                                 <Link
                                   href={`/home/sales/${meeting.entity_type === 'opportunity' ? 'opportunities' : `${meeting.entity_type}s`}/${meeting.entity_id}`}
@@ -2738,7 +2738,7 @@ export default function MeetingsPage() {
                               )}
                             </TableCell>
                           )}
-                          <TableCell className="bg-card sticky right-0 px-4 py-2 text-right">
+                          <TableCell className="bg-card sticky right-0 px-4 py-0 text-right">
                             <DropdownMenu>
                               <DropdownMenuTrigger
                                 asChild
@@ -2746,8 +2746,7 @@ export default function MeetingsPage() {
                               >
                                 <Button
                                   variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8"
+                                  size="icon"                                 
                                 >
                                   <MoreVertical className="h-4 w-4" />
                                 </Button>
