@@ -8,12 +8,7 @@ import { createTrustedDeviceBypass } from '@kit/supabase/check-trusted-device';
 import { requireUser } from '@kit/supabase/require-user';
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
-/**
- * @name requireUserInServerComponent
- * @description Require the user to be authenticated in a server component.
- * We reuse this function in multiple server components - it is cached so that the data is only fetched once per request.
- * Use this instead of `requireUser` in server components, so you don't need to hit the database multiple times in a single request.
- */
+import { getUserContext } from './get-user-context';
 export const requireUserInServerComponent = cache(async () => {
   const client = getSupabaseServerClient();
   const result = await requireUser(client, createTrustedDeviceBypass(client));
@@ -22,5 +17,26 @@ export const requireUserInServerComponent = cache(async () => {
     redirect(result.redirectTo);
   }
 
-  return result.data;
+  const user = result.data;
+
+  // Check if an impersonation session is active
+  try {
+    const ctx = await getUserContext();
+    if (ctx.isImpersonating && ctx.targetUser) {
+      return {
+        ...user,
+        id: ctx.effectiveUserId,
+        email: ctx.targetUser.email || user.email,
+        user_metadata: {
+          ...user.user_metadata,
+          full_name: ctx.targetUser.full_name,
+          name: ctx.targetUser.full_name,
+        },
+      };
+    }
+  } catch (err) {
+    console.error('Error applying impersonation to user context:', err);
+  }
+
+  return user;
 });
