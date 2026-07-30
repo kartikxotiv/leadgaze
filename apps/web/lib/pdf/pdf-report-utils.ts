@@ -124,6 +124,51 @@ export function generateDonutChartBase64(data: { value: number; color: string }[
 }
 
 /**
+ * Gets dimensions of a base64 image.
+ */
+export function getImageDimensions(base64: string): Promise<{ width: number; height: number }> {
+  return new Promise((resolve) => {
+    if (typeof window === 'undefined') return resolve({ width: 0, height: 0 });
+    const img = new Image();
+    img.onload = () => resolve({ width: img.naturalWidth || img.width, height: img.naturalHeight || img.height });
+    img.onerror = () => resolve({ width: 0, height: 0 });
+    img.src = base64;
+  });
+}
+
+/**
+ * Gets initials from an organization name (e.g., "Teen Therapy" -> "TT", "Acme" -> "AC").
+ */
+export function getOrgInitials(name: string): string {
+  if (!name || !name.trim()) return 'CO';
+  const clean = name.trim();
+  const words = clean.split(/\s+/).filter(Boolean);
+  if (words.length === 1) {
+    return clean.slice(0, 2).toUpperCase();
+  }
+  return ((words[0]?.[0] || '') + (words[1]?.[0] || '')).toUpperCase();
+}
+
+/**
+ * Formats currency values cleanly for PDF standard fonts without corrupted UTF-8 unicode symbols.
+ */
+export function formatPdfCurrency(value: number, currencyCode: string = 'USD'): string {
+  const code = (currencyCode || 'USD').toUpperCase();
+  const formattedNum = new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value || 0);
+
+  if (code === 'USD') return `$${formattedNum}`;
+  if (code === 'GBP') return `£${formattedNum}`;
+
+  // For currencies whose symbols contain non-ASCII Unicode characters (like INR ₹, JPY ¥, etc.),
+  // standard jsPDF Helvetica font corrupts U+20B9 (₹) to '¹'.
+  // Using ISO currency code prefix (e.g. "INR 0.00", "EUR 0.00") is 100% clean, professional, and un-corrupted in PDF standard fonts!
+  return `${code} ${formattedNum}`;
+}
+
+/**
  * Draws the branded header on the current page.
  * Returns the Y position after the header so content can start below it.
  */
@@ -132,73 +177,105 @@ async function drawBrandedHeader(
   org: OrgBranding,
   reportTitle: string,
   logoBase64?: string | null,
+  logoDimensions?: { width: number; height: number } | null,
 ): Promise<number> {
   const pageWidth = doc.internal.pageSize.getWidth();
   const headerHeight = 42;
 
-  // Background banner - custom curved bottom right
+  // Background banner
   doc.setFillColor(...PDF_BRAND.primary);
-  
-  // We can't easily do a complex bezier curve without advanced paths,
-  // but we can draw a rectangle and then a curved shape or just use a standard rounded rectangle.
-  // Actually, jsPDF supports lines and bezier curves using the `lines` method or just advanced paths.
-  // Let's use a simpler approach: draw a full rectangle, then draw a white ellipse to "cut out" the curve,
-  // but that's messy. Let's just use a normal rectangle and maybe a small arc or just stick to a rectangle 
-  // that looks good, or use jsPDF's advanced API if needed.
-  // For now, let's draw a normal rectangle, as approximating the exact curve might be tricky.
-  // Wait, doc.roundedRect(x, y, w, h, rx, ry, style) can round all corners.
-  
   doc.rect(0, 0, pageWidth, headerHeight, 'F');
   
-  // To simulate the curved bottom right, we can draw a large white circle at the bottom right.
-  // Actually, let's just stick to a clean rectangular header or a simple rounded rect.
-  // The screenshot shows a curve on the bottom right.
   doc.setFillColor(255, 255, 255);
   doc.ellipse(pageWidth + 20, headerHeight + 5, 40, 15, 'F');
 
   let logoWidth = 0;
   const logoX = 14;
-  const logoY = 8;
-  const logoH = 24;
+  const maxW = 36;
+  const maxH = 24;
+  const containerY = 8;
 
-  // Draw organization logo if available
-  if (logoBase64) {
+  const rawOrgName = org.name && org.name.trim() ? org.name.trim() : 'Organization';
+  // Avoid displaying raw "team" or "default" as company name if unset
+  const orgName = rawOrgName.toLowerCase() === 'team' || rawOrgName.toLowerCase() === 'default' ? 'Organization' : rawOrgName;
+
+  // 1. Draw organization logo if available with object-fit: contain behavior
+  if (logoBase64 && logoDimensions && logoDimensions.width > 0 && logoDimensions.height > 0) {
+    try {
+      const aspect = logoDimensions.width / logoDimensions.height;
+      let finalW = maxW;
+      let finalH = maxW / aspect;
+
+      if (finalH > maxH) {
+        finalH = maxH;
+        finalW = maxH * aspect;
+      }
+
+      const drawY = containerY + (maxH - finalH) / 2;
+      logoWidth = finalW;
+
+      doc.addImage(logoBase64, 'AUTO', logoX, drawY, finalW, finalH, undefined, 'FAST');
+    } catch {
+      logoWidth = 0;
+    }
+  } else if (logoBase64) {
     try {
       logoWidth = 24;
-      doc.addImage(logoBase64, 'AUTO', logoX, logoY, logoWidth, logoH, undefined, 'FAST');
+      doc.addImage(logoBase64, 'AUTO', logoX, containerY, logoWidth, maxH, undefined, 'FAST');
     } catch {
       logoWidth = 0;
     }
   }
 
-  const textX = logoWidth > 0 ? logoX + logoWidth + 6 : logoX;
-
-  // Organization name (only draw if no logo, otherwise it looks awkward next to branded logos)
+  // 2. If NO logo, draw ONLY the Avatar Circle on top left with larger, perfectly centered initials
   if (logoWidth === 0) {
+    const avatarCenterX = 24;
+    const avatarCenterY = 20;
+    const avatarRadius = 10;
+
+    // Draw white circle for Avatar
+    doc.setFillColor(255, 255, 255);
+    doc.circle(avatarCenterX, avatarCenterY, avatarRadius, 'F');
+
+    // Draw initials inside circle with larger font (13pt bold) and exact vertical & horizontal centering
+    const initials = getOrgInitials(orgName);
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(14);    
-    doc.setTextColor(...PDF_BRAND.white);
-    doc.text(org.name, textX, 16);
+    doc.setFontSize(13);
+    doc.setTextColor(...PDF_BRAND.primary);
+    const initWidth = doc.getTextWidth(initials);
+    doc.text(initials, avatarCenterX - initWidth / 2, avatarCenterY + 1.8);
   }
 
-  // Report title (exactly centered)
+  // 3. Report title (centered at Y = 16)
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(16);
+  doc.setFontSize(15);
   doc.setTextColor(...PDF_BRAND.white);
   const titleWidth = doc.getTextWidth(reportTitle);
   const titleX = (pageWidth - titleWidth) / 2;
   doc.text(reportTitle, titleX, 16);
 
-  // Subtitle/Team Report (exactly centered)
+  // 4. Subtitle on new line under title: Full Company Name (without truncation, centered)
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
+  let nameFontSize = 10;
+  doc.setFontSize(nameFontSize);
   doc.setTextColor(...PDF_BRAND.white);
-  const subtitle = "Team Report";
-  const subtitleWidth = doc.getTextWidth(subtitle);
-  const subtitleX = (pageWidth - subtitleWidth) / 2;
-  doc.text(subtitle, subtitleX, 24);
 
-  // Generated date (top right)
+  const maxLineW = pageWidth - 80;
+  while (doc.getTextWidth(orgName) > maxLineW * 1.8 && nameFontSize > 8) {
+    nameFontSize -= 0.5;
+    doc.setFontSize(nameFontSize);
+  }
+
+  const splitSubtitleLines = doc.splitTextToSize(orgName, maxLineW);
+  let subY = 23;
+  splitSubtitleLines.forEach((line: string) => {
+    const lineW = doc.getTextWidth(line);
+    const lineX = (pageWidth - lineW) / 2;
+    doc.text(line, lineX, subY);
+    subY += 4.5;
+  });
+
+  // 5. Generated date (top right)
   const nowStr = new Date().toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
@@ -215,7 +292,7 @@ async function drawBrandedHeader(
 }
 
 /**
- * Draws a footer with page number and branding on the current page.
+ * Draws a footer with page number on the current page.
  */
 function drawFooter(doc: jsPDF, orgName: string, pageNum: number, totalPages: number) {
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -227,20 +304,10 @@ function drawFooter(doc: jsPDF, orgName: string, pageNum: number, totalPages: nu
   doc.setLineWidth(0.5);
   doc.line(14, footerY - 4, pageWidth - 14, footerY - 4);
 
-  // Org name left
+  // Page number right
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
   doc.setTextColor(...PDF_BRAND.gray);
-  doc.text(orgName, 14, footerY);
-
-  // Confidential center
-  doc.setFont('helvetica', 'italic');
-  const confText = 'Confidential';
-  const confWidth = doc.getTextWidth(confText);
-  doc.text(confText, (pageWidth - confWidth) / 2, footerY);
-
-  // Page number right
-  doc.setFont('helvetica', 'normal');
   const pageText = `Page ${pageNum} of ${totalPages}`;
   const pageTextWidth = doc.getTextWidth(pageText);
   doc.text(pageText, pageWidth - 14 - pageTextWidth, footerY);
@@ -379,11 +446,18 @@ export function drawKeyMetrics(
       doc.text('#', x - 16, y + 7.5);
     }
 
-    // Value (Right of circle)
+    // Value (Right of circle with dynamic text scaling)
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(12);
+    const valStr = String(metric.value);
+    let valFontSize = 11;
+    doc.setFontSize(valFontSize);
+    const maxValWidth = spacing - 14;
+    while (doc.getTextWidth(valStr) > maxValWidth && valFontSize > 7.5) {
+      valFontSize -= 0.5;
+      doc.setFontSize(valFontSize);
+    }
     doc.setTextColor(0, 0, 0);
-    doc.text(String(metric.value), x - 4, y + 4);
+    doc.text(valStr, x - 4, y + 4);
 
     // Label (Below value, properly wrapped)
     doc.setFont('helvetica', 'normal');
@@ -412,15 +486,17 @@ export async function createBrandedReport(options: ReportOptions): Promise<{
   doc: jsPDF;
   startY: number;
   logoBase64: string | null;
+  logoDimensions: { width: number; height: number } | null;
 }> {
   const { org, title, infoLine } = options;
 
-  // Load logo once
+  // Load logo once with dimensions
   const logoBase64 = org.logoUrl ? await loadImageAsBase64(org.logoUrl) : null;
+  const logoDimensions = logoBase64 ? await getImageDimensions(logoBase64) : null;
 
   const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
 
-  const startY = await drawBrandedHeader(doc, org, title, logoBase64);
+  const startY = await drawBrandedHeader(doc, org, title, logoBase64, logoDimensions);
 
   // Info line (date filter, etc.)
   if (infoLine) {
@@ -428,10 +504,10 @@ export async function createBrandedReport(options: ReportOptions): Promise<{
     doc.setFontSize(9);
     doc.setTextColor(...PDF_BRAND.gray);
     doc.text(infoLine, 14, startY);
-    return { doc, startY: startY + 8, logoBase64 };
+    return { doc, startY: startY + 8, logoBase64, logoDimensions };
   }
 
-  return { doc, startY, logoBase64 };
+  return { doc, startY, logoBase64, logoDimensions };
 }
 
 /**
@@ -456,7 +532,8 @@ export async function addBrandedPage(
   org: OrgBranding,
   title: string,
   logoBase64: string | null,
+  logoDimensions?: { width: number; height: number } | null,
 ): Promise<number> {
   doc.addPage();
-  return drawBrandedHeader(doc, org, title, logoBase64);
+  return drawBrandedHeader(doc, org, title, logoBase64, logoDimensions);
 }
