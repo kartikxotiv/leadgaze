@@ -294,6 +294,16 @@ export default function LeadDetailsPage() {
     );
   }, [fields, canView, lead]);
 
+  const currentStatus = useMemo(() => {
+    if (!lead) return null;
+    return (
+      lead.status ||
+      statuses.find(
+        (s: any) => s.id === lead.status_id || s.id === lead.status?.id,
+      )
+    );
+  }, [lead, statuses]);
+
   if (!workspace) {
     // Workspace context still hydrating; show skeleton, same as isLoading.
     return (
@@ -354,16 +364,6 @@ export default function LeadDetailsPage() {
       </ModuleGuard>
     );
   }
-
-  const currentStatus = useMemo(() => {
-    if (!lead) return null;
-    return (
-      lead.status ||
-      statuses.find(
-        (s: any) => s.id === lead.status_id || s.id === lead.status?.id,
-      )
-    );
-  }, [lead, statuses]);
 
   const fullName = `${lead.first_name}${lead.last_name ? ` ${lead.last_name}` : ''}`;
   const statusColor = currentStatus?.color || lead.status?.color || '#3B82F6';
