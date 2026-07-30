@@ -68,6 +68,7 @@ import {
 } from '~/services/contact-assignees.service';
 import { getContactByIdService } from '~/services/contacts.service';
 
+import { EntityActivityLogs } from '../../_components/entity-activity-logs';
 import { DeleteEntityDialog } from '../../_components/delete-entity-dialog';
 import {
   EntityDocuments,
@@ -554,40 +555,7 @@ export default function ContactDetailsPage() {
               </TabsContent>
 
               <TabsContent value="activity">
-                <CardWidgetContainer
-                  title="Activity"
-                  hideHeaderBorder={true}
-                  icon={<Clock className="text-leadgaze-dark h-5 w-5 dark:text-white" />}>
-                  <CardContent className="px-6 py-3">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3 dark:bg-slate-900">
-                        <div className="h-2 w-2 rounded-full bg-green-500" />
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm font-medium text-gray-900 dark:text-white">
-                            Contact Created
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            {formatDate(contact.created_at)}
-                          </p>
-                        </div>
-                      </div>
-                      {contact.updated_at &&
-                        contact.updated_at !== contact.created_at && (
-                          <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3 dark:bg-slate-900">
-                            <div className="h-2 w-2 rounded-full bg-blue-500" />
-                            <div className="min-w-0 flex-1">
-                              <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                Contact Updated
-                              </p>
-                              <p className="text-xs text-gray-500">
-                                {formatDate(contact.updated_at)}
-                              </p>
-                            </div>
-                          </div>
-                        )}
-                    </div>
-                  </CardContent>
-                </CardWidgetContainer>
+                <EntityActivityLogs entityType="contact" entityId={id} />
               </TabsContent>
             </Tabs>
 
