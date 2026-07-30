@@ -114,6 +114,7 @@ export function useColumnResize(
     columnId: string;
     startX: number;
     startWidth: number;
+    minWidth: number;
     thEl: HTMLElement;
     /** Abort flag: set to true on cleanup so stale handlers no-op. */
     aborted: boolean;
@@ -136,10 +137,14 @@ export function useColumnResize(
       // Capture pointer so events continue even if the cursor leaves the handle
       (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
 
+      const rawMinWidth = (e.currentTarget as HTMLElement).getAttribute('data-min-width');
+      const minWidth = rawMinWidth ? parseInt(rawMinWidth, 10) : MIN_COLUMN_WIDTH;
+
       resizingRef.current = {
         columnId,
         startX: e.clientX,
         startWidth: currentWidth,
+        minWidth,
         thEl,
         aborted: false,
       };
@@ -154,7 +159,7 @@ export function useColumnResize(
         if (!state || state.aborted) return;
 
         const delta = moveEvent.clientX - state.startX;
-        const newWidth = Math.max(MIN_COLUMN_WIDTH, state.startWidth + delta);
+        const newWidth = Math.max(state.minWidth, state.startWidth + delta);
 
         // Write directly to the DOM — zero re-renders while dragging.
         state.thEl.style.width = `${newWidth}px`;
@@ -170,7 +175,7 @@ export function useColumnResize(
         resizingRef.current = null;
 
         const delta = upEvent.clientX - state.startX;
-        const finalWidth = Math.max(MIN_COLUMN_WIDTH, state.startWidth + delta);
+        const finalWidth = Math.max(state.minWidth, state.startWidth + delta);
 
         // Single state update after drag ends → single re-render.
         setColumnWidths((prev) => ({

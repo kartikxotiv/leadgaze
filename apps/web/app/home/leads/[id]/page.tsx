@@ -245,7 +245,7 @@ export default function LeadDetailsPage() {
     queryKey: ['lead-statuses', workspace?.id],
     queryFn: () => {
       if (!workspace?.id) return Promise.resolve([]);
-      return getLeadStatusesService(workspace.id);
+      return getLeadStatusesService({ workspaceId: workspace.id });
     },
     enabled: !!workspace?.id,
   });

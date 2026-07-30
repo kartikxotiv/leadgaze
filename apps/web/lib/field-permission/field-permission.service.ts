@@ -301,3 +301,22 @@ export function filterExportColumns(
     return canViewField(ctx, fieldKey);
   });
 }
+
+export function filterImportColumns<T extends { key: string; label: string; required?: boolean }>(
+  columns: T[],
+  ctx: FieldPermissionContext,
+): { allowedColumns: T[]; missingRequired: string[] } {
+  const allowedColumns: T[] = [];
+  const missingRequired: string[] = [];
+
+  for (const col of columns) {
+    const fieldKey = LEAD_DB_COLUMN_TO_FIELD_KEY[col.key] ?? col.key;
+    if (canEditField(ctx, fieldKey)) {
+      allowedColumns.push(col);
+    } else if (col.required) {
+      missingRequired.push(col.label);
+    }
+  }
+
+  return { allowedColumns, missingRequired };
+}

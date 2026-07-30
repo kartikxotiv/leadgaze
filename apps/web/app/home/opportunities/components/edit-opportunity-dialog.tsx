@@ -500,7 +500,7 @@ export function EditOpportunityDialog({
             
           </form>
         </Form>
-        <DialogFooter className="border-t p-6 mt-auto">
+        <DialogFooter className="border-t p-2 mt-auto">
               <Button
                 type="button"
                 variant="outline"

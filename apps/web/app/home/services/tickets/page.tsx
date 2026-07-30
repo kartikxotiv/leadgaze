@@ -2,10 +2,16 @@
 
 import React, { useMemo, useState } from 'react';
 
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
+
 import { ServiceCloudTicketsPage } from '@kit/service-cloud';
 import { AddColumnModal } from '@kit/ui/add-column-modal';
 import { ColumnEditModal } from '@kit/ui/column-edit-modal';
 import type { ColumnEditFieldShape } from '@kit/ui/column-edit-modal';
+import { CsvImportDialog } from '@kit/ui/csv-import-dialog';
+import { filterExportColumns, filterImportColumns } from '~/lib/field-permission';
+import { importTicketsService } from '~/services/tickets.service';
 
 import {
   type EntityField,
@@ -35,9 +41,28 @@ export default function ServiceCloudTicketsRoute() {
   const { currentWorkspace, canAccess, user } = useRBAC();
   const workspaceId = currentWorkspace?.id;
 
-  // Modals state
   const [addColumnModalOpen, setAddColumnModalOpen] = useState(false);
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [editingField, setEditingField] = useState<EntityField | null>(null);
+
+  const queryClient = useQueryClient();
+
+  const importMutation = useMutation({
+    mutationFn: async (payload: any[]) => {
+      if (!workspaceId) throw new Error('Workspace ID is required');
+      return await importTicketsService({
+        workspaceId,
+        data: payload,
+      });
+    },
+    onSuccess: (data) => {
+      toast.success(`Imported ${data.count || 0} tickets successfully`);
+      queryClient.invalidateQueries({ queryKey: ['tickets'] });
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'An error occurred during import');
+    },
+  });
 
   const productKey = 'service-cloud';
   const entityType = 'tickets';
@@ -77,12 +102,39 @@ export default function ServiceCloudTicketsRoute() {
   });
 
   // 4. Field-Level Security (FLS): which columns can the current user view/edit?
-  const { canViewColumn, canEdit: canEditTicketField } = useFieldPermissions({
+  const { canViewColumn, canEdit: canEditTicketField, ctx: fieldPermissionCtx } = useFieldPermissions({
     entityType,
     workspaceId: workspaceId,
     enabled: !!workspaceId && !!user?.id,
     productKey,
   });
+
+  const { importColumns, missingRequiredImportFields } = useMemo(() => {
+    const cols = [
+      { key: 'subject', label: 'Subject', required: true },
+      { key: 'description', label: 'Description' },
+      { key: 'status_id', label: 'Status', required: true },
+      { key: 'priority_id', label: 'Priority' },
+      { key: 'category_id', label: 'Category' },
+      { key: 'customer_email', label: 'Customer Email', required: true },
+      { key: 'customer_name', label: 'Customer Name' },
+      { key: 'organization_id', label: 'Organization ID' },
+      { key: 'owner_id', label: 'Owner ID' },
+      { key: 'tags', label: 'Tags' },
+      ...allEntityFields
+        .filter((f) => !f.is_system)
+        .map((field) => ({
+          key: field.field_key,
+          label: field.field_label,
+          required: false,
+        })),
+    ];
+    if (fieldPermissionCtx) {
+      const { allowedColumns, missingRequired } = filterImportColumns(cols, fieldPermissionCtx);
+      return { importColumns: allowedColumns, missingRequiredImportFields: missingRequired };
+    }
+    return { importColumns: cols, missingRequiredImportFields: [] };
+  }, [fieldPermissionCtx, allEntityFields]);
 
   const createField = useCreateField();
   const updateField = useUpdateField();
@@ -151,7 +203,7 @@ export default function ServiceCloudTicketsRoute() {
           is_required: editingField.is_required,
           is_system: true,
           settings: editingField.settings || {},
-          access_type: updates.access_type || 'public',
+          access_type: (updates.access_type || 'public') as any,
           access_members: updates.access_members,
         });
         setEditingField(null);
@@ -169,7 +221,7 @@ export default function ServiceCloudTicketsRoute() {
 
       await updateFieldAccess.mutateAsync({
         fieldId,
-        accessType: updates.access_type || 'public',
+        accessType: (updates.access_type || 'public') as any,
         members: updates.access_members,
       });
       setEditingField(null);
@@ -204,6 +256,40 @@ export default function ServiceCloudTicketsRoute() {
         canViewColumn={canViewColumn}
         canEditField={canEditTicketField}
         currentUserId={user?.id}
+        canImport={canAccess('service_cloud', 'import')}
+        onImportClick={() => setIsImportDialogOpen(true)}
+      />
+
+      <CsvImportDialog
+        open={isImportDialogOpen}
+        onOpenChange={setIsImportDialogOpen}
+        title="Import Tickets from CSV"
+        description="Upload a CSV, match each header to a database column, and save."
+        columns={importColumns}
+        disabledReason={
+          missingRequiredImportFields.length > 0
+            ? `You do not have permission to edit mandatory fields required for import: ${missingRequiredImportFields.join(', ')}. Please contact your administrator.`
+            : null
+        }
+        onUpload={async ({ headers, rows }) => {
+          const payload = rows.map((row) => {
+            const obj: any = {};
+            headers.forEach((header, index) => {
+              if (!header) return;
+              const val = row[index];
+              if (val === undefined || val === '') return;
+              obj[header] = val;
+            });
+            return obj;
+          });
+
+            try {
+              await importMutation.mutateAsync(payload);
+              setIsImportDialogOpen(false);
+            } catch (error: any) {
+              // error is already handled by onError in mutation
+            }
+        }}
       />
 
       <AddColumnModal

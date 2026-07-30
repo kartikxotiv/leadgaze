@@ -313,7 +313,7 @@ export default function OpportunityDetailsPage() {
 
   const { data: stages = [] } = useQuery({
     queryKey: ['opportunity-stages', currentWorkspace?.id],
-    queryFn: () => getOpportunityStatusesService(currentWorkspace!.id),
+    queryFn: () => getOpportunityStatusesService({ workspaceId: currentWorkspace!.id }),
     enabled: !!currentWorkspace?.id,
   });
 

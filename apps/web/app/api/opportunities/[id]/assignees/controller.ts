@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
-import { Database } from '~/lib/database.types';
+import { Database } from '@kit/supabase/database';
 import { catchAsync, successDataResponse } from '~/utils/response-handler';
 
 type OpportunityAssignee = Database['public']['Tables']['opportunity_assignees']['Row'];

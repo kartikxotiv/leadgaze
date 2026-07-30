@@ -225,7 +225,7 @@ export function LogCallDialog({
           </div>
         </div>
         
-      <DialogFooter className="border-t p-6 mt-auto">
+      <DialogFooter className="border-t p-2 mt-auto">
           <Button
             variant="outline"
             onClick={() => handleOpenChange(false)}

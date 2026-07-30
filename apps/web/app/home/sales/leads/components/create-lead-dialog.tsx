@@ -115,7 +115,7 @@ export default function CreateLeadDialog({
         return Promise.resolve([]);
       }
 
-      return getLeadStatusesService(workspace.id).catch((error) => {
+      return getLeadStatusesService({ workspaceId: workspace.id }).catch((error) => {
         console.error('❌ Error fetching statuses:', error);
         toast.error('Failed to load statuses');
         return [];
@@ -727,14 +727,14 @@ export default function CreateLeadDialog({
           </form>
 
           {/* Form Actions - Pinned to bottom */}
-          <div className="border-t border-gray-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
+          <div className="border-t border-gray-200 bg-white p-2 dark:border-slate-800 dark:bg-slate-950">
             <div className="flex justify-end gap-3">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => handleOpenChange(false)}
                 disabled={isLoading}
-                className="border-gray-300 text-gray-900 dark:border-slate-700 dark:text-white mb-2"
+                className="border-gray-300 text-gray-900 dark:border-slate-700 dark:text-white"
               >
                 Cancel
               </Button>

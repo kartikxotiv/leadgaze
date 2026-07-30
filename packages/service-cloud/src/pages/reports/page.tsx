@@ -186,6 +186,7 @@ export function ServiceCloudReportsPage({
             title="Customer-Specific Workload"
             description="Customers with active/open tickets and total support effort."
             hideHeaderBorder={true}
+            hideBorderBottom={true}
           >
             <ReportTable
               tableKey="sc-report-customer-workload"
@@ -233,6 +234,7 @@ export function ServiceCloudReportsPage({
             title="Oldest Open Tickets"
             description="Open tickets sorted by age so overdue work is visible."
             hideHeaderBorder={true}
+            hideBorderBottom={true}
           >
             <ReportTable
               tableKey="sc-report-oldest-tickets"
@@ -264,6 +266,7 @@ export function ServiceCloudReportsPage({
             title="Time Logs By Ticket"
             description="Where time is being spent, based on individual time entries."
             hideHeaderBorder={true}
+            hideBorderBottom={true}
           >
             <ReportTable
               tableKey="sc-report-time-logs"

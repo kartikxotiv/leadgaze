@@ -129,11 +129,18 @@ const deleteContactService = asyncHandlerClient(async (id: string) => {
   return response.data?.data;
 });
 
+const importContactsService = asyncHandlerClient(
+  async (payload: { workspaceId: string; data: any[] }) => {
+    const response = await ApiClient.post('/contacts/import', payload);
+    return response.data;
+  },
+);
+
 export {
   getContactsService,
   getContactByIdService,
   createContactService,
-
+  importContactsService,
   updateContactService,
   deleteContactService,
 };

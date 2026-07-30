@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 
 import { usePathname, useRouter } from 'next/navigation';
 
-import { Building2, CreditCard, Globe, Mail, Settings2, Video } from 'lucide-react';
+import { Building2, CreditCard, Globe, Mail, Settings2, Video, Link2 } from 'lucide-react';
 
 import { CoreEmailSettingsPage } from '@kit/core/pages';
 import { getSupabaseBrowserClient } from '@kit/supabase/browser-client';
@@ -26,6 +26,7 @@ import OrgSubscriptionPage from '~/org/subscription/page';
 import { WorkspaceLocalizationSettings } from './_components/localization-settings';
 import { MeetingAccountsSettings } from './_components/meeting-accounts-settings';
 import { WorkspaceGeneralSettings } from './_components/general-settings';
+import { WorkspaceIntegrationsSettings } from './_components/integrations-settings';
 
 type WorkspaceSummary = {
   id: string;
@@ -166,14 +167,17 @@ export default function WorkspaceSettingsPage() {
   const canManageEmail = canAccess('emails', 'manage_email');
   const canManageMeetings = 1 == 1 || canAccess('meetings', 'manage');
 
-  const pathname = usePathname();
+  const pathname = usePathname() || '';
+  const isSalesModule = pathname.includes('/sales');
+  const showMeetingsTab = canManageMeetings && isSalesModule;
+
   const defaultTab = canViewGeneralSettings
     ? 'general'
     : canViewSettings
       ? 'localization'
       : canViewSubscription
         ? 'billing'
-        : canManageMeetings
+        : showMeetingsTab
           ? 'meetings'
           : 'emails';
 
@@ -211,7 +215,10 @@ export default function WorkspaceSettingsPage() {
         description="Manage your workspace configuration, email accounts, meeting accounts, and templates."
       />
       <PageBody className="sticky flex min-w-0 flex-1 shrink-0 flex-col overflow-hidden">
-        <Tabs defaultValue={defaultTab} className="space-y-6 overflow-auto">
+        <Tabs
+          defaultValue={defaultTab}
+          className="flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col space-y-6"
+        >
           <TabsList className="mb-1 h-auto w-full justify-start gap-8 rounded-none border-b bg-transparent p-0">
             {canViewGeneralSettings && (
               <TabsTrigger
@@ -249,7 +256,7 @@ export default function WorkspaceSettingsPage() {
                 Email Accounts
               </TabsTrigger>
             )}
-            {canManageMeetings && (
+            {showMeetingsTab && (
               <TabsTrigger
                 value="meetings"
                 className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
@@ -258,23 +265,41 @@ export default function WorkspaceSettingsPage() {
                 Meeting Accounts
               </TabsTrigger>
             )}
+            {isSalesModule && (
+              <TabsTrigger
+                value="integrations"
+                className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
+              >
+                <Link2 className="mr-2 h-4 w-4" />
+                Integrations
+              </TabsTrigger>
+            )}
           </TabsList>
 
           {canViewGeneralSettings && workspace?.id && (
-            <TabsContent value="general">
+            <TabsContent
+              value="general"
+              className="mt-0 flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col data-[state=active]:flex data-[state=active]:flex-1 data-[state=active]:flex-col data-[state=active]:min-h-0"
+            >
               {/* <WorkspaceManagement currentWorkspace={workspace} /> */}
               <WorkspaceGeneralSettings workspaceId={workspace.id} />
             </TabsContent>
           )}
 
           {canViewSettings && workspace?.id && (
-            <TabsContent value="localization">
+            <TabsContent
+              value="localization"
+              className="mt-0 flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col data-[state=active]:flex data-[state=active]:flex-1 data-[state=active]:flex-col data-[state=active]:min-h-0"
+            >
               <WorkspaceLocalizationSettings workspaceId={workspace.id} />
             </TabsContent>
           )}
 
           {canViewSubscription && (
-            <TabsContent value="billing">
+            <TabsContent
+              value="billing"
+              className="mt-0 flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col data-[state=active]:flex data-[state=active]:flex-1 data-[state=active]:flex-col data-[state=active]:min-h-0"
+            >
               <OrgSubscriptionPage
                 canManageSubscription={canManageSubscription}
               />
@@ -282,7 +307,10 @@ export default function WorkspaceSettingsPage() {
           )}
 
           {canManageEmail && (
-            <TabsContent value="emails">
+            <TabsContent
+              value="emails"
+              className="mt-0 flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col data-[state=active]:flex data-[state=active]:flex-1 data-[state=active]:flex-col data-[state=active]:min-h-0"
+            >
               {/* {shouldUseWebEmailSettings ? (
               <EmailAccountsSettings workspace={workspace} />
             ) : ( */}
@@ -301,9 +329,21 @@ export default function WorkspaceSettingsPage() {
             </TabsContent>
           )}
 
-          {canManageMeetings && (
-            <TabsContent value="meetings">
+          {showMeetingsTab && (
+            <TabsContent
+              value="meetings"
+              className="mt-0 flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col data-[state=active]:flex data-[state=active]:flex-1 data-[state=active]:flex-col data-[state=active]:min-h-0"
+            >
               <MeetingAccountsSettings workspace={workspace} />
+            </TabsContent>
+          )}
+
+          {isSalesModule && (
+            <TabsContent
+              value="integrations"
+              className="mt-0 flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col data-[state=active]:flex data-[state=active]:flex-1 data-[state=active]:flex-col data-[state=active]:min-h-0"
+            >
+              <WorkspaceIntegrationsSettings workspace={workspace} />
             </TabsContent>
           )}
         </Tabs>
