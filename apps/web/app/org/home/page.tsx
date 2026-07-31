@@ -278,8 +278,13 @@ function ModuleSelectorPage() {
     return <FullScreenLoader />;
   }
 
+  // Prevent crashing if workspace is missing (WorkspaceCheckWrapper will redirect)
+  if (!workspaceId) {
+    return <FullScreenLoader />;
+  }
+
   // Error state
-  if (isSubError || (!data && !isSubLoading && workspaceId)) {
+  if (isSubError || (!data && !isSubLoading)) {
     return (
       <div className="bg-background flex h-screen flex-col items-center justify-center">
         <Card className="mx-4 w-full max-w-md text-center">
@@ -303,8 +308,6 @@ function ModuleSelectorPage() {
       </div>
     );
   }
-
-
 
   // No active subscription
   if (enabledModules.length === 0 && !data.is_subscription_valid) {
