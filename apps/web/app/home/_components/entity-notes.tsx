@@ -11,6 +11,7 @@ import { CardWidgetContainer } from '@kit/ui/card-widget-container';
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -177,7 +178,7 @@ export function EntityNotes({ entityType, entityId }: EntityNotesProps) {
                   onChange={(e) => setNewNoteContent(e.target.value)}
                   rows={4}
                 />
-                <div className="flex justify-end gap-2">
+                <DialogFooter>
                   <Button
                     variant="outline"
                     onClick={() => setIsOpen(false)}
@@ -198,7 +199,7 @@ export function EntityNotes({ entityType, entityId }: EntityNotesProps) {
                     )}
                     {editingNote ? 'Update Note' : 'Save Note'}
                   </Button>
-                </div>
+                </DialogFooter>
               </div>
             </DialogContent>
           </Dialog>

@@ -21,6 +21,7 @@ import { CardWidgetList, CardWidgetListItem } from '@kit/ui/card-widget-list';
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -518,7 +519,7 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
               />
             </div>
           </div>
-          <div className="flex justify-end gap-3">
+          <DialogFooter>
             <Button variant="ghost" onClick={() => setIsTimeLogOpen(false)}>Cancel</Button>
             {isCompletingTask && (
               <Button
@@ -538,7 +539,7 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
             >
               {timeLogMutation.isPending ? 'Saving...' : 'Submit Log'}
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 

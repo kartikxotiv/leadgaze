@@ -10,6 +10,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@kit/ui/dialog';
@@ -672,28 +673,27 @@ export default function EditLeadDialog({
               </div>
             </div>
 
-            {/* Form Actions */}
-            <div className="flex justify-end gap-3 border-t border-gray-200 bg-white p-2 dark:border-slate-800 dark:bg-slate-950">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => handleOpenChange(false)}
-                disabled={isLoading}                
-              >
-                Cancel
-              </Button>
-              <Button type="submit" form="dialog-form" disabled={isLoading} className="gap-2">
-                {isLoading ? (
-                  <>
-                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                    Saving...
-                  </>
-                ) : (
-                  'Save Changes'
-                )}
-              </Button>
-            </div>
           </form>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => handleOpenChange(false)}
+              disabled={isLoading}                
+            >
+              Cancel
+            </Button>
+            <Button type="submit" form="dialog-form" disabled={isLoading} className="gap-2">
+              {isLoading ? (
+                <>
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  Saving...
+                </>
+              ) : (
+                'Save Changes'
+              )}
+            </Button>
+          </DialogFooter>
         </div>
       </DialogContent>
     </Dialog>

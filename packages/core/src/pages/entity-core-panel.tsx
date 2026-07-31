@@ -12,7 +12,7 @@ import { Label } from '@kit/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@kit/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@kit/ui/tabs';
 import { Textarea } from '@kit/ui/textarea';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@kit/ui/dialog';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@kit/ui/dialog';
 import { toast } from 'sonner';
 import { DateTimePicker } from '@kit/ui/datetime-picker';
 import { format } from 'date-fns';
@@ -259,7 +259,7 @@ function NotesPanel(props: CoreEntityPanelProps) {
               onChange={(e) => setEditText(e.target.value)}
               rows={4}
             />
-            <div className="flex justify-end gap-2">
+            <DialogFooter>
               <Button
                 variant="outline"
                 onClick={() => setIsEditOpen(false)}
@@ -273,7 +273,7 @@ function NotesPanel(props: CoreEntityPanelProps) {
               >
                 Save
               </Button>
-            </div>
+            </DialogFooter>
           </div>
         </DialogContent>
       </Dialog>

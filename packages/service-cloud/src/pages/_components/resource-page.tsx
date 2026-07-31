@@ -24,6 +24,7 @@ import CustomTableContainer from '@kit/ui/custom-table-container';
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -959,16 +960,14 @@ export function ServiceCloudResourcePage({
                     })}
                 </div>
               </div>
-              <div className="border-t border-gray-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
-                <div className="flex justify-end gap-3">
-                  <Button onClick={save} disabled={saving}>
-                    {saving ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : null}
-                    Save
-                  </Button>
-                </div>
-              </div>
+              <DialogFooter>
+                <Button onClick={save} disabled={saving}>
+                  {saving ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : null}
+                  Save
+                </Button>
+              </DialogFooter>
             </div>
           </DialogContent>
         </Dialog>
