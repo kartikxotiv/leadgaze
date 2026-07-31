@@ -102,7 +102,7 @@ export function UpdateMemberDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-[450px]">
-        <DialogHeader className="border-b p-6 pb-4">
+        <DialogHeader>
           <DialogTitle>Update Member</DialogTitle>
           <DialogDescription>
             Update the role and settings for this team member
@@ -171,7 +171,7 @@ export function UpdateMemberDialog({
 
           
         </form>
-      <DialogFooter className="border-t p-2 mt-auto">
+      <DialogFooter>
             <Button
               type="button"
               variant="outline"

@@ -211,7 +211,7 @@ export function StatusManagementDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="p-0 sm:max-w-[440px]">
-        <DialogHeader className="border-b px-6 py-4">
+        <DialogHeader>
           <DialogTitle>
             {isEditMode ? `Edit ${entityLabel}` : `New ${entityLabel}`}
           </DialogTitle>
@@ -357,7 +357,7 @@ export function StatusManagementDialog({
           </div>
         </form>
 
-        <DialogFooter className="border-t px-6 py-4">
+        <DialogFooter>
           <Button
             type="button"
             variant="outline"

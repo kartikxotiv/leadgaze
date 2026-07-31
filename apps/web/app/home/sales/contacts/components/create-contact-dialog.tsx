@@ -122,7 +122,7 @@ export function CreateContactDialog({
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-[650px]">
-          <DialogHeader className="border-b p-6 pb-4">
+          <DialogHeader>
             <DialogTitle>Create New Contact</DialogTitle>
             <DialogDescription>
               Add a new person to your workspace.
@@ -261,16 +261,15 @@ export function CreateContactDialog({
 
             
           </form>
-        <DialogFooter className="border-t p-2 mt-auto">
+        <DialogFooter>
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => onOpenChange(false)}
-                className='mb-2'
               >
                 Cancel
               </Button>
-              <Button type="submit" form="dialog-form" disabled={mutation.isPending} className='mb-2'>
+              <Button type="submit" form="dialog-form" disabled={mutation.isPending}>
                 {mutation.isPending ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (

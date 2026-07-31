@@ -114,7 +114,7 @@ export function CreateAccountDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-[700px]">
-        <DialogHeader className="border-b p-6 pb-4">
+        <DialogHeader>
           <DialogTitle>Create New Account</DialogTitle>
           <DialogDescription>
             Add a new business account to your workspace.
@@ -301,7 +301,7 @@ export function CreateAccountDialog({
           </div>
         </form>
 
-        <DialogFooter className="mt-auto border-t p-6">
+        <DialogFooter>
           <Button
             type="button"
             variant="outline"

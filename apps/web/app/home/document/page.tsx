@@ -1027,7 +1027,7 @@ export default function DocumentPage() {
       {/* Upload Dialog */}
       <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
         <DialogContent className="flex max-h-[90vh] max-w-[600px] flex-col p-0">
-          <DialogHeader className="border-b p-6 pb-4">
+          <DialogHeader>
             <DialogTitle>Upload Document</DialogTitle>
           </DialogHeader>
           <div className="flex-1 space-y-4 overflow-y-auto px-6 py-4">
@@ -1138,7 +1138,7 @@ export default function DocumentPage() {
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="flex max-h-[90vh] flex-col p-0">
-          <DialogHeader className="border-b p-6 pb-4">
+          <DialogHeader>
             <DialogTitle>Rename Document</DialogTitle>
           </DialogHeader>
           <div className="flex-1 space-y-4 px-6 py-4">

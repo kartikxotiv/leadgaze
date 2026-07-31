@@ -279,8 +279,8 @@ export default function EditLeadDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="flex max-h-[90vh] flex-col p-0 overflow-hidden border-gray-200 bg-white p-0 sm:max-w-[800px] dark:border-slate-800 dark:bg-slate-950">
         <div className="flex max-h-[90vh] flex-col">
-          <DialogHeader className="border-b border-gray-200 bg-white p-6 pb-4 dark:border-slate-800 dark:bg-slate-950 border-b p-6 pb-4">
-            <DialogTitle className="pr-12">
+          <DialogHeader>
+            <DialogTitle>
               Edit Lead
             </DialogTitle>
             <DialogDescription>

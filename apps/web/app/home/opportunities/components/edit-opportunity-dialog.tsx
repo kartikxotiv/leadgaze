@@ -209,7 +209,7 @@ export function EditOpportunityDialog({
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-[600px]">
-        <DialogHeader className="border-b p-6 pb-4">
+        <DialogHeader>
           <DialogTitle>Edit Opportunity</DialogTitle>
           <DialogDescription>
             Update the information for this opportunity.
@@ -500,17 +500,16 @@ export function EditOpportunityDialog({
             
           </form>
         </Form>
-        <DialogFooter className="border-t p-2 mt-auto">
+        <DialogFooter>
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => onOpenChange(false)}
                 disabled={updateMutation.isPending}
-                className="mb-2"
               >
                 Cancel
               </Button>
-              <Button type="submit" form="dialog-form" disabled={updateMutation.isPending} className="mb-2">
+              <Button type="submit" form="dialog-form" disabled={updateMutation.isPending}>
                 {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
               </Button>
             </DialogFooter>

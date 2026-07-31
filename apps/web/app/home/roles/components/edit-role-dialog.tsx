@@ -209,7 +209,7 @@ export function EditRoleDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[90vh] flex-col p-0 flex h-fit flex-col gap-0 overflow-hidden p-0 sm:max-w-[700px]">
-        <DialogHeader className="shrink-0 border-b px-6 py-4 border-b p-6 pb-4">
+        <DialogHeader>
           <DialogTitle>Edit Role</DialogTitle>
           <DialogDescription>
             Update the role details and settings
@@ -384,7 +384,7 @@ export function EditRoleDialog({
 
           
         </form>
-      <DialogFooter className="shrink-0 border-t bg-white px-6 py-4 border-t p-6 mt-auto">
+      <DialogFooter>
             <Button
               type="button"
               variant="outline"

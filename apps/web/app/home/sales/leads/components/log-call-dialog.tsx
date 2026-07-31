@@ -123,7 +123,7 @@ export function LogCallDialog({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-[550px]">
-        <DialogHeader className="border-b p-6 pb-4">
+        <DialogHeader>
           <DialogTitle>Call Log</DialogTitle>
         </DialogHeader>
         <div className="grid gap-4 px-6 py-4 flex-1 overflow-y-auto">
@@ -225,7 +225,7 @@ export function LogCallDialog({
           </div>
         </div>
         
-      <DialogFooter className="border-t p-2 mt-auto">
+      <DialogFooter>
           <Button
             variant="outline"
             onClick={() => handleOpenChange(false)}

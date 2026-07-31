@@ -249,7 +249,7 @@ function NotesPanel(props: CoreEntityPanelProps) {
 
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
         <DialogContent className="flex max-h-[90vh] flex-col p-0">
-          <DialogHeader className="border-b p-6 pb-4">
+          <DialogHeader>
             <DialogTitle>Edit Note</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 px-6 pb-4">

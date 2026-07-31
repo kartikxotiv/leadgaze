@@ -104,7 +104,7 @@ export function ChangeStatusDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-[425px]">
-        <DialogHeader className="border-b p-6 pb-4">
+        <DialogHeader>
           <DialogTitle>Change Status</DialogTitle>
           <DialogDescription>
             Select a new status for this lead.
@@ -137,7 +137,7 @@ export function ChangeStatusDialog({
           </div>
         </div>
         
-      <DialogFooter className="border-t p-2 mt-auto">
+      <DialogFooter>
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}

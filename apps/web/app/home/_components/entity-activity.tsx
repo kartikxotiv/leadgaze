@@ -246,7 +246,7 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
             </Button>
           </DialogTrigger>
           <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-[400px]">
-            <DialogHeader className="border-b p-6 pb-4">
+            <DialogHeader>
               <DialogTitle>
                 {editingReminder ? 'Edit Reminder' : 'Set Reminder'}
               </DialogTitle>
@@ -886,7 +886,7 @@ export function EntityDocuments({ entityType, entityId }: EntityActivityProps) {
             </Button>
           </DialogTrigger>
           <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-[400px]">
-            <DialogHeader className="border-b p-6 pb-4">
+            <DialogHeader>
               <DialogTitle>
                 {editingDoc ? 'Rename Document' : 'Upload Document'}
               </DialogTitle>

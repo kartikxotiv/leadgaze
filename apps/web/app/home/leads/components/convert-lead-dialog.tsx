@@ -253,7 +253,7 @@ export function ConvertLeadDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-2xl">
-        <DialogHeader className="border-b p-6 pb-4">
+        <DialogHeader>
           <DialogTitle>Convert Lead</DialogTitle>
           <DialogDescription>
             Convert this lead into an Account, Contact, and Opportunity.
@@ -723,17 +723,16 @@ export function ConvertLeadDialog({
             
           </form>
         </Form>
-      <DialogFooter className="border-t p-2 mt-auto">
+      <DialogFooter>
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => onOpenChange(false)}
-                disabled={isSubmitting}
-                className='mb-2'
+                disabled={isSubmitting}                
               >
                 Cancel
               </Button>
-              <Button type="submit" form="dialog-form" disabled={isSubmitting} className='mb-2'>
+              <Button type="submit" form="dialog-form" disabled={isSubmitting}>
                 {isSubmitting ? 'Converting...' : 'Convert'}
               </Button>
             </DialogFooter>

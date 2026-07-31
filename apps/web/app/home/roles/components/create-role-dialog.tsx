@@ -159,7 +159,7 @@ export function CreateRoleDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[90vh] flex-col p-0 flex h-fit flex-col gap-0 overflow-hidden p-0 sm:max-w-[700px]">
-        <DialogHeader className="shrink-0 border-b px-6 py-4 border-b p-6 pb-4">
+        <DialogHeader>
           <DialogTitle>New Role</DialogTitle>
           <DialogDescription>
             Create a new role and assign permissions to it
@@ -337,7 +337,7 @@ export function CreateRoleDialog({
 
           
         </form>
-      <DialogFooter className="shrink-0 border-t px-6 py-4 border-t p-6 mt-auto">
+      <DialogFooter>
             <Button
               type="button"
               variant="outline"

@@ -962,7 +962,7 @@ export default function OrgSubscriptionPage({
         }}
       >
         <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-md">
-          <DialogHeader className="border-b p-6 pb-4">
+          <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Users className="text-primary h-5 w-5" />
               {seatUpdateDialog.newSeats > seatUpdateDialog.currentSeats
@@ -1000,7 +1000,7 @@ export default function OrgSubscriptionPage({
               </div>
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="mt-auto gap-2 border-t p-6 sm:gap-0">
+          <DialogFooter>
             <Button
               variant="outline"
               onClick={() =>
@@ -1052,8 +1052,8 @@ export default function OrgSubscriptionPage({
         }}
       >
         <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-md">
-          <DialogHeader className="border-b p-6 pb-4">
-            <DialogTitle className="text-destructive flex items-center gap-2">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5" />
               Cancel Subscription
             </DialogTitle>
@@ -1092,7 +1092,7 @@ export default function OrgSubscriptionPage({
               </div>
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="mt-auto gap-2 border-t p-6 sm:gap-0">
+          <DialogFooter>
             <Button
               variant="outline"
               onClick={() => setCancelDialogOpen(false)}
@@ -1131,7 +1131,7 @@ export default function OrgSubscriptionPage({
         }}
       >
         <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-md">
-          <DialogHeader className="border-b p-6 pb-4">
+          <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Trash2 className="text-destructive h-5 w-5" />
               Remove Module
@@ -1169,7 +1169,7 @@ export default function OrgSubscriptionPage({
               </div>
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="mt-auto gap-2 border-t p-6 sm:gap-0">
+          <DialogFooter>
             <Button
               variant="outline"
               onClick={() =>

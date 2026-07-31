@@ -299,8 +299,8 @@ export default function CreateLeadDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="flex max-h-[90vh] flex-col p-0 overflow-hidden border-gray-200 bg-white p-0 sm:max-w-[800px] dark:border-slate-800 dark:bg-slate-950">
         <div className="flex max-h-[90vh] flex-col">
-          <DialogHeader className="border-b border-gray-200 bg-white p-6 pb-4 dark:border-slate-800 dark:bg-slate-950 border-b p-6 pb-4">
-            <DialogTitle className="pr-12">
+          <DialogHeader>
+            <DialogTitle>
               Add New Lead
             </DialogTitle>
             <DialogDescription>
@@ -311,7 +311,7 @@ export default function CreateLeadDialog({
 
           <form id="dialog-form"
             onSubmit={handleSubmit}
-            className="flex-1 space-y-8 overflow-y-auto p-6 pb-8"
+            className="flex flex-col flex-1 overflow-y-auto p-2 gap-2"
           >
             {/* Contact Information Section */}
             <div className="space-y-4">

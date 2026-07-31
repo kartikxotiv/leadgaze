@@ -316,8 +316,8 @@ export function AddColumnModal({
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) resetForm(); onOpenChange(v); }}>
       <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-md gap-0">
-        <DialogHeader className="p-4 pb-0 flex flex-col gap-4 text-left">
-          <DialogTitle className="text-lg font-semibold">Toggle Columns</DialogTitle>
+        <DialogHeader>
+          <DialogTitle>Toggle Columns</DialogTitle>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -613,7 +613,7 @@ export function AddColumnModal({
             </div>
           )}
         </div>
-              <DialogFooter className="mt-auto flex justify-between border-t p-2">
+              <DialogFooter>
                 <Button variant="outline" onClick={() => { resetForm(); onOpenChange(false); }}>
                   Cancel
                 </Button>

@@ -93,8 +93,8 @@ export function RoleFormDialog({
       <DialogContent className="max-h-[90vh] overflow-hidden border-gray-200 bg-white p-0 sm:max-w-md dark:border-slate-800 dark:bg-slate-950">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="flex max-h-[90vh] flex-col">
-            <DialogHeader className="border-b border-gray-200 bg-white p-6 pb-4 dark:border-slate-800 dark:bg-slate-950">
-              <DialogTitle className="text-2xl pr-12">{initialData ? 'Edit Role' : 'Create Custom Role'}</DialogTitle>
+            <DialogHeader>
+              <DialogTitle>{initialData ? 'Edit Role' : 'Create Custom Role'}</DialogTitle>
               <DialogDescription className="text-base">
                 Defines a new role for your organization. You can configure permissions after creating the role.
               </DialogDescription>
@@ -167,11 +167,11 @@ export function RoleFormDialog({
               </div>
             </div>
 
-            <DialogFooter className="border-t border-gray-200 bg-white p-2 dark:border-slate-800 dark:bg-slate-950">
-              <Button type={'button'} variant={'outline'} onClick={() => setOpen(false)} className='mb-2'>
+            <DialogFooter>
+              <Button type={'button'} variant={'outline'} onClick={() => setOpen(false)}>
                 Cancel
               </Button>
-              <Button type={'submit'} disabled={mutation.isPending} className='mb-2'>
+              <Button type={'submit'} disabled={mutation.isPending}>
                 {mutation.isPending ? 'Saving...' : initialData ? 'Save Changes' : 'Create Role'}
               </Button>
             </DialogFooter>

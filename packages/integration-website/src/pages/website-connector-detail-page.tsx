@@ -905,10 +905,10 @@ export function WebsiteConnectorDetailPage({
                         </div>
                       </div>
                     </CardContent>
-                    <DialogFooter className="border-t bg-muted/20 p-4 shrink-0">
+                    <DialogFooter>
                       <Button
                         onClick={handleSaveFormBuilder}
-                        className="w-full gap-2"
+                        className="gap-2"
                         disabled={isSavingForm}
                       >
                         <Save className="h-4 w-4" />

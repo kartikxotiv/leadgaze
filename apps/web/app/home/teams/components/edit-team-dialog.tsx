@@ -88,7 +88,7 @@ export function EditTeamDialog({ team, open, onOpenChange, onSuccess }: EditTeam
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[90vh] flex-col p-0">
-        <DialogHeader className="border-b p-6 pb-4">
+        <DialogHeader>
           <DialogTitle>Edit Team</DialogTitle>
           <DialogDescription>
             Update the team details.
@@ -132,16 +132,16 @@ export function EditTeamDialog({ team, open, onOpenChange, onSuccess }: EditTeam
             
           </form>
         </Form>
-      <DialogFooter className="pt-4 border-t p-6 mt-auto">
+      <DialogFooter>
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => onOpenChange(false)}
-                disabled={updateMutation.isPending} className='mb-2'
+                disabled={updateMutation.isPending}
               >
                 Cancel
               </Button>
-              <Button type="submit" form="dialog-form" disabled={updateMutation.isPending} className='mb-2'>
+              <Button type="submit" form="dialog-form" disabled={updateMutation.isPending}>
                 {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
               </Button>
             </DialogFooter>

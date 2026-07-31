@@ -155,8 +155,8 @@ export function ExitLetterDialog({
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-h-[90vh] overflow-hidden border-gray-200 bg-white p-0 sm:max-w-2xl dark:border-slate-800 dark:bg-slate-950">
         <form className="flex max-h-[90vh] flex-col" onSubmit={handleSubmit}>
-          <DialogHeader className="border-b border-gray-200 bg-white p-6 pb-4 dark:border-slate-800 dark:bg-slate-950">
-            <DialogTitle className="text-2xl pr-12">{editingLetter ? 'Edit Letter Request' : 'Add Letter Request'}</DialogTitle>
+          <DialogHeader>
+            <DialogTitle>{editingLetter ? 'Edit Letter Request' : 'Add Letter Request'}</DialogTitle>
             <DialogDescription className="text-base">
               All exit letter fields are available below.
             </DialogDescription>
@@ -312,7 +312,7 @@ export function ExitLetterDialog({
             </div>
           </div>
 
-          <DialogFooter className="border-t border-gray-200 bg-white p-2 dark:border-slate-800 dark:bg-slate-950">
+          <DialogFooter>
             <Button
               type="button"
               variant="outline"

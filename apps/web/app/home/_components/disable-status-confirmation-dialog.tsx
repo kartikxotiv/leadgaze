@@ -222,7 +222,7 @@ export function DisableStatusConfirmationDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[520px] p-0 flex flex-col max-h-[90vh]">
-        <DialogHeader className="border-b px-6 py-4 shrink-0">
+        <DialogHeader>
           <div className="flex items-center gap-2">
             <AlertTriangle className="h-5 w-5 text-amber-500" />
             <DialogTitle>Disable &ldquo;{statusToDisable.status_name}&rdquo;?</DialogTitle>
@@ -331,7 +331,7 @@ export function DisableStatusConfirmationDialog({
           </div>
         </div>
 
-        <DialogFooter className="border-t px-6 py-4 shrink-0">
+        <DialogFooter>
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}

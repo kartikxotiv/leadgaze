@@ -165,7 +165,7 @@ export function EntityNotes({ entityType, entityId }: EntityNotesProps) {
               </Button>
             </DialogTrigger>
             <DialogContent className="flex max-h-[90vh] flex-col p-0">
-              <DialogHeader className="border-b p-6 pb-4">
+              <DialogHeader>
                 <DialogTitle>
                   {editingNote ? 'Edit Note' : 'Add Note'}
                 </DialogTitle>

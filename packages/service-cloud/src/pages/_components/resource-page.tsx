@@ -814,7 +814,7 @@ export function ServiceCloudResourcePage({
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogContent className="max-h-[90vh] overflow-hidden border-gray-200 bg-white p-0 sm:max-w-[560px] dark:border-slate-800 dark:bg-slate-950">
             <div className="flex max-h-[90vh] flex-col">
-              <DialogHeader className="border-b border-gray-200 bg-white p-6 pb-4 dark:border-slate-800 dark:bg-slate-950">
+              <DialogHeader>
                 <DialogTitle>
                   {editing ? `Edit ${title}` : `New ${title}`}
                 </DialogTitle>

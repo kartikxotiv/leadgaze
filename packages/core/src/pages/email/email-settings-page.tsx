@@ -331,7 +331,7 @@ export function CoreEmailSettingsPage({
                       </DialogTrigger>
                       <DialogContent className="max-h-[90vh] overflow-hidden border-gray-200 bg-white p-0 sm:max-w-[540px] dark:border-slate-800 dark:bg-slate-950">
                         <div className="flex max-h-[90vh] flex-col">
-                        <DialogHeader className="border-b border-gray-200 bg-white p-6 pb-4 dark:border-slate-800 dark:bg-slate-950">
+                        <DialogHeader>
                           <DialogTitle>Connect Email Account</DialogTitle>
                         </DialogHeader>
                         <Tabs value={connectTab} onValueChange={(v) => setConnectTab(v as 'google' | 'smtp')} className="flex flex-1 flex-col overflow-hidden">
@@ -474,11 +474,10 @@ export function CoreEmailSettingsPage({
                           </div>
                         </Tabs>
                         {connectTab === 'smtp' ? (
-                        <DialogFooter className="border-t border-gray-200 bg-white p-2 dark:border-slate-800 dark:bg-slate-950">
+                        <DialogFooter>
                           <Button
                             onClick={handleSubmitSmtp}
-                            disabled={isSubmitting}
-                            className="w-full"
+                            disabled={isSubmitting}                            
                           >
                             {isSubmitting ? (
                               <Loader2 className="mr-2 h-4 w-4 animate-spin" />

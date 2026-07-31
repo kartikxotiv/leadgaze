@@ -121,8 +121,8 @@ export function EmployeePayItemFormDialog(props: {
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-hidden border-gray-200 bg-white p-0 sm:max-w-[450px] dark:border-slate-800 dark:bg-slate-950">
         <form className="flex max-h-[90vh] flex-col" onSubmit={onSubmit}>
-          <DialogHeader className="border-b border-gray-200 bg-white p-6 pb-4 dark:border-slate-800 dark:bg-slate-950">
-            <DialogTitle className="pr-12">
+          <DialogHeader>
+            <DialogTitle>
               {isEditing ? 'Edit Pay Item' : 'Add One-Time Pay Item'}
             </DialogTitle>
             <DialogDescription>
@@ -215,7 +215,7 @@ export function EmployeePayItemFormDialog(props: {
             </div>
           </div>
 
-          <DialogFooter className="border-t border-gray-200 bg-white p-2 dark:border-slate-800 dark:bg-slate-950">
+          <DialogFooter>
             <Button
               type="button"
               variant="outline"

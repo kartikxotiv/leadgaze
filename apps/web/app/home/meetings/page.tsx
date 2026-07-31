@@ -827,7 +827,7 @@ export function CreateMeetingDialog({
       <DialogContent className="max-h-[90vh] max-w-2xl gap-0 overflow-y-auto p-0">
         <div className="bg-background sticky top-0 z-10 border-b px-6 py-5">
           <DialogHeader>
-            <DialogTitle className="text-xl font-semibold">
+            <DialogTitle>
               Schedule Meeting
             </DialogTitle>
             <p className="text-muted-foreground text-sm">
@@ -1466,7 +1466,7 @@ export function EditMeetingDialog({
       <DialogContent className="max-h-[90vh] max-w-2xl gap-0 overflow-y-auto p-0">
         <div className="bg-background sticky top-0 z-10 border-b px-6 py-5">
           <DialogHeader>
-            <DialogTitle className="text-xl font-semibold">
+            <DialogTitle>
               Edit Meeting
             </DialogTitle>
           </DialogHeader>
@@ -1793,7 +1793,7 @@ export function MeetingDetailsDialog({
       <DialogContent className="max-h-[90vh] max-w-2xl gap-0 overflow-y-auto p-0">
         <div className="bg-background sticky top-0 z-10 flex items-center justify-between border-b px-6 py-4">
           <div className="flex items-center gap-3">
-            <DialogTitle className="text-lg font-semibold">
+            <DialogTitle>
               {meeting.title}
             </DialogTitle>
           </div>

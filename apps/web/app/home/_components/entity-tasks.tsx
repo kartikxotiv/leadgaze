@@ -267,7 +267,7 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
               </Button>
             </DialogTrigger>
             <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-[450px]">
-              <DialogHeader className="border-b p-6 pb-4">
+              <DialogHeader>
                 <DialogTitle>
                   {editingTask ? 'Edit Task' : 'Add Task'}
                 </DialogTitle>
@@ -553,7 +553,7 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
         }}
       >
         <DialogContent className="sm:max-w-[500px] max-h-[80vh] flex flex-col p-6">
-          <DialogHeader className="mb-4">
+          <DialogHeader>
             <DialogTitle>Time Logs: {viewLogsTask?.title}</DialogTitle>
           </DialogHeader>
           <div className="flex-1 overflow-y-auto space-y-3 pr-2">

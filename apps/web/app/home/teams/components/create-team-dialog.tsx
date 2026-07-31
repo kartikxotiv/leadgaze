@@ -83,7 +83,7 @@ export function CreateTeamDialog({ open, onOpenChange }: CreateTeamDialogProps) 
       }}
     >
       <DialogContent className="flex max-h-[90vh] flex-col p-0">
-        <DialogHeader className="border-b p-6 pb-4">
+        <DialogHeader>
           <DialogTitle>Create Team</DialogTitle>
           <DialogDescription>
             Create a new team to organize your SDRs and Managers.
@@ -127,16 +127,16 @@ export function CreateTeamDialog({ open, onOpenChange }: CreateTeamDialogProps) 
             
           </form>
         </Form>
-      <DialogFooter className="pt-4 border-t p-6 mt-auto">
+      <DialogFooter>
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => onOpenChange(false)}
-                disabled={createMutation.isPending} className='mb-2'
+                disabled={createMutation.isPending}
               >
                 Cancel
               </Button>
-              <Button type="submit" form="dialog-form" disabled={createMutation.isPending} className='mb-2'>
+              <Button type="submit" form="dialog-form" disabled={createMutation.isPending}>
                 {createMutation.isPending ? 'Creating...' : 'Create Team'}
               </Button>
             </DialogFooter>

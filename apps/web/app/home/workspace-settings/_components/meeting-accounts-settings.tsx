@@ -249,7 +249,7 @@ export function MeetingAccountsSettings({
               </div>
             </div>
           </div>
-          <DialogFooter className="sm:justify-end">
+          <DialogFooter>
             <Button
               variant="outline"
               onClick={() => setConnectDialogOpen(false)}

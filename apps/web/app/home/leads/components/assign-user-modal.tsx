@@ -104,7 +104,7 @@ export function AssignUserModal({
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[90vh] flex-col p-0 max-w-[600px]">
-        <DialogHeader className="border-b p-6 pb-4">
+        <DialogHeader>
           <DialogTitle>Assign Team Member</DialogTitle>
           <DialogDescription>
             Select a team member to assign to this lead
@@ -192,7 +192,7 @@ export function AssignUserModal({
           )}
         </div>
 
-        <DialogFooter className="border-t p-2 mt-auto">
+        <DialogFooter>
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}

@@ -284,8 +284,8 @@ export function CsvImportDialog({
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="flex max-h-[92vh] w-[95vw] max-w-6xl flex-col overflow-hidden p-0">
         {/* ── Fixed Header ── */}
-        <DialogHeader className="border-b bg-white px-6 py-4 dark:bg-slate-950">
-          <DialogTitle className="flex items-center gap-2 text-base">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
             <FileSpreadsheet className="h-5 w-5 text-sky-600" />
             {title}
           </DialogTitle>
