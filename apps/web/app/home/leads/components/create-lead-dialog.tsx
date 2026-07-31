@@ -742,8 +742,7 @@ export default function CreateLeadDialog({
                 type="button"
                 variant="outline"
                 onClick={() => handleOpenChange(false)}
-                disabled={isLoading}
-                className="border-gray-300 text-gray-900 dark:border-slate-700 dark:text-white"
+                disabled={isLoading}                
               >
                 Cancel
               </Button>
