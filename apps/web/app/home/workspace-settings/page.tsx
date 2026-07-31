@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 
 import { usePathname, useRouter } from 'next/navigation';
 
-import { Building2, CreditCard, Globe, Mail, Settings2, Video } from 'lucide-react';
+import { Building2, CreditCard, Globe, Mail, Settings2, Video, Link2, Check, ChevronDown } from 'lucide-react';
+import { toast } from 'sonner';
 
 import { CoreEmailSettingsPage } from '@kit/core/pages';
 import { getSupabaseBrowserClient } from '@kit/supabase/browser-client';
@@ -17,6 +18,12 @@ import {
   CardHeader,
   CardTitle,
 } from '@kit/ui/card';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@kit/ui/dropdown-menu';
 import { PageBody, PageHeader } from '@kit/ui/page';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@kit/ui/tabs';
 
@@ -26,6 +33,7 @@ import OrgSubscriptionPage from '~/org/subscription/page';
 import { WorkspaceLocalizationSettings } from './_components/localization-settings';
 import { MeetingAccountsSettings } from './_components/meeting-accounts-settings';
 import { WorkspaceGeneralSettings } from './_components/general-settings';
+import { WorkspaceIntegrationsSettings } from './_components/integrations-settings';
 
 type WorkspaceSummary = {
   id: string;
@@ -41,65 +49,21 @@ function WorkspaceManagement({
 }: {
   currentWorkspace: WorkspaceSummary | null;
 }) {
-  const { data: user } = useUser();
+  const { workspaces, selectWorkspace } = useRBAC();
   const router = useRouter();
-  const [_workspaces, setWorkspaces] = useState<WorkspaceSummary[]>([]);
 
-  useEffect(() => {
-    const fetchWorkspaces = async () => {
-      if (!user?.id) return;
-      const supabase = getSupabaseBrowserClient();
-
-      try {
-        const { data, error } = await supabase
-          .from('workspace_members')
-          .select(
-            `
-            workspace_id,
-            workspaces (
-              id,
-              name
-            )
-          `,
-          )
-          .eq('user_id', user.id)
-          .eq('status', 'accepted');
-
-        if (error) throw error;
-
-        const rows = (data ?? []) as WorkspaceMembershipRow[];
-        const uniqueWorkspaces = Array.from(
-          new Map(
-            rows
-              .filter((item) => item.workspaces)
-              .map((item) => [
-                item.workspaces!.id,
-                {
-                  id: item.workspaces!.id,
-                  name: item.workspaces!.name,
-                },
-              ]),
-          ).values(),
-        );
-
-        setWorkspaces(uniqueWorkspaces);
-      } catch (error) {
-        console.error('Failed to fetch workspaces:', error);
-      }
-    };
-
-    fetchWorkspaces();
-  }, [user?.id]);
-
-  const _handleWorkspaceChange = (workspaceId: string) => {
-    localStorage.setItem('selectedWorkspace', workspaceId);
-    router.refresh();
+  const handleWorkspaceChange = (workspaceId: string) => {
+    selectWorkspace(workspaceId);
+    toast.success('Workspace switched successfully');
+    setTimeout(() => {
+      window.location.assign('/home');
+    }, 500);
   };
 
-  if (!currentWorkspace) return null;
+  if (!currentWorkspace || workspaces.length <= 1) return null;
 
   return (
-    <Card>
+    <Card className="mb-6">
       <CardHeader className="p-4 pb-3">
         <CardTitle className="mb-0">Workspace Management</CardTitle>
         <CardDescription>
@@ -108,41 +72,32 @@ function WorkspaceManagement({
       </CardHeader>
       <CardContent className="p-4 pt-0">
         <div className="flex items-center gap-4">
-          <Button
-            variant="outline"
-            className="w-[300px] justify-between dark:text-white"
-          >
-            <span className="flex items-center gap-2">
-              <Building2 className="h-4 w-4" />
-              {currentWorkspace.name}
-            </span>
-          </Button>
-          {/* <DropdownMenu>
+          <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="w-[300px] justify-between dark:text-white">
                 <span className="flex items-center gap-2">
                   <Building2 className="h-4 w-4" />
-                  {currentWorkspace.name}
+                  <span className="truncate">{currentWorkspace.name}</span>
                 </span>
-                <ChevronDown className="h-4 w-4 opacity-50" />
+                <ChevronDown className="h-4 w-4 opacity-50 flex-shrink-0" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-[300px] h-[32px]">
+            <DropdownMenuContent align="start" className="w-[300px] max-h-[300px] overflow-y-auto">
               {workspaces.map((ws) => (
                 <DropdownMenuItem
                   key={ws.id}
                   onClick={() => handleWorkspaceChange(ws.id)}
-                  className="cursor-pointer gap-2 w-[290px] pt-0"
+                  className="cursor-pointer gap-2 w-full"
                 >
-                  <Building2 className="h-4 w-4" />
+                  <Building2 className="h-4 w-4 flex-shrink-0" />
                   <span className="flex-1 truncate">{ws.name}</span>
                   {ws.id === currentWorkspace?.id && (
-                    <Check className="h-4 w-4" />
+                    <Check className="h-4 w-4 flex-shrink-0" />
                   )}
                 </DropdownMenuItem>
               ))}
             </DropdownMenuContent>
-          </DropdownMenu> */}
+          </DropdownMenu>
         </div>
       </CardContent>
     </Card>
@@ -166,14 +121,17 @@ export default function WorkspaceSettingsPage() {
   const canManageEmail = canAccess('emails', 'manage_email');
   const canManageMeetings = 1 == 1 || canAccess('meetings', 'manage');
 
-  const pathname = usePathname();
+  const pathname = usePathname() || '';
+  const isSalesModule = pathname.includes('/sales');
+  const showMeetingsTab = canManageMeetings && isSalesModule;
+
   const defaultTab = canViewGeneralSettings
     ? 'general'
     : canViewSettings
       ? 'localization'
       : canViewSubscription
         ? 'billing'
-        : canManageMeetings
+        : showMeetingsTab
           ? 'meetings'
           : 'emails';
 
@@ -211,7 +169,10 @@ export default function WorkspaceSettingsPage() {
         description="Manage your workspace configuration, email accounts, meeting accounts, and templates."
       />
       <PageBody className="sticky flex min-w-0 flex-1 shrink-0 flex-col overflow-hidden">
-        <Tabs defaultValue={defaultTab} className="space-y-6 overflow-auto">
+        <Tabs
+          defaultValue={defaultTab}
+          className="flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col space-y-6"
+        >
           <TabsList className="mb-1 h-auto w-full justify-start gap-8 rounded-none border-b bg-transparent p-0">
             {canViewGeneralSettings && (
               <TabsTrigger
@@ -249,7 +210,7 @@ export default function WorkspaceSettingsPage() {
                 Email Accounts
               </TabsTrigger>
             )}
-            {canManageMeetings && (
+            {showMeetingsTab && (
               <TabsTrigger
                 value="meetings"
                 className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
@@ -258,23 +219,41 @@ export default function WorkspaceSettingsPage() {
                 Meeting Accounts
               </TabsTrigger>
             )}
+            {isSalesModule && (
+              <TabsTrigger
+                value="integrations"
+                className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
+              >
+                <Link2 className="mr-2 h-4 w-4" />
+                Integrations
+              </TabsTrigger>
+            )}
           </TabsList>
 
           {canViewGeneralSettings && workspace?.id && (
-            <TabsContent value="general">
-              {/* <WorkspaceManagement currentWorkspace={workspace} /> */}
+            <TabsContent
+              value="general"
+              className="mt-0 flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col data-[state=active]:flex data-[state=active]:flex-1 data-[state=active]:flex-col data-[state=active]:min-h-0"
+            >
+              <WorkspaceManagement currentWorkspace={workspace} />
               <WorkspaceGeneralSettings workspaceId={workspace.id} />
             </TabsContent>
           )}
 
           {canViewSettings && workspace?.id && (
-            <TabsContent value="localization">
+            <TabsContent
+              value="localization"
+              className="mt-0 flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col data-[state=active]:flex data-[state=active]:flex-1 data-[state=active]:flex-col data-[state=active]:min-h-0"
+            >
               <WorkspaceLocalizationSettings workspaceId={workspace.id} />
             </TabsContent>
           )}
 
           {canViewSubscription && (
-            <TabsContent value="billing">
+            <TabsContent
+              value="billing"
+              className="mt-0 flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col data-[state=active]:flex data-[state=active]:flex-1 data-[state=active]:flex-col data-[state=active]:min-h-0"
+            >
               <OrgSubscriptionPage
                 canManageSubscription={canManageSubscription}
               />
@@ -282,7 +261,10 @@ export default function WorkspaceSettingsPage() {
           )}
 
           {canManageEmail && (
-            <TabsContent value="emails">
+            <TabsContent
+              value="emails"
+              className="mt-0 flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col data-[state=active]:flex data-[state=active]:flex-1 data-[state=active]:flex-col data-[state=active]:min-h-0"
+            >
               {/* {shouldUseWebEmailSettings ? (
               <EmailAccountsSettings workspace={workspace} />
             ) : ( */}
@@ -301,9 +283,21 @@ export default function WorkspaceSettingsPage() {
             </TabsContent>
           )}
 
-          {canManageMeetings && (
-            <TabsContent value="meetings">
+          {showMeetingsTab && (
+            <TabsContent
+              value="meetings"
+              className="mt-0 flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col data-[state=active]:flex data-[state=active]:flex-1 data-[state=active]:flex-col data-[state=active]:min-h-0"
+            >
               <MeetingAccountsSettings workspace={workspace} />
+            </TabsContent>
+          )}
+
+          {isSalesModule && (
+            <TabsContent
+              value="integrations"
+              className="mt-0 flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col data-[state=active]:flex data-[state=active]:flex-1 data-[state=active]:flex-col data-[state=active]:min-h-0"
+            >
+              <WorkspaceIntegrationsSettings workspace={workspace} />
             </TabsContent>
           )}
         </Tabs>

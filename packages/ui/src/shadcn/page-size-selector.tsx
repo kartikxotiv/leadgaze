@@ -98,7 +98,7 @@ export const PageSizeSelector: React.FC<PageSizeSelectorProps> = ({
 
   return (
     <div
-      className={`flex items-center gap-2 my-2 ${className ?? ''}`}
+      className={`flex items-center gap-2 ${className ?? ''}`}
     >
       {label && (
         <span className="text-leadgaze-muted whitespace-nowrap text-sm">

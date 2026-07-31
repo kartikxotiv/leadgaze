@@ -107,7 +107,7 @@ export default function EditLeadDialog({
 
   const { data: statuses = [] } = useQuery({
     queryKey: ['lead-statuses', workspace?.id],
-    queryFn: () => getLeadStatusesService(workspace!.id),
+    queryFn: () => getLeadStatusesService({ workspaceId: workspace!.id }),
     enabled: !!workspace?.id,
   });
 
@@ -673,17 +673,17 @@ export default function EditLeadDialog({
             </div>
 
             {/* Form Actions */}
-            <div className="flex justify-end gap-3 border-t border-gray-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
+            <div className="flex justify-end gap-3 border-t border-gray-200 bg-white p-2 dark:border-slate-800 dark:bg-slate-950">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => handleOpenChange(false)}
                 disabled={isLoading}
-                className="border-gray-300 text-gray-900 dark:border-slate-700 dark:text-white mb-2"
+                className="border-gray-300 text-gray-900 dark:border-slate-700 dark:text-white"
               >
                 Cancel
               </Button>
-              <Button type="submit" form="dialog-form" disabled={isLoading} className="gap-2 mb-2">
+              <Button type="submit" form="dialog-form" disabled={isLoading} className="gap-2">
                 {isLoading ? (
                   <>
                     <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />

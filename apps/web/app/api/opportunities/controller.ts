@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
-import { Database } from '../../../lib/database.types';
+import { Database } from '@kit/supabase/database';
 import {
   catchAsync,
   successDataResponse,
@@ -322,12 +322,14 @@ export const getOpportunities = catchAsync(
 /**
  * GET /api/opportunities/statuses
  * Fetch all stages for opportunities
+ * Supports ?includeInactive=true to return all stages (for management dialog)
  */
 export const getOpportunityStages = catchAsync(
   async ({ request }: { request: NextRequest }) => {
     const supabase = getSupabaseServerClient();
     const url = new URL(request.url);
     const workspaceId = url.searchParams.get('workspaceId');
+    const includeInactive = url.searchParams.get('includeInactive') === 'true';
 
     if (!workspaceId) {
       return NextResponse.json(
@@ -346,13 +348,18 @@ export const getOpportunityStages = catchAsync(
       return successDataResponse('Stages retrieved successfully', []);
     }
 
-    const { data: stages, error } = await supabase
+    let query = supabase
       .from('entity_statuses')
-      .select('*')
+      .select('id, status_name, status_key, color, icon, is_closed, is_active, is_system, is_default, sort_order')
       .eq('workspace_id', workspaceId)
       .eq('module_id', moduleData.id)
-      .eq('is_active', true)
       .order('sort_order', { ascending: true });
+
+    if (!includeInactive) {
+      query = query.eq('is_active', true);
+    }
+
+    const { data: stages, error } = await query;
 
     if (error) {
       console.error('Get stages error:', error);
@@ -360,6 +367,141 @@ export const getOpportunityStages = catchAsync(
     }
 
     return successDataResponse('Stages retrieved successfully', stages || []);
+  },
+);
+
+/**
+ * GET /api/opportunities/statuses/[id]/affected
+ * Get count + first N opportunities using this stage (for pre-disable confirmation modal)
+ */
+export const getAffectedOpportunities = catchAsync(
+  async ({
+    request,
+    params,
+  }: {
+    request: NextRequest;
+    params?: Record<string, string>;
+  }) => {
+    const adminClient = getSupabaseServerAdminClient<Database>();
+    const url = new URL(request.url);
+    const workspaceId = url.searchParams.get('workspaceId');
+    const limit = parseInt(url.searchParams.get('limit') || '10', 10);
+    const offset = parseInt(url.searchParams.get('offset') || '0', 10);
+    const stageId = params?.id;
+
+    if (!workspaceId || !stageId) {
+      return NextResponse.json(
+        { message: 'workspaceId and stage id are required' },
+        { status: 400 },
+      );
+    }
+
+    const { data: records, error, count } = await adminClient
+      .from('crm_opportunities')
+      .select('id, opportunity_name', { count: 'exact' })
+      .eq('workspace_id', workspaceId)
+      .eq('stage_id', stageId)
+      .eq('is_deleted', false)
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (error) {
+      console.error('Get affected opportunities error:', error);
+      throw error;
+    }
+
+    /* eslint-disable @typescript-eslint/no-explicit-any */
+    const mapped = (records || []).map((r: any) => ({
+      id: r.id,
+      name: r.opportunity_name,
+    }));
+    /* eslint-enable @typescript-eslint/no-explicit-any */
+
+    return successDataResponse('Affected opportunities retrieved successfully', {
+      total_count: count ?? 0,
+      records: mapped,
+    });
+  },
+);
+
+/**
+ * PATCH /api/opportunities/statuses/[id]/reassign
+ * Bulk-reassign all opportunities from old stage to new stage, then disable old stage.
+ * Body: { new_status_id: string, workspace_id: string }
+ */
+export const reassignOpportunityStage = catchAsync(
+  async ({
+    request,
+    params,
+  }: {
+    request: NextRequest;
+    params?: Record<string, string>;
+  }) => {
+    const supabase = getSupabaseServerClient();
+    const adminClient = getSupabaseServerAdminClient<Database>();
+    const oldStageId = params?.id;
+    const body = await request.json();
+    const { new_status_id, workspace_id } = body;
+
+    if (!oldStageId || !new_status_id || !workspace_id) {
+      return NextResponse.json(
+        { message: 'id, new_status_id, and workspace_id are required' },
+        { status: 400 },
+      );
+    }
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Validate new stage is active and belongs to the same workspace
+    const { data: newStage } = await adminClient
+      .from('entity_statuses')
+      .select('id, is_active')
+      .eq('id', new_status_id)
+      .eq('workspace_id', workspace_id)
+      .eq('is_active', true)
+      .single();
+
+    if (!newStage) {
+      return NextResponse.json(
+        { message: 'New stage not found or is not active' },
+        { status: 400 },
+      );
+    }
+
+    // Bulk update all affected opportunities
+    const { count: reassignedCount, error: updateError } = await adminClient
+      .from('crm_opportunities')
+      .update({ stage_id: new_status_id, updated_by: user.id, updated_at: new Date().toISOString() })
+      .eq('workspace_id', workspace_id)
+      .eq('stage_id', oldStageId)
+      .eq('is_deleted', false);
+
+    if (updateError) {
+      console.error('Reassign opportunities error:', updateError);
+      throw updateError;
+    }
+
+    // Now disable the old stage
+    const { error: disableError } = await adminClient
+      .from('entity_statuses')
+      .update({ is_active: false, updated_by: user.id, updated_at: new Date().toISOString() })
+      .eq('id', oldStageId);
+
+    if (disableError) {
+      console.error('Disable stage error:', disableError);
+      throw disableError;
+    }
+
+    return successDataResponse('Opportunities reassigned and stage disabled successfully', {
+      reassigned_count: reassignedCount ?? 0,
+      disabled_status_id: oldStageId,
+    });
   },
 );
 

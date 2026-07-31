@@ -210,14 +210,35 @@ const createLeadSourceService = asyncHandlerClient(
 );
 
 const getLeadStatusesService = asyncHandlerClient(
-  async (workspaceId: string) => {
-    const response = await ApiClient.get(
-      `/leads/statuses?workspaceId=${workspaceId}`,
-    );
+  async (params: { workspaceId: string; includeInactive?: boolean }) => {
+    const { workspaceId, includeInactive = false } = params;
+    const url = `/leads/statuses?workspaceId=${workspaceId}${includeInactive ? '&includeInactive=true' : ''}`;
+    const response = await ApiClient.get(url);
     // response.data = { success, statusCode, message, data: [...] }
     const statuses = response.data?.data || [];
 
     return statuses;
+  },
+);
+
+const getAffectedLeadsForStatusService = asyncHandlerClient(
+  async (params: { statusId: string; workspaceId: string; limit?: number; offset?: number }) => {
+    const { statusId, workspaceId, limit = 10, offset = 0 } = params;
+    const response = await ApiClient.get(
+      `/leads/statuses/${statusId}/affected?workspaceId=${workspaceId}&limit=${limit}&offset=${offset}`,
+    );
+    return response.data?.data as { total_count: number; records: { id: string; name: string; email: string | null }[] };
+  },
+);
+
+const reassignLeadStatusService = asyncHandlerClient(
+  async (params: { statusId: string; new_status_id: string; workspace_id: string }) => {
+    const { statusId, new_status_id, workspace_id } = params;
+    const response = await ApiClient.patch(`/leads/statuses/${statusId}/reassign`, {
+      new_status_id,
+      workspace_id,
+    });
+    return response.data?.data as { reassigned_count: number; disabled_status_id: string };
   },
 );
 
@@ -300,6 +321,13 @@ const sendLeadEmailService = asyncHandlerClient(
   },
 );
 
+const importLeadsService = asyncHandlerClient(
+  async (payload: { workspaceId: string; data: any[] }) => {
+    const response = await ApiClient.post('/leads/import', payload);
+    return response.data;
+  },
+);
+
 export {
   getLeadsService,
   getLeadByIdService,
@@ -308,10 +336,13 @@ export {
   getLeadSourcesService,
   createLeadSourceService,
   getLeadStatusesService,
+  getAffectedLeadsForStatusService,
+  reassignLeadStatusService,
   createLeadStatusService,
   updateLeadStatusService,
   deleteLeadStatusService,
   updateLeadService,
   deleteLeadService,
   sendLeadEmailService,
+  importLeadsService,
 };

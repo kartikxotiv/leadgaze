@@ -105,7 +105,7 @@ function TeamMembersPageSkeleton() {
             <TableBody>
               {[...Array(10)].map((_, i) => (
                 <TableRow key={i}>
-                  <TableCell className="h-[52px] px-4 py-2" colSpan={6}>
+                  <TableCell className="h-[32px] px-4 py-2" colSpan={6}>
                     <Skeleton className="h-7 w-full" />
                   </TableCell>
                 </TableRow>
@@ -576,7 +576,7 @@ export default function TeamMembersPage() {
                 {isLoading || isLoadingInvitations ? (
                   [...Array(8)].map((_, i) => (
                     <TableRow key={i}>
-                      <TableCell className="h-[52px] px-4 py-2" colSpan={5}>
+                      <TableCell className="h-[32px] px-4 py-2" colSpan={5}>
                         <Skeleton className="h-7 w-full" />
                       </TableCell>
                       <TableCell className="bg-card right-0 px-4 text-right">

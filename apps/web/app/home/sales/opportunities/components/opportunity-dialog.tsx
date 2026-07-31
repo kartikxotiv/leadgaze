@@ -102,7 +102,7 @@ export function OpportunityDialog({
   // Fetch Stages
   const { data: stages = [] } = useQuery({
     queryKey: ['opportunity-stages', currentWorkspace?.id],
-    queryFn: () => getOpportunityStatusesService(currentWorkspace!.id),
+    queryFn: () => getOpportunityStatusesService({ workspaceId: currentWorkspace!.id }),
     enabled: !!currentWorkspace?.id && isOpen,
   });
 
@@ -537,7 +537,7 @@ export function OpportunityDialog({
             
           </form>
         </Form>
-        <DialogFooter className="border-t p-6 mt-auto">
+        <DialogFooter className="border-t p-2 mt-auto">
               <Button
                 type="button"
                 variant="outline"

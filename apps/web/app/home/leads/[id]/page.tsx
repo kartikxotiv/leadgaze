@@ -79,6 +79,7 @@ import {
   updateLeadService,
 } from '~/services/leads.service';
 
+import { EntityActivityLogs } from '../../_components/entity-activity-logs';
 import { DeleteEntityDialog } from '../../_components/delete-entity-dialog';
 import {
   EntityDocuments,
@@ -245,7 +246,7 @@ export default function LeadDetailsPage() {
     queryKey: ['lead-statuses', workspace?.id],
     queryFn: () => {
       if (!workspace?.id) return Promise.resolve([]);
-      return getLeadStatusesService(workspace.id);
+      return getLeadStatusesService({ workspaceId: workspace.id });
     },
     enabled: !!workspace?.id,
   });
@@ -294,6 +295,16 @@ export default function LeadDetailsPage() {
     );
   }, [fields, canView, lead]);
 
+  const currentStatus = useMemo(() => {
+    if (!lead) return null;
+    return (
+      lead.status ||
+      statuses.find(
+        (s: any) => s.id === lead.status_id || s.id === lead.status?.id,
+      )
+    );
+  }, [lead, statuses]);
+
   if (!workspace) {
     // Workspace context still hydrating; show skeleton, same as isLoading.
     return (
@@ -309,6 +320,9 @@ export default function LeadDetailsPage() {
       await updateLeadService(leadId, { status_id: newStatusId });
       toast.success('Lead status updated successfully');
       setStatusModalOpen(false);
+      queryClient.invalidateQueries({ queryKey: ['lead', leadId] });
+      queryClient.invalidateQueries({ queryKey: ['leads'] });
+      queryClient.invalidateQueries({ queryKey: ['leads-kanban'] });
       await refetch();
     } catch (err: any) {
       console.error('Status update error:', err);
@@ -353,7 +367,7 @@ export default function LeadDetailsPage() {
   }
 
   const fullName = `${lead.first_name}${lead.last_name ? ` ${lead.last_name}` : ''}`;
-  const statusColor = lead.status?.color || '#3B82F6';
+  const statusColor = currentStatus?.color || lead.status?.color || '#3B82F6';
   const sourceColor = lead.source?.color || '#6B7280';
 
   const EditableField = ({
@@ -412,7 +426,10 @@ export default function LeadDetailsPage() {
                     className="gap-2"
                     disabled={isSaving}
                   >
-                    <Flag className="h-4 w-4" />
+                    <Flag
+                      className="h-4 w-4 shrink-0 transition-colors"
+                      style={{ color: statusColor, fill: statusColor }}
+                    />
                     <span className="hidden sm:inline">Change Status</span>
                   </Button>
                 </TooltipTrigger>
@@ -726,40 +743,7 @@ export default function LeadDetailsPage() {
               </TabsContent>
 
               <TabsContent value="activity">
-                <CardWidgetContainer
-                  title="Activity"
-                  hideHeaderBorder={true}
-                  icon={<Clock className="text-leadgaze-dark h-5 w-5 dark:text-white" />}>
-                  <CardContent className="px-6 py-3">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3 dark:bg-slate-900">
-                        <div className="h-2 w-2 rounded-full bg-green-500" />
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm font-medium text-gray-900 dark:text-white">
-                            Lead Created
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            {formatDate(lead.created_at)}
-                          </p>
-                        </div>
-                      </div>
-                      {lead.updated_at &&
-                        lead.updated_at !== lead.created_at && (
-                          <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3 dark:bg-slate-900">
-                            <div className="h-2 w-2 rounded-full bg-blue-500" />
-                            <div className="min-w-0 flex-1">
-                              <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                Lead Updated
-                              </p>
-                              <p className="text-xs text-gray-500">
-                                {formatDate(lead.updated_at)}
-                              </p>
-                            </div>
-                          </div>
-                        )}
-                    </div>
-                  </CardContent>
-                </CardWidgetContainer>
+                <EntityActivityLogs entityType="lead" entityId={leadId} />
               </TabsContent>
             </Tabs>
 
@@ -1213,7 +1197,12 @@ export default function LeadDetailsPage() {
         <ChangeStatusDialog
           open={statusModalOpen}
           onOpenChange={setStatusModalOpen}
-          onSuccess={() => refetch()}
+          onSuccess={() => {
+            queryClient.invalidateQueries({ queryKey: ['lead', leadId] });
+            queryClient.invalidateQueries({ queryKey: ['leads'] });
+            queryClient.invalidateQueries({ queryKey: ['leads-kanban'] });
+            refetch();
+          }}
           lead={lead}
           statuses={statuses}
         />

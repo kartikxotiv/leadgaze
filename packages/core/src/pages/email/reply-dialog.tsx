@@ -382,7 +382,7 @@ export function CoreEmailReplyDialog({
             </div>
           </div>
 
-          <DialogFooter className="border-t border-gray-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
+          <DialogFooter className="border-t border-gray-200 bg-white p-2 dark:border-slate-800 dark:bg-slate-950">
             <Button variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>

@@ -111,10 +111,14 @@
     "./table-status-metric-tab": "./src/shadcn/table-status-metric-tab.tsx",
     "./list-toolbar": "./src/shadcn/list-toolbar.tsx",
     "./csv-import-dialog": "./src/shadcn/csv-import-dialog.tsx",
+    "./csv-export-button": "./src/shadcn/csv-export-button.tsx",
+    "./use-csv-export": "./src/shadcn/use-csv-export.ts",
+    "./csv-utils": "./src/shadcn/csv-utils.ts",
     "./status-filter-dropdown": "./src/shadcn/status-filter-dropdown.tsx",
     "./page-size-selector": "./src/shadcn/page-size-selector.tsx",
     "./detail-header": "./src/shadcn/detail-header.tsx",
     "./detail-info-row": "./src/shadcn/detail-info-row.tsx",
+    "./view-toggle": "./src/shadcn/view-toggle.tsx",
     "./utils": "./src/lib/utils/index.ts",
     "./use-column-visibility": "./src/hooks/use-column-visibility.ts",
     "./use-column-resize": "./src/hooks/use-column-resize.ts",
@@ -148,7 +152,15 @@
     "./multi-step-form": "./src/makerkit/multi-step-form.tsx",
     "./app-breadcrumbs": "./src/makerkit/app-breadcrumbs.tsx",
     "./empty-state": "./src/makerkit/empty-state.tsx",
-    "./marketing": "./src/makerkit/marketing/index.tsx"
+    "./download-report-button": "./src/shadcn/download-report-button.tsx",
+    "./marketing": "./src/makerkit/marketing/index.tsx",
+    "./app-shell": "./src/layouts/app-shell/app-shell.tsx",
+    "./app-navbar": "./src/navigation/app-navbar/app-navbar.tsx",
+    "./mobile-navbar": "./src/navigation/mobile-navbar/mobile-navbar.tsx",
+    "./workspace-switcher": "./src/navigation/workspace-switcher/workspace-switcher.tsx",
+    "./module-switcher": "./src/navigation/module-switcher/module-switcher.tsx",
+    "./profile-dropdown": "./src/navigation/profile-dropdown/profile-dropdown.tsx",
+    "./navigation-types": "./src/navigation/navigation-types/index.ts"
   },
   "typesVersions": {
     "*": {
