@@ -108,6 +108,10 @@ export default function WorkspaceSetupPage() {
         const workspace = (memberRow.workspaces as any);
         if (!workspace) return;
 
+        const searchParams = new URLSearchParams(window.location.search);
+        const isNew = searchParams.get('new') === 'true';
+        if (isNew) return;
+
         // Workspace exists but onboarding already finished — redirect away
         if (workspace.is_onboarding_finished) {
           router.push(pathsConfig.app.home);
