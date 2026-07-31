@@ -139,3 +139,24 @@
   background-color: color-mix(in srgb, var(--primary) 65%, transparent);
 }
 
+@layer utilities {
+  .dialog-footer button{
+    font-family: var(--font-sans) !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+    line-height: 20px !important;
+    padding-inline: calc(var(--spacing) * 2) !important;
+    gap: calc(var(--spacing) * 1.5) !important;  
+  }
+
+  .main-dialog div label{
+    font-family: var(--font-sans) !important;
+    font-size: 12px !important;
+    font-weight: 400 !important;
+    line-height: 20px !important;
+  }
+  .main-dialog div label~input{
+    margin-top: 0 !important;
+
+  }
+}

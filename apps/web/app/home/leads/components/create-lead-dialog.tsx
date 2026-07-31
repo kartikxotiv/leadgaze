@@ -759,7 +759,7 @@ export default function CreateLeadDialog({
               ) : (
                 <>
                   <Plus className="h-4 w-4" />
-                  Create Lead
+                  Add Lead
                 </>
               )}
             </Button>
