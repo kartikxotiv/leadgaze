@@ -62,6 +62,10 @@ async function resolvePostAuthRedirect(
       return pathsConfig.app.workspaceSetup;
     }
 
+    if (count !== null && count > 1) {
+      return '/workspace-select';
+    }
+
     return nextPathFromParams ?? pathsConfig.app.home;
   } catch (error) {
     console.error('Error resolving post-auth redirect:', error);
