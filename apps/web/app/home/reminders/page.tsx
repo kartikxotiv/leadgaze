@@ -122,7 +122,7 @@ function RemindersPageSkeleton() {
               <TableBody>
                 {[...Array(10)].map((_, i) => (
                   <TableRow key={i}>
-                    <TableCell className="h-[52px] px-4 py-2" colSpan={7}>
+                    <TableCell className="h-[32px] px-4 py-2" colSpan={7}>
                       <Skeleton className="h-7 w-full" />
                     </TableCell>
                   </TableRow>
@@ -736,6 +736,7 @@ export default function RemindersPage() {
                     >
                       <span
                         className="col-resize-handle"
+                        data-min-width={30}
                         {...getResizeHandleProps('sno')}
                       />
                     </SortableTableHead>
@@ -915,7 +916,7 @@ export default function RemindersPage() {
                     {[...Array(10)].map((_, i) => (
                       <TableRow key={i}>
                         <TableCell
-                          className="h-[52px] px-4 py-2"
+                          className="h-[32px] px-4 py-2"
                           colSpan={
                             visibility
                               ? Object.values(visibility).filter(

@@ -468,30 +468,27 @@ function UpcomingTasks({ tasks }: { tasks: DashboardTask[] }) {
     return { label: 'low', bg: 'var(--color-status-neutral-bg)', text: 'var(--color-status-neutral-text)' };
   };
 
-  // Limit to latest 3 tasks
-  const latestTasks = useMemo(() => tasks.slice(0, 3), [tasks]);
+  const latestTasks = useMemo(() => tasks ?? [], [tasks]);
 
   return (
-    <div className="max-h-[400px] overflow-y-auto xl:max-h-[430px] 2xl:max-h-[440px] overflow-auto">
+    <div className="">
       {latestTasks.length === 0 ? (
             <div className="flex h-40 flex-col items-center justify-center text-slate-400">
               <FileText className="mb-2 h-8 w-8 opacity-20" />
               <p className="text-sm">No upcoming tasks</p>
             </div>
           ) : (
-            <div className="divide-y dark:divide-zinc-800">
+            <div className="divide-y dark:divide-zinc-800 max-h-[300px] overflow-y-auto xl:max-h-[300px] 2xl:max-h-[300px] overflow-auto">
               {latestTasks.map((task) => {
                 const relativeDate = formatDueDateShort(task.dueDate);
                 const priority = getTaskPriority(task);
                 return (
                   <div
                     key={task.id}
-                    className="flex items-center justify-between p-5 transition-colors hover:bg-slate-50/30 xl:p-3 2xl:p-5 dark:hover:bg-zinc-800/30 border-b border-gray-300 last:border-0"
+                    className="flex items-center justify-between px-6 py-2 transition-colors hover:bg-slate-50/30 dark:hover:bg-zinc-800/30 border-b border-gray-300 last:border-0 xl:px-4 2xl:px-6"
                   >
                     <div className="flex items-start gap-4">
-                      <div className="mt-0.5">
-                        <input type="checkbox" className="h-4 w-4 rounded border-gray-300 text-leadgaze-primary focus:ring-leadgaze-primary" />
-                      </div>
+
                       <div className="flex flex-col gap-0.5">
                         <span className="primary-text-medium text-leadgaze-dark dark:text-zinc-200">
                           {task.title}
@@ -757,8 +754,7 @@ function SalesDashboardSkeleton() {
                 className="flex items-center justify-between p-5 xl:p-3 2xl:p-5"
               >
                 <div className="flex items-start gap-4">
-                  {/* Checkbox placeholder */}
-                  <Skeleton className="mt-0.5 h-4 w-4 rounded" />
+
                   <div className="flex flex-col gap-1.5">
                     <Skeleton className={`h-4 ${i === 1 ? 'w-48' : i === 2 ? 'w-40' : 'w-52'}`} />
                     <Skeleton className="h-3 w-16" />

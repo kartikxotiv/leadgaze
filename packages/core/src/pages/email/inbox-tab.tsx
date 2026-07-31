@@ -334,37 +334,39 @@ export function CoreInboxTab({
         </CardContent>
       </Card>
 
-      <div className="flex flex-col gap-3 rounded-xl border bg-white px-4 py-3 text-sm shadow-sm sm:flex-row sm:items-center sm:justify-between dark:bg-zinc-900">
-        <div className="text-muted-foreground">
-          Showing {pageStart}-{pageEnd} of {totalCount} emails
-          {isFetching ? ' · refreshing...' : ''}
+      {totalCount > 0 && (
+        <div className="flex flex-col gap-3 rounded-xl border bg-white px-4 py-3 text-sm shadow-sm sm:flex-row sm:items-center sm:justify-between dark:bg-zinc-900">
+          <div className="text-muted-foreground">
+            Showing {pageStart}-{pageEnd} of {totalCount} emails
+            {isFetching ? ' · refreshing...' : ''}
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page <= 1 || isFetching}
+              onClick={() => setPage((current) => Math.max(1, current - 1))}
+            >
+              <ChevronLeft className="mr-1 h-4 w-4" />
+              Previous
+            </Button>
+            <span className="text-muted-foreground min-w-20 text-center text-xs">
+              Page {page} of {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page >= totalPages || isFetching}
+              onClick={() =>
+                setPage((current) => Math.min(totalPages, current + 1))
+              }
+            >
+              Next
+              <ChevronRight className="ml-1 h-4 w-4" />
+            </Button>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page <= 1 || isFetching}
-            onClick={() => setPage((current) => Math.max(1, current - 1))}
-          >
-            <ChevronLeft className="mr-1 h-4 w-4" />
-            Previous
-          </Button>
-          <span className="text-muted-foreground min-w-20 text-center text-xs">
-            Page {page} of {totalPages}
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page >= totalPages || isFetching}
-            onClick={() =>
-              setPage((current) => Math.min(totalPages, current + 1))
-            }
-          >
-            Next
-            <ChevronRight className="ml-1 h-4 w-4" />
-          </Button>
-        </div>
-      </div>
+      )}
 
       <CoreEmailDetailDialog
         open={isDetailOpen}

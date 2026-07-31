@@ -40,6 +40,8 @@ import {
   SelectValue,
 } from '@kit/ui/select';
 import { Skeleton } from '@kit/ui/skeleton';
+import { Checkbox } from '@kit/ui/checkbox';
+import { CsvExportButton } from '@kit/ui/csv-export-button';
 import {
   Table,
   TableBody,
@@ -161,6 +163,19 @@ type ResourcePageProps = {
   canEditField?: (fieldKey: string) => boolean;
   /** Logged in user's ID to restrict dynamic fields edits to their creators */
   currentUserId?: string;
+  viewMode?: 'table' | 'kanban';
+  kanbanSlot?: (data: any[], refetch: () => void) => React.ReactNode;
+  showSelection?: boolean;
+  selectedIds?: Set<string>;
+  onSelectAll?: () => void;
+  onSelectRow?: (id: string) => void;
+  isAllSelected?: boolean;
+  isIndeterminate?: boolean;
+  exportSlot?: React.ReactNode;
+  enableExport?: boolean;
+  serializeRow?: (record: ServiceCloudRecord) => Record<string, string>;
+  exportColumns?: Array<{ key: string; label: string }>;
+  actions?: React.ComponentProps<typeof ListToolBar>['actions'];
 };
 
 function getInitialForm(
@@ -201,7 +216,25 @@ export function ServiceCloudResourcePage({
   canViewField,
   canEditField,
   currentUserId,
+  viewMode = 'table',
+  kanbanSlot,
+  showSelection = false,
+  selectedIds = new Set(),
+  onSelectAll,
+  onSelectRow,
+  isAllSelected = false,
+  isIndeterminate = false,
+  exportSlot,
+  enableExport = false,
+  serializeRow,
+  exportColumns,
+  actions,
 }: ResourcePageProps) {
+  const [internalSelectedIds, setInternalSelectedIds] = useState<Set<string>>(new Set());
+  const [isExporting, setIsExporting] = useState(false);
+
+  const showSelectionFinal = showSelection || enableExport;
+  const selectedIdsFinal = showSelection ? (selectedIds || new Set()) : internalSelectedIds;
   // Apply FLS: filter out columns the current user cannot view
   const visibleColumns = useMemo(
     () =>
@@ -225,6 +258,11 @@ export function ServiceCloudResourcePage({
   useEffect(() => {
     setCurrentPage(1);
   }, [debouncedSearchTerm, pageSize]);
+
+  // Reset selection when pagination, search, or viewMode changes
+  useEffect(() => {
+    setInternalSelectedIds(new Set());
+  }, [debouncedSearchTerm, pageSize, currentPage, viewMode]);
 
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<ServiceCloudRecord | null>(null);
@@ -311,6 +349,134 @@ export function ServiceCloudResourcePage({
     [sortedData, currentPage, pageSize],
   );
 
+  const allVisibleIds = paginatedData.map((r) => r.id).filter(Boolean) as string[];
+
+  const isAllSelectedFinal = showSelection
+    ? isAllSelected
+    : allVisibleIds.length > 0 && allVisibleIds.every((id) => selectedIdsFinal.has(id));
+
+  const isIndeterminateFinal = showSelection
+    ? isIndeterminate
+    : !isAllSelectedFinal && allVisibleIds.some((id) => selectedIdsFinal.has(id));
+
+  const handleSelectAllInternal = () => {
+    if (isAllSelectedFinal) {
+      setInternalSelectedIds((prev) => {
+        const next = new Set(prev);
+        allVisibleIds.forEach((id) => next.delete(id));
+        return next;
+      });
+    } else {
+      setInternalSelectedIds((prev) => {
+        const next = new Set(prev);
+        allVisibleIds.forEach((id) => next.add(id));
+        return next;
+      });
+    }
+  };
+
+  const handleSelectRowInternal = (id: string) => {
+    setInternalSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const onSelectAllFinal = showSelection ? onSelectAll : handleSelectAllInternal;
+  const onSelectRowFinal = showSelection ? onSelectRow : handleSelectRowInternal;
+
+  const handleExportAll = async () => {
+    if (!workspaceId) return;
+    try {
+      setIsExporting(true);
+      const allData = await getServiceCloudResourceService(
+        resource,
+        workspaceId,
+        {
+          ...queryParamsWithSort,
+          limit: '10000',
+        }
+      );
+
+      if (allData.length === 0) {
+        toast.info('No data to export.');
+        return;
+      }
+
+      const { stringifyCsv } = await import('@kit/ui/csv-utils');
+      const cols = exportColumns || visibleColumns.map(c => ({ key: c.key, label: c.label }));
+      const headerRow = cols.map((c) => c.label);
+      const dataRows = allData.map((record: ServiceCloudRecord) => {
+        const flat = serializeRow ? serializeRow(record) : record;
+        return cols.map((c) => String(flat[c.key] ?? ''));
+      });
+      const csvText = stringifyCsv([headerRow, ...dataRows]);
+      const blob = new Blob([csvText], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const dateSuffix = new Date().toISOString().slice(0, 10);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `${resource}_export_${dateSuffix}.csv`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      toast.success(`Exported ${allData.length} records successfully.`);
+    } catch (err) {
+      toast.error('Failed to export.');
+      console.error('Export All error:', err);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleExportSelected = async () => {
+    const selectedRows = data.filter((r) => r.id && selectedIdsFinal.has(r.id));
+    if (selectedRows.length === 0) {
+      toast.info('No rows selected.');
+      return;
+    }
+
+    try {
+      setIsExporting(true);
+      const { stringifyCsv } = await import('@kit/ui/csv-utils');
+      const cols = exportColumns || visibleColumns.map(c => ({ key: c.key, label: c.label }));
+      const headerRow = cols.map((c) => c.label);
+      const dataRows = selectedRows.map((record) => {
+        const flat = serializeRow ? serializeRow(record) : record;
+        return cols.map((c) => String(flat[c.key] ?? ''));
+      });
+      const csvText = stringifyCsv([headerRow, ...dataRows]);
+      const blob = new Blob([csvText], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const dateSuffix = new Date().toISOString().slice(0, 10);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `${resource}_export_selected_${dateSuffix}.csv`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      toast.success(`Exported ${selectedRows.length} selected record${selectedRows.length > 1 ? 's' : ''} successfully.`);
+    } catch (err) {
+      toast.error('Failed to export selected.');
+      console.error('Export Selected error:', err);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const exportSlotFinal = exportSlot || (enableExport ? (
+    <CsvExportButton
+      selectedCount={selectedIdsFinal.size}
+      onExportAll={handleExportAll}
+      onExportSelected={handleExportSelected}
+      isExporting={isExporting}
+    />
+  ) : undefined);
+
   const openCreate = () => {
     setEditing(null);
     setForm(getInitialForm(fields, defaults));
@@ -392,8 +558,10 @@ export function ServiceCloudResourcePage({
           activeFilterCount={activeFilterCount}
           onClearFilters={onClearFilters}
           statusSlot={toolbar}
+          exportSlot={exportSlotFinal}
           actions={
-            canCreate
+            actions ||
+            (canCreate
               ? [
                   {
                     key: 'create',
@@ -403,31 +571,50 @@ export function ServiceCloudResourcePage({
                     buttonVariant: 'default' as const,
                   },
                 ]
-              : []
+              : [])
           }
         />
       </div>
       <PageBody className="sticky flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col overflow-hidden">
         <div className="flex min-h-0 w-full min-w-0 max-w-full flex-1 gap-0">
-          <CustomTableContainer
-            pagination={
-              <TablePagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                totalCount={totalCount}
-                pageSize={pageSize}
-                onPageChange={setCurrentPage}
-                onPageSizeChange={(val) => {
-                  setPageSize(val);
-                  setCurrentPage(1);
-                }}
-                entityLabel={entityLabel ?? resource}
-              />
-            }
-          >
-            <Table>
-              <TableHeader>
-                <TableRow>
+          {viewMode === 'kanban' && kanbanSlot ? (
+            kanbanSlot(data, refetch)
+          ) : (
+            <CustomTableContainer
+              pagination={
+                <TablePagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  totalCount={totalCount}
+                  pageSize={pageSize}
+                  onPageChange={setCurrentPage}
+                  onPageSizeChange={(val) => {
+                    setPageSize(val);
+                    setCurrentPage(1);
+                  }}
+                  entityLabel={entityLabel ?? resource}
+                />
+              }
+            >
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    {showSelectionFinal && (
+                      <TableHead className="w-10 px-3">
+                        <Checkbox
+                          checked={
+                            isAllSelectedFinal
+                              ? true
+                              : isIndeterminateFinal
+                                ? 'indeterminate'
+                                : false
+                          }
+                          onCheckedChange={onSelectAllFinal}
+                          aria-label="Select all rows"
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      </TableHead>
+                    )}
                   {visibleColumns.map((column) => (
                     <ColumnHeader
                       key={column.key}
@@ -463,7 +650,7 @@ export function ServiceCloudResourcePage({
                   ))}
                   {canEdit || canDelete ? (
                     onColumnAddClick ? (
-                      <TableHead className="sticky-right-header bg-background z-10 w-12 px-1 text-center">
+                      <TableHead className="sticky-right-header z-10 w-12 px-1 text-center">
                         <Button
                           type="button"
                           variant="outline"
@@ -487,9 +674,14 @@ export function ServiceCloudResourcePage({
                 {isLoading ? (
                   [...Array(5)].map((_, i) => (
                     <TableRow key={`skeleton-${i}`}>
+                      {showSelectionFinal && (
+                        <TableCell className="w-10 px-3">
+                          <Skeleton className="h-4 w-4" />
+                        </TableCell>
+                      )}
                       <TableCell
                         colSpan={visibleColumns.length}
-                        className="h-[52px] px-4 py-2"
+                        className="h-[32px] px-4 py-2"
                       >
                         <Skeleton className="h-7 w-full" />
                       </TableCell>
@@ -503,7 +695,7 @@ export function ServiceCloudResourcePage({
                 ) : filteredData.length === 0 ? (
                   <TableRow>
                     <TableCell
-                      colSpan={visibleColumns.length + 1}
+                      colSpan={visibleColumns.length + (showSelectionFinal ? 1 : 0) + (canEdit || canDelete ? 1 : 0)}
                       className="text-muted-foreground py-8 text-center"
                     >
                       {emptyLabel}
@@ -512,6 +704,18 @@ export function ServiceCloudResourcePage({
                 ) : (
                   paginatedData.map((record: ServiceCloudRecord) => (
                     <TableRow key={record.id}>
+                      {showSelectionFinal && (
+                        <TableCell
+                          className="w-10 px-3"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Checkbox
+                            checked={selectedIdsFinal?.has(record.id) ?? false}
+                            onCheckedChange={() => onSelectRowFinal?.(record.id)}
+                            aria-label={`Select row ${record.id}`}
+                          />
+                        </TableCell>
+                      )}
                       {visibleColumns.map((column) => (
                         <TableCell
                           key={column.key}
@@ -540,7 +744,7 @@ export function ServiceCloudResourcePage({
                             {canDelete ? (
                               <Button
                                 variant="ghost"
-                                size="icon"
+                                size="sm"                                
                                 onClick={() => setDeletingRecord(record)}
                               >
                                 <Trash2 className="text-muted-foreground h-4 w-4" />
@@ -555,6 +759,7 @@ export function ServiceCloudResourcePage({
               </TableBody>
             </Table>
           </CustomTableContainer>
+          )}
         </div>
       </PageBody>
       <AlertDialog

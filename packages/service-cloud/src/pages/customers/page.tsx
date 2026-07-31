@@ -41,6 +41,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@kit/ui/tooltip';
 import { useColumnResize } from '@kit/ui/use-column-resize';
 import { useDateRangeFilter } from '@kit/ui/use-date-range-filter';
 
+import { formatDate } from '@kit/shared/utils';
+
 import {
   type ServiceCloudRecord,
   createServiceCloudResourceService,
@@ -158,10 +160,10 @@ export function ServiceCloudCustomersPage({
           ? 'All members'
           : selectedCreatedByIds.length === 1
             ? ((
-                (Array.isArray(teamMembers) ? teamMembers : []).find(
-                  (m: any) => m?.user_id === selectedCreatedByIds[0],
-                ) as any
-              )?.user?.user_metadata?.full_name ?? '1 selected')
+              (Array.isArray(teamMembers) ? teamMembers : []).find(
+                (m: any) => m?.user_id === selectedCreatedByIds[0],
+              ) as any
+            )?.user?.user_metadata?.full_name ?? '1 selected')
             : `${selectedCreatedByIds.length} selected`,
       options: (Array.isArray(teamMembers) ? teamMembers : [])
         .filter((m: any) => m?.user_id)
@@ -402,14 +404,17 @@ export function ServiceCloudCustomersPage({
     <>
       <Tabs
         defaultValue={tab}
-        className="space-y-4"
+        className="flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col space-y-4"
         onValueChange={(value) => router.push(`${pathname}?tab=${value}`)}
       >
-        <TabsList className="mb-0">
+        <TabsList className="mb-0 shrink-0 w-fit self-start">
           <TabsTrigger value="customers">Customers</TabsTrigger>
           <TabsTrigger value="organizations">Organizations</TabsTrigger>
         </TabsList>
-        <TabsContent value="customers">
+        <TabsContent
+          value="customers"
+          className="mt-0 flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col data-[state=active]:flex data-[state=active]:flex-1 data-[state=active]:flex-col data-[state=active]:min-h-0"
+        >
           <ServiceCloudResourcePage
             workspaceId={workspaceId}
             resource="customers"
@@ -483,7 +488,10 @@ export function ServiceCloudCustomersPage({
             ]}
           />
         </TabsContent>
-        <TabsContent value="organizations">
+        <TabsContent
+          value="organizations"
+          className="mt-0 flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col data-[state=active]:flex data-[state=active]:flex-1 data-[state=active]:flex-col data-[state=active]:min-h-0"
+        >
           <ServiceCloudResourcePage
             workspaceId={workspaceId}
             resource="organizations"
@@ -703,7 +711,7 @@ export function ServiceCloudCustomersPage({
                 </div>
               </div>
 
-              <DialogFooter className="border-t border-gray-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
+              <DialogFooter className="border-t border-gray-200 bg-white p-2 dark:border-slate-800 dark:bg-slate-950">
                 <Button
                   variant="outline"
                   onClick={() => setCreateOpen(false)}
@@ -878,7 +886,7 @@ export function ServiceCloudCustomersPage({
               )}
             </div>
 
-            <DialogFooter className="border-t border-gray-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
+            <DialogFooter className="border-t border-gray-200 bg-white p-2 dark:border-slate-800 dark:bg-slate-950">
               <Button
                 variant="outline"
                 onClick={() => setTicketsModalCustomer(null)}

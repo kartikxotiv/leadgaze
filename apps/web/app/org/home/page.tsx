@@ -284,7 +284,7 @@ function ModuleSelectorPage() {
               <h2 className="primary-heading text-foreground">
                 No Active Subscription
               </h2>
-              <p className="primary-text-regular text-muted-foreground mt-2">
+              <p className="primary-text-regular text-muted-foreground">
                 Your workspace does not have any active modules. Subscribe to a
                 module to get started.
               </p>
@@ -337,10 +337,10 @@ function ModuleSelectorPage() {
 
   // Multiple modules — show selector
   return (
-    <div className="min-h-screen">
+    <div className="flex flex-col">
       {/* Hero */}
       <div className="border-border from-primary/[0.03] border-b">
-        <div className="mx-auto">
+        <div>
           {/* <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <div className="mb-2 flex items-center gap-2">
@@ -413,8 +413,8 @@ function ModuleSelectorPage() {
       </div>
 
       {/* Module grid */}
-      <div className="mx-auto py-8">
-        <div className="mb-6 flex items-center justify-between">
+      <div className="py-1">
+        <div className="mb-1 flex items-center justify-between">
           <h2 className="primary-heading text-foreground">Available Modules</h2>
           <Button
             variant="ghost"
@@ -441,7 +441,7 @@ function ModuleSelectorPage() {
         </div>
 
         {/* Footer note */}
-        <Card className="mt-8">
+        <Card className="mt-4">
           <CardContent className="flex items-center gap-3 p-4">
             <Shield className="text-muted-foreground h-4 w-4 shrink-0" />
             <p className="secondary-text-small text-muted-foreground">

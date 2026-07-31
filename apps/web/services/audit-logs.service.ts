@@ -7,6 +7,7 @@ export async function getAuditLogsService(params: {
   workspaceId: string;
   module?: string;
   entityId?: string;
+  entityType?: string;
   action?: string;
   actorId?: string;
   page?: number;
