@@ -317,7 +317,7 @@ export default function CreateLeadDialog({
             {/* Contact Information Section */}
             <div className="space-y-2">
               <h3 className="primary-heading text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">
-                Contact Information
+                Contact Informationss
               </h3>
               <Separator className="bg-gray-200 dark:bg-slate-800" />
 

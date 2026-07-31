@@ -152,7 +152,7 @@ export function UpdateMemberDialog({
             </Select>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 pb-2">
             <Checkbox
               id="primary_contact"
               checked={formData.is_primary_contact}

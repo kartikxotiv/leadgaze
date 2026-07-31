@@ -70,7 +70,7 @@ const DialogFooter = ({
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     className={cn(
-      'flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 dialog-footer-border-top dialog-footer-bg p-2 dialog-footer',
+      'flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 dialog-footer-border-top p-2 dialog-footer',
       className,
     )}
     {...props}
