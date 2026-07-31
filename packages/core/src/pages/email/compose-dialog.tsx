@@ -140,10 +140,10 @@ export function CoreEmailComposeDialog({
             <DialogTitle>New Email</DialogTitle>
           </DialogHeader>
 
-          <div className="flex-1 space-y-2 overflow-y-auto p-6 pb-8">
-            <div className="grid gap-4">
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="grid gap-2">
+          <div className="flex-1 space-y-2 overflow-y-auto p-2">
+            <div className="grid gap-2">
+              <div className="grid gap-2 sm:grid-cols-2">
+                <div className="grid">
                   <Label>Template</Label>
                   <Select value={templateId} onValueChange={applyTemplate}>
                     <SelectTrigger>
@@ -171,7 +171,7 @@ export function CoreEmailComposeDialog({
                   </Select>
                 </div>
 
-                <div className="grid gap-2">
+                <div className="grid">
                   <Label>Insert Variable</Label>
                   <Select value="" onValueChange={insertVariable}>
                     <SelectTrigger>
@@ -200,7 +200,7 @@ export function CoreEmailComposeDialog({
                 </div>
               </div>
 
-              <div className="grid gap-2">
+              <div className="grid">
                 <Label>From</Label>
                 <Select
                   value={emailAccountId}
@@ -219,7 +219,7 @@ export function CoreEmailComposeDialog({
                 </Select>
               </div>
 
-              <div className="grid gap-2">
+              <div className="grid">
                 <Label>To</Label>
                 <Input
                   value={to}
@@ -228,15 +228,15 @@ export function CoreEmailComposeDialog({
                 />
               </div>
 
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="grid gap-2">
+              <div className="grid gap-2 sm:grid-cols-2">
+                <div className="grid">
                   <Label>Cc</Label>
                   <Input
                     value={cc}
                     onChange={(event) => setCc(event.target.value)}
                   />
                 </div>
-                <div className="grid gap-2">
+                <div className="grid">
                   <Label>Bcc</Label>
                   <Input
                     value={bcc}
@@ -245,7 +245,7 @@ export function CoreEmailComposeDialog({
                 </div>
               </div>
 
-              <div className="grid gap-2">
+              <div className="grid">
                 <Label>Subject</Label>
                 <Input
                   value={subject}
@@ -253,7 +253,7 @@ export function CoreEmailComposeDialog({
                 />
               </div>
 
-              <div className="grid gap-2">
+              <div className="grid">
                 <Label>Message</Label>
                 <Textarea
                   value={body}

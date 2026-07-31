@@ -40,13 +40,13 @@ export function LeadCustomFieldInputs({
 
   return (
     <div className="space-y-4">
-      <h4 className="text-sm font-medium text-muted-foreground">Custom Fields</h4>
+      <h4 className="primary-heading text-muted-foreground mb-0">Custom Fields</h4>
       {visibleFields.map((field) => {
         const isEditable = canEdit(field.field_key);
         const value = values[field.field_key];
 
         return (
-          <div key={field.id} className="space-y-2">
+          <div key={field.id} className="mb-2">
             <Label htmlFor={`cf-${field.field_key}`} className={!isEditable ? 'opacity-60' : ''}>
               {field.field_label}
               {field.is_required && <span className="text-destructive ml-1">*</span>}

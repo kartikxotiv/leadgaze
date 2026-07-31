@@ -148,7 +148,7 @@
     padding-inline: calc(var(--spacing) * 2) !important;
     gap: calc(var(--spacing) * 1.5) !important;  
   }
-  .dialog-footer button:not(.text-primary-foreground){
+  .dialog-footer button:not(.text-primary-foreground, .text-destructive-foreground){
     color: #475569;    
   }
 

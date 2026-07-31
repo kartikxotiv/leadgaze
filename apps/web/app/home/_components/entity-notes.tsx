@@ -171,36 +171,36 @@ export function EntityNotes({ entityType, entityId }: EntityNotesProps) {
                   {editingNote ? 'Edit Note' : 'Add Note'}
                 </DialogTitle>
               </DialogHeader>
-              <div className="space-y-2 px-6 pb-4">
-                <Textarea
-                  placeholder="Enter note content..."
-                  value={newNoteContent}
-                  onChange={(e) => setNewNoteContent(e.target.value)}
-                  rows={4}
-                />
-                <DialogFooter>
-                  <Button
-                    variant="outline"
-                    onClick={() => setIsOpen(false)}
-                    disabled={
-                      createMutation.isPending || updateMutation.isPending
-                    }
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    onClick={handleSave}
-                    disabled={
-                      createMutation.isPending || updateMutation.isPending
-                    }
-                  >
-                    {(createMutation.isPending || updateMutation.isPending) && (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    )}
-                    {editingNote ? 'Update Note' : 'Save Note'}
-                  </Button>
-                </DialogFooter>
-              </div>
+          <div className="px-2">
+            <Textarea
+              placeholder="Enter note content..."
+              value={newNoteContent}
+              onChange={(e) => setNewNoteContent(e.target.value)}
+              rows={4}
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsOpen(false)}
+              disabled={
+                createMutation.isPending || updateMutation.isPending
+              }
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSave}
+              disabled={
+                createMutation.isPending || updateMutation.isPending
+              }
+            >
+              {(createMutation.isPending || updateMutation.isPending) && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              {editingNote ? 'Update Note' : 'Save Note'}
+            </Button>
+          </DialogFooter>              
             </DialogContent>
           </Dialog>
         ) : null

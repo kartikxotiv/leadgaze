@@ -312,11 +312,17 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
                   </select>
                 </div>
               </div>
-              <div className="border-t p-6 pt-4">
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => setIsOpen(false)}
+                  disabled={createMutation.isPending || updateMutation.isPending}
+                >
+                  Cancel
+                </Button>
                 <Button
                   onClick={handleSave}
                   disabled={!formData.title || createMutation.isPending || updateMutation.isPending}
-                  className="w-full"
                 >
                   {createMutation.isPending || updateMutation.isPending
                     ? 'Saving...'
@@ -324,7 +330,7 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
                       ? 'Save Changes'
                       : 'Create Task'}
                 </Button>
-              </div>
+              </DialogFooter>
             </DialogContent>
           </Dialog>
         </div>
@@ -595,9 +601,9 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
               <p className="text-sm text-gray-500 text-center py-6">No time logged yet.</p>
             )}
           </div>
-          <div className="mt-4 flex justify-end">
-            <Button onClick={() => setIsViewLogsOpen(false)}>Close</Button>
-          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsViewLogsOpen(false)}>Close</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </CardWidgetContainer>

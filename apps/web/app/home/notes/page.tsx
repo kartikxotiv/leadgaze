@@ -32,6 +32,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from '@kit/ui/dialog';
 import {
   DropdownMenu,
@@ -1022,7 +1023,7 @@ export default function NotesPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
+            <div className="px-2">
               <Label>Note Content</Label>
               <Textarea
                 placeholder="Enter note content..."
@@ -1032,7 +1033,7 @@ export default function NotesPage() {
               />
             </div>
           </div>
-          <div className="mt-auto flex justify-end gap-2 border-t p-6">
+          <DialogFooter>
             <Button
               variant="outline"
               onClick={() => setIsCreateDialogOpen(false)}
@@ -1051,7 +1052,7 @@ export default function NotesPage() {
               )}
               Save Note
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -1069,7 +1070,7 @@ export default function NotesPage() {
               rows={6}
             />
           </div>
-          <div className="mt-auto flex justify-end gap-2 border-t p-6">
+          <DialogFooter>
             <Button
               variant="outline"
               onClick={() => setIsEditDialogOpen(false)}
@@ -1086,7 +1087,7 @@ export default function NotesPage() {
               )}
               Update Note
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>

@@ -113,7 +113,7 @@ export function AssignUserModal({
 
         <div className="flex-1 overflow-y-auto space-y-2 px-2">
           {/* Search Input */}
-          <div className="relative">
+          <div className="relative mb-1 mt-[1px]">
             <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
             <Input
               placeholder="Search by name or email..."
@@ -125,7 +125,7 @@ export function AssignUserModal({
           </div>
 
           {/* Members List */}
-          <ScrollArea className="h-[300px] rounded-lg border p-3">
+          <ScrollArea className="h-[300px] rounded-lg border p-2">
             {isLoaderActive ? (
               <div className="flex h-full items-center justify-center">
                 <div className="flex flex-col items-center gap-2">
@@ -150,7 +150,7 @@ export function AssignUserModal({
                     key={member.id}
                     onClick={() => onAssign(member.id)}
                     disabled={isLoading}
-                    className="hover:bg-muted/50 w-full rounded-lg border p-3 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+                    className="hover:bg-muted/50 w-full rounded-lg border p-2 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <div className="flex items-center gap-3">
                       {member.avatar_url && (
@@ -161,7 +161,7 @@ export function AssignUserModal({
                         />
                       )}
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium">
+                        <p className="primary-text-medium text-leadgaze-dark">
                           {member.full_name || 'Unknown'}
                         </p>
                         <p className="text-muted-foreground truncate text-xs">

@@ -285,12 +285,12 @@ export function CsvImportDialog({
       <DialogContent className="flex max-h-[92vh] w-[95vw] max-w-6xl flex-col overflow-hidden p-0">
         {/* ── Fixed Header ── */}
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <FileSpreadsheet className="h-5 w-5 text-sky-600" />
+          <DialogTitle className="flex items-center gap-2 primary-heading-extra text-white">
+            <FileSpreadsheet className="h-5 w-5 text-white" />
             {title}
           </DialogTitle>
           {description && (
-            <DialogDescription className="text-sm text-slate-500">{description}</DialogDescription>
+            <DialogDescription className="primary-text-medium text-white">{description}</DialogDescription>
           )}
         </DialogHeader>
 
@@ -322,7 +322,7 @@ export function CsvImportDialog({
             <div className="p-6">
               <div
                 className={cn(
-                  'flex min-h-[320px] flex-col items-center justify-center rounded-2xl border-2 border-dashed px-6 text-center transition-colors',
+                  'flex min-h-[320px] flex-col items-center justify-center rounded-1 border-2 border-dashed px-6 text-center transition-colors',
                   isDragging
                     ? 'border-sky-500 bg-sky-50/70 dark:bg-sky-950/20'
                     : 'border-slate-200 bg-slate-50/60 dark:border-slate-800 dark:bg-slate-900/40',
@@ -332,13 +332,13 @@ export function CsvImportDialog({
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={handleDrop}
               >
-                <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-sm dark:bg-slate-950">
-                  <Download className="h-7 w-7 border-light-gray primary-text-medium text-leadgaze-dark dark:text-white rotate-180" />
+                <div className="mb-4 flex h-14 w-14 items-center justify-center bg-white shadow-sm dark:bg-slate-950">
+                  <Download className="h-7 w-7 border-light-gray primary-text-medium text-leadgaze-dark dark:text-white rotate-180 rounded-1" />
                 </div>
-                <h3 className="text-lg font-semibold text-slate-900 dark:text-white custom-sub-heading-dialog-form">
+                <h3 className="primary-heading-extra text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">
                   Drop your CSV file here
                 </h3>
-                <p className="mt-2 max-w-lg text-sm text-slate-500 dark:text-slate-400">
+                <p className="mt-2 max-w-lg primary-text-medium text-leadgaze-dark dark:text-slate-400">
                   Upload a CSV — we'll auto-detect column mappings and let you adjust them before
                   importing.
                 </p>

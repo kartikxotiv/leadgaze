@@ -317,9 +317,8 @@ export default function CreateLeadDialog({
             {/* Contact Information Section */}
             <div className="space-y-2">
               <h3 className="primary-heading text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">
-                Contact Informationss
-              </h3>
-              <Separator className="bg-gray-200 dark:bg-slate-800" />
+                Contact Information
+              </h3>              
 
               <div className="grid grid-cols-2 gap-2">
                 <LeadFormField formKey="first_name" canEdit={canEdit}>
@@ -440,8 +439,7 @@ export default function CreateLeadDialog({
             <div className="space-y-2">
               <h3 className="primary-heading text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">
                 Company Information
-              </h3>
-              <Separator className="bg-gray-200 dark:bg-slate-800" />
+              </h3>              
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
@@ -580,8 +578,7 @@ export default function CreateLeadDialog({
             <div className="space-y-2">
               <h3 className="primary-heading text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">
                 Professional Information
-              </h3>
-              <Separator className="bg-gray-200 dark:bg-slate-800" />
+              </h3>              
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
@@ -640,8 +637,7 @@ export default function CreateLeadDialog({
             <div className="space-y-2">
               <h3 className="primary-heading text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">
                 Lead Information
-              </h3>
-              <Separator className="bg-gray-200 dark:bg-slate-800" />
+              </h3>              
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
@@ -702,8 +698,7 @@ export default function CreateLeadDialog({
             <div className="space-y-2">
               <h3 className="primary-heading text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">
                 Additional Information
-              </h3>
-              <Separator className="bg-gray-200 dark:bg-slate-800" />
+              </h3>              
 
               <div>
                 <Label

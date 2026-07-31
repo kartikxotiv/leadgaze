@@ -303,13 +303,12 @@ export default function EditLeadDialog({
             onSubmit={handleSubmit}
             className="flex flex-1 flex-col overflow-hidden"
           >
-            <div className="flex-1 space-y-8 overflow-y-auto p-6">
+            <div className="flex flex-col flex-1 overflow-y-auto p-2 gap-2">
               {/* ── Contact Information ── */}
               <div className="space-y-2">
                 <h3 className="primary-heading text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">
                   Contact Information
-                </h3>
-                <Separator className="bg-gray-200 dark:bg-slate-800" />
+                </h3>                
 
                 <div className="grid grid-cols-2 gap-2">
                   <FieldGuard fieldKey="first_name" canEdit={canEdit}>
@@ -408,8 +407,7 @@ export default function EditLeadDialog({
               <div className="space-y-2">
                 <h3 className="primary-heading text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">
                   Company Information
-                </h3>
-                <Separator className="bg-gray-200 dark:bg-slate-800" />
+                </h3>                
 
                 <div className="grid grid-cols-2 gap-2">
                   <FieldGuard fieldKey="company" canEdit={canEdit}>
@@ -569,8 +567,7 @@ export default function EditLeadDialog({
               <div className="space-y-2">
                 <h3 className="primary-heading text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">
                   Lead Information
-                </h3>
-                <Separator className="bg-gray-200 dark:bg-slate-800" />
+                </h3>                
 
                 <div className="grid grid-cols-2 gap-2">
                   {/* Status is always shown — required field */}
@@ -645,8 +642,7 @@ export default function EditLeadDialog({
                 <div className="space-y-2">
                   <h3 className="primary-heading text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">
                     Additional Information
-                  </h3>
-                  <Separator className="bg-gray-200 dark:bg-slate-800" />
+                  </h3>                  
 
                   <div>
                     <Label htmlFor="notes">Notes (Optional)</Label>

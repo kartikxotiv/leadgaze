@@ -252,29 +252,29 @@ function NotesPanel(props: CoreEntityPanelProps) {
           <DialogHeader>
             <DialogTitle>Edit Note</DialogTitle>
           </DialogHeader>
-          <div className="space-y-2 px-6 pb-4">
+          <div className="px-2">
             <Textarea
               placeholder="Enter note content..."
               value={editText}
               onChange={(e) => setEditText(e.target.value)}
               rows={4}
             />
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => setIsEditOpen(false)}
-                disabled={updateMutation.isPending}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleEditSave}
-                disabled={updateMutation.isPending || !editText.trim()}
-              >
-                Save
-              </Button>
-            </DialogFooter>
           </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsEditOpen(false)}
+              disabled={updateMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleEditSave}
+              disabled={updateMutation.isPending || !editText.trim()}
+            >
+              Save
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </section>

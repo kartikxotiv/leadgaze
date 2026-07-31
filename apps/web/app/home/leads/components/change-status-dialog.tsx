@@ -112,13 +112,13 @@ export function ChangeStatusDialog({
         <DialogHeader>
           <DialogTitle>Change Status</DialogTitle>
           <DialogDescription>
-            Select a new status for this lead.
+            Select a new status for this lead
           </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4 px-2 flex-1 overflow-y-auto">
-          <div className="grid gap-2">
+        <div className="grid gap-2 px-2 flex-1 overflow-y-auto">
+          <div className="grid">
             <Label htmlFor="status">Lead Status</Label>
-            <div className="mt-1">
+            <div className="pb-1">
               <ManageableStatusSelect
                 moduleKey="leads"
                 workspaceId={workspace?.id ?? ''}
