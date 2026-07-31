@@ -806,7 +806,7 @@ export function ServiceCloudTicketsPage({
               <DialogTitle>New Ticket</DialogTitle>
             </DialogHeader>
 
-            <div className="flex-1 space-y-4 overflow-y-auto p-6 pb-8">
+            <div className="flex-1 space-y-2 overflow-y-auto p-6 pb-8">
               <div className="grid gap-4">
                 {(!canEditField || canEditField('subject')) && (
                   <div className="grid gap-2">

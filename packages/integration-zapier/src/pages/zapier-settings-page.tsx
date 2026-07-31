@@ -156,7 +156,7 @@ export function ZapierSettingsPage({
                 <CardHeader className="border-b pb-3">
                   <CardTitle className="text-sm font-semibold">Config &amp; Routing</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4 pt-4">
+                <CardContent className="space-y-2 pt-4">
                   <Skeleton className="h-4 w-full" />
                   <Skeleton className="h-4 w-3/4" />
                 </CardContent>
@@ -221,7 +221,7 @@ export function ZapierSettingsPage({
               <CardHeader className="border-b pb-3">
                 <CardTitle className="text-sm font-semibold">Config &amp; Routing</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4 pt-4">
+              <CardContent className="space-y-2 pt-4">
                 <div className="flex items-center justify-between">
                   <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                     Status
@@ -324,13 +324,13 @@ export function ZapierSettingsPage({
             <TabsContent value="tutorial" className="flex-1 overflow-y-auto min-h-0">
               <Card className="border shadow-sm bg-card p-6 space-y-6">
                 <div>
-                  <h3 className="text-base font-bold mb-1">Zapier Integration Tutorial</h3>
+                  <h3 className="text-base font-bold mb-1 custom-sub-heading-dialog-form">Zapier Integration Tutorial</h3>
                   <p className="text-sm text-muted-foreground">
                     Follow these steps to connect your custom third-party platforms with Leadgaze CRM via Zapier.
                   </p>
                 </div>
 
-                <div className="space-y-4">
+                <div className="space-y-2">
                   {/* Step 1 */}
                   <div className="space-y-1.5 border-l-2 border-primary pl-4">
                     <h4 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">1. Generate API Credentials</h4>
@@ -488,7 +488,7 @@ X-Zapier-Api-Key: ${activeKey?.masked_key || 'YOUR_ZAPIER_API_KEY'}`}
               Copy this key and save it in a secure password manager. For security reasons, <strong>this key will not be shown again</strong>.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-2">
+          <div className="space-y-2 py-2">
             <div className="flex items-center gap-2 rounded border bg-muted/20 p-2.5 font-mono text-sm">
               <span className="flex-1 truncate">{generatedKey}</span>
               <Button

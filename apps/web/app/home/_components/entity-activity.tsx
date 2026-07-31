@@ -251,7 +251,7 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
                 {editingReminder ? 'Edit Reminder' : 'Set Reminder'}
               </DialogTitle>
             </DialogHeader>
-            <div className="flex-1 space-y-4 px-6 py-4">
+            <div className="flex-1 space-y-2 px-6 py-4">
               <div className="space-y-2">
                 <Label>Title</Label>
                 <Input
@@ -891,7 +891,7 @@ export function EntityDocuments({ entityType, entityId }: EntityActivityProps) {
                 {editingDoc ? 'Rename Document' : 'Upload Document'}
               </DialogTitle>
             </DialogHeader>
-            <div className="flex-1 space-y-4 px-6 py-4">
+            <div className="flex-1 space-y-2 px-6 py-4">
               {editingDoc ? (
                 <div className="space-y-2">
                   <Label>Document Name</Label>

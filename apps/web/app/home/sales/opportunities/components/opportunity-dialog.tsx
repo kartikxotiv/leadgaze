@@ -246,7 +246,7 @@ export function OpportunityDialog({
           </DialogTitle>
         </DialogHeader>
         <Form {...form}>
-          <form id="dialog-form" onSubmit={form.handleSubmit(onSubmit)} className="flex-1 overflow-y-auto px-6 py-4 space-y-4 pt-4">
+          <form id="dialog-form" onSubmit={form.handleSubmit(onSubmit)} className="flex-1 overflow-y-auto px-2 space-y-2">
             <FormField
               control={form.control}
               name="opportunity_name"              
@@ -261,7 +261,7 @@ export function OpportunityDialog({
               )}
             />
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-2">
               <FormField
                 control={form.control}
                 name="account_id"
@@ -278,7 +278,7 @@ export function OpportunityDialog({
                             variant="outline"
                             role="combobox"
                             className={cn(
-                              'justify-between font-normal',
+                              'justify-between font-normal h-[36px]',
                               !field.value && 'text-muted-foreground',
                             )}
                             disabled={isEditMode}
@@ -362,7 +362,7 @@ export function OpportunityDialog({
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-2">
               <FormField
                 control={form.control}
                 name="amount"
@@ -405,7 +405,7 @@ export function OpportunityDialog({
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-2">
               <FormField
                 control={form.control}
                 name="probability"
@@ -434,7 +434,7 @@ export function OpportunityDialog({
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-2">
               <FormField
                 control={form.control}
                 name="opportunity_type"

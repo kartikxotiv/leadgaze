@@ -111,7 +111,7 @@ export function AssignUserModal({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto space-y-4 px-6 py-4">
+        <div className="flex-1 overflow-y-auto space-y-2 px-2">
           {/* Search Input */}
           <div className="relative">
             <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />

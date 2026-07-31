@@ -412,7 +412,7 @@ export function ServiceCloudCustomersPage({
     <>
       <Tabs
         defaultValue={tab}
-        className="flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col space-y-4"
+        className="flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col space-y-2"
         onValueChange={(value) => router.push(`${pathname}?tab=${value}`)}
       >
         <TabsContent
@@ -586,7 +586,7 @@ export function ServiceCloudCustomersPage({
                 </DialogTitle>
               </DialogHeader>
 
-              <div className="flex-1 space-y-4 overflow-y-auto p-6 pb-8">
+              <div className="flex-1 space-y-2 overflow-y-auto p-6 pb-8">
                 <div className="grid gap-4">
                   {/* Customer Selection */}
                   <div className="grid gap-2">

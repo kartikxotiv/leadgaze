@@ -110,7 +110,7 @@ export function ChangeStatusDialog({
             Select a new status for this lead.
           </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4 px-6 py-4 flex-1 overflow-y-auto">
+        <div className="grid gap-4 px-2 flex-1 overflow-y-auto">
           <div className="grid gap-2">
             <Label htmlFor="status">Lead Status</Label>
             <Select

@@ -127,7 +127,7 @@ export function TemplateDialog({
           <DialogTitle>{template ? 'Edit Template' : 'Create New Template'}</DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 space-y-4 px-6 py-4">
+        <div className="flex-1 space-y-2 px-6 py-4">
           <div className="space-y-2">
             <Label htmlFor="name">Template Name</Label>
             <Input

@@ -126,7 +126,7 @@ export function LogCallDialog({
         <DialogHeader>
           <DialogTitle>Call Log</DialogTitle>
         </DialogHeader>
-        <div className="grid gap-4 px-6 py-4 flex-1 overflow-y-auto">
+        <div className="grid gap-4 px-2 flex-1 overflow-y-auto">
           {/* Subject */}
           <div className="grid gap-2">
             <Label htmlFor="subject">
@@ -141,7 +141,7 @@ export function LogCallDialog({
           </div>
 
           {/* Call Type and Status */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-2">
             <div className="grid gap-2">
               <Label htmlFor="callType">Call Type</Label>
               <Select

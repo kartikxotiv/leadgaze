@@ -186,7 +186,7 @@ export function MeetingAccountsSettings({
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-2">
                 {/* Connected Accounts */}
                 {providerAccounts.length > 0 ? (
                   <div className="space-y-2">

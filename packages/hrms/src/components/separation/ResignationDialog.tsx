@@ -173,7 +173,7 @@ export function ResignationDialog({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex-1 overflow-y-auto p-6 space-y-4">
+          <div className="flex-1 overflow-y-auto p-6 space-y-2">
             <div className="grid gap-4 sm:grid-cols-2">
               {canManageResignations && (
                 <div className="space-y-2">

@@ -346,7 +346,7 @@ export function CoreEmailSettingsPage({
                           <div className="flex-1 overflow-y-auto p-6">
                           <TabsContent
                             value="google"
-                            className="space-y-4 pt-4"
+                            className="space-y-2 pt-4"
                           >
                             <div className="rounded-md bg-blue-50 p-4 text-sm text-blue-800 dark:bg-blue-950 dark:text-blue-200">
                               Connect Gmail or Google Workspace for sending and
@@ -361,7 +361,7 @@ export function CoreEmailSettingsPage({
                               Connect with Google
                             </Button>
                           </TabsContent>
-                          <TabsContent value="smtp" className="space-y-4 pt-4">
+                          <TabsContent value="smtp" className="space-y-2 pt-4">
                             <SmtpField
                               label="From Name"
                               value={form.from_name}
@@ -376,7 +376,7 @@ export function CoreEmailSettingsPage({
                                 setForm((prev) => ({ ...prev, email }))
                               }
                             />
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-2 gap-2">
                               <SmtpField
                                 label="SMTP Host"
                                 value={form.host}
@@ -419,7 +419,7 @@ export function CoreEmailSettingsPage({
                             <div className="text-sm font-medium">
                               IMAP Settings for Inbox Sync
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-2 gap-2">
                               <SmtpField
                                 label="IMAP Host"
                                 value={form.imap_host}

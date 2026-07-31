@@ -91,7 +91,7 @@ export function CreateTeamDialog({ open, onOpenChange }: CreateTeamDialogProps) 
         </DialogHeader>
 
         <Form {...form}>
-          <form id="dialog-form" onSubmit={form.handleSubmit(onSubmit)} className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+          <form id="dialog-form" onSubmit={form.handleSubmit(onSubmit)} className="flex-1 overflow-y-auto px-2 space-y-2">
             <FormField
               control={form.control}
               name="name"

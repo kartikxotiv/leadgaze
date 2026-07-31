@@ -305,13 +305,13 @@ export default function EditLeadDialog({
           >
             <div className="flex-1 space-y-8 overflow-y-auto p-6">
               {/* ── Contact Information ── */}
-              <div className="space-y-4">
-                <h3 className="primary-heading text-leadgaze-dark dark:text-white">
+              <div className="space-y-2">
+                <h3 className="primary-heading text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">
                   Contact Information
                 </h3>
                 <Separator className="bg-gray-200 dark:bg-slate-800" />
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-2">
                   <FieldGuard fieldKey="first_name" canEdit={canEdit}>
                     <div>
                       <Label htmlFor="first_name">
@@ -343,7 +343,7 @@ export default function EditLeadDialog({
                   </FieldGuard>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-2">
                   <FieldGuard fieldKey="email" canEdit={canEdit}>
                     <div>
                       <Label htmlFor="email">Email (Optional)</Label>
@@ -374,7 +374,7 @@ export default function EditLeadDialog({
                   </FieldGuard>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-2">
                   <FieldGuard fieldKey="phone" canEdit={canEdit}>
                     <div>
                       <Label htmlFor="phone_number">Phone (Optional)</Label>
@@ -405,13 +405,13 @@ export default function EditLeadDialog({
               </div>
 
               {/* ── Company Information ── */}
-              <div className="space-y-4">
-                <h3 className="primary-heading text-leadgaze-dark dark:text-white">
+              <div className="space-y-2">
+                <h3 className="primary-heading text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">
                   Company Information
                 </h3>
                 <Separator className="bg-gray-200 dark:bg-slate-800" />
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-2">
                   <FieldGuard fieldKey="company" canEdit={canEdit}>
                     <div>
                       <Label htmlFor="company_name">Company Name (Optional)</Label>
@@ -440,7 +440,7 @@ export default function EditLeadDialog({
                   </FieldGuard>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-2">
                   <FieldGuard fieldKey="industry" canEdit={canEdit}>
                     <div>
                       <Label htmlFor="industry_id">Industry (Optional)</Label>
@@ -477,7 +477,7 @@ export default function EditLeadDialog({
                   </FieldGuard>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-2">
                   <FieldGuard fieldKey="company_website" canEdit={canEdit}>
                     <div>
                       <Label htmlFor="company_website">Website (Optional)</Label>
@@ -506,7 +506,7 @@ export default function EditLeadDialog({
                   </FieldGuard>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-2">
                   <FieldGuard fieldKey="department" canEdit={canEdit}>
                     <div>
                       <Label htmlFor="department">Department (Optional)</Label>
@@ -535,7 +535,7 @@ export default function EditLeadDialog({
                   </FieldGuard>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-2">
                   <FieldGuard fieldKey="location" canEdit={canEdit}>
                     <div>
                       <Label htmlFor="location">Location (Optional)</Label>
@@ -566,13 +566,13 @@ export default function EditLeadDialog({
               </div>
 
               {/* ── Lead Information ── */}
-              <div className="space-y-4">
-                <h3 className="primary-heading text-leadgaze-dark dark:text-white">
+              <div className="space-y-2">
+                <h3 className="primary-heading text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">
                   Lead Information
                 </h3>
                 <Separator className="bg-gray-200 dark:bg-slate-800" />
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-2">
                   {/* Status is always shown — required field */}
                   <div>
                     <Label htmlFor="status_id">
@@ -605,7 +605,7 @@ export default function EditLeadDialog({
                   </FieldGuard>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-2">
                   <FieldGuard fieldKey="trigger" canEdit={canEdit}>
                     <div>
                       <Label htmlFor="trigger">Trigger (Optional)</Label>
@@ -642,8 +642,8 @@ export default function EditLeadDialog({
 
               {/* ── Additional Information ── */}
               <FieldGuard fieldKey="notes" canEdit={canEdit}>
-                <div className="space-y-4">
-                  <h3 className="primary-heading text-leadgaze-dark dark:text-white">
+                <div className="space-y-2">
+                  <h3 className="primary-heading text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">
                     Additional Information
                   </h3>
                   <Separator className="bg-gray-200 dark:bg-slate-800" />

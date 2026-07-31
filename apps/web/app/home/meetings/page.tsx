@@ -1828,7 +1828,7 @@ export function MeetingDetailsDialog({
             <TabsTrigger value="notes">Notes</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="overview" className="space-y-4 pb-6">
+          <TabsContent value="overview" className="space-y-2 pb-6">
             <div className="flex flex-wrap gap-2 pt-2">
               <Badge
                 variant="outline"
@@ -1944,7 +1944,7 @@ export function MeetingDetailsDialog({
             )}
           </TabsContent>
 
-          <TabsContent value="notes" className="space-y-4 pb-6">
+          <TabsContent value="notes" className="space-y-2 pb-6">
             <div className="space-y-2 pt-2">
               <Label className="font-medium">Add Note</Label>
               <Textarea

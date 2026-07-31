@@ -1030,8 +1030,8 @@ export default function DocumentPage() {
           <DialogHeader>
             <DialogTitle>Upload Document</DialogTitle>
           </DialogHeader>
-          <div className="flex-1 space-y-4 overflow-y-auto px-6 py-4">
-            <div className="space-y-4">
+          <div className="flex-1 space-y-2 overflow-y-auto px-2">
+            <div className="space-y-2">
               <Label>Associate with</Label>
               <RadioGroup
                 value={entityType}
@@ -1141,7 +1141,7 @@ export default function DocumentPage() {
           <DialogHeader>
             <DialogTitle>Rename Document</DialogTitle>
           </DialogHeader>
-          <div className="flex-1 space-y-4 px-6 py-4">
+          <div className="flex-1 space-y-2 px-6 py-4">
             <div className="space-y-2">
               <Label>Document Name</Label>
               <Input

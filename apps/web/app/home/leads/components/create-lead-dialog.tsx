@@ -315,13 +315,13 @@ export default function CreateLeadDialog({
             className="flex flex-col flex-1 overflow-y-auto p-2 gap-2"
           >
             {/* Contact Information Section */}
-            <div className="space-y-4">
-              <h3 className="primary-heading text-leadgaze-dark dark:text-white">
+            <div className="space-y-2">
+              <h3 className="primary-heading text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">
                 Contact Information
               </h3>
               <Separator className="bg-gray-200 dark:bg-slate-800" />
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-2">
                 <LeadFormField formKey="first_name" canEdit={canEdit}>
                 <div>
                   <Label
@@ -361,7 +361,7 @@ export default function CreateLeadDialog({
                 </LeadFormField>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-2">
                 <LeadFormField formKey="email" canEdit={canEdit}>
                 <div>
                   <Label
@@ -400,7 +400,7 @@ export default function CreateLeadDialog({
                 </LeadFormField>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-2">
                 <div>
                   <Label
                     htmlFor="phone_number">
@@ -437,13 +437,13 @@ export default function CreateLeadDialog({
             </div>
 
             {/* Company Information Section */}
-            <div className="space-y-4">
-              <h3 className="primary-heading text-leadgaze-dark dark:text-white">
+            <div className="space-y-2">
+              <h3 className="primary-heading text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">
                 Company Information
               </h3>
               <Separator className="bg-gray-200 dark:bg-slate-800" />
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-2">
                 <div>
                   <Label
                     htmlFor="company_name">
@@ -478,7 +478,7 @@ export default function CreateLeadDialog({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-2">
                 <div>
                   <Label
                     htmlFor="company_website">
@@ -513,7 +513,7 @@ export default function CreateLeadDialog({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-2">
                 <div>
                   <Label
                     htmlFor="company_size">
@@ -556,7 +556,7 @@ export default function CreateLeadDialog({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-2">
                 <div>
                   <Label
                     htmlFor="linkedin_url">
@@ -577,13 +577,13 @@ export default function CreateLeadDialog({
             </div>
 
             {/* Professional Information Section */}
-            <div className="space-y-4">
-              <h3 className="primary-heading text-leadgaze-dark dark:text-white">
+            <div className="space-y-2">
+              <h3 className="primary-heading text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">
                 Professional Information
               </h3>
               <Separator className="bg-gray-200 dark:bg-slate-800" />
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-2">
                 <div>
                   <Label
                     htmlFor="job_title">
@@ -637,13 +637,13 @@ export default function CreateLeadDialog({
             </div>
 
             {/* Lead Information Section */}
-            <div className="space-y-4">
-              <h3 className="primary-heading text-leadgaze-dark dark:text-white">
+            <div className="space-y-2">
+              <h3 className="primary-heading text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">
                 Lead Information
               </h3>
               <Separator className="bg-gray-200 dark:bg-slate-800" />
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-2">
                 <div>
                   <Label
                     htmlFor="status_id">
@@ -699,8 +699,8 @@ export default function CreateLeadDialog({
 
             {/* Additional Notes Section */}
             <LeadFormField formKey="notes" canEdit={canEdit}>
-            <div className="space-y-4">
-              <h3 className="primary-heading text-leadgaze-dark dark:text-white">
+            <div className="space-y-2">
+              <h3 className="primary-heading text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">
                 Additional Information
               </h3>
               <Separator className="bg-gray-200 dark:bg-slate-800" />

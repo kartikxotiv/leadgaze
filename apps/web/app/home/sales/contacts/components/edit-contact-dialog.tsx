@@ -154,7 +154,7 @@ export function EditContactDialog({
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form id="dialog-form" onSubmit={form.handleSubmit(onSubmit)} className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+          <form id="dialog-form" onSubmit={form.handleSubmit(onSubmit)} className="flex-1 overflow-y-auto px-2 space-y-2">
             <Tabs defaultValue="general" className="w-full">
               <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="general">Data</TabsTrigger>
@@ -162,8 +162,8 @@ export function EditContactDialog({
                 <TabsTrigger value="preferences">Preferences</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="general" className="space-y-4 pt-4">
-                <div className="grid grid-cols-2 gap-4">
+              <TabsContent value="general" className="space-y-2 pt-4">
+                <div className="grid grid-cols-2 gap-2">
                   <FormField
                     control={form.control}
                     name="first_name"
@@ -192,7 +192,7 @@ export function EditContactDialog({
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-2">
                   <FormField
                     control={form.control}
                     name="email"
@@ -263,7 +263,7 @@ export function EditContactDialog({
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-2">
                   <FormField
                     control={form.control}
                     name="job_title"
@@ -293,7 +293,7 @@ export function EditContactDialog({
                 </div>
               </TabsContent>
 
-              <TabsContent value="details" className="space-y-4 pt-4">
+              <TabsContent value="details" className="space-y-2 pt-4">
                 <div className="grid grid-cols-3 gap-4">
                   <FormField
                     control={form.control}
@@ -346,7 +346,7 @@ export function EditContactDialog({
                 />
               </TabsContent>
 
-              <TabsContent value="preferences" className="space-y-4 pt-4">
+              <TabsContent value="preferences" className="space-y-2 pt-4">
                 <FormField
                   control={form.control}
                   name="preferred_contact_method"
@@ -405,7 +405,7 @@ export function EditContactDialog({
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 border-t pt-4">
+                <div className="grid grid-cols-2 gap-2 border-t pt-4">
                   <FormField
                     control={form.control}
                     name="linkedin_url"

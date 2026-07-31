@@ -132,7 +132,7 @@ export function EmployeePayItemFormDialog(props: {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex-1 overflow-y-auto p-6 space-y-4">
+          <div className="flex-1 overflow-y-auto p-6 space-y-2">
             <div className="space-y-2">
               <Label htmlFor="employee_id">Employee *</Label>
               <Select
@@ -177,7 +177,7 @@ export function EmployeePayItemFormDialog(props: {
               </Select>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-2">
               <div className="space-y-2">
                 <Label htmlFor="amount">Amount *</Label>
                 <Input

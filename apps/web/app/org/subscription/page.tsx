@@ -919,7 +919,7 @@ export default function OrgSubscriptionPage({
                 <AlertTriangle className="text-destructive h-4 w-4" />
               </div>
               <div className="flex-1">
-                <h3 className="text-destructive font-semibold">
+                <h3 className="text-destructive font-semibold custom-sub-heading-dialog-form">
                   Cancel Subscription
                 </h3>
                 <p className="text-muted-foreground mt-1 text-sm">
@@ -1587,7 +1587,7 @@ function AvailableModuleCard({
 
         {/* Name + description */}
         <div className="mt-4 flex-1">
-          <h3 className="text-foreground font-semibold">
+          <h3 className="text-foreground font-semibold custom-sub-heading-dialog-form">
             {product.display_name}
           </h3>
           <p className="text-muted-foreground mt-1 text-sm">

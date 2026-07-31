@@ -335,7 +335,7 @@ export function CsvImportDialog({
                 <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-sm dark:bg-slate-950">
                   <Download className="h-7 w-7 border-light-gray primary-text-medium text-leadgaze-dark dark:text-white rotate-180" />
                 </div>
-                <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-white custom-sub-heading-dialog-form">
                   Drop your CSV file here
                 </h3>
                 <p className="mt-2 max-w-lg text-sm text-slate-500 dark:text-slate-400">

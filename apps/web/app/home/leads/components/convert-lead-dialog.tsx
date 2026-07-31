@@ -261,10 +261,10 @@ export function ConvertLeadDialog({
         </DialogHeader>
 
         <Form {...form}>
-          <form id="dialog-form" onSubmit={form.handleSubmit(onSubmit)} className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
+          <form id="dialog-form" onSubmit={form.handleSubmit(onSubmit)} className="flex-1 overflow-y-auto px-2 space-y-6">
             {/* Account Section */}
-            <div className="space-y-4 rounded-lg border p-4">
-              <h3 className="flex items-center gap-2 font-semibold">
+            <div className="space-y-2 rounded-lg border p-4">
+              <h3 className="flex items-center gap-2 font-semibold custom-sub-heading-dialog-form">
                 <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 text-xs text-blue-600">
                   1
                 </span>
@@ -391,8 +391,8 @@ export function ConvertLeadDialog({
             </div>
 
             {/* Contact Section */}
-            <div className="space-y-4 rounded-lg border p-4">
-              <h3 className="flex items-center gap-2 font-semibold">
+            <div className="space-y-2 rounded-lg border p-4">
+              <h3 className="flex items-center gap-2 font-semibold custom-sub-heading-dialog-form">
                 <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 text-xs text-blue-600">
                   2
                 </span>
@@ -537,9 +537,9 @@ export function ConvertLeadDialog({
             </div>
 
             {/* Opportunity Section */}
-            <div className="space-y-4 rounded-lg border p-4">
+            <div className="space-y-2 rounded-lg border p-4">
               <div className="flex items-center justify-between">
-                <h3 className="flex items-center gap-2 font-semibold">
+                <h3 className="flex items-center gap-2 font-semibold custom-sub-heading-dialog-form">
                   <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 text-xs text-blue-600">
                     3
                   </span>
@@ -688,7 +688,7 @@ export function ConvertLeadDialog({
             </div>
 
             {/* Converted Status */}
-            <div className="space-y-4 rounded-lg border bg-slate-50 p-4 dark:bg-slate-900/50">
+            <div className="space-y-2 rounded-lg border bg-slate-50 p-4 dark:bg-slate-900/50">
               <FormField
                 control={form.control}
                 name="convertedStatusId"

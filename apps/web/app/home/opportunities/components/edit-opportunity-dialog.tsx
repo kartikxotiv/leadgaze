@@ -216,7 +216,7 @@ export function EditOpportunityDialog({
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form id="dialog-form" onSubmit={form.handleSubmit(onSubmit)} className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+          <form id="dialog-form" onSubmit={form.handleSubmit(onSubmit)} className="flex-1 overflow-y-auto px-2 space-y-2">
             <FieldGuard fieldKey="opportunity_name" canEdit={canEdit}>
               <FormField
                 control={form.control}
@@ -233,7 +233,7 @@ export function EditOpportunityDialog({
               />
             </FieldGuard>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-2">
               <FieldGuard fieldKey="amount" canEdit={canEdit}>
                 <FormField
                   control={form.control}
@@ -280,7 +280,7 @@ export function EditOpportunityDialog({
               </FieldGuard>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-2">
               <FieldGuard fieldKey="probability" canEdit={canEdit}>
                 <FormField
                   control={form.control}
@@ -313,7 +313,7 @@ export function EditOpportunityDialog({
               </FieldGuard>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-2">
               <FieldGuard fieldKey="opportunity_type" canEdit={canEdit}>
                 <FormField
                   control={form.control}
@@ -425,7 +425,7 @@ export function EditOpportunityDialog({
 
             <div className="space-y-3 border-t pt-4">
               <h4 className="text-sm font-medium">Outcome</h4>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-2">
                 <FieldGuard fieldKey="is_closed" canEdit={canEdit}>
                   <FormField
                     control={form.control}

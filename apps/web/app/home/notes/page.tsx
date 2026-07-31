@@ -940,8 +940,8 @@ export default function NotesPage() {
           <DialogHeader>
             <DialogTitle>Add New Note</DialogTitle>
           </DialogHeader>
-          <div className="flex-1 space-y-4 overflow-y-auto px-6 py-4">
-            <div className="space-y-4">
+          <div className="flex-1 space-y-2 overflow-y-auto px-2">
+            <div className="space-y-2">
               <Label>Associate with</Label>
               <RadioGroup
                 value={entityType}
@@ -1061,7 +1061,7 @@ export default function NotesPage() {
           <DialogHeader>
             <DialogTitle>Edit Note</DialogTitle>
           </DialogHeader>
-          <div className="flex-1 space-y-4 overflow-y-auto px-6 py-4">
+          <div className="flex-1 space-y-2 overflow-y-auto px-2">
             <Textarea
               placeholder="Enter note content..."
               value={editContent}

@@ -1133,8 +1133,8 @@ export default function RemindersPage() {
           <DialogHeader>
             <DialogTitle>Add New Reminder</DialogTitle>
           </DialogHeader>
-          <div className="flex-1 space-y-4 overflow-y-auto px-6 py-4">
-            <div className="space-y-4">
+          <div className="flex-1 space-y-2 overflow-y-auto px-2">
+            <div className="space-y-2">
               <Label>Associate with</Label>
               <RadioGroup
                 value={formData.entity_type}
@@ -1296,7 +1296,7 @@ export default function RemindersPage() {
           <DialogHeader>
             <DialogTitle>Edit Reminder</DialogTitle>
           </DialogHeader>
-          <div className="flex-1 space-y-4 px-6 py-4">
+          <div className="flex-1 space-y-2 px-6 py-4">
             <div className="space-y-2">
               <Label>Title</Label>
               <Input

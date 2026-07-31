@@ -100,7 +100,7 @@ export function RoleFormDialog({
               </DialogDescription>
             </DialogHeader>
 
-            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+            <div className="flex-1 overflow-y-auto p-6 space-y-2">
               <FormField
                 control={form.control}
                 name={'name'}

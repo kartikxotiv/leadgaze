@@ -237,7 +237,7 @@ export function EditAccountDialog({
           <form
             id="dialog-form"
             onSubmit={form.handleSubmit(onSubmit)}
-            className="flex-1 space-y-4 overflow-y-auto px-6 py-4"
+            className="flex-1 space-y-2 overflow-y-auto px-2"
           >
             <Tabs defaultValue="general" className="w-full">
               <TabsList className="grid w-full grid-cols-4">
@@ -247,7 +247,7 @@ export function EditAccountDialog({
                 <TabsTrigger value="social">Social</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="general" className="space-y-4 pt-4">
+              <TabsContent value="general" className="space-y-2 pt-4">
                 <FieldGuard fieldKey="account_name" canEdit={canEdit}>
                   <FormField
                     control={form.control}
@@ -263,7 +263,7 @@ export function EditAccountDialog({
                     )}
                   />
                 </FieldGuard>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-2">
                   <FieldGuard fieldKey="website" canEdit={canEdit}>
                     <FormField
                       control={form.control}
@@ -353,8 +353,8 @@ export function EditAccountDialog({
                 </FieldGuard>
               </TabsContent>
 
-              <TabsContent value="details" className="space-y-4 pt-4">
-                <div className="grid grid-cols-2 gap-4">
+              <TabsContent value="details" className="space-y-2 pt-4">
+                <div className="grid grid-cols-2 gap-2">
                   <FieldGuard fieldKey="annual_revenue" canEdit={canEdit}>
                     <FormField
                       control={form.control}
@@ -403,8 +403,8 @@ export function EditAccountDialog({
                 </FieldGuard>
               </TabsContent>
 
-              <TabsContent value="address" className="space-y-4 pt-4">
-                <div className="space-y-4">
+              <TabsContent value="address" className="space-y-2 pt-4">
+                <div className="space-y-2">
                   <h4 className="text-primary text-sm font-medium">
                     Billing Address
                   </h4>
@@ -477,7 +477,7 @@ export function EditAccountDialog({
                   </div>
                 </div>
 
-                <div className="space-y-4 border-t pt-4">
+                <div className="space-y-2 border-t pt-4">
                   <h4 className="text-primary text-sm font-medium">
                     Shipping Address
                   </h4>
@@ -551,7 +551,7 @@ export function EditAccountDialog({
                 </div>
               </TabsContent>
 
-              <TabsContent value="social" className="space-y-4 pt-4">
+              <TabsContent value="social" className="space-y-2 pt-4">
                 <FieldGuard fieldKey="linkedin" canEdit={canEdit}>
                   <FormField
                     control={form.control}

@@ -291,7 +291,7 @@ export function EmailAccountsSettings({ workspace }: { workspace: any }) {
                     </TabsList>
                     </div>
                     <div className="flex-1 overflow-y-auto p-6">
-                    <TabsContent value="google" className="space-y-4 pt-4">
+                    <TabsContent value="google" className="space-y-2 pt-4">
                       <div className="mb-4 rounded-md bg-blue-50 p-4 text-sm text-blue-800 dark:bg-blue-950 dark:text-blue-200">
                         Connect your Gmail or Google Workspace account to send
                         emails directly.
@@ -305,7 +305,7 @@ export function EmailAccountsSettings({ workspace }: { workspace: any }) {
                         Connect with Google
                       </Button>
                     </TabsContent>
-                    <TabsContent value="smtp" className="space-y-4 pt-4">
+                    <TabsContent value="smtp" className="space-y-2 pt-4">
                       <SmtpField
                         label="From Name"
                         value={form.from_name}
@@ -320,7 +320,7 @@ export function EmailAccountsSettings({ workspace }: { workspace: any }) {
                           setForm((prev) => ({ ...prev, email }))
                         }
                       />
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-2 gap-2">
                         <SmtpField
                           label="SMTP Host"
                           value={form.host}
@@ -360,7 +360,7 @@ export function EmailAccountsSettings({ workspace }: { workspace: any }) {
                       />
                       <Separator />
                       <div className="text-sm font-medium">IMAP Settings</div>
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-2 gap-2">
                         <SmtpField
                           label="IMAP Host"
                           value={form.imap_host}

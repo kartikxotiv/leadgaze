@@ -98,7 +98,7 @@ export function InviteMemberDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <form id="dialog-form" onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+        <form id="dialog-form" onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-2 space-y-2">
           <div className="space-y-2">
             <Label htmlFor="email">Email Address *</Label>
             <Input

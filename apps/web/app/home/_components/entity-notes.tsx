@@ -171,7 +171,7 @@ export function EntityNotes({ entityType, entityId }: EntityNotesProps) {
                   {editingNote ? 'Edit Note' : 'Add Note'}
                 </DialogTitle>
               </DialogHeader>
-              <div className="space-y-4 px-6 pb-4">
+              <div className="space-y-2 px-6 pb-4">
                 <Textarea
                   placeholder="Enter note content..."
                   value={newNoteContent}

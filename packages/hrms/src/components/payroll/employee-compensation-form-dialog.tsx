@@ -197,8 +197,8 @@ export function EmployeeCompensationFormDialog(props: {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex-1 overflow-y-auto p-6 space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+          <div className="flex-1 overflow-y-auto p-6 space-y-2">
+            <div className="grid grid-cols-2 gap-2">
               <div>
                 <Label htmlFor="employee_id">Employee *</Label>
                 <Select
@@ -245,7 +245,7 @@ export function EmployeeCompensationFormDialog(props: {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-2">
               <div>
                 <Label htmlFor="assignment_type">Assignment Type *</Label>
                 <Select
@@ -287,7 +287,7 @@ export function EmployeeCompensationFormDialog(props: {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-2">
               <div>
                 <Label htmlFor="annual_ctc">Annual CTC</Label>
                 <Input
@@ -370,7 +370,7 @@ export function EmployeeCompensationFormDialog(props: {
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-2">
               <div>
                 <Label htmlFor="effective_from">Effective From *</Label>
                 <Input

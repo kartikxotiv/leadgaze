@@ -223,7 +223,7 @@ export function StatusManagementDialog({
         </DialogHeader>
 
         <form id="status-form" onSubmit={handleSubmit}>
-          <div className="space-y-4 px-6 py-0">
+          <div className="space-y-2 px-6 py-0">
             {/* Name */}
             <div className="space-y-2">
               <Label htmlFor="status_name">

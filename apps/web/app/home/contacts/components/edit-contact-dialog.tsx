@@ -203,15 +203,15 @@ export function EditContactDialog({
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form id="dialog-form" onSubmit={form.handleSubmit(onSubmit)} className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+          <form id="dialog-form" onSubmit={form.handleSubmit(onSubmit)} className="flex-1 overflow-y-auto px-2 space-y-2">
             <Tabs defaultValue="basic" className="w-full h-full flex flex-col">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="basic">Basic Info</TabsTrigger>
                 <TabsTrigger value="additional">Additional Details</TabsTrigger>
               </TabsList>
               
-              <TabsContent value="basic" className="space-y-4 py-4 flex-1 overflow-y-auto pr-2">
-                <div className="grid grid-cols-2 gap-4">
+              <TabsContent value="basic" className="space-y-2 py-4 flex-1 overflow-y-auto pr-2">
+                <div className="grid grid-cols-2 gap-2">
                   <FieldGuard fieldKey="first_name" canEdit={canEdit}>
                     <FormField
                       control={form.control}
@@ -243,7 +243,7 @@ export function EditContactDialog({
                   </FieldGuard>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-2">
                   <FieldGuard fieldKey="email" canEdit={canEdit}>
                     <FormField
                       control={form.control}
@@ -319,7 +319,7 @@ export function EditContactDialog({
                   </FieldGuard>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-2">
                   <FieldGuard fieldKey="job_title" canEdit={canEdit}>
                     <FormField
                       control={form.control}
@@ -366,8 +366,8 @@ export function EditContactDialog({
                 </FieldGuard>
               </TabsContent>
 
-              <TabsContent value="additional" className="space-y-4 py-4 flex-1 overflow-y-auto pr-2">
-                <div className="grid grid-cols-2 gap-4">
+              <TabsContent value="additional" className="space-y-2 py-4 flex-1 overflow-y-auto pr-2">
+                <div className="grid grid-cols-2 gap-2">
                   <FieldGuard fieldKey="location" canEdit={canEdit}>
                     <FormField
                       control={form.control}
@@ -398,7 +398,7 @@ export function EditContactDialog({
                   </FieldGuard>
                 </div>
                 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-2">
                   <FieldGuard fieldKey="language" canEdit={canEdit}>
                     <FormField
                       control={form.control}
@@ -476,7 +476,7 @@ export function EditContactDialog({
                   </FieldGuard>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 border-t pt-4">
+                <div className="grid grid-cols-2 gap-2 border-t pt-4">
                   <FieldGuard fieldKey="linkedin" canEdit={canEdit}>
                     <FormField
                       control={form.control}

@@ -148,15 +148,18 @@
     padding-inline: calc(var(--spacing) * 2) !important;
     gap: calc(var(--spacing) * 1.5) !important;  
   }
+  .dialog-footer button:not(.text-primary-foreground){
+    color: #475569;    
+  }
 
   .main-dialog div label{
     font-family: var(--font-sans) !important;
     font-size: 12px !important;
-    font-weight: 400 !important;
+    font-weight: 500 !important;
     line-height: 20px !important;
   }
   .main-dialog div label~input{
     margin-top: 0 !important;
-
   }
+
 }

@@ -295,13 +295,13 @@ export default function EditLeadDialog({
           >
             <div className="flex-1 space-y-8 overflow-y-auto p-6">
               {/* Contact Information Section */}
-              <div className="space-y-4">
-                <h3 className="primary-heading text-leadgaze-dark dark:text-white">
+              <div className="space-y-2">
+                <h3 className="primary-heading text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">
                   Contact Information
                 </h3>
                 <Separator className="bg-gray-200 dark:bg-slate-800" />
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-2">
                   <div>
                     <Label
                       htmlFor="first_name">
@@ -337,7 +337,7 @@ export default function EditLeadDialog({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-2">
                   <div>
                     <Label
                       htmlFor="email">
@@ -374,7 +374,7 @@ export default function EditLeadDialog({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-2">
                   <div>
                     <Label
                       htmlFor="phone_number">
@@ -411,13 +411,13 @@ export default function EditLeadDialog({
               </div>
 
               {/* Company Information Section */}
-              <div className="space-y-4">
-                <h3 className="primary-heading text-leadgaze-dark dark:text-white">
+              <div className="space-y-2">
+                <h3 className="primary-heading text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">
                   Company Information
                 </h3>
                 <Separator className="bg-gray-200 dark:bg-slate-800" />
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-2">
                   <div>
                     <Label
                       htmlFor="company_name">
@@ -452,7 +452,7 @@ export default function EditLeadDialog({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-2">
                   <div>
                     <Label
                       htmlFor="industry_id">
@@ -495,7 +495,7 @@ export default function EditLeadDialog({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-2">
                   <div>
                     <Label
                       htmlFor="company_website">
@@ -533,7 +533,7 @@ export default function EditLeadDialog({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-2">
                   <div>
                     <Label
                       htmlFor="linkedin_url">
@@ -554,13 +554,13 @@ export default function EditLeadDialog({
               </div>
 
               {/* Lead Information Section */}
-              <div className="space-y-4">
-                <h3 className="primary-heading text-leadgaze-dark dark:text-white">
+              <div className="space-y-2">
+                <h3 className="primary-heading text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">
                   Lead Information
                 </h3>
                 <Separator className="bg-gray-200 dark:bg-slate-800" />
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-2">
                   <div>
                     <Label
                       htmlFor="status_id">
@@ -604,7 +604,7 @@ export default function EditLeadDialog({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-2">
                   <div>
                     <Label
                       htmlFor="trigger">
@@ -647,8 +647,8 @@ export default function EditLeadDialog({
               </div>
 
               {/* Additional Information Section */}
-              <div className="space-y-4">
-                <h3 className="primary-heading text-leadgaze-dark dark:text-white">
+              <div className="space-y-2">
+                <h3 className="primary-heading text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">
                   Additional Information
                 </h3>
                 <Separator className="bg-gray-200 dark:bg-slate-800" />

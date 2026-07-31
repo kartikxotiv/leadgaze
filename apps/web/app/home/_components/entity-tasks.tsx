@@ -273,7 +273,7 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
                   {editingTask ? 'Edit Task' : 'Add Task'}
                 </DialogTitle>
               </DialogHeader>
-              <div className="flex-1 space-y-4 px-6 py-4 overflow-y-auto">
+              <div className="flex-1 space-y-2 px-2 overflow-y-auto">
                 <div className="space-y-2">
                   <Label>Title</Label>
                   <Input
@@ -477,8 +477,8 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
               <p className="primary-text-regular text-red-500 mt-1">Please input time before closing this task</p>
             )}
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2 py-4">
+            <div className="grid grid-cols-2 gap-2">
               <div className="space-y-2">
                 <Label>Hours</Label>
                 <Input

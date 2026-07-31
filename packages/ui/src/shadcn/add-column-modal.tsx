@@ -359,7 +359,7 @@ export function AddColumnModal({
                 </div>
                 <span>{shownColumnsCount}</span>
               </div>
-              <div className="space-y-4">
+              <div className="space-y-2">
                 {filteredColumns.map(column => (
                   <div key={column.id} className="flex items-center justify-between">
                     <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">{column.label}</span>
@@ -474,7 +474,7 @@ export function AddColumnModal({
 
           {/* Role/User Selection */}
           {accessType !== 'public' && accessType !== 'private' && (
-            <div className="space-y-4 border-t pt-4">
+            <div className="space-y-2 border-t pt-4">
               {/* Roles */}
               <div className="space-y-2">
                 <Label className="flex items-center gap-2">

@@ -48,7 +48,7 @@ export function CreatePayrollRunDialog(props: {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex-1 overflow-y-auto p-6 space-y-4">
+          <div className="flex-1 overflow-y-auto p-6 space-y-2">
             <div className="space-y-1 rounded-lg border border-blue-100 bg-blue-50 p-3 text-xs text-blue-800 dark:border-blue-900/30 dark:bg-blue-900/20 dark:text-blue-300">
               <p className="font-semibold">Eligibility Check:</p>
               <ul className="list-inside list-disc opacity-90">

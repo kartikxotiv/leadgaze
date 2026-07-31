@@ -165,7 +165,7 @@ export function EditOpportunityDialog({
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form id="dialog-form" onSubmit={form.handleSubmit(onSubmit)} className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+          <form id="dialog-form" onSubmit={form.handleSubmit(onSubmit)} className="flex-1 overflow-y-auto px-2 space-y-2">
             <FormField
               control={form.control}
               name="opportunity_name"
@@ -180,7 +180,7 @@ export function EditOpportunityDialog({
               )}
             />
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-2">
               <FormField
                 control={form.control}
                 name="amount"
@@ -223,7 +223,7 @@ export function EditOpportunityDialog({
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-2">
               <FormField
                 control={form.control}
                 name="probability"
@@ -252,7 +252,7 @@ export function EditOpportunityDialog({
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-2">
               <FormField
                 control={form.control}
                 name="opportunity_type"
@@ -354,7 +354,7 @@ export function EditOpportunityDialog({
 
             <div className="space-y-3 border-t pt-4">
               <h4 className="text-sm font-medium">Outcome</h4>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-2">
                 <FormField
                   control={form.control}
                   name="is_closed"
