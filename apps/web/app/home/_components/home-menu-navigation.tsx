@@ -578,7 +578,7 @@ function getModuleDisplayName(originalName: string): string {
 }
 
 export function HomeMenuNavigation() {
-  const { canAccess, currentWorkspace } = useRBAC();
+  const { canAccess, currentWorkspace, userPreferences } = useRBAC();
   const { data: authUser } = useUser();
   const router = useRouter();
   const pathname = usePathname() || '';
@@ -595,26 +595,18 @@ export function HomeMenuNavigation() {
   useEffect(() => {
     if (authUser?.id) {
       const localTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      if (localTz) {
+      const userTz = userPreferences?.timezone;
+      if (localTz && userTz && userTz !== localTz) {
         supabase
           .from('accounts')
-          .select('timezone')
+          .update({ timezone: localTz })
           .eq('id', authUser.id)
-          .single()
-          .then(({ data }) => {
-            if (data && data.timezone !== localTz) {
-              supabase
-                .from('accounts')
-                .update({ timezone: localTz })
-                .eq('id', authUser.id)
-                .then(() => {
-                  console.log('[Timezone Sync] Updated account timezone to:', localTz);
-                });
-            }
+          .then(() => {
+            console.log('[Timezone Sync] Updated account timezone to:', localTz);
           });
       }
     }
-  }, [authUser?.id, supabase]);
+  }, [authUser?.id, supabase, userPreferences?.timezone]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {

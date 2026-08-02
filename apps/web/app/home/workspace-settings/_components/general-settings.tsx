@@ -20,6 +20,7 @@ import { Input } from '@kit/ui/input';
 
 import { CountrySelect } from '~/workspace-setup/_components/CountrySelect';
 import { LogoUploader } from '~/workspace-setup/_components/LogoUploader';
+import { WorkspaceSwitcher } from '../../_components/workspace-switcher';
 
 interface WorkspaceGeneralSettingsProps {
   workspaceId: string;
@@ -269,6 +270,23 @@ export function WorkspaceGeneralSettings({ workspaceId }: WorkspaceGeneralSettin
 
   return (
     <div className="space-y-6">
+      <Card>
+        <CardHeader className="p-4 pb-3">
+          <CardTitle className="mb-0 flex items-center gap-2 text-base">
+            <Building2 className="h-4 w-4" />
+            Workspace Management
+          </CardTitle>
+          <CardDescription>
+            Select and manage your active workspace.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="p-4 pt-0">
+          <div className="w-[300px] border border-input rounded-md bg-background shadow-sm">
+            <WorkspaceSwitcher />
+          </div>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader className="p-4 pb-3">
           <CardTitle className="mb-0 flex items-center gap-2 text-base">

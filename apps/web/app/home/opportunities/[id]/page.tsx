@@ -308,22 +308,7 @@ export default function OpportunityDetailsPage() {
   });
 
   // Fetch exchange rates for currency conversion
-  const { data: exchangeRates = [] } = useQuery({
-    queryKey: ['exchange-rates'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .schema('core')
-        .from('currency_exchange_rates')
-        .select('*')
-        .eq('base_currency', 'USD');
-      if (error) {
-        console.error('Failed to fetch exchange rates:', error);
-        return [];
-      }
-      return data;
-    },
-    staleTime: 24 * 60 * 60 * 1000,
-  });
+  const exchangeRates = currentWorkspace?.localization?.exchange_rates || [];
 
   const customFieldsToShow = useMemo(() => {
     if (!opportunity) return [];
