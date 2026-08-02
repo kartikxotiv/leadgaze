@@ -80,6 +80,7 @@ import pathsConfig from '~/config/paths.config';
 import { usePermissionBasedNavigationConfig } from '~/lib/permissions/use-navigation-permissions';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { getNavigationConfig } from '~/lib/rbac/use-dynamic-navigation';
+import { usePreloadStrategies, usePreloadHoverHandlers } from '~/lib/hooks/use-preload-strategies';
 import { getAccountsService } from '~/services/accounts.service';
 import { getContactsService } from '~/services/contacts.service';
 import { getLeadsService } from '~/services/leads.service';
@@ -417,6 +418,9 @@ function NavDropdown({
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
 
+  const { preloadLeadsList } = usePreloadStrategies();
+  const { handleMouseEnter, handleMouseLeave } = usePreloadHoverHandlers();
+
   return (
     <>
       {/* Wrapper keeps label + chevron visually grouped with shared active styling */}
@@ -437,6 +441,12 @@ function NavDropdown({
               ? 'bg-header-primary !text-white'
               : '!text-blue-100 hover:bg-white/10 hover:text-white',
           )}
+          onMouseEnter={() => {
+            if (formattedLabel === 'Leads' && workspaceId) {
+              handleMouseEnter(() => preloadLeadsList(workspaceId));
+            }
+          }}
+          onMouseLeave={handleMouseLeave}
         >
           <Trans i18nKey={label} defaults={formattedLabel} />
         </Link>
@@ -583,6 +593,8 @@ export function HomeMenuNavigation() {
   const router = useRouter();
   const pathname = usePathname() || '';
   const [isLauncherOpen, setIsLauncherOpen] = useState(false);
+  const { preloadLeadsList } = usePreloadStrategies();
+  const { handleMouseEnter, handleMouseLeave } = usePreloadHoverHandlers();
   const [interestModalOpen, setInterestModalOpen] = useState(false);
   const [selectedComingSoonModule, setSelectedComingSoonModule] = useState<{
     id: string;
@@ -1417,6 +1429,12 @@ export function HomeMenuNavigation() {
                       ? 'bg-header-primary !text-white'
                       : '!text-blue-100 hover:bg-white/10 hover:text-white',
                   )}
+                  onMouseEnter={() => {
+                    if (formatted === 'Leads' && currentWorkspace?.id) {
+                      handleMouseEnter(() => preloadLeadsList(currentWorkspace.id));
+                    }
+                  }}
+                  onMouseLeave={handleMouseLeave}
                 >
                   <span>
                     <Trans i18nKey={item.label} defaults={formatted} />
@@ -1445,6 +1463,12 @@ export function HomeMenuNavigation() {
                         <Link
                           href={item.path}
                           className="w-full cursor-pointer px-3 py-1 secondary-text-small-bold 2xl:primary-text-medium"
+                          onMouseEnter={() => {
+                            if (formatted === 'Leads' && currentWorkspace?.id) {
+                              handleMouseEnter(() => preloadLeadsList(currentWorkspace.id));
+                            }
+                          }}
+                          onMouseLeave={handleMouseLeave}
                         >
                           <Trans i18nKey={item.label} defaults={formatted} />
                         </Link>
@@ -1486,6 +1510,12 @@ export function HomeMenuNavigation() {
                           ? 'bg-header-primary font-semibold text-white'
                           : '',
                       )}
+                      onMouseEnter={() => {
+                        if (formatted === 'Leads' && currentWorkspace?.id) {
+                          handleMouseEnter(() => preloadLeadsList(currentWorkspace.id));
+                        }
+                      }}
+                      onMouseLeave={handleMouseLeave}
                     >
                       {item.Icon}
                       <span>

@@ -56,6 +56,7 @@ import {
 } from '~/lib/hooks/use-leads-column-preferences';
 import { usePackageMembers } from '~/lib/hooks/use-package-members';
 import { useTeamMembers } from '~/lib/hooks/use-team-members';
+import { usePreloadStrategies, usePreloadHoverHandlers } from '~/lib/hooks/use-preload-strategies';
 import { calculateLeadScore } from '~/lib/lead-scoring/lead-scoring-engine';
 import { useLocalization } from '~/lib/localization/localization-provider';
 import { ModuleGuard } from '~/lib/rbac/module-guard';
@@ -66,6 +67,7 @@ import {
   getLeadsService,
   updateLeadService,
   importLeadsService,
+  getLeadsMetaService,
 } from '~/services/leads.service';
 import { Lead } from '~/services/leads.service';
 
@@ -186,30 +188,30 @@ const DEFAULT_VISIBILITY: Record<string, boolean> = {
 // Export column definitions — ALL fields, regardless of visibility
 // ---------------------------------------------------------------------------
 const EXPORT_COLUMNS = [
-  { key: 'first_name',           label: 'First Name' },
-  { key: 'last_name',            label: 'Last Name' },
-  { key: 'email',                label: 'Email' },
-  { key: 'alt_email',            label: 'Alt Email' },
-  { key: 'phone_number',         label: 'Phone' },
-  { key: 'mobile_number',        label: 'Mobile' },
-  { key: 'company_name',         label: 'Company' },
-  { key: 'company_website',      label: 'Company Website' },
+  { key: 'first_name', label: 'First Name' },
+  { key: 'last_name', label: 'Last Name' },
+  { key: 'email', label: 'Email' },
+  { key: 'alt_email', label: 'Alt Email' },
+  { key: 'phone_number', label: 'Phone' },
+  { key: 'mobile_number', label: 'Mobile' },
+  { key: 'company_name', label: 'Company' },
+  { key: 'company_website', label: 'Company Website' },
   { key: 'company_linkedin_url', label: 'Company LinkedIn' },
-  { key: 'linkedin_url',         label: 'LinkedIn' },
-  { key: 'job_title',            label: 'Job Title' },
-  { key: 'department',           label: 'Department' },
-  { key: 'industry',             label: 'Industry' },
-  { key: 'company_size',         label: 'Company Size' },
-  { key: 'location',             label: 'Location' },
-  { key: 'timezone',             label: 'Timezone' },
-  { key: 'status',               label: 'Status' },
-  { key: 'source',               label: 'Source' },
-  { key: 'trigger',              label: 'Trigger' },
-  { key: 'notes',                label: 'Notes' },
-  { key: 'score',                label: 'Score' },
-  { key: 'created_by',           label: 'Created By' },
-  { key: 'created_at',           label: 'Created On' },
-  { key: 'updated_by',           label: 'Last Updated By' },
+  { key: 'linkedin_url', label: 'LinkedIn' },
+  { key: 'job_title', label: 'Job Title' },
+  { key: 'department', label: 'Department' },
+  { key: 'industry', label: 'Industry' },
+  { key: 'company_size', label: 'Company Size' },
+  { key: 'location', label: 'Location' },
+  { key: 'timezone', label: 'Timezone' },
+  { key: 'status', label: 'Status' },
+  { key: 'source', label: 'Source' },
+  { key: 'trigger', label: 'Trigger' },
+  { key: 'notes', label: 'Notes' },
+  { key: 'score', label: 'Score' },
+  { key: 'created_by', label: 'Created By' },
+  { key: 'created_at', label: 'Created On' },
+  { key: 'updated_by', label: 'Last Updated By' },
 ];
 
 export default function LeadsPage() {
@@ -228,6 +230,9 @@ export default function LeadsPage() {
     [],
   );
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [exportModalOpen, setExportModalOpen] = useState(false);
+  const { preloadLeadDetail } = usePreloadStrategies();
+  const { handleMouseEnter, handleMouseLeave } = usePreloadHoverHandlers();
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [leadToDelete, setLeadToDelete] = useState<Lead | null>(null);
@@ -268,6 +273,41 @@ export default function LeadsPage() {
     clearDateRange: clearUpdatedOnRange,
   } = useDateRangeFilter('updated');
 
+  // =========================================================================
+  // OPTIMIZATION: Fetch consolidated leads meta data and seed React Query cache
+  // =========================================================================
+  const { isLoading: isMetaLoading } = useQuery({
+    queryKey: ['leads-meta', workspace?.id, user?.id, productKey],
+    queryFn: async () => {
+      if (!workspace?.id || !user?.id) return null;
+
+      const data = await getLeadsMetaService({
+        workspaceId: workspace.id,
+        userId: user.id,
+        productKey,
+      });
+
+      // Seed the React Query cache for the generic hooks
+      queryClient.setQueryData(
+        ['entity-fields', workspace.id, 'leads', productKey],
+        data.fields
+      );
+      queryClient.setQueryData(
+        ['user-column-preferences', workspace.id, user.id, 'leads'],
+        data.preferences?.preferences ?? null
+      );
+      queryClient.setQueryData(
+        ['lead-statuses', workspace.id],
+        data.statuses
+      );
+      // Optional: If role_permissions is cached independently, seed it here
+
+      return data;
+    },
+    enabled: !!workspace?.id && !!user?.id,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
   const {
     canViewColumn,
     visibleCustomFields,
@@ -276,7 +316,8 @@ export default function LeadsPage() {
   } = useFieldPermissions({
     entityType: 'leads',
     workspaceId: workspace?.id,
-    enabled: !!workspace?.id && !!user?.id,
+    enabled: !!workspace?.id && !!user?.id && !isMetaLoading,
+    staleTime: 5 * 60 * 1000,
   });
 
   const { mergedDefaults, persistVisibility } = useLeadsColumnPreferences({
@@ -284,7 +325,8 @@ export default function LeadsPage() {
     workspaceId: workspace?.id,
     userId: user?.id,
     defaultVisibility: DEFAULT_VISIBILITY,
-    enabled: !!workspace?.id && !!user?.id,
+    enabled: !!workspace?.id && !!user?.id && !isMetaLoading,
+    staleTime: 5 * 60 * 1000,
   });
 
   // Fetch ALL entity fields (system + custom)
@@ -299,7 +341,8 @@ export default function LeadsPage() {
     workspaceId: workspace?.id,
     userId: user?.id,
     productKey,
-    enabled: !!workspace?.id && !!user?.id,
+    enabled: !!workspace?.id && !!user?.id && !isMetaLoading,
+    staleTime: 5 * 60 * 1000,
   });
   const createField = useCreateField();
   const updateField = useUpdateField();
@@ -495,6 +538,7 @@ export default function LeadsPage() {
     queryKey: ['lead-statuses', workspace?.id],
     queryFn: () => getLeadStatusesService({ workspaceId: workspace?.id || '' }),
     enabled: !!workspace?.id,
+    staleTime: 5 * 60 * 1000,
   });
 
   const defaultStatusIds = useMemo(() => {
@@ -692,30 +736,30 @@ export default function LeadsPage() {
       }).totalScore;
 
       const base: Record<string, string> = {
-        first_name:           lead.first_name ?? '',
-        last_name:            lead.last_name ?? '',
-        email:                lead.email ?? '',
-        alt_email:            lead.alt_email ?? '',
-        phone_number:         lead.phone_number ?? '',
-        mobile_number:        lead.mobile_number ?? '',
-        company_name:         lead.company_name ?? '',
-        company_website:      lead.company_website ?? '',
+        first_name: lead.first_name ?? '',
+        last_name: lead.last_name ?? '',
+        email: lead.email ?? '',
+        alt_email: lead.alt_email ?? '',
+        phone_number: lead.phone_number ?? '',
+        mobile_number: lead.mobile_number ?? '',
+        company_name: lead.company_name ?? '',
+        company_website: lead.company_website ?? '',
         company_linkedin_url: lead.company_linkedin_url ?? '',
-        linkedin_url:         lead.linkedin_url ?? '',
-        job_title:            lead.job_title ?? '',
-        department:           lead.department ?? '',
-        industry:             lead.industry?.industry_name ?? '',
-        company_size:         lead.company_size ?? '',
-        location:             lead.location ?? '',
-        timezone:             lead.timezone ?? '',
-        status:               lead.status?.status_name ?? '',
-        source:               lead.source?.source_name ?? '',
-        trigger:              lead.trigger ?? '',
-        notes:                lead.notes ?? '',
-        score:                String(score),
-        created_by:           lead.created_by_account?.name ?? lead.created_by ?? '',
-        created_at:           lead.created_at ? formatDate(lead.created_at) : '',
-        updated_by:           lead.updated_by_account?.name ?? lead.updated_by ?? '',
+        linkedin_url: lead.linkedin_url ?? '',
+        job_title: lead.job_title ?? '',
+        department: lead.department ?? '',
+        industry: lead.industry?.industry_name ?? '',
+        company_size: lead.company_size ?? '',
+        location: lead.location ?? '',
+        timezone: lead.timezone ?? '',
+        status: lead.status?.status_name ?? '',
+        source: lead.source?.source_name ?? '',
+        trigger: lead.trigger ?? '',
+        notes: lead.notes ?? '',
+        score: String(score),
+        created_by: lead.created_by_account?.name ?? lead.created_by ?? '',
+        created_at: lead.created_at ? formatDate(lead.created_at) : '',
+        updated_by: lead.updated_by_account?.name ?? lead.updated_by ?? '',
       };
 
       // Append custom fields
@@ -991,11 +1035,11 @@ export default function LeadsPage() {
     <ModuleGuard module="leads">
       <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden">
         <PageHeader
-          title="Leads"      
+          title="Leads"
         >
           {canAccess('leads', 'create') && (
-            <Button 
-              onClick={() => setIsCreateDialogOpen(true)} 
+            <Button
+              onClick={() => setIsCreateDialogOpen(true)}
               className="bg-leadgaze-primary hover:bg-leadgaze-primary text-white secondary-text-small-bold gap-1.5 px-2"
             >
               <Plus className="h-4 w-4" />
@@ -1030,7 +1074,7 @@ export default function LeadsPage() {
               {totalCount}
             </span>
           </button>
-          
+
           {statuses.filter((s: any) => !s.is_closed).map((status: any) => {
             const breakdown = leadsData.statusBreakdown?.[status.id] as { count: number } | undefined;
             const count = breakdown?.count || 0;
@@ -1203,74 +1247,74 @@ export default function LeadsPage() {
         ) : (
           /* ── Table View ───────────────────────────────────────────────── */
           <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 gap-0">
-          <CustomTableContainer
-            pagination={
-              <TablePagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                totalCount={totalCount}
-                pageSize={pageSize}
-                onPageChange={setCurrentPage}
-                onPageSizeChange={(val) => {
-                  setPageSize(val);
-                  setCurrentPage(1);
-                }}
-                entityLabel="entries"
-              />
-            }
-          >
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  {/* Checkbox column */}
-                  <TableHead className="w-10 px-3">
-                    <Checkbox
-                      checked={
-                        isAllSelected
-                          ? true
-                          : isIndeterminate
-                            ? 'indeterminate'
-                            : false
-                      }
-                      onCheckedChange={handleSelectAll}
-                      aria-label="Select all rows"
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                  </TableHead>
+            <CustomTableContainer
+              pagination={
+                <TablePagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  totalCount={totalCount}
+                  pageSize={pageSize}
+                  onPageChange={setCurrentPage}
+                  onPageSizeChange={(val) => {
+                    setPageSize(val);
+                    setCurrentPage(1);
+                  }}
+                  entityLabel="entries"
+                />
+              }
+            >
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    {/* Checkbox column */}
+                    <TableHead className="w-10 px-3">
+                      <Checkbox
+                        checked={
+                          isAllSelected
+                            ? true
+                            : isIndeterminate
+                              ? 'indeterminate'
+                              : false
+                        }
+                        onCheckedChange={handleSelectAll}
+                        aria-label="Select all rows"
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </TableHead>
 
-                  {/* System columns */}
-                  {SYSTEM_FIELDS.map((field) => {
-                    if (!showColumn(field.id)) return null;
-                    const config = getSystemFieldConfig(field.id);
-                    return (
-                      <ColumnHeader
-                        key={field.id}
-                        label={
-                          getEntityFieldByKey(field.key)?.field_label ??
-                          field.label
-                        }
-                        columnId={field.id}
-                        sortKey={field.sortKey ?? null}
-                        sortColumn={sortColumn}
-                        sortDirection={sortDirection}
-                        onSort={toggleSort}
-                        sortable={config?.sortable !== false}
-                        className={cn('relative', config?.width)}
-                        isAdmin={isAdmin}
-                        field={getEntityFieldByKey(field.key)}
-                        onEditClick={
-                          isAdmin ? () => openColumnEdit(field.key) : undefined
-                        }
-                        {...getHeaderProps(field.id)}
-                      >
-                        <span
-                          className="col-resize-handle"
-                          data-min-width={config?.minWidth}
-                          {...getResizeHandleProps(field.id)}
-                        />
-                      </ColumnHeader>
-                    );
-                  })}
+                    {/* System columns */}
+                    {SYSTEM_FIELDS.map((field) => {
+                      if (!showColumn(field.id)) return null;
+                      const config = getSystemFieldConfig(field.id);
+                      return (
+                        <ColumnHeader
+                          key={field.id}
+                          label={
+                            getEntityFieldByKey(field.key)?.field_label ??
+                            field.label
+                          }
+                          columnId={field.id}
+                          sortKey={field.sortKey ?? null}
+                          sortColumn={sortColumn}
+                          sortDirection={sortDirection}
+                          onSort={toggleSort}
+                          sortable={config?.sortable !== false}
+                          className={cn('relative', config?.width)}
+                          isAdmin={isAdmin}
+                          field={getEntityFieldByKey(field.key)}
+                          onEditClick={
+                            isAdmin ? () => openColumnEdit(field.key) : undefined
+                          }
+                          {...getHeaderProps(field.id)}
+                        >
+                          <span
+                            className="col-resize-handle"
+                            data-min-width={config?.minWidth}
+                            {...getResizeHandleProps(field.id)}
+                          />
+                        </ColumnHeader>
+                      );
+                    })}
 
                     {/* Custom field columns with hover edit */}
                     {customFields.map((field) => {
@@ -1333,231 +1377,237 @@ export default function LeadsPage() {
                                 ? Object.values(visibility).filter(
                                   (v) => v !== false,
                                 ).length + trailingColumnCount
-                              : 8
-                          }
-                        >
-                          <Skeleton className="h-7 w-full rounded-md" />
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </>
-                ) : paginatedLeads.length === 0 ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={
-                        visibility
-                          ? Object.values(visibility).filter((v) => v !== false)
-                              .length + trailingColumnCount
-                          : 8
-                      }
-                      className="h-24 text-center"
-                    >
-                      <div className="text-gray-500">
-                        {searchTerm ||
-                        selectedStatuses.length > 0 ||
-                        selectedCreatedByIds.length > 0
-                          ? 'No leads match your search'
-                          : 'No leads yet. Create one to get started!'}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  paginatedLeads.map((lead: Lead, index: number) => (
-                    <TableRow
-                      key={lead.id}
-                      className="group hover:bg-muted/50 cursor-pointer"
-                      onClick={() =>
-                        router.push(`/home/sales/leads/${lead.id}`)
-                      }
-                    >
-                      {/* Checkbox */}
+                                : 8
+                            }
+                          >
+                            <Skeleton className="h-7 w-full rounded-md" />
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </>
+                  ) : paginatedLeads.length === 0 ? (
+                    <TableRow>
                       <TableCell
-                        className="w-10 px-3"
-                        onClick={(e) => e.stopPropagation()}
+                        colSpan={
+                          visibility
+                            ? Object.values(visibility).filter((v) => v !== false)
+                              .length + trailingColumnCount
+                            : 8
+                        }
+                        className="h-24 text-center"
                       >
-                        <Checkbox
-                          checked={selectedLeadIds.has(lead.id)}
-                          onCheckedChange={() => handleSelectRow(lead.id)}
-                          aria-label={`Select lead ${lead.first_name}`}
-                        />
+                        <div className="text-gray-500">
+                          {searchTerm ||
+                            selectedStatuses.length > 0 ||
+                            selectedCreatedByIds.length > 0
+                            ? 'No leads match your search'
+                            : 'No leads yet. Create one to get started!'}
+                        </div>
                       </TableCell>
+                    </TableRow>
+                  ) : (
+                    paginatedLeads.map((lead: Lead, index: number) => (
+                      <TableRow
+                        key={lead.id}
+                        className="group hover:bg-muted/50 cursor-pointer"
+                        onClick={() =>
+                          router.push(`/home/sales/leads/${lead.id}`)
+                        }
+                        onMouseEnter={() =>
+                          handleMouseEnter(() =>
+                            preloadLeadDetail(workspace?.id || '', lead)
+                          )
+                        }
+                        onMouseLeave={handleMouseLeave}
+                      >
+                        {/* Checkbox */}
+                        <TableCell
+                          className="w-10 px-3"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Checkbox
+                            checked={selectedLeadIds.has(lead.id)}
+                            onCheckedChange={() => handleSelectRow(lead.id)}
+                            aria-label={`Select lead ${lead.first_name}`}
+                          />
+                        </TableCell>
 
-                      {/* System columns */}
-                      {showColumn('sno') && (
-                        <TableCell className="text-muted-foreground w-12">
-                          {(currentPage - 1) * itemsPerPage + index + 1}
-                        </TableCell>
-                      )}
-                      {showColumn('name') && (
-                        <TableCell className="primary-text-medium text-leadgaze-primary dark:text-leadgaze-primary">
-                          <span>
-                            {lead.first_name} {lead.last_name || ''}
-                          </span>
-                        </TableCell>
-                      )}
-                      {showColumn('first_name') && (
-                        <TableCell>{lead.first_name || '-'}</TableCell>
-                      )}
-                      {showColumn('last_name') && (
-                        <TableCell>{lead.last_name || '-'}</TableCell>
-                      )}
-                      {showColumn('job_title') && (
-                        <TableCell>{lead.job_title || '-'}</TableCell>
-                      )}
-                      {showColumn('email') && (
-                        <TableCell className="text-muted-foreground">
-                          {lead.email || '-'}
-                        </TableCell>
-                      )}
-                      {showColumn('alt_email') && (
-                        <TableCell className="text-muted-foreground">
-                          {lead.alt_email || '-'}
-                        </TableCell>
-                      )}
-                      {showColumn('phone') && (
-                        <TableCell>{lead.phone_number || '-'}</TableCell>
-                      )}
-                      {showColumn('mobile') && (
-                        <TableCell>{lead.mobile_number || '-'}</TableCell>
-                      )}
-                      {showColumn('company') && (
-                        <TableCell>{lead.company_name || '-'}</TableCell>
-                      )}
-                      {showColumn('company_website') && (
-                        <TableCell>{lead.company_website || '-'}</TableCell>
-                      )}
-                      {showColumn('company_linkedin') && (
-                        <TableCell className="max-w-[150px] truncate">
-                          {lead.company_linkedin_url || '-'}
-                        </TableCell>
-                      )}
-                      {showColumn('linkedin') && (
-                        <TableCell className="max-w-[150px] truncate">
-                          {lead.linkedin_url || '-'}
-                        </TableCell>
-                      )}
-                      {showColumn('department') && (
-                        <TableCell>{lead.department || '-'}</TableCell>
-                      )}
-                      {showColumn('industry') && (
-                        <TableCell>
-                          {lead.industry?.industry_name || '-'}
-                        </TableCell>
-                      )}
-                      {showColumn('company_size') && (
-                        <TableCell>{lead.company_size || '-'}</TableCell>
-                      )}
-                      {showColumn('location') && (
-                        <TableCell>{lead.location || '-'}</TableCell>
-                      )}
-                      {showColumn('timezone') && (
-                        <TableCell>{lead.timezone || '-'}</TableCell>
-                      )}
-                      {showColumn('status') && (
-                        <TableCell>
-                          {lead.status && (
-                            <Badge
-                              variant="secondary"
-                              className="gap-1"
-                              style={{
-                                backgroundColor: `${lead.status.color}20`,
-                                color: lead.status.color,
-                                borderColor: `${lead.status.color}40`,
-                              }}
-                            >
-                              {lead.status.status_name}
-                            </Badge>
-                          )}
-                        </TableCell>
-                      )}
-                      {showColumn('source') && (
-                        <TableCell>{lead.source?.source_name || '-'}</TableCell>
-                      )}
-                      {showColumn('trigger') && (
-                        <TableCell>{lead.trigger || '-'}</TableCell>
-                      )}
-                      {showColumn('notes') && (
-                        <TableCell className="max-w-[200px] truncate">
-                          {lead.notes || '-'}
-                        </TableCell>
-                      )}
-                      {showColumn('score') && (
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            <div className="bg-secondary h-2 w-16 overflow-hidden rounded-full">
-                              <div
-                                className="bg-primary h-full transition-all"
-                                style={{
-                                  width: `${Math.min(
-                                    calculateLeadScore({
-                                      first_name: lead.first_name,
-                                      last_name: lead.last_name,
-                                      company_name: lead.company_name,
-                                      industry_id:
-                                        lead.industry_id || lead.industry?.id,
-                                      company_size: lead.company_size,
-                                      location: lead.location,
-                                      timezone: lead.timezone,
-                                      job_title: lead.job_title,
-                                      contacted_count: lead.contacted_count,
-                                      status_key: lead.status?.status_key,
-                                      custom_fields: lead.custom_fields || {},
-                                      source_id: lead.source_id,
-                                    }).totalScore,
-                                    100,
-                                  )}%`,
-                                }}
-                              />
-                            </div>
-                            <span className="w-8 text-right text-sm">
-                              {
-                                calculateLeadScore({
-                                  first_name: lead.first_name,
-                                  last_name: lead.last_name,
-                                  company_name: lead.company_name,
-                                  industry_id:
-                                    lead.industry_id || lead.industry?.id,
-                                  company_size: lead.company_size,
-                                  location: lead.location,
-                                  timezone: lead.timezone,
-                                  job_title: lead.job_title,
-                                  contacted_count: lead.contacted_count,
-                                  status_key: lead.status?.status_key,
-                                  custom_fields: lead.custom_fields || {},
-                                  source_id: lead.source_id,
-                                }).totalScore
-                              }
+                        {/* System columns */}
+                        {showColumn('sno') && (
+                          <TableCell className="text-muted-foreground w-12">
+                            {(currentPage - 1) * itemsPerPage + index + 1}
+                          </TableCell>
+                        )}
+                        {showColumn('name') && (
+                          <TableCell className="primary-text-medium text-leadgaze-primary dark:text-leadgaze-primary">
+                            <span>
+                              {lead.first_name} {lead.last_name || ''}
                             </span>
-                          </div>
-                        </TableCell>
-                      )}
-                      {showColumn('created_by') && (
-                        <TableCell>
-                          {lead.created_by_account?.name ||
-                            lead.created_by ||
-                            '-'}
-                        </TableCell>
-                      )}
-                      {showColumn('created_at') && (
-                        <TableCell className="whitespace-nowrap">
-                          {lead.created_at ? formatDate(lead.created_at) : '-'}
-                        </TableCell>
-                      )}
-                      {showColumn('updated_by') && (
-                        <TableCell>
-                          {lead.updated_by_account?.name ||
-                            lead.updated_by ||
-                            '-'}
-                        </TableCell>
-                      )}
-
-                      {/* Custom field cells */}
-                      {customFields.map((field) =>
-                        showColumn(field.field_key) ? (
-                          <TableCell key={field.id}>
-                            {(lead as any).custom_fields?.[field.field_key] ??
+                          </TableCell>
+                        )}
+                        {showColumn('first_name') && (
+                          <TableCell>{lead.first_name || '-'}</TableCell>
+                        )}
+                        {showColumn('last_name') && (
+                          <TableCell>{lead.last_name || '-'}</TableCell>
+                        )}
+                        {showColumn('job_title') && (
+                          <TableCell>{lead.job_title || '-'}</TableCell>
+                        )}
+                        {showColumn('email') && (
+                          <TableCell className="text-muted-foreground">
+                            {lead.email || '-'}
+                          </TableCell>
+                        )}
+                        {showColumn('alt_email') && (
+                          <TableCell className="text-muted-foreground">
+                            {lead.alt_email || '-'}
+                          </TableCell>
+                        )}
+                        {showColumn('phone') && (
+                          <TableCell>{lead.phone_number || '-'}</TableCell>
+                        )}
+                        {showColumn('mobile') && (
+                          <TableCell>{lead.mobile_number || '-'}</TableCell>
+                        )}
+                        {showColumn('company') && (
+                          <TableCell>{lead.company_name || '-'}</TableCell>
+                        )}
+                        {showColumn('company_website') && (
+                          <TableCell>{lead.company_website || '-'}</TableCell>
+                        )}
+                        {showColumn('company_linkedin') && (
+                          <TableCell className="max-w-[150px] truncate">
+                            {lead.company_linkedin_url || '-'}
+                          </TableCell>
+                        )}
+                        {showColumn('linkedin') && (
+                          <TableCell className="max-w-[150px] truncate">
+                            {lead.linkedin_url || '-'}
+                          </TableCell>
+                        )}
+                        {showColumn('department') && (
+                          <TableCell>{lead.department || '-'}</TableCell>
+                        )}
+                        {showColumn('industry') && (
+                          <TableCell>
+                            {lead.industry?.industry_name || '-'}
+                          </TableCell>
+                        )}
+                        {showColumn('company_size') && (
+                          <TableCell>{lead.company_size || '-'}</TableCell>
+                        )}
+                        {showColumn('location') && (
+                          <TableCell>{lead.location || '-'}</TableCell>
+                        )}
+                        {showColumn('timezone') && (
+                          <TableCell>{lead.timezone || '-'}</TableCell>
+                        )}
+                        {showColumn('status') && (
+                          <TableCell>
+                            {lead.status && (
+                              <Badge
+                                variant="secondary"
+                                className="gap-1"
+                                style={{
+                                  backgroundColor: `${lead.status.color}20`,
+                                  color: lead.status.color,
+                                  borderColor: `${lead.status.color}40`,
+                                }}
+                              >
+                                {lead.status.status_name}
+                              </Badge>
+                            )}
+                          </TableCell>
+                        )}
+                        {showColumn('source') && (
+                          <TableCell>{lead.source?.source_name || '-'}</TableCell>
+                        )}
+                        {showColumn('trigger') && (
+                          <TableCell>{lead.trigger || '-'}</TableCell>
+                        )}
+                        {showColumn('notes') && (
+                          <TableCell className="max-w-[200px] truncate">
+                            {lead.notes || '-'}
+                          </TableCell>
+                        )}
+                        {showColumn('score') && (
+                          <TableCell>
+                            <div className="flex items-center gap-1">
+                              <div className="bg-secondary h-2 w-16 overflow-hidden rounded-full">
+                                <div
+                                  className="bg-primary h-full transition-all"
+                                  style={{
+                                    width: `${Math.min(
+                                      calculateLeadScore({
+                                        first_name: lead.first_name,
+                                        last_name: lead.last_name,
+                                        company_name: lead.company_name,
+                                        industry_id:
+                                          lead.industry_id || lead.industry?.id,
+                                        company_size: lead.company_size,
+                                        location: lead.location,
+                                        timezone: lead.timezone,
+                                        job_title: lead.job_title,
+                                        contacted_count: lead.contacted_count,
+                                        status_key: lead.status?.status_key,
+                                        custom_fields: lead.custom_fields || {},
+                                        source_id: lead.source_id,
+                                      }).totalScore,
+                                      100,
+                                    )}%`,
+                                  }}
+                                />
+                              </div>
+                              <span className="w-8 text-right text-sm">
+                                {
+                                  calculateLeadScore({
+                                    first_name: lead.first_name,
+                                    last_name: lead.last_name,
+                                    company_name: lead.company_name,
+                                    industry_id:
+                                      lead.industry_id || lead.industry?.id,
+                                    company_size: lead.company_size,
+                                    location: lead.location,
+                                    timezone: lead.timezone,
+                                    job_title: lead.job_title,
+                                    contacted_count: lead.contacted_count,
+                                    status_key: lead.status?.status_key,
+                                    custom_fields: lead.custom_fields || {},
+                                    source_id: lead.source_id,
+                                  }).totalScore
+                                }
+                              </span>
+                            </div>
+                          </TableCell>
+                        )}
+                        {showColumn('created_by') && (
+                          <TableCell>
+                            {lead.created_by_account?.name ||
+                              lead.created_by ||
                               '-'}
                           </TableCell>
+                        )}
+                        {showColumn('created_at') && (
+                          <TableCell className="whitespace-nowrap">
+                            {lead.created_at ? formatDate(lead.created_at) : '-'}
+                          </TableCell>
+                        )}
+                        {showColumn('updated_by') && (
+                          <TableCell>
+                            {lead.updated_by_account?.name ||
+                              lead.updated_by ||
+                              '-'}
+                          </TableCell>
+                        )}
+
+                        {/* Custom field cells */}
+                        {customFields.map((field) =>
+                          showColumn(field.field_key) ? (
+                            <TableCell key={field.id}>
+                              {(lead as any).custom_fields?.[field.field_key] ??
+                                '-'}
+                            </TableCell>
                           ) : null,
                         )}
 

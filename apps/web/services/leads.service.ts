@@ -328,6 +328,16 @@ const importLeadsService = asyncHandlerClient(
   },
 );
 
+const getLeadsMetaService = asyncHandlerClient(
+  async (payload: { workspaceId: string; userId: string; productKey: string }) => {
+    const { workspaceId, userId, productKey } = payload;
+    const response = await ApiClient.get(
+      `/leads/meta?workspaceId=${workspaceId}&userId=${userId}&productKey=${productKey}`
+    );
+    return response.data;
+  },
+);
+
 export {
   getLeadsService,
   getLeadByIdService,
@@ -345,4 +355,5 @@ export {
   deleteLeadService,
   sendLeadEmailService,
   importLeadsService,
+  getLeadsMetaService,
 };

@@ -100,7 +100,8 @@ export default function EditLeadDialog({
   const { canEdit, canView, editableCustomFields, visibleCustomFields, isLoading: permissionsLoading } = useFieldPermissions({
     entityType: 'leads',
     workspaceId: workspace?.id,
-    enabled: open && !!workspace?.id,
+    enabled: open && !!workspace?.id && !!lead,
+    staleTime: 5 * 60 * 1000,
   });
   const [isLoading, setIsLoading] = useState(false);
   const [customFields, setCustomFields] = useState<Record<string, unknown>>({});
