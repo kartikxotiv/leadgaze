@@ -63,7 +63,7 @@ export default function WorkspaceSettingsPage() {
     return (
       <>
         <PageHeader
-          title="Workspace"          
+          title="Workspace"
         />
         {/* description="Manage your workspace configuration, email accounts, meeting accounts, and templates." */}
         <PageBody className="flex min-w-0 flex-1 shrink-0 flex-col">
@@ -80,7 +80,7 @@ export default function WorkspaceSettingsPage() {
   return (
     <>
       <PageHeader
-        title="Workspace"        
+        title="Workspace"
       />
       {/* description="Manage your workspace configuration, email accounts, meeting accounts, and templates." */}
       <PageBody className="sticky flex min-w-0 flex-1 shrink-0 flex-col overflow-hidden">
