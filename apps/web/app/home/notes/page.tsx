@@ -849,7 +849,7 @@ export default function NotesPage() {
                           {note.updated_by || '-'}
                         </TableCell>
                       )}
-                      <TableCell className="sticky right-0 px-4 text-right">
+                      <TableCell className="bg-card sticky right-0 px-4 text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button

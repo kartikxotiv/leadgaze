@@ -217,7 +217,7 @@ export function SupportSystemRequestsCard(props: {
                 <TableCell className="text-sm">
                   {formatDate(request.created_at)}
                 </TableCell>
-                <TableCell className="sticky right-0 px-4 text-right">
+                <TableCell className="bg-card sticky right-0 px-4 text-right">
                   <Button
                     size="sm"
                     variant="ghost"
