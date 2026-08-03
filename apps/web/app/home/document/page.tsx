@@ -35,6 +35,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from '@kit/ui/dialog';
 import {
   DropdownMenu,
@@ -951,7 +952,7 @@ export default function DocumentPage() {
                           {doc.updated_by || '-'}
                         </TableCell>
                       )}
-                      <TableCell className="bg-card sticky right-0 px-4 text-right">
+                      <TableCell className="sticky right-0 px-4 text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="icon">
@@ -1116,22 +1117,28 @@ export default function DocumentPage() {
               <Input
                 type="file"
                 onChange={(e) => setFile(e.target.files?.[0] || null)}
+                className="selectFileDetails"
               />
             </div>
           </div>
-          <div className="mt-auto border-t p-6">
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsUploadDialogOpen(false)}
+              disabled={createMutation.isPending}
+            >
+              Cancel
+            </Button>
             <Button
               onClick={handleUpload}
               disabled={!file || !entityId || createMutation.isPending}
-              className="w-full"
             >
-              {createMutation.isPending ? (
+              {createMutation.isPending && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                'Upload'
               )}
+              Upload
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -1141,7 +1148,7 @@ export default function DocumentPage() {
           <DialogHeader>
             <DialogTitle>Rename Document</DialogTitle>
           </DialogHeader>
-          <div className="flex-1 space-y-2 px-6 py-4">
+          <div className="flex-1 space-y-2 px-2">
             <div className="space-y-2">
               <Label>Document Name</Label>
               <Input
@@ -1149,18 +1156,25 @@ export default function DocumentPage() {
                 onChange={(e) => setNewName(e.target.value)}
               />
             </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsEditDialogOpen(false)}
+              disabled={updateMutation.isPending}
+            >
+              Cancel
+            </Button>
             <Button
               onClick={handleSave}
               disabled={!newName.trim() || updateMutation.isPending}
-              className="w-full"
             >
-              {updateMutation.isPending ? (
+              {updateMutation.isPending && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                'Rename'
               )}
+              Rename
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>

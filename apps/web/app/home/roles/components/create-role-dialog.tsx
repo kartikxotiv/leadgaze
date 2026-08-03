@@ -173,8 +173,8 @@ export function CreateRoleDialog({
           <div className="flex-1 overflow-y-auto p-2">
             <div className="space-y-2">
               {/* Role Details Section */}
-              <div className="space-y-2 border-b pb-4">
-                <h3 className="text-sm font-semibold custom-sub-heading-dialog-form">Role Details</h3>
+              <div className="space-y-2">
+                <h3 className="primary-heading text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">Role Details</h3>
 
                 <div className="space-y-2">
                   <Label htmlFor="role_name">Role Name *</Label>
@@ -247,7 +247,7 @@ export function CreateRoleDialog({
 
               {/* Permissions Section */}
               <div className="space-y-2">
-                <h3 className="text-sm font-semibold custom-sub-heading-dialog-form">Permissions</h3>
+                <h3 className="primary-heading text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">Permissions</h3>
                 {modulesLoading ? (
                   <div className="flex items-center justify-center py-8">
                     <Loader2 className="h-4 w-4 animate-spin" />

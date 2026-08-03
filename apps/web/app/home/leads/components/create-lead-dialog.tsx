@@ -463,7 +463,7 @@ export default function CreateLeadDialog({
                     htmlFor="industry_id">
                     Industry (Optional)
                   </Label>
-                  <div className="mt-2">
+                  <div>
                     <IndustrySelect
                       value={formData.industry_id}
                       onValueChange={(value) =>
@@ -524,7 +524,7 @@ export default function CreateLeadDialog({
                     }
                     disabled={isLoading}
                   >
-                    <SelectTrigger className="mt-2 border-gray-300 bg-white text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+                    <SelectTrigger className="border-gray-300 bg-white text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white">
                       <SelectValue placeholder="Select company size" />
                     </SelectTrigger>
                     <SelectContent className="z-50 border-gray-300 bg-white dark:border-slate-700 dark:bg-slate-900">
@@ -645,7 +645,7 @@ export default function CreateLeadDialog({
                     htmlFor="status_id">
                     Status <span className="text-red-500">*</span>
                   </Label>
-                  <div className="mt-2">
+                  <div>
                     <ManageableStatusSelect
                       moduleKey="leads"
                       workspaceId={workspace?.id ?? ''}
@@ -663,7 +663,7 @@ export default function CreateLeadDialog({
                     htmlFor="source_id">
                     Lead Source (Optional)
                   </Label>
-                  <div className="mt-2">
+                  <div>
                     <LeadSourceSelect
                       value={formData.source_id}
                       onValueChange={(value) =>
@@ -711,7 +711,7 @@ export default function CreateLeadDialog({
                   value={formData.notes}
                   onChange={(e) => handleInputChange('notes', e.target.value)}
                   disabled={isLoading}
-                  className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
+                  className="border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
                   rows={4}
                 />
               </div>
