@@ -212,7 +212,7 @@ export function EditOpportunityDialog({
         <DialogHeader>
           <DialogTitle>Edit Opportunity</DialogTitle>
           <DialogDescription>
-            Update the information for this opportunity.
+            Update the information for this opportunity
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -423,7 +423,7 @@ export function EditOpportunityDialog({
               />
             </FieldGuard>
 
-            <div className="space-y-3 border-t pt-4">
+            <div className="space-y-2 border-t pt-2">
               <h4 className="text-sm font-medium">Outcome</h4>
               <div className="grid grid-cols-2 gap-2">
                 <FieldGuard fieldKey="is_closed" canEdit={canEdit}>
@@ -485,7 +485,8 @@ export function EditOpportunityDialog({
 
             </div>
 
-            <div className="border-t pt-4">
+            {Object.keys(customFields).length > 0 && <div className="border-t pt-4">
+              
               <LeadCustomFieldInputs
                 fields={visibleCustomFields}
                 values={customFields}
@@ -495,9 +496,7 @@ export function EditOpportunityDialog({
                 canEdit={canEdit}
                 canView={canView}
               />
-            </div>
-
-            
+            </div>}            
           </form>
         </Form>
         <DialogFooter>

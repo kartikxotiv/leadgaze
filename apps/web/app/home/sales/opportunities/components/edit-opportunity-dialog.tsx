@@ -161,7 +161,7 @@ export function EditOpportunityDialog({
         <DialogHeader>
           <DialogTitle>Edit Opportunity</DialogTitle>
           <DialogDescription>
-            Update the information for this opportunity.
+            Update the information for this opportunity
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
