@@ -209,7 +209,7 @@ export function EditRoleDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[90vh] flex-col p-0 flex h-fit flex-col gap-0 overflow-hidden p-0 sm:max-w-[700px]">
-        <DialogHeader className="shrink-0 border-b px-6 py-4 border-b p-6 pb-4">
+        <DialogHeader>
           <DialogTitle>Edit Role</DialogTitle>
           <DialogDescription>
             Update the role details and settings
@@ -221,7 +221,7 @@ export function EditRoleDialog({
           className="flex flex-1 flex-col overflow-hidden"
         >
           <div className="flex-1 overflow-y-auto p-6 pt-0">
-            <div className="space-y-4 pt-6">
+            <div className="space-y-2 pt-6">
               <div className="space-y-2">
                 <Label htmlFor="role_name">Role Name *</Label>
                 <Input
@@ -293,8 +293,8 @@ export function EditRoleDialog({
                 </Select>
               </div>
 
-              <div className="space-y-4 border-t pt-4">
-                <h3 className="text-sm font-semibold">Permissions</h3>
+              <div className="space-y-2 border-t pt-4">
+                <h3 className="text-sm font-semibold custom-sub-heading-dialog-form">Permissions</h3>
                 {modulesLoading || permissionsLoading ? (
                   <div className="flex items-center justify-center py-8">
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -384,7 +384,7 @@ export function EditRoleDialog({
 
           
         </form>
-      <DialogFooter className="shrink-0 border-t bg-white px-6 py-4 border-t p-6 mt-auto">
+      <DialogFooter>
             <Button
               type="button"
               variant="outline"

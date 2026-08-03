@@ -21,6 +21,7 @@ import { CardWidgetList, CardWidgetListItem } from '@kit/ui/card-widget-list';
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -30,6 +31,13 @@ import { Label } from '@kit/ui/label';
 import { Textarea } from '@kit/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@kit/ui/tabs';
 import { Badge } from '@kit/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@kit/ui/select';
 
 import { useLocalization } from '~/lib/localization/localization-provider';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
@@ -267,12 +275,12 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
               </Button>
             </DialogTrigger>
             <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-[450px]">
-              <DialogHeader className="border-b p-6 pb-4">
+              <DialogHeader>
                 <DialogTitle>
                   {editingTask ? 'Edit Task' : 'Add Task'}
                 </DialogTitle>
               </DialogHeader>
-              <div className="flex-1 space-y-4 px-6 py-4 overflow-y-auto">
+              <div className="flex-1 space-y-2 px-2 overflow-y-auto">
                 <div className="space-y-2">
                   <Label>Title</Label>
                   <Input
@@ -298,24 +306,36 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
                     onChange={(date) => setFormData({ ...formData, due_date: date ? format(date, 'yyyy-MM-dd') : '' })}
                   />
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-2 pb-1">
                   <Label>Priority</Label>
-                  <select
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  <Select
                     value={formData.priority}
-                    onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, priority: value })
+                    }
                   >
-                    <option value="low">Low</option>
-                    <option value="medium">Medium</option>
-                    <option value="high">High</option>
-                  </select>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select priority" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="low">Low</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="high">High</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
-              <div className="border-t p-6 pt-4">
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => setIsOpen(false)}
+                  disabled={createMutation.isPending || updateMutation.isPending}
+                >
+                  Cancel
+                </Button>
                 <Button
                   onClick={handleSave}
                   disabled={!formData.title || createMutation.isPending || updateMutation.isPending}
-                  className="w-full"
                 >
                   {createMutation.isPending || updateMutation.isPending
                     ? 'Saving...'
@@ -323,7 +343,7 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
                       ? 'Save Changes'
                       : 'Create Task'}
                 </Button>
-              </div>
+              </DialogFooter>
             </DialogContent>
           </Dialog>
         </div>
@@ -476,8 +496,8 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
               <p className="primary-text-regular text-red-500 mt-1">Please input time before closing this task</p>
             )}
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2 py-4">
+            <div className="grid grid-cols-2 gap-2">
               <div className="space-y-2">
                 <Label>Hours</Label>
                 <Input
@@ -518,7 +538,7 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
               />
             </div>
           </div>
-          <div className="flex justify-end gap-3">
+          <DialogFooter>
             <Button variant="ghost" onClick={() => setIsTimeLogOpen(false)}>Cancel</Button>
             {isCompletingTask && (
               <Button
@@ -538,7 +558,7 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
             >
               {timeLogMutation.isPending ? 'Saving...' : 'Submit Log'}
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -553,7 +573,7 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
         }}
       >
         <DialogContent className="sm:max-w-[500px] max-h-[80vh] flex flex-col p-6">
-          <DialogHeader className="mb-4">
+          <DialogHeader>
             <DialogTitle>Time Logs: {viewLogsTask?.title}</DialogTitle>
           </DialogHeader>
           <div className="flex-1 overflow-y-auto space-y-3 pr-2">
@@ -594,9 +614,9 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
               <p className="text-sm text-gray-500 text-center py-6">No time logged yet.</p>
             )}
           </div>
-          <div className="mt-4 flex justify-end">
-            <Button onClick={() => setIsViewLogsOpen(false)}>Close</Button>
-          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsViewLogsOpen(false)}>Close</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </CardWidgetContainer>

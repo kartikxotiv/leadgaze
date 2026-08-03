@@ -24,6 +24,7 @@ import CustomTableContainer from '@kit/ui/custom-table-container';
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -814,12 +815,12 @@ export function ServiceCloudResourcePage({
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogContent className="max-h-[90vh] overflow-hidden border-gray-200 bg-white p-0 sm:max-w-[560px] dark:border-slate-800 dark:bg-slate-950">
             <div className="flex max-h-[90vh] flex-col">
-              <DialogHeader className="border-b border-gray-200 bg-white p-6 pb-4 dark:border-slate-800 dark:bg-slate-950">
+              <DialogHeader>
                 <DialogTitle>
                   {editing ? `Edit ${title}` : `New ${title}`}
                 </DialogTitle>
               </DialogHeader>
-              <div className="flex-1 space-y-4 overflow-y-auto p-6 pb-8">
+              <div className="flex-1 space-y-2 overflow-y-auto p-6 pb-8">
                 <div className="grid gap-4">
                   {fields
                     // Hide field if canViewField is provided AND returns false
@@ -959,16 +960,14 @@ export function ServiceCloudResourcePage({
                     })}
                 </div>
               </div>
-              <div className="border-t border-gray-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
-                <div className="flex justify-end gap-3">
-                  <Button onClick={save} disabled={saving}>
-                    {saving ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : null}
-                    Save
-                  </Button>
-                </div>
-              </div>
+              <DialogFooter>
+                <Button onClick={save} disabled={saving}>
+                  {saving ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : null}
+                  Save
+                </Button>
+              </DialogFooter>
             </div>
           </DialogContent>
         </Dialog>

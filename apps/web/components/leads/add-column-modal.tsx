@@ -270,7 +270,7 @@ export function AddColumnModal({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-lg">
-        <DialogHeader className="border-b p-6 pb-4">
+        <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Plus className="h-5 w-5" />
             Add New Column
@@ -542,7 +542,7 @@ export function AddColumnModal({
           )}
         </div>
 
-        <DialogFooter className="mt-auto flex justify-between border-t p-2">
+        <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>

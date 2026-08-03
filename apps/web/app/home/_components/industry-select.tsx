@@ -121,13 +121,13 @@ export function IndustrySelect({
 
             <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
                 <DialogContent className="flex max-h-[90vh] flex-col p-0">
-                    <DialogHeader className="border-b p-6 pb-4">
+                    <DialogHeader>
                         <DialogTitle>Add New Industry</DialogTitle>
                         <DialogDescription>
                             Create a new industry for this workspace
                         </DialogDescription>
                     </DialogHeader>
-                    <div className="flex-1 space-y-4 px-6 py-4">
+                    <div className="flex-1 space-y-2 px-6 py-4">
                         <div className="space-y-2">
                             <Label htmlFor="industry-name">Industry Name</Label>
                             <Input
@@ -146,7 +146,7 @@ export function IndustrySelect({
                         </div>
                     </div>
                     
-                <DialogFooter className="border-t p-2 mt-auto">
+                <DialogFooter>
                         <Button
                             variant="outline"
                             onClick={() => {

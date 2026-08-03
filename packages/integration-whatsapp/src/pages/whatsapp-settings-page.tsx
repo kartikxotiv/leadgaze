@@ -240,7 +240,7 @@ export function WhatsAppSettingsPage({
           title={<div className="flex items-center gap-3"><Button variant="ghost" size="icon" className="h-8 w-8" disabled><ArrowLeft className="h-4 w-4" /></Button><Skeleton className="h-8 w-52" /></div>}
           description="Connect your WhatsApp Business number to Leadgaze."
         />
-        <PageBody className="py-4 space-y-4">
+        <PageBody className="py-4 space-y-2">
           <Skeleton className="h-48 w-full" />
           <Skeleton className="h-64 w-full" />
         </PageBody>
@@ -278,7 +278,7 @@ export function WhatsAppSettingsPage({
                   )}
                 </div>
               </CardHeader>
-              <CardContent className="space-y-4 pt-4">
+              <CardContent className="space-y-2 pt-4">
                 {accounts.length === 0 ? (
                   <div className="space-y-2">
                     <p className="text-xs text-muted-foreground">
@@ -380,7 +380,7 @@ export function WhatsAppSettingsPage({
                       </svg>
                     </div>
                     <div>
-                      <h3 className="font-semibold text-base">Connect WhatsApp Business</h3>
+                      <h3 className="font-semibold text-base custom-sub-heading-dialog-form">Connect WhatsApp Business</h3>
                       <p className="text-sm text-muted-foreground mt-1 max-w-sm">
                         Connect your WhatsApp Business number to receive and send messages directly from Leadgaze.
                       </p>
@@ -398,7 +398,7 @@ export function WhatsAppSettingsPage({
                       <CheckCircle2 className="h-8 w-8" />
                     </div>
                     <div className="space-y-1">
-                      <h3 className="font-semibold text-base">Meta Connection Active</h3>
+                      <h3 className="font-semibold text-base custom-sub-heading-dialog-form">Meta Connection Active</h3>
                       <p className="text-xs text-muted-foreground max-w-md">
                         Your Meta OAuth authorization was successful. However, 0 phone numbers were automatically retrieved for your WhatsApp Business Account.
                       </p>
@@ -444,7 +444,7 @@ export function WhatsAppSettingsPage({
                         </div>
                       </CardHeader>
                       <CardContent className="pt-4">
-                        <div className="grid grid-cols-2 gap-4 text-xs">
+                        <div className="grid grid-cols-2 gap-2 text-xs">
                           <div>
                             <p className="text-muted-foreground">Quality Rating</p>
                             <p className="font-medium capitalize">{acc.metadata?.quality_rating ?? '—'}</p>
@@ -489,7 +489,7 @@ export function WhatsAppSettingsPage({
             </TabsContent>
 
             {/* LEAD SETTINGS */}
-            <TabsContent value="lead-settings" className="flex-1 overflow-y-auto min-h-0 space-y-4">
+            <TabsContent value="lead-settings" className="flex-1 overflow-y-auto min-h-0 space-y-2">
               <Card className="border shadow-sm">
                 <CardHeader className="border-b pb-3">
                   <CardTitle className="text-sm font-semibold flex items-center gap-2">
@@ -583,7 +583,7 @@ export function WhatsAppSettingsPage({
             <TabsContent value="setup" className="flex-1 overflow-y-auto min-h-0">
               <Card className="border shadow-sm p-6 space-y-8">
                 <div>
-                  <h3 className="text-base font-bold mb-1">WhatsApp Integration & Usage Guide</h3>
+                  <h3 className="text-base font-bold mb-1 custom-sub-heading-dialog-form">WhatsApp Integration & Usage Guide</h3>
                   <p className="text-sm text-muted-foreground">How to connect your WhatsApp Business number, manage customer chats, and capture leads automatically.</p>
                 </div>
 

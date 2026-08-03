@@ -827,7 +827,7 @@ export function CreateMeetingDialog({
       <DialogContent className="max-h-[90vh] max-w-2xl gap-0 overflow-y-auto p-0">
         <div className="bg-background sticky top-0 z-10 border-b px-6 py-5">
           <DialogHeader>
-            <DialogTitle className="text-xl font-semibold">
+            <DialogTitle>
               Schedule Meeting
             </DialogTitle>
             <p className="text-muted-foreground text-sm">
@@ -1466,7 +1466,7 @@ export function EditMeetingDialog({
       <DialogContent className="max-h-[90vh] max-w-2xl gap-0 overflow-y-auto p-0">
         <div className="bg-background sticky top-0 z-10 border-b px-6 py-5">
           <DialogHeader>
-            <DialogTitle className="text-xl font-semibold">
+            <DialogTitle>
               Edit Meeting
             </DialogTitle>
           </DialogHeader>
@@ -1793,7 +1793,7 @@ export function MeetingDetailsDialog({
       <DialogContent className="max-h-[90vh] max-w-2xl gap-0 overflow-y-auto p-0">
         <div className="bg-background sticky top-0 z-10 flex items-center justify-between border-b px-6 py-4">
           <div className="flex items-center gap-3">
-            <DialogTitle className="text-lg font-semibold">
+            <DialogTitle>
               {meeting.title}
             </DialogTitle>
           </div>
@@ -1828,7 +1828,7 @@ export function MeetingDetailsDialog({
             <TabsTrigger value="notes">Notes</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="overview" className="space-y-4 pb-6">
+          <TabsContent value="overview" className="space-y-2 pb-6">
             <div className="flex flex-wrap gap-2 pt-2">
               <Badge
                 variant="outline"
@@ -1944,7 +1944,7 @@ export function MeetingDetailsDialog({
             )}
           </TabsContent>
 
-          <TabsContent value="notes" className="space-y-4 pb-6">
+          <TabsContent value="notes" className="space-y-2 pb-6">
             <div className="space-y-2 pt-2">
               <Label className="font-medium">Add Note</Label>
               <Textarea
@@ -2646,26 +2646,26 @@ export default function MeetingsPage() {
                           }}
                         >
                           {isVisible('sno') && (
-                            <TableCell className="text-muted-foreground px-4 py-2">
+                            <TableCell className="text-muted-foreground py-0">
                               {sno}
                             </TableCell>
                           )}
                           {isVisible('title') && (
-                            <TableCell className="px-4 py-2">
-                              <div>
-                                <p className="text-sm font-medium">
+                            <TableCell className="px-4 py-0">
+                              <>
+                                <span className="text-sm font-medium">
                                   {meeting.title}
-                                </p>
+                                </span>
                                 {meeting.location && (
-                                  <p className="text-muted-foreground mt-0.5 text-xs">
+                                  <span className="text-muted-foreground mt-0.5 text-xs">
                                     {meeting.location}
-                                  </p>
+                                  </span>
                                 )}
-                              </div>
+                              </>
                             </TableCell>
                           )}
                           {isVisible('type') && (
-                            <TableCell className="px-4 py-2">
+                            <TableCell className="px-4 py-0">
                               <Badge
                                 variant="outline"
                                 className="h-5 py-0 text-xs"
@@ -2677,7 +2677,7 @@ export default function MeetingsPage() {
                             </TableCell>
                           )}
                           {isVisible('provider') && (
-                            <TableCell className="px-4 py-2">
+                            <TableCell className="px-4 py-0">
                               <Badge
                                 variant="outline"
                                 className={`h-5 gap-1.5 py-0 text-xs ${providerInfo.cls}`}
@@ -2688,8 +2688,8 @@ export default function MeetingsPage() {
                             </TableCell>
                           )}
                           {isVisible('date_time') && (
-                            <TableCell className="px-4 py-2">
-                              <div className="flex items-center gap-2 text-xs">
+                            <TableCell className="px-4 py-0">
+                              <span className="flex items-center gap-2 text-xs">
                                 <Clock className="text-muted-foreground h-3.5 w-3.5" />
                                 {formatMeetingTime(
                                   meeting.meeting_type === 'logged'
@@ -2701,11 +2701,11 @@ export default function MeetingsPage() {
                                   meeting.timezone,
                                   userTz,
                                 )}
-                              </div>
+                              </span>
                             </TableCell>
                           )}
                           {isVisible('status') && (
-                            <TableCell className="px-4 py-2">
+                            <TableCell className="px-4 py-0">
                               <Badge
                                 variant="outline"
                                 className="h-5 gap-1.5 py-0 text-xs"
@@ -2721,12 +2721,12 @@ export default function MeetingsPage() {
                             </TableCell>
                           )}
                           {isVisible('category') && (
-                            <TableCell className="px-4 py-2" onClick={(e) => e.stopPropagation()}>
+                            <TableCell className="px-4 py-0" onClick={(e) => e.stopPropagation()}>
                               {getCategoryBadge(meeting.entity_type)}
                             </TableCell>
                           )}
                           {isVisible('associate') && (
-                            <TableCell className="px-4 py-2" onClick={(e) => e.stopPropagation()}>
+                            <TableCell className="px-4 py-0" onClick={(e) => e.stopPropagation()}>
                               {meeting.entity_name && (
                                 <Link
                                   href={`/home/sales/${meeting.entity_type === 'opportunity' ? 'opportunities' : `${meeting.entity_type}s`}/${meeting.entity_id}`}
@@ -2738,7 +2738,7 @@ export default function MeetingsPage() {
                               )}
                             </TableCell>
                           )}
-                          <TableCell className="bg-card sticky right-0 px-4 py-2 text-right">
+                          <TableCell className="bg-card sticky right-0 px-4 py-0 text-right">
                             <DropdownMenu>
                               <DropdownMenuTrigger
                                 asChild
@@ -2746,8 +2746,7 @@ export default function MeetingsPage() {
                               >
                                 <Button
                                   variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8"
+                                  size="icon"                                 
                                 >
                                   <MoreVertical className="h-4 w-4" />
                                 </Button>
