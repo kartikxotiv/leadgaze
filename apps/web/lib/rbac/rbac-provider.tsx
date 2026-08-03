@@ -107,11 +107,15 @@ export function RBACProvider({ children }: { children: ReactNode }) {
     const workspacesWithUpdatedRole = initData.user_workspaces.map(workspace => {
       if (!workspace.roles || !currentProductKey) return workspace;
 
-      // Update currentRole if we have a role for the current product
-      if (workspace.roles[currentProductKey]) {
+      const targetRole =
+        workspace.roles[currentProductKey] ||
+        workspace.roles['sales'] ||
+        Object.values(workspace.roles)[0];
+
+      if (targetRole) {
         return {
           ...workspace,
-          currentRole: workspace.roles[currentProductKey],
+          currentRole: targetRole,
           currentProductKey,
         };
       }
@@ -204,14 +208,18 @@ export function RBACProvider({ children }: { children: ReactNode }) {
   const selectModule = React.useCallback((productKey: string) => {
     if (!currentWorkspace) return;
 
-    const role = currentWorkspace.roles[productKey];
+    const role =
+      currentWorkspace.roles[productKey] ||
+      currentWorkspace.roles['sales'] ||
+      Object.values(currentWorkspace.roles)[0];
+
     if (role) {
       setCurrentProductKey(productKey);
 
       if (typeof window !== 'undefined') {
         localStorage.setItem('currentProductKey', productKey);
       }
-      
+
       console.log('[RBAC] Module switched:', productKey);
     }
   }, [currentWorkspace]);

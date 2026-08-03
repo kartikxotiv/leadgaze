@@ -57,6 +57,7 @@ import {
 } from '~/lib/hooks/use-leads-column-preferences';
 import { usePackageMembers } from '~/lib/hooks/use-package-members';
 import { useTeamMembers } from '~/lib/hooks/use-team-members';
+import { usePreloadStrategies, usePreloadHoverHandlers } from '~/lib/hooks/use-preload-strategies';
 import { useLocalization } from '~/lib/localization/localization-provider';
 import { ModuleGuard } from '~/lib/rbac/module-guard';
 import { useModuleRoles, useRBAC } from '~/lib/rbac/rbac-provider';
@@ -172,6 +173,8 @@ export default function OpportunitiesPage() {
   const queryClient = useQueryClient();
   const { currentWorkspace: workspace, user, canAccess } = useRBAC();
   const { formatDate, formatCurrency } = useLocalization();
+  const { preloadOpportunityDetail } = usePreloadStrategies();
+  const { handleMouseEnter, handleMouseLeave } = usePreloadHoverHandlers();
   const supabase = useSupabase();
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'table' | 'kanban'>(() => {
@@ -1429,6 +1432,12 @@ export default function OpportunitiesPage() {
                             `/home/sales/opportunities/${opportunity.id}`,
                           )
                         }
+                        onMouseEnter={() =>
+                          handleMouseEnter(() =>
+                            preloadOpportunityDetail(workspace?.id || '', opportunity)
+                          )
+                        }
+                        onMouseLeave={handleMouseLeave}
                       >
                         {/* Checkbox */}
                         <TableCell

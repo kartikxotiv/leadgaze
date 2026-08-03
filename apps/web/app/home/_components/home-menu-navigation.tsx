@@ -418,7 +418,12 @@ function NavDropdown({
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  const { preloadLeadsList } = usePreloadStrategies();
+  const {
+    preloadLeadsList,
+    preloadContactsList,
+    preloadAccountsList,
+    preloadOpportunitiesList,
+  } = usePreloadStrategies();
   const { handleMouseEnter, handleMouseLeave } = usePreloadHoverHandlers();
 
   return (
@@ -442,8 +447,15 @@ function NavDropdown({
               : '!text-blue-100 hover:bg-white/10 hover:text-white',
           )}
           onMouseEnter={() => {
-            if (formattedLabel === 'Leads' && workspaceId) {
+            if (!workspaceId) return;
+            if (formattedLabel === 'Leads') {
               handleMouseEnter(() => preloadLeadsList(workspaceId));
+            } else if (formattedLabel === 'Contacts') {
+              handleMouseEnter(() => preloadContactsList(workspaceId));
+            } else if (formattedLabel === 'Accounts') {
+              handleMouseEnter(() => preloadAccountsList(workspaceId));
+            } else if (formattedLabel === 'Opportunities') {
+              handleMouseEnter(() => preloadOpportunitiesList(workspaceId));
             }
           }}
           onMouseLeave={handleMouseLeave}

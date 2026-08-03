@@ -54,6 +54,7 @@ import {
 } from '~/lib/hooks/use-leads-column-preferences';
 import { usePackageMembers } from '~/lib/hooks/use-package-members';
 import { useTeamMembers } from '~/lib/hooks/use-team-members';
+import { usePreloadStrategies, usePreloadHoverHandlers } from '~/lib/hooks/use-preload-strategies';
 import { useLocalization } from '~/lib/localization/localization-provider';
 import { ModuleGuard } from '~/lib/rbac/module-guard';
 import { useModuleRoles, useRBAC } from '~/lib/rbac/rbac-provider';
@@ -126,6 +127,8 @@ export default function AccountsPage() {
   const queryClient = useQueryClient();
   const { currentWorkspace: workspace, canAccess } = useRBAC();
   const { formatDate } = useLocalization();
+  const { preloadAccountDetail } = usePreloadStrategies();
+  const { handleMouseEnter, handleMouseLeave } = usePreloadHoverHandlers();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCreatedByIds, setSelectedCreatedByIds] = useState<string[]>(
     [],
@@ -1066,6 +1069,12 @@ export default function AccountsPage() {
                       onClick={() =>
                         router.push(`/home/sales/accounts/${account.id}`)
                       }
+                      onMouseEnter={() =>
+                        handleMouseEnter(() =>
+                          preloadAccountDetail(workspace?.id || '', account)
+                        )
+                      }
+                      onMouseLeave={handleMouseLeave}
                     >
                       {/* Checkbox */}
                       <TableCell
