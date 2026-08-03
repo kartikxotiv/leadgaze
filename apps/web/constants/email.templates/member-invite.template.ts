@@ -4,7 +4,6 @@ const INVITE_MEMBER_TEMPLATE = ({
   inviterName,
   productName,
   appUrl = 'https://app.leadgaze.com',
-  billingCountry = 'US',
 }: {
   inviteLink: string;
   workspaceName: string;
@@ -13,14 +12,14 @@ const INVITE_MEMBER_TEMPLATE = ({
   appUrl?: string;
   billingCountry?: string;
 }) => {
-  const isIndia = billingCountry.toUpperCase() === 'IN';
-  const operatorName = isIndia ? 'Xotiv Pvt. Ltd.' : 'Programea LLC';
-  const operatorUrl = isIndia ? 'https://xotiv.com/' : 'https://programea.com/';
+  const operatorName = 'Xotiv Technologies Pvt. Ltd.';
+  const operatorUrl = 'https://xotiv.com';
 
   // If local host or empty, fallback to production logo URL so it renders in email clients
-  const logoUrl = (!appUrl || appUrl.includes('localhost') || appUrl.includes('127.0.0.1'))
-    ? 'https://app.leadgaze.com/images/lead-gaze-logo-main-screen.png'
-    : `${appUrl}/images/lead-gaze-logo-main-screen.png`;
+  const logoUrl =
+    !appUrl || appUrl.includes('localhost') || appUrl.includes('127.0.0.1')
+      ? 'https://app.leadgaze.com/images/lead-gaze-logo-main-screen.png'
+      : `${appUrl}/images/lead-gaze-logo-main-screen.png`;
 
   return `
 <!DOCTYPE html>

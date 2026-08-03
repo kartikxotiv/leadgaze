@@ -31,6 +31,8 @@ test.describe('Password Reset Flow', () => {
 
     await auth.visitConfirmEmailLink(email);
 
+    await page.locator('[data-test="confirm-password-reset"]').click();
+
     await page.waitForURL('/update-password');
 
     await auth.updatePassword(newPassword);
