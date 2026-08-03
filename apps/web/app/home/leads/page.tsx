@@ -1612,7 +1612,7 @@ export default function LeadsPage() {
                         )}
 
                         {/* Actions */}
-                        <TableCell className="sticky right-0 text-right">
+                        <TableCell className="bg-card sticky right-0 text-right">
                           <div className="flex items-center justify-end gap-2">
                             <EntityActionsDropdown
                               id={lead.id}

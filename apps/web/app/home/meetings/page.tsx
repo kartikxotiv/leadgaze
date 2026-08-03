@@ -2734,7 +2734,7 @@ export default function MeetingsPage() {
                               )}
                             </TableCell>
                           )}
-                          <TableCell className="sticky right-0 px-4 py-0 text-right">
+                          <TableCell className="bg-card sticky right-0 px-4 py-0 text-right">
                             <DropdownMenu>
                               <DropdownMenuTrigger
                                 asChild

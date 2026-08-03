@@ -550,7 +550,7 @@ export default function RolesPage() {
                           )}
                         </TableCell>
                       )}
-                      <TableCell className="sticky right-0 px-4 text-right">
+                      <TableCell className="bg-card sticky right-0 px-4 text-right">
                         <div className="flex items-center justify-end">
                           <DropdownMenu>
                                 <DropdownMenuTrigger asChild>

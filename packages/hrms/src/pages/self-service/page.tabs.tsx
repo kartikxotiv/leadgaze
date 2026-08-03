@@ -138,7 +138,7 @@ export function SelfServicePayslipsTab(props: {
                       {payslip.status}
                     </Badge>
                   </TableCell>
-                  <TableCell className="sticky right-0 px-4 text-right">
+                  <TableCell className="bg-card sticky right-0 px-4 text-right">
                     <div className="flex justify-end gap-2">
                       <Button
                         size="sm"
