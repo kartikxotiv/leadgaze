@@ -70,21 +70,9 @@ const getLeadById = catchAsync(
     }
 
     // Fetch the lead first to get workspace_id for the RPC access check
-    const { data: lead, error } = await adminClient
+    const { data: leadStub, error } = await adminClient
       .from('crm_leads')
-      .select(
-        `
-          *,
-          company_website,
-          company_linkedin_url,
-          status:entity_statuses(id, status_name, status_key, color, icon),
-          source:lead_sources(id, source_name, source_key, color, icon),
-          owner:accounts!crm_leads_owner_id_fkey(id, email, name),
-          created_by_account:accounts!crm_leads_created_by_fkey(id, email, name),
-          updated_by_account:accounts!crm_leads_updated_by_fkey(id, email, name),
-          industry:crm_industries(id, industry_name)
-        `,
-      )
+      .select('workspace_id, owner_id, created_by')
       .eq('id', leadId)
       .eq('is_deleted', false)
       .maybeSingle();
@@ -94,17 +82,16 @@ const getLeadById = catchAsync(
       throw error;
     }
 
-    if (!lead) {
+    if (!leadStub) {
       return NextResponse.json({ message: 'Lead not found' }, { status: 404 });
     }
 
-    // Single RPC call replaces: accounts lookup, workspace owner check, membership check,
-    // and 3-5 queries inside getHierarchyVisibleUserIds
+    // Single RPC call replaces: accounts lookup, workspace owner check, membership check
     /* eslint-disable @typescript-eslint/no-explicit-any */
     const { data: accessResult, error: accessError } = await (
       adminClient as any
     ).rpc('resolve_workspace_access', {
-      p_workspace_id: lead.workspace_id,
+      p_workspace_id: leadStub.workspace_id,
       p_user_id: user.id,
       p_user_email: user.email || null,
       p_require_shared_team: false,
@@ -130,54 +117,28 @@ const getLeadById = catchAsync(
       );
     }
 
-    let canViewLead = isOwner;
+    const { LeadsService } = await import('@kit/sales');
+    const leadsService = new LeadsService(adminClient);
 
-    if (!canViewLead) {
-      if (hierarchyType === 'all') {
-        canViewLead = true;
-      } else {
-        const visibleUserIds = new Set<string>(rpcVisibleUserIds || []);
+    const { lead: rawLead, relations } = await leadsService.getLeadDetails({
+      leadId,
+      workspaceId: leadStub.workspace_id,
+      isOwner,
+      visibleUserIds: rpcVisibleUserIds || []
+    });
 
-        canViewLead =
-          (lead.owner_id ? visibleUserIds.has(lead.owner_id) : false) ||
-          visibleUserIds.has(lead.created_by);
-
-        if (!canViewLead) {
-          const { data: assignment } = await adminClient
-            .from('lead_assignees')
-            .select('id')
-            .eq('workspace_id', lead.workspace_id)
-            .eq('lead_id', leadId)
-            .in('assigned_to_user_id', Array.from(visibleUserIds))
-            .eq('assignment_status', 'active')
-            .limit(1)
-            .maybeSingle();
-
-          canViewLead = Boolean(assignment);
-        }
-      }
+    if (!rawLead) {
+      return NextResponse.json({ message: 'Lead not found' }, { status: 404 });
     }
-
-    if (!canViewLead) {
-      return NextResponse.json(
-        { message: 'You do not have permission to view this lead' },
-        { status: 403 },
-      );
-    }
-
-    const { data: account } = await adminClient
-      .from('crm_accounts')
-      .select()
-      .eq('created_from_lead_id', leadId);
 
     const leadWithConversion = {
-      ...lead,
-      converted_account_id: account?.[0]?.id || null,
-      is_converted_to_account: Boolean(account?.length),
+      ...rawLead,
+      converted_account_id: relations.accounts?.[0]?.id || null,
+      is_converted_to_account: Boolean(relations.accounts?.length),
     } as LeadWithRelations;
 
     const fieldCtx = await loadFieldPermissionContext(supabase, {
-      workspaceId: lead.workspace_id,
+      workspaceId: leadStub.workspace_id,
       entityType: 'leads',
       productKey: 'sales',
       userId: user.id,

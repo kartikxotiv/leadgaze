@@ -22,6 +22,7 @@ interface UseFieldPermissionsOptions {
   workspaceId?: string;
   enabled?: boolean;
   productKey?: string;
+  staleTime?: number;
 }
 
 export function useFieldPermissions({
@@ -29,6 +30,7 @@ export function useFieldPermissions({
   workspaceId,
   enabled = true,
   productKey: overrideProductKey,
+  staleTime = 5 * 60 * 1000, // Default to 5 minutes
 }: UseFieldPermissionsOptions) {
   const pathname = usePathname();
   const inferredProductKey = useMemo(
@@ -47,6 +49,7 @@ export function useFieldPermissions({
     userId: user?.id,
     productKey,
     enabled: enabled && !!effectiveWorkspaceId && !!user?.id,
+    staleTime,
   });
 
   const ctx = useMemo(() => {

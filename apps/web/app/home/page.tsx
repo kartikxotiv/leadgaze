@@ -62,20 +62,13 @@ export default function HomePage() {
         return;
       }
 
-      // Fetch workspace currency & exchange rates for pipeline value conversion
-      const { data: currenciesData } = await supabase
-        .schema('core')
-        .from('workspace_currencies')
-        .select('currency_code, is_default')
-        .eq('workspace_id', workspaceId)
-        .eq('is_active', true)
-        .order('is_default', { ascending: false });
-
-      const { data: exchangeRates = [] } = await supabase
-        .schema('core')
-        .from('currency_exchange_rates')
-        .select('*')
-        .eq('base_currency', 'USD');
+      // Use workspace currency & exchange rates from initialized context
+      const currenciesData = [{
+        currency_code: currentWorkspace?.localization?.default_currency || 'USD',
+        is_default: true
+      }];
+      
+      const exchangeRates = currentWorkspace?.localization?.exchange_rates || [];
 
       const workspaceCurrency = currenciesData?.find((c: any) => c.is_default)?.currency_code || 'USD';
       const pipelineValueUsd = metrics?.opportunities?.totalAmount ?? 0;

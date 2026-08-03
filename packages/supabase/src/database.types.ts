@@ -9882,6 +9882,108 @@ export type Database = {
       }
     }
     Views: {
+      vw_crm_leads_list: {
+        Row: {
+          id: string
+          workspace_id: string
+          first_name: string
+          last_name: string | null
+          email: string | null
+          alt_email: string | null
+          phone_number: string | null
+          mobile_number: string | null
+          company_name: string | null
+          job_title: string | null
+          department: string | null
+          location: string | null
+          trigger: string | null
+          created_at: string
+          updated_at: string
+          company_size: Database["public"]["Enums"]["company_size"] | null
+          annual_revenue: number | null
+          owner_id: string | null
+          created_by: string | null
+          is_deleted: boolean
+          status_id: string
+          status: Json | null
+          source_id: string | null
+          source: Json | null
+          industry_id: string | null
+          industry: Json | null
+          owner: Json | null
+          created_by_account: Json | null
+          updated_by_account: Json | null
+          created_by_account_name: string | null
+          updated_by_account_name: string | null
+        }
+        Insert: {
+          id?: string
+          workspace_id?: string
+          first_name?: string
+          last_name?: string | null
+          email?: string | null
+          alt_email?: string | null
+          phone_number?: string | null
+          mobile_number?: string | null
+          company_name?: string | null
+          job_title?: string | null
+          department?: string | null
+          location?: string | null
+          trigger?: string | null
+          created_at?: string
+          updated_at?: string
+          company_size?: Database["public"]["Enums"]["company_size"] | null
+          annual_revenue?: number | null
+          owner_id?: string | null
+          created_by?: string | null
+          is_deleted?: boolean
+          status_id?: string
+          status?: Json | null
+          source_id?: string | null
+          source?: Json | null
+          industry_id?: string | null
+          industry?: Json | null
+          owner?: Json | null
+          created_by_account?: Json | null
+          updated_by_account?: Json | null
+          created_by_account_name?: string | null
+          updated_by_account_name?: string | null
+        }
+        Update: {
+          id?: string
+          workspace_id?: string
+          first_name?: string
+          last_name?: string | null
+          email?: string | null
+          alt_email?: string | null
+          phone_number?: string | null
+          mobile_number?: string | null
+          company_name?: string | null
+          job_title?: string | null
+          department?: string | null
+          location?: string | null
+          trigger?: string | null
+          created_at?: string
+          updated_at?: string
+          company_size?: Database["public"]["Enums"]["company_size"] | null
+          annual_revenue?: number | null
+          owner_id?: string | null
+          created_by?: string | null
+          is_deleted?: boolean
+          status_id?: string
+          status?: Json | null
+          source_id?: string | null
+          source?: Json | null
+          industry_id?: string | null
+          industry?: Json | null
+          owner?: Json | null
+          created_by_account?: Json | null
+          updated_by_account?: Json | null
+          created_by_account_name?: string | null
+          updated_by_account_name?: string | null
+        }
+        Relationships: []
+      }
       account_assignees_with_details: {
         Row: {
           account_id: string | null
@@ -10081,6 +10183,13 @@ export type Database = {
       }
     }
     Functions: {
+      get_lead_related_entities: {
+        Args: {
+          p_lead_id: string
+          p_workspace_id: string
+        }
+        Returns: Json
+      }
       current_user_can_send_from_email_account: {
         Args: { p_email_account_id: number }
         Returns: boolean

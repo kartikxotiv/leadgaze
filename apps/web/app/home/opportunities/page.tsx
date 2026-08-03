@@ -716,22 +716,7 @@ export default function OpportunitiesPage() {
   });
 
   // Fetch exchange rates for currency conversion
-  const { data: exchangeRates = [] } = useQuery({
-    queryKey: ['exchange-rates'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .schema('core')
-        .from('currency_exchange_rates')
-        .select('*')
-        .eq('base_currency', 'USD');
-      if (error) {
-        console.error('Failed to fetch exchange rates:', error);
-        return [];
-      }
-      return data;
-    },
-    staleTime: 24 * 60 * 60 * 1000, // 24 hours
-  });
+  const exchangeRates = workspace?.localization?.exchange_rates || [];
 
   // Fetch team members filtered by package access (for Created By filter)
   const { members } = usePackageMembers();
