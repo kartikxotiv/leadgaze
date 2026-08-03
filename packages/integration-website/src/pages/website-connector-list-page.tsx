@@ -99,9 +99,14 @@ export function WebsiteConnectorListPage({
         .eq('workspace_id', workspaceId);
 
       if (membersData) {
-        const fetchedAccounts = membersData
-          .map((m: any) => m.accounts)
-          .filter(Boolean) as Account[];
+        const fetchedAccounts = Array.from(
+          new Map(
+            (membersData as Array<{ accounts: Account | null }>)
+              .map((member) => member.accounts)
+              .filter((account): account is Account => Boolean(account))
+              .map((account) => [account.id, account]),
+          ).values(),
+        );
         setAccounts(fetchedAccounts);
         if (fetchedAccounts.length > 0 && fetchedAccounts[0]) {
           setNewConnectorOwner(fetchedAccounts[0].id);
@@ -150,7 +155,7 @@ export function WebsiteConnectorListPage({
           Configure a new endpoint structure for web integration.
         </DialogDescription>
       </DialogHeader>
-      <div className="space-y-4 py-4">
+      <div className="space-y-2 py-4">
         <div className="space-y-2">
           <Label htmlFor="cname">Connector Name</Label>
           <Input
@@ -213,7 +218,7 @@ export function WebsiteConnectorListPage({
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-md">
-              <CreateConnectorForm />
+              {CreateConnectorForm()}
             </DialogContent>
           </Dialog>
         </PageHeaderActions>
@@ -256,7 +261,7 @@ export function WebsiteConnectorListPage({
                 <Button>Create First Connector</Button>
               </DialogTrigger>
               <DialogContent className="max-w-md">
-                <CreateConnectorForm />
+                {CreateConnectorForm()}
               </DialogContent>
             </Dialog>
           </Card>

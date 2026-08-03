@@ -235,10 +235,10 @@ function CoreVariableDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-hidden border-gray-200 bg-white p-0 sm:max-w-md dark:border-slate-800 dark:bg-slate-950">
         <div className="flex max-h-[90vh] flex-col">
-          <DialogHeader className="border-b border-gray-200 bg-white p-6 pb-4 dark:border-slate-800 dark:bg-slate-950">
+          <DialogHeader>
             <DialogTitle>{variable ? 'Edit Variable' : 'Create Variable'}</DialogTitle>
           </DialogHeader>
-          <div className="flex-1 space-y-4 overflow-y-auto p-6 pb-8">
+          <div className="flex-1 space-y-2 overflow-y-auto p-6 pb-8">
           <div className="space-y-2">
             <Label>Variable Key</Label>
             <Input value={key} onChange={(event) => setKey(event.target.value)} placeholder="company_address" />
@@ -248,7 +248,7 @@ function CoreVariableDialog({
             <Input value={value} onChange={(event) => setValue(event.target.value)} placeholder="123 Main St" />
           </div>
           </div>
-          <DialogFooter className="border-t border-gray-200 bg-white p-2 dark:border-slate-800 dark:bg-slate-950">
+          <DialogFooter>
             <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSaving}>Cancel</Button>
             <Button onClick={handleSave} disabled={isSaving}>
               {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}

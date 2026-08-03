@@ -96,7 +96,7 @@ export function ManageableStatusSelect({
         onValueChange={onValueChange}
         disabled={disabled}
         open={selectOpen}
-        onOpenChange={setSelectOpen}
+        onOpenChange={setSelectOpen}        
       >
         <SelectTrigger className={triggerClassName}>
           <SelectValue placeholder={defaultPlaceholder}>

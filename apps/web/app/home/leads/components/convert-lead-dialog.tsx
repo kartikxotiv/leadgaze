@@ -253,18 +253,18 @@ export function ConvertLeadDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-2xl">
-        <DialogHeader className="border-b p-6 pb-4">
+        <DialogHeader>
           <DialogTitle>Convert Lead</DialogTitle>
           <DialogDescription>
-            Convert this lead into an Account, Contact, and Opportunity.
+            Convert this lead into an Account, Contact, and Opportunity
           </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
-          <form id="dialog-form" onSubmit={form.handleSubmit(onSubmit)} className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
+          <form id="dialog-form" onSubmit={form.handleSubmit(onSubmit)} className="flex-1 overflow-y-auto px-2 space-y-2">
             {/* Account Section */}
-            <div className="space-y-4 rounded-lg border p-4">
-              <h3 className="flex items-center gap-2 font-semibold">
+            <div className="space-y-2 rounded-lg border p-2">
+              <h3 className="flex items-center gap-2 font-semibold custom-sub-heading-dialog-form">
                 <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 text-xs text-blue-600">
                   1
                 </span>
@@ -278,9 +278,9 @@ export function ConvertLeadDialog({
                   <RadioGroup
                     onValueChange={field.onChange}
                     defaultValue={field.value}
-                    className="flex flex-col space-y-3"
+                    className="flex flex-col"
                   >
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-2 mt-2 ml-1">
                       <RadioGroupItem value="new" id="acc-new" />
                       <FormLabel htmlFor="acc-new" className="font-normal">
                         Create New Account
@@ -288,7 +288,7 @@ export function ConvertLeadDialog({
                     </div>
 
                     {field.value === 'new' && (
-                      <div className="w-full pl-6">
+                      <div className="w-full pl-1">
                         <FormField
                           control={form.control}
                           name="accountName"
@@ -304,14 +304,14 @@ export function ConvertLeadDialog({
                       </div>
                     )}
 
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-2 pl-1">
                       <RadioGroupItem value="existing" id="acc-exist" />
                       <FormLabel htmlFor="acc-exist" className="font-normal">
                         Choose Existing Account
                       </FormLabel>
                     </div>
                     {field.value === 'existing' && (
-                      <div className="w-full pl-6">
+                      <div className="w-full pl-1">
                         <FormField
                           control={form.control}
                           name="existingAccountId"
@@ -391,8 +391,8 @@ export function ConvertLeadDialog({
             </div>
 
             {/* Contact Section */}
-            <div className="space-y-4 rounded-lg border p-4">
-              <h3 className="flex items-center gap-2 font-semibold">
+            <div className="space-y-2 rounded-lg border p-2">
+              <h3 className="flex items-center gap-2 font-semibold custom-sub-heading-dialog-form">
                 <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 text-xs text-blue-600">
                   2
                 </span>
@@ -406,9 +406,9 @@ export function ConvertLeadDialog({
                   <RadioGroup
                     onValueChange={field.onChange}
                     defaultValue={field.value}
-                    className="flex flex-col space-y-3"
+                    className="flex flex-col"
                   >
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-2 mt-2 ml-1">
                       <RadioGroupItem value="new" id="cont-new" />
                       <FormLabel htmlFor="cont-new" className="font-normal">
                         Create New Contact
@@ -416,7 +416,7 @@ export function ConvertLeadDialog({
                     </div>
 
                     {field.value === 'new' && (
-                      <div className="grid w-full grid-cols-2 gap-4 pl-6">
+                      <div className="grid w-full grid-cols-2 gap-4 pl-1">
                         <FormField
                           control={form.control}
                           name="contactFirstName"
@@ -451,7 +451,7 @@ export function ConvertLeadDialog({
                       </FormLabel>
                     </div>
                     {field.value === 'existing' && (
-                      <div className="w-full pl-6">
+                      <div className="w-full pl-1">
                         <FormField
                           control={form.control}
                           name="existingContactId"
@@ -537,9 +537,9 @@ export function ConvertLeadDialog({
             </div>
 
             {/* Opportunity Section */}
-            <div className="space-y-4 rounded-lg border p-4">
-              <div className="flex items-center justify-between">
-                <h3 className="flex items-center gap-2 font-semibold">
+            <div className="space-y-2 rounded-lg border p-2">
+              <div className="flex items-center justify-between mb-0">
+                <h3 className="flex items-center gap-2 font-semibold custom-sub-heading-dialog-form">
                   <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 text-xs text-blue-600">
                     3
                   </span>
@@ -574,9 +574,9 @@ export function ConvertLeadDialog({
                     <RadioGroup
                       onValueChange={field.onChange}
                       defaultValue={field.value}
-                      className="flex flex-col space-y-3"
+                      className="flex flex-col"
                     >
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center space-x-2 mt-2 ml-1">
                         <RadioGroupItem value="new" id="opp-new" />
                         <FormLabel htmlFor="opp-new" className="font-normal">
                           New Opportunity
@@ -584,7 +584,7 @@ export function ConvertLeadDialog({
                       </div>
 
                       {field.value === 'new' && (
-                        <div className="w-full pl-6">
+                        <div className="w-full pl-1">
                           <FormField
                             control={form.control}
                             name="opportunityName"
@@ -607,7 +607,7 @@ export function ConvertLeadDialog({
                         </FormLabel>
                       </div>
                       {field.value === 'existing' && (
-                        <div className="w-full pl-6">
+                        <div className="w-full pl-1">
                           <FormField
                             control={form.control}
                             name="existingOpportunityId"
@@ -688,7 +688,7 @@ export function ConvertLeadDialog({
             </div>
 
             {/* Converted Status */}
-            <div className="space-y-4 rounded-lg border bg-slate-50 p-4 dark:bg-slate-900/50">
+            <div className="space-y-2 rounded-lg border bg-slate-50 p-1 dark:bg-slate-900/50">
               <FormField
                 control={form.control}
                 name="convertedStatusId"
@@ -723,17 +723,16 @@ export function ConvertLeadDialog({
             
           </form>
         </Form>
-      <DialogFooter className="border-t p-2 mt-auto">
+      <DialogFooter>
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => onOpenChange(false)}
-                disabled={isSubmitting}
-                className='mb-2'
+                disabled={isSubmitting}                
               >
                 Cancel
               </Button>
-              <Button type="submit" form="dialog-form" disabled={isSubmitting} className='mb-2'>
+              <Button type="submit" form="dialog-form" disabled={isSubmitting}>
                 {isSubmitting ? 'Converting...' : 'Convert'}
               </Button>
             </DialogFooter>

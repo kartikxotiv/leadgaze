@@ -518,12 +518,12 @@ export function ColumnEditModal({
                   </div>
                 </>
               ) : (
-                <div className="flex flex-col items-center justify-center min-h-[300px] text-center p-6 space-y-4">
+                <div className="flex flex-col items-center justify-center min-h-[300px] text-center p-6 space-y-2">
                   <div className="h-16 w-16 rounded-full bg-emerald-50/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
                     <Check className="h-8 w-8" />
                   </div>
                   <div className="space-y-1.5">
-                    <h3 className="font-bold text-sm text-foreground">
+                    <h3 className="font-bold text-sm text-foreground custom-sub-heading-dialog-form">
                       {accessType === 'public' ? 'Public Column Visibility' : 'Private Column Visibility'}
                     </h3>
                     <p className="text-xs text-muted-foreground max-w-[280px] leading-normal">

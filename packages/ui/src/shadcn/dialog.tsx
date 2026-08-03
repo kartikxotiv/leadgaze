@@ -35,14 +35,14 @@ const DialogContent: React.FC<
     <DialogOverlay />
     <DialogPrimitive.Content
       className={cn(
-        'bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border p-6 shadow-lg duration-200 sm:rounded-lg',
+        'main-dialog bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-2 border p-6 shadow-lg duration-200',
         className,
       )}
       {...props}
     >
       {children}
-      <DialogPrimitive.Close className="ring-offset-background focus:ring-ring data-[state=open]:bg-accent data-[state=open]:text-muted-foreground absolute top-4 right-4 z-50 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none">
-        <Cross2Icon className="h-4 w-4" />
+      <DialogPrimitive.Close className="data-[state=open]:bg-accent data-[state=open]:text-muted-foreground absolute top-4 right-4 z-50 opacity-90 transition-opacity hover:opacity-100 focus:outline-hidden disabled:pointer-events-none cursor-pointer">
+        <Cross2Icon className="h-4 w-4 text-white" />
         <span className="sr-only">Close</span>
       </DialogPrimitive.Close>
     </DialogPrimitive.Content>
@@ -56,7 +56,7 @@ const DialogHeader = ({
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     className={cn(
-      'flex flex-col space-y-1.5 text-center sm:text-left',
+      'flex flex-col text-center sm:text-left bg-leadgaze-primary py-3 px-2',
       className,
     )}
     {...props}
@@ -70,7 +70,7 @@ const DialogFooter = ({
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     className={cn(
-      'flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2',
+      'flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 dialog-footer-border-top p-2 dialog-footer',
       className,
     )}
     {...props}
@@ -83,7 +83,7 @@ const DialogTitle: React.FC<
 > = ({ className, ...props }) => (
   <DialogPrimitive.Title
     className={cn(
-      'primary-heading text-leadgaze-dark dark:text-white leading-none tracking-tight',
+      'primary-heading-extra text-white',
       className,
     )}
     {...props}
@@ -95,7 +95,7 @@ const DialogDescription: React.FC<
   React.ComponentPropsWithRef<typeof DialogPrimitive.Description>
 > = ({ className, ...props }) => (
   <DialogPrimitive.Description
-    className={cn('text-sm text-leadgaze-muted dark:text-white', className)}
+    className={cn('primary-text-medium text-white', className)}
     {...props}
   />
 );

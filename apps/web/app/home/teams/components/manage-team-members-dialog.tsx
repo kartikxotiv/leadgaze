@@ -136,7 +136,7 @@ export function ManageTeamMembersDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[90vh] flex-col p-0 max-w-3xl">
-        <DialogHeader className="border-b p-6 pb-4">
+        <DialogHeader>
           <DialogTitle>Manage Members: {team.name}</DialogTitle>
           <DialogDescription>
             Add SDRs and Managers to this team.

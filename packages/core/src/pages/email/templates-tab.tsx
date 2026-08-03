@@ -307,12 +307,12 @@ function CoreTemplateDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-hidden border-gray-200 bg-white p-0 sm:max-w-3xl dark:border-slate-800 dark:bg-slate-950">
         <div className="flex max-h-[90vh] flex-col">
-          <DialogHeader className="border-b border-gray-200 bg-white p-6 pb-4 dark:border-slate-800 dark:bg-slate-950">
+          <DialogHeader>
             <DialogTitle>
               {template ? 'Edit Template' : 'Create Template'}
             </DialogTitle>
           </DialogHeader>
-          <div className="flex-1 space-y-4 overflow-y-auto px-6 pb-8">
+          <div className="flex-1 space-y-2 overflow-y-auto px-6 pb-8">
           <div className="space-y-2">
             <Label>Template Name</Label>
             <Input
@@ -381,7 +381,7 @@ function CoreTemplateDialog({
             </div>
           </div>
           </div>
-          <DialogFooter className="border-t border-gray-200 bg-white p-2 dark:border-slate-800 dark:bg-slate-950">
+          <DialogFooter>
             <Button
               variant="outline"
               onClick={() => onOpenChange(false)}

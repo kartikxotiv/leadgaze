@@ -25,10 +25,10 @@ export function CustomInputForView({
   const isPrimitive = typeof value === 'string' || typeof value === 'number' || value === undefined;
 
   return (
-    <div className={cn('flex flex-col gap-1.5', className)}>
+    <div className={cn('flex flex-col', className)}>
       <Label className="flex items-center gap-1.5">
         {labelIcon && <span className="text-leadgaze-muted dark:text-gray-400">{labelIcon}</span>}
-        <span>{label}</span>
+        {label}
         {isRequired && <span className="text-red-500">*</span>}
       </Label>
       {isPrimitive ? (

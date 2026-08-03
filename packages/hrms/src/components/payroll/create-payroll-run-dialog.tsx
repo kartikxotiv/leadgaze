@@ -40,15 +40,15 @@ export function CreatePayrollRunDialog(props: {
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-hidden border-gray-200 bg-white p-0 sm:max-w-md dark:border-slate-800 dark:bg-slate-950">
         <div className="flex max-h-[90vh] flex-col">
-          <DialogHeader className="border-b border-gray-200 bg-white p-6 pb-4 dark:border-slate-800 dark:bg-slate-950">
-            <DialogTitle className="pr-12">Create Payroll Run</DialogTitle>
+          <DialogHeader>
+            <DialogTitle>Create Payroll Run</DialogTitle>
             <DialogDescription>
               Define the period for this payroll run. Calculation will pick up all
               active assignments in this range.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex-1 overflow-y-auto p-6 space-y-4">
+          <div className="flex-1 overflow-y-auto p-6 space-y-2">
             <div className="space-y-1 rounded-lg border border-blue-100 bg-blue-50 p-3 text-xs text-blue-800 dark:border-blue-900/30 dark:bg-blue-900/20 dark:text-blue-300">
               <p className="font-semibold">Eligibility Check:</p>
               <ul className="list-inside list-disc opacity-90">
@@ -79,7 +79,7 @@ export function CreatePayrollRunDialog(props: {
               </div>
             </div>
           </div>
-          <DialogFooter className="border-t border-gray-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950 sm:justify-start">
+          <DialogFooter>
             <Button variant="outline" onClick={() => props.onOpenChange(false)}>
               Cancel
             </Button>

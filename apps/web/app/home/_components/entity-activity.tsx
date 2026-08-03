@@ -33,6 +33,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogFooter,
 } from '@kit/ui/dialog';
 import { Input } from '@kit/ui/input';
 import { Label } from '@kit/ui/label';
@@ -246,13 +247,13 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
             </Button>
           </DialogTrigger>
           <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-[400px]">
-            <DialogHeader className="border-b p-6 pb-4">
+            <DialogHeader>
               <DialogTitle>
                 {editingReminder ? 'Edit Reminder' : 'Set Reminder'}
               </DialogTitle>
             </DialogHeader>
-            <div className="flex-1 space-y-4 px-6 py-4">
-              <div className="space-y-2">
+            <div className="flex-1 space-y-2 px-2">
+              <div>
                 <Label>Title</Label>
                 <Input
                   value={formData.title}
@@ -262,7 +263,7 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
                   placeholder="Call client..."
                 />
               </div>
-              <div className="space-y-2">
+              <div>
                 <Label>Due Date</Label>
                 <DateTimePicker
                   showTime
@@ -273,7 +274,16 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
                 />
               </div>
             </div>
-            <div className="border-t p-6 pt-4">
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setIsOpen(false)}
+                disabled={
+                  createMutation.isPending || updateMutation.isPending
+                }
+              >
+                Cancel
+              </Button>
               <Button
                 onClick={handleSave}
                 disabled={
@@ -281,7 +291,6 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
                   createMutation.isPending ||
                   updateMutation.isPending
                 }
-                className="w-full"
               >
                 {createMutation.isPending || updateMutation.isPending
                   ? 'Saving...'
@@ -289,7 +298,7 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
                     ? 'Update Reminder'
                     : 'Set Reminder'}
               </Button>
-            </div>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       }
@@ -886,12 +895,12 @@ export function EntityDocuments({ entityType, entityId }: EntityActivityProps) {
             </Button>
           </DialogTrigger>
           <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-[400px]">
-            <DialogHeader className="border-b p-6 pb-4">
+            <DialogHeader>
               <DialogTitle>
                 {editingDoc ? 'Rename Document' : 'Upload Document'}
               </DialogTitle>
             </DialogHeader>
-            <div className="flex-1 space-y-4 px-6 py-4">
+            <div className="flex-1 space-y-2 px-2">
               {editingDoc ? (
                 <div className="space-y-2">
                   <Label>Document Name</Label>
@@ -906,11 +915,21 @@ export function EntityDocuments({ entityType, entityId }: EntityActivityProps) {
                   <Input
                     type="file"
                     onChange={(e) => setFile(e.target.files?.[0] || null)}
+                    className="selectFileDetails"
                   />
                 </div>
               )}
             </div>
-            <div className="border-t p-6 pt-4">
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setIsOpen(false)}
+                disabled={
+                  createMutation.isPending || updateMutation.isPending
+                }
+              >
+                Cancel
+              </Button>
               <Button
                 onClick={handleSave}
                 disabled={
@@ -919,7 +938,6 @@ export function EntityDocuments({ entityType, entityId }: EntityActivityProps) {
                   createMutation.isPending ||
                   updateMutation.isPending
                 }
-                className="w-full"
               >
                 {createMutation.isPending || updateMutation.isPending
                   ? 'Saving...'
@@ -927,7 +945,7 @@ export function EntityDocuments({ entityType, entityId }: EntityActivityProps) {
                     ? 'Rename'
                     : 'Upload'}
               </Button>
-            </div>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       }

@@ -85,7 +85,7 @@ function CommitmentSection({ workspaceId, dealId, canEditDeal }: { workspaceId: 
   return (
     <section className="grid gap-4">
       <div className="grid gap-1">
-        <h3 className="font-semibold">Commitments</h3>
+        <h3 className="font-semibold custom-sub-heading-dialog-form">Commitments</h3>
         <p className="text-sm text-muted-foreground">
           Track capital that an investor has promised for this deal. Use promised amount for the total commitment, received amount for funds already collected, and expected close date for when the remaining funds should arrive.
         </p>
@@ -185,7 +185,7 @@ function DealDetails({ workspaceId, deal, investors, rounds, stages, canEditDeal
       <DialogHeader><DialogTitle>{dealDisplay(deal)}</DialogTitle><DialogDescription>Deal information, follow-ups, commitments, and core-module anchors.</DialogDescription></DialogHeader>
       <div className="grid gap-6">
         <section className="grid gap-3 text-sm sm:grid-cols-3"><Info label="Investor" value={investorName} /><Info label="Round" value={roundName} /><Info label="Stage" value={stageName} /><Info label="Expected Amount" value={deal.expected_amount ?? '-'} /><Info label="Probability" value={`${deal.probability}%`} /><Info label="Owner" value={ownerDisplay(deal)} /></section>
-        <section className="grid gap-3"><h3 className="font-semibold">Follow-Ups</h3><div className="grid gap-3 text-sm sm:grid-cols-2"><Info label="Last Contact Date" value={dateDisplay(deal.last_contact_date_display, deal.last_contact_date)} /><Info label="Next Follow-Up Date" value={dateDisplay(deal.next_followup_date_display, deal.next_followup_date)} /></div></section>
+        <section className="grid gap-3"><h3 className="font-semibold custom-sub-heading-dialog-form">Follow-Ups</h3><div className="grid gap-3 text-sm sm:grid-cols-2"><Info label="Last Contact Date" value={dateDisplay(deal.last_contact_date_display, deal.last_contact_date)} /><Info label="Next Follow-Up Date" value={dateDisplay(deal.next_followup_date_display, deal.next_followup_date)} /></div></section>
         <CommitmentSection workspaceId={workspaceId} dealId={deal.id} canEditDeal={canEditDeal} />
       </div>
     </DialogContent>

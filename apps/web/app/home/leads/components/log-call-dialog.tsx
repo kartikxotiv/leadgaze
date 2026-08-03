@@ -123,12 +123,12 @@ export function LogCallDialog({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-[550px]">
-        <DialogHeader className="border-b p-6 pb-4">
+        <DialogHeader>
           <DialogTitle>Call Log</DialogTitle>
         </DialogHeader>
-        <div className="grid gap-4 px-6 py-4 flex-1 overflow-y-auto">
+        <div className="grid gap-2 px-2 flex-1 overflow-y-auto">
           {/* Subject */}
-          <div className="grid gap-2">
+          <div className="grid">
             <Label htmlFor="subject">
               Subject <span className="text-red-500">*</span>
             </Label>
@@ -141,8 +141,8 @@ export function LogCallDialog({
           </div>
 
           {/* Call Type and Status */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="grid gap-2">
+          <div className="grid grid-cols-2 gap-2">
+            <div className="grid">
               <Label htmlFor="callType">Call Type</Label>
               <Select
                 value={callType}
@@ -160,7 +160,7 @@ export function LogCallDialog({
               </Select>
             </div>
 
-            <div className="grid gap-2">
+            <div className="grid">
               <Label htmlFor="callStatus">Status</Label>
               <Select
                 value={status}
@@ -192,7 +192,7 @@ export function LogCallDialog({
           </div>
 
           {/* Contact Name */}
-          <div className="grid gap-2">
+          <div className="grid">
             <Label htmlFor="contactName">Name</Label>
             <Input
               id="contactName"
@@ -203,7 +203,7 @@ export function LogCallDialog({
           </div>
 
           {/* Call Date/Time */}
-          <div className="grid gap-2">
+          <div className="grid">
             <Label htmlFor="callDatetime">Date & Time</Label>
             <DateTimePicker
               showTime
@@ -213,7 +213,7 @@ export function LogCallDialog({
           </div>
 
           {/* Comments */}
-          <div className="grid gap-2">
+          <div className="grid">
             <Label htmlFor="comments">Comments</Label>
             <Textarea
               id="comments"
@@ -225,7 +225,7 @@ export function LogCallDialog({
           </div>
         </div>
         
-      <DialogFooter className="border-t p-2 mt-auto">
+      <DialogFooter>
           <Button
             variant="outline"
             onClick={() => handleOpenChange(false)}

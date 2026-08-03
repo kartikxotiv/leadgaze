@@ -72,20 +72,20 @@ export default function WorkspaceSelectPage() {
   return (
     <div className="bg-gradient-to-br from-indigo-50/50 via-slate-50 to-blue-50/50 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950 flex min-h-screen flex-col items-center justify-center p-4 sm:p-6 md:p-8">
       <Card className="w-full max-w-lg border border-slate-200/80 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/80 shadow-2xl backdrop-blur-md rounded-2xl overflow-hidden">
-        <CardHeader className="text-center space-y-2 pt-8 pb-6 border-b border-slate-100 dark:border-zinc-800 bg-white/40 dark:bg-zinc-900/40">
+        <CardHeader className="text-center space-y-1 pt-6 pb-4 border-b border-slate-100 dark:border-zinc-800 bg-white/40 dark:bg-zinc-900/40">
           <div className="mx-auto bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex h-12 w-12 items-center justify-center rounded-xl shadow-inner mb-2">
             <Building2 className="h-6 w-6" />
           </div>
-          <CardTitle className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white block text-center justify-center w-full">
+          <CardTitle className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white block text-center justify-center w-full">
             Welcome back!
           </CardTitle>
-          <CardDescription className="text-slate-500 dark:text-zinc-400 text-xl max-w-sm mx-auto">
+          <CardDescription className="text-slate-500 dark:text-zinc-400 text-lg max-w-sm mx-auto">
             Choose a workspace
           </CardDescription>
         </CardHeader>
         
-        <CardContent className="p-6 space-y-6">
-          <div className="space-y-3 max-h-[350px] overflow-y-auto pr-1">
+        <CardContent className="p-4 sm:p-6 space-y-4">
+          <div className="space-y-2 max-h-[350px] overflow-y-auto pr-1">
             {workspaces.map((workspace) => {
               const roleName = workspace?.role?.role_name || 'Member';
               const isAdmin = workspace?.role?.role_key === 'admin';
@@ -121,10 +121,10 @@ export default function WorkspaceSelectPage() {
             })}
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-3 pt-2">
+          <div className="flex flex-col sm:flex-row gap-3 pt-1">
             <Button
               variant="outline"
-              onClick={() => router.push('/workspace-setup')}
+              onClick={() => router.push('/workspace-setup?new=true')}
               className="flex-1 gap-2 border-dashed border-slate-300 dark:border-zinc-700 text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800/50"
             >
               <Plus className="h-4 w-4" />
