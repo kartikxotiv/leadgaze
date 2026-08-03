@@ -26,6 +26,8 @@ function toUiEntityType(type: string): string {
   return type;
 }
 
+import { NotesService } from '@kit/core';
+
 /**
  * GET /api/notes
  * Fetch notes for an entity
@@ -45,7 +47,6 @@ export const getNotes = catchAsync(
     const entityId = url.searchParams.get('entityId');
     const workspaceId = url.searchParams.get('workspaceId');
     const status = url.searchParams.get('status') || 'active';
-    const isClosedFilter = status === 'closed';
 
     const searchTerm = url.searchParams.get('searchTerm') || '';
     const createdByIds = url.searchParams.get('createdByIds') || '';
@@ -53,6 +54,11 @@ export const getNotes = catchAsync(
     const createdAtTo = url.searchParams.get('createdAtTo') || '';
     const updatedAtFrom = url.searchParams.get('updatedAtFrom') || '';
     const updatedAtTo = url.searchParams.get('updatedAtTo') || '';
+
+    const pageParam = url.searchParams.get('page');
+    const limitParam = url.searchParams.get('limit');
+    const page = pageParam ? parseInt(pageParam, 10) : null;
+    const limit = limitParam ? parseInt(limitParam, 10) : null;
 
     if (!workspaceId) {
       return NextResponse.json(
@@ -79,170 +85,49 @@ export const getNotes = catchAsync(
 
     const isWorkspaceOwner = workspace?.owner_id === user.id;
 
-    let uniqueNotes: any[] = [];
+    const notesService = new NotesService(supabase);
+    const result = await notesService.getNotes({
+      workspaceId,
+      entityType,
+      entityId,
+      status,
+      searchTerm,
+      createdByIds,
+      createdAtFrom,
+      createdAtTo,
+      updatedAtFrom,
+      updatedAtTo,
+      isWorkspaceOwner,
+      userId: user.id,
+      page,
+      limit,
+    });
 
-    if (entityType && entityId) {
-      // Get all related entity IDs (includes lead conversion chain)
-      const entityIds = await getRelatedEntityIds(supabase, entityType, entityId);
+    const rawList = Array.isArray(result) ? result : (result.data || []);
+    const formattedNotes = rawList.map((note: any) => ({
+      ...note,
+      content: note.note || note.content,
+      entity_type: note.entity_type || entityType || null,
+      entity_id: note.entity_id || entityId || null,
+      entity_name: note.entity_name || null,
+      created_by_user: note.created_by_user
+        ? { name: note.created_by_user.name || null, email: note.created_by_user.email || null }
+        : null,
+    }));
 
-      // Fetch note IDs from core.note_relations for the related entities (with DB schema mapping)
-      const relationPromises = entityIds.map(async ({ entity_type, entity_id }) => {
-        const dbType = toDbEntityType(entity_type);
-        const { data } = await supabase
-          .schema('core')
-          .from('note_relations')
-          .select('note_id')
-          .eq('workspace_id', workspaceId)
-          .eq('entity_type', dbType)
-          .eq('entity_id', entity_id);
-        return data || [];
-      });
-
-      const relationResults = await Promise.all(relationPromises);
-      const noteIds = Array.from(
-        new Set(relationResults.flat().map((r: any) => r.note_id))
-      );
-
-      if (noteIds.length === 0) {
-        uniqueNotes = [];
-      } else {
-        let query = supabase
-          .schema('core')
-          .from('notes')
-          .select('*, note_relations(*)')
-          .eq('workspace_id', workspaceId)
-          .in('id', noteIds)
-          .eq('is_deleted', false)
-          .eq('is_closed', isClosedFilter);
-
-        if (!isWorkspaceOwner) {
-          query = query.eq('created_by', user.id);
-        }
-
-        if (createdByIds && createdByIds !== 'all') {
-          const ids = createdByIds.split(',').map((id) => id.trim()).filter(Boolean);
-          if (ids.length > 0) {
-            query = query.in('created_by', ids);
-          }
-        }
-        if (searchTerm) {
-          query = query.ilike('note', `%${searchTerm}%`);
-        }
-        if (createdAtFrom) query = query.gte('created_at', (createdAtFrom.includes('T') ? createdAtFrom : `${createdAtFrom}T00:00:00.000Z`));
-        if (createdAtTo) query = query.lte('created_at', (createdAtTo.includes('T') ? createdAtTo : `${createdAtTo}T23:59:59.999Z`));
-        if (updatedAtFrom) query = query.gte('updated_at', (updatedAtFrom.includes('T') ? updatedAtFrom : `${updatedAtFrom}T00:00:00.000Z`));
-        if (updatedAtTo) query = query.lte('updated_at', (updatedAtTo.includes('T') ? updatedAtTo : `${updatedAtTo}T23:59:59.999Z`));
-
-        const { data, error } = await query;
-        if (error) throw error;
-        uniqueNotes = data || [];
-      }
-    } else {
-      // Fetch all notes for the workspace
-      let query = supabase
-        .schema('core')
-        .from('notes')
-        .select('*, note_relations(*)')
-        .eq('workspace_id', workspaceId)
-        .eq('is_deleted', false)
-        .eq('is_closed', isClosedFilter);
-
-      if (!isWorkspaceOwner) {
-        query = query.eq('created_by', user.id);
-      }
-
-      const moduleParam = url.searchParams.get('module') || '';
-
-      if (entityType) {
-        const dbType = toDbEntityType(entityType);
-        const { data: relations } = await supabase
-          .schema('core')
-          .from('note_relations')
-          .select('note_id')
-          .eq('workspace_id', workspaceId)
-          .eq('entity_type', dbType);
-        const noteIds = Array.from(new Set(relations?.map((r: any) => r.note_id) || []));
-        if (noteIds.length === 0) {
-          query = query.in('id', ['00000000-0000-0000-0000-000000000000']);
-        } else {
-          query = query.in('id', noteIds);
-        }
-      } else if (moduleParam === 'sales') {
-        const { data: relations } = await supabase
-          .schema('core')
-          .from('note_relations')
-          .select('note_id')
-          .eq('workspace_id', workspaceId)
-          .in('entity_type', ['sales_lead', 'sales_contact', 'sales_account', 'sales_opportunity']);
-        const noteIds = Array.from(new Set(relations?.map((r: any) => r.note_id) || []));
-        if (noteIds.length === 0) {
-          query = query.in('id', ['00000000-0000-0000-0000-000000000000']);
-        } else {
-          query = query.in('id', noteIds);
-        }
-      }
-
-      if (createdByIds && createdByIds !== 'all') {
-        const ids = createdByIds.split(',').map((id) => id.trim()).filter(Boolean);
-        if (ids.length > 0) {
-          query = query.in('created_by', ids);
-        }
-      }
-      if (searchTerm) {
-        query = query.ilike('note', `%${searchTerm}%`);
-      }
-      if (createdAtFrom) query = query.gte('created_at', (createdAtFrom.includes('T') ? createdAtFrom : `${createdAtFrom}T00:00:00.000Z`));
-      if (createdAtTo) query = query.lte('created_at', (createdAtTo.includes('T') ? createdAtTo : `${createdAtTo}T23:59:59.999Z`));
-      if (updatedAtFrom) query = query.gte('updated_at', (updatedAtFrom.includes('T') ? updatedAtFrom : `${updatedAtFrom}T00:00:00.000Z`));
-      if (updatedAtTo) query = query.lte('updated_at', (updatedAtTo.includes('T') ? updatedAtTo : `${updatedAtTo}T23:59:59.999Z`));
-
-      const { data, error } = await query;
-      if (error) throw error;
-      uniqueNotes = data || [];
-    }
-
-    // Fetch user details for created_by (avoiding cross-schema PostgREST join issues)
-    const accountIds = Array.from(
-      new Set(uniqueNotes.map((n) => n.created_by).filter(Boolean)),
-    );
-    const accountsMap = new Map();
-    if (accountIds.length > 0) {
-      const { data: accountsData } = await supabase
-        .from('accounts')
-        .select('id, name, email')
-        .in('id', accountIds);
-      accountsData?.forEach((acc: any) => {
-        accountsMap.set(acc.id, acc);
+    if (pageParam || limitParam) {
+      return NextResponse.json({
+        success: true,
+        data: formattedNotes,
+        count: result.total ?? formattedNotes.length,
+        total: result.total ?? formattedNotes.length,
+        page: result.page ?? 1,
+        limit: result.limit ?? formattedNotes.length,
+        has_more: result.has_more ?? false,
       });
     }
 
-    // Sort by created_at descending
-    uniqueNotes.sort(
-      (a, b) =>
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-    );
-
-    // Add entity names to each note
-    const notesWithEntityNames = await Promise.all(
-      uniqueNotes.map(async (note) => {
-        const relation = note.note_relations?.[0] || {};
-        const entityTypeVal = toUiEntityType(note.entity_type ?? relation.entity_type);
-        const entityIdVal = note.entity_id ?? relation.entity_id;
-        const entityName = entityTypeVal && entityIdVal
-          ? await getEntityName(supabase, entityTypeVal as any, entityIdVal)
-          : null;
-        return {
-          ...note,
-          content: note.note,
-          entity_type: entityTypeVal,
-          entity_id: entityIdVal,
-          entity_name: entityName,
-          created_by_user: note.created_by ? accountsMap.get(note.created_by) || null : null,
-        };
-      }),
-    );
-
-    return successDataResponse('Notes retrieved', notesWithEntityNames || []);
+    return successDataResponse('Notes retrieved', formattedNotes || []);
   },
 );
 

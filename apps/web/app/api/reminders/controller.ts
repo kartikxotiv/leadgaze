@@ -26,6 +26,8 @@ function toUiEntityType(type: string): string {
   return type;
 }
 
+import { RemindersService } from '@kit/core';
+
 /**
  * GET /api/reminders
  * Fetch reminders for an entity
@@ -55,6 +57,11 @@ export const getReminders = catchAsync(
     const updatedAtFrom = url.searchParams.get('updatedAtFrom') || '';
     const updatedAtTo = url.searchParams.get('updatedAtTo') || '';
 
+    const pageParam = url.searchParams.get('page');
+    const limitParam = url.searchParams.get('limit');
+    const page = pageParam ? parseInt(pageParam, 10) : null;
+    const limit = limitParam ? parseInt(limitParam, 10) : null;
+
     if (!workspaceId) {
       return NextResponse.json(
         { message: 'workspaceId is required' },
@@ -80,236 +87,60 @@ export const getReminders = catchAsync(
 
     const isWorkspaceOwner = workspace?.owner_id === user.id;
 
-    let dbReminders: any[] = [];
-
-    if (entityType && entityId) {
-      // Get all related entity IDs (includes lead conversion chain)
-      const entityIds = await getRelatedEntityIds(supabase, entityType, entityId);
-
-      // Build query - fetch reminders for all related entities
-      const reminderPromises = entityIds.map(async ({ entity_type, entity_id }) => {
-        const dbType = toDbEntityType(entity_type);
-        // Find relations first
-        const { data: relations } = await supabase
-          .schema('core')
-          .from('reminder_relations')
-          .select('reminder_id')
-          .eq('workspace_id', workspaceId)
-          .eq('entity_type', dbType)
-          .eq('entity_id', entity_id);
-
-        if (!relations || relations.length === 0) return [];
-
-        const reminderIds = relations.map((r) => r.reminder_id);
-
-        let query = supabase
-          .schema('core')
-          .from('reminders')
-          .select('*')
-          .in('id', reminderIds)
-          .eq('workspace_id', workspaceId)
-          .eq('is_deleted', false);
-
-        if (!isWorkspaceOwner) {
-          query = query.eq('created_by', user.id);
-        }
-
-        if (priority && priority !== 'all') {
-          query = query.eq('priority', priority);
-        }
-        if (createdByIds && createdByIds !== 'all') {
-          const ids = createdByIds.split(',').map((id) => id.trim()).filter(Boolean);
-          if (ids.length > 0) {
-            query = query.in('created_by', ids);
-          }
-        }
-        if (searchTerm) {
-          query = query.or(`title.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`);
-        }
-        if (createdAtFrom) query = query.gte('created_at', (createdAtFrom.includes('T') ? createdAtFrom : `${createdAtFrom}T00:00:00.000Z`));
-        if (createdAtTo) query = query.lte('created_at', (createdAtTo.includes('T') ? createdAtTo : `${createdAtTo}T23:59:59.999Z`));
-        if (updatedAtFrom) query = query.gte('updated_at', (updatedAtFrom.includes('T') ? updatedAtFrom : `${updatedAtFrom}T00:00:00.000Z`));
-        if (updatedAtTo) query = query.lte('updated_at', (updatedAtTo.includes('T') ? updatedAtTo : `${updatedAtTo}T23:59:59.999Z`));
-
-        const { data } = await query;
-        return (data as any[]) || [];
-      });
-
-      const results = await Promise.all(reminderPromises);
-      dbReminders = results.flat();
-    } else {
-      // Fetch all reminders for the workspace
-      let query = supabase
-        .schema('core')
-        .from('reminders')
-        .select('*')
-        .eq('workspace_id', workspaceId)
-        .eq('is_deleted', false);
-
-      if (!isWorkspaceOwner) {
-        query = query.eq('created_by', user.id);
-      }
-
-      if (entityType) {
-        const dbType = toDbEntityType(entityType);
-        const { data: relations } = await supabase
-          .schema('core')
-          .from('reminder_relations')
-          .select('reminder_id')
-          .eq('workspace_id', workspaceId)
-          .eq('entity_type', dbType);
-        const reminderIds = Array.from(new Set(relations?.map((r) => r.reminder_id) || []));
-        if (reminderIds.length === 0) {
-          query = query.in('id', ['00000000-0000-0000-0000-000000000000']);
-        } else {
-          query = query.in('id', reminderIds);
-        }
-      }
-
-      if (priority && priority !== 'all') {
-        query = query.eq('priority', priority);
-      }
-      if (createdByIds && createdByIds !== 'all') {
-        const ids = createdByIds.split(',').map((id) => id.trim()).filter(Boolean);
-        if (ids.length > 0) {
-          query = query.in('created_by', ids);
-        }
-      }
-      if (searchTerm) {
-        query = query.or(`title.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`);
-      }
-      if (createdAtFrom) query = query.gte('created_at', (createdAtFrom.includes('T') ? createdAtFrom : `${createdAtFrom}T00:00:00.000Z`));
-      if (createdAtTo) query = query.lte('created_at', (createdAtTo.includes('T') ? createdAtTo : `${createdAtTo}T23:59:59.999Z`));
-      if (updatedAtFrom) query = query.gte('updated_at', (updatedAtFrom.includes('T') ? updatedAtFrom : `${updatedAtFrom}T00:00:00.000Z`));
-      if (updatedAtTo) query = query.lte('updated_at', (updatedAtTo.includes('T') ? updatedAtTo : `${updatedAtTo}T23:59:59.999Z`));
-
-      const { data, error } = await query;
-      if (error) throw error;
-      dbReminders = (data as any[]) || [];
-    }
-
-    // Filter strategy:
-    // - status=completed  → return only completed reminders (for the standalone "Sent" view)
-    // - status=active     → return only non-completed reminders
-    // - no status param   → return active + completed within last 1 day (legacy entity widget behaviour)
-    let filteredReminders: any[];
-
-    if (statusParam === 'completed') {
-      filteredReminders = dbReminders.filter((r) => r.status === 'completed');
-    } else if (statusParam === 'active') {
-      filteredReminders = dbReminders.filter((r) => r.status !== 'completed');
-    } else {
-      // Default: active + recently completed (entity widget)
-      const now = new Date();
-      const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-      filteredReminders = dbReminders.filter((reminder) => {
-        const isCompleted = reminder.status === 'completed';
-        if (!isCompleted) return true;
-        if (isCompleted && reminder.completed_at) {
-          const completedDate = new Date(reminder.completed_at);
-          if (completedDate >= oneDayAgo) return true;
-        }
-        if (reminder.due_at) {
-          const dueDate = new Date(reminder.due_at);
-          const now2 = new Date();
-          if (dueDate >= now2) return true;
-          if (dueDate >= oneDayAgo) return true;
-        }
-        return false;
-      });
-    }
-
-    // Remove duplicates
-    const uniqueReminders = Array.from(
-      new Map(filteredReminders.map((reminder) => [reminder.id, reminder])).values(),
-    );
-
-    // Sort by due_at ascending
-    uniqueReminders.sort((a, b) => {
-      if (!a.due_at) return 1;
-      if (!b.due_at) return -1;
-      return new Date(a.due_at).getTime() - new Date(b.due_at).getTime();
+    const remindersService = new RemindersService(supabase);
+    const result = await remindersService.getReminders({
+      workspaceId,
+      entityType,
+      entityId,
+      status: statusParam,
+      priority,
+      searchTerm,
+      createdByIds,
+      createdAtFrom,
+      createdAtTo,
+      updatedAtFrom,
+      updatedAtTo,
+      isWorkspaceOwner,
+      userId: user.id,
+      page,
+      limit,
     });
 
-    // Fetch user details for creator and assignee in JS to prevent PostgREST cross-schema join errors
-    const userIds = Array.from(
-      new Set(
-        uniqueReminders
-          .flatMap((r) => [r.created_by, r.assigned_to])
-          .filter(Boolean),
-      ),
-    );
+    const rawList = Array.isArray(result) ? result : (result.data || []);
+    const formattedReminders = rawList.map((reminder: any) => ({
+      id: reminder.id,
+      workspace_id: reminder.workspace_id,
+      title: reminder.title,
+      description: reminder.description,
+      due_date: reminder.due_at || reminder.due_date,
+      priority: reminder.priority,
+      is_completed: reminder.status === 'completed',
+      completed_at: reminder.completed_at,
+      entity_type: reminder.entity_type || entityType || 'lead',
+      entity_id: reminder.entity_id || entityId || '',
+      entity_name: reminder.entity_name || '',
+      created_by: reminder.created_by,
+      assigned_to: reminder.assigned_to,
+      created_by_name: reminder.created_by_user?.name || reminder.created_by_user?.email || null,
+      created_by_email: reminder.created_by_user?.email || null,
+      assigned_to_name: reminder.assigned_to_user?.name || reminder.assigned_to_user?.email || null,
+      created_at: reminder.created_at,
+      updated_at: reminder.updated_at,
+    }));
 
-    let usersMap: Record<string, { name: string | null; email: string | null }> = {};
-    if (userIds.length > 0) {
-      const { data: accounts } = await supabase
-        .from('accounts')
-        .select('id, name, email')
-        .in('id', userIds);
-
-      if (accounts) {
-        accounts.forEach((acc) => {
-          usersMap[acc.id] = { name: acc.name, email: acc.email };
-        });
-      }
+    if (pageParam || limitParam) {
+      return NextResponse.json({
+        success: true,
+        data: formattedReminders,
+        count: result.total ?? formattedReminders.length,
+        total: result.total ?? formattedReminders.length,
+        page: result.page ?? 1,
+        limit: result.limit ?? formattedReminders.length,
+        has_more: result.has_more ?? false,
+      });
     }
 
-    // Resolve relations to get entity information
-    const reminderIds = uniqueReminders.map((r) => r.id);
-    let relationsMap: Record<string, { entity_type: string; entity_id: string }> = {};
-    if (reminderIds.length > 0) {
-      const { data: relations } = await supabase
-        .schema('core')
-        .from('reminder_relations')
-        .select('reminder_id, entity_type, entity_id')
-        .in('reminder_id', reminderIds);
-
-      if (relations) {
-        relations.forEach((rel) => {
-          relationsMap[rel.reminder_id] = {
-            entity_type: toUiEntityType(rel.entity_type),
-            entity_id: rel.entity_id,
-          };
-        });
-      }
-    }
-
-    // Add entity names to each reminder and map response format
-    const remindersWithEntityNames = await Promise.all(
-      uniqueReminders.map(async (reminder) => {
-        const relation = relationsMap[reminder.id];
-        const currentEntityType = relation?.entity_type || entityType || 'lead';
-        const currentEntityId = relation?.entity_id || entityId || '';
-
-        const entityName = await getEntityName(
-          supabase,
-          currentEntityType,
-          currentEntityId,
-        );
-
-        return {
-          id: reminder.id,
-          workspace_id: reminder.workspace_id,
-          title: reminder.title,
-          description: reminder.description,
-          due_date: reminder.due_at,
-          priority: reminder.priority,
-          is_completed: reminder.status === 'completed',
-          completed_at: reminder.completed_at,
-          entity_type: currentEntityType,
-          entity_id: currentEntityId,
-          assigned_to: reminder.assigned_to,
-          created_by: reminder.created_by,
-          created_at: reminder.created_at,
-          updated_at: reminder.updated_at,
-          assigned_to_user: reminder.assigned_to ? usersMap[reminder.assigned_to] || null : null,
-          created_by_user: reminder.created_by ? usersMap[reminder.created_by] || null : null,
-          entity_name: entityName,
-        };
-      }),
-    );
-
-    return successDataResponse('Reminders retrieved', remindersWithEntityNames || []);
+    return successDataResponse(formattedReminders);
   },
 );
 
