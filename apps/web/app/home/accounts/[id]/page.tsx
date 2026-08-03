@@ -790,6 +790,7 @@ export default function AccountDetailsPage() {
                               variant="destructive"
                               disabled={!rbacCanAccess('accounts', 'delete')}
                               onClick={() => setDeleteDialogOpen(true)}
+                              className="secondary-text-small-bold"
                             >
                               <Trash2 className="mr-2 h-4 w-4" />
                               Delete Account
@@ -1547,6 +1548,7 @@ export default function AccountDetailsPage() {
                               variant="destructive"
                               disabled={!rbacCanAccess('accounts', 'delete')}
                               onClick={() => setDeleteDialogOpen(true)}
+                              className="secondary-text-small-bold"
                             >
                               <Trash2 className="mr-2 h-4 w-4" />
                               Delete Account

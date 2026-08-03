@@ -199,7 +199,7 @@ function TicketCustomFieldsSection({
         </span>
       </AccordionTrigger>
       <AccordionContent className="px-4 pb-4">
-        <div className="space-y-4 pt-2">
+        <div className="space-y-2 pt-2">
           <LeadCustomFieldInputs
             fields={fields}
             values={values}
@@ -511,7 +511,7 @@ export function ServiceCloudTicketDetailPage({
     updateMutation.mutate(payload);
 
   return (
-    <div className="mt-2 space-y-4">
+    <div className="mt-2 space-y-2">
       <section className="overflow-hidden rounded-none border bg-[radial-gradient(circle_at_top_left,_rgba(14,165,233,0.18),_transparent_34%),linear-gradient(135deg,_#0f172a,_#164e63_52%,_#0f172a)] p-6 text-white shadow-xl">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-4xl space-y-5">
@@ -626,7 +626,7 @@ export function ServiceCloudTicketDetailPage({
       </section>
 
       <div className="flex w-full flex-col gap-4 lg:flex-row">
-        <div className="w-full space-y-4 lg:w-[65%]">
+        <div className="w-full space-y-2 lg:w-[65%]">
           <CardWidgetContainer
             title="Ticket Workspace"
             description="Customer conversation, internal work, attachments, and service timeline."
@@ -702,14 +702,14 @@ export function ServiceCloudTicketDetailPage({
                 </TabsList>
 
                 {canManageInbox ? (
-                  <TabsContent value="conversation" className="space-y-4">
+                  <TabsContent value="conversation" className="space-y-2">
                     {emails.length === 0 ? (
                       <EmptyState
                         title="No emails linked yet"
                         description="Emails converted into this ticket will appear here."
                       />
                     ) : (
-                      <div className="scrollbar-thin h-[calc(100vh-420px)] min-h-[350px] space-y-4 overflow-y-auto pr-2">
+                      <div className="scrollbar-thin h-[calc(100vh-420px)] min-h-[350px] space-y-2 overflow-y-auto pr-2">
                         {emails.map((item: any) => {
                           const email = item.email;
                           return (
@@ -781,7 +781,7 @@ export function ServiceCloudTicketDetailPage({
                   </TabsContent>
                 ) : null}
 
-                <TabsContent value="work" className="space-y-4">
+                <TabsContent value="work" className="space-y-2">
                   <div className="grid gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
                     <CardWidgetContainer
                       title="Log Time"
@@ -789,7 +789,7 @@ export function ServiceCloudTicketDetailPage({
                       icon={<Timer className="h-4 w-4" />}
                       hideHeaderBorder={true}
                     >
-                      <div className="space-y-4 px-6 pb-4">
+                      <div className="space-y-2 px-6 pb-4">
                         <Field label="Date">
                           <DateTimePicker
                             mode="date"
@@ -1131,7 +1131,7 @@ export function ServiceCloudTicketDetailPage({
           </CardWidgetContainer>
         </div>
 
-        <div className="w-full space-y-4 lg:w-[35%] lg:overflow-y-auto">
+        <div className="w-full space-y-2 lg:w-[35%] lg:overflow-y-auto">
           <Accordion
             type="single"
             collapsible
@@ -1155,7 +1155,7 @@ export function ServiceCloudTicketDetailPage({
                 </div>
               </AccordionTrigger>
               <AccordionContent className="px-4 pb-4">
-                <div className="space-y-4 pt-2">
+                <div className="space-y-2 pt-2">
                   {(!canViewField || canViewField('status_id')) && (
                     <EditableSelect
                       icon={<Flag className="h-4 w-4" />}
@@ -1476,7 +1476,7 @@ export function ServiceCloudTicketDetailPage({
           <DialogHeader>
             <DialogTitle>Edit Time Entry</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-2">
             <Field label="Date">
               <Popover>
                 <PopoverTrigger asChild>
@@ -1822,7 +1822,7 @@ function EmptyState({
 
 function ServiceCloudTicketDetailSkeleton() {
   return (
-    <div className="mt-2 space-y-4">
+    <div className="mt-2 space-y-2">
       {/* ── Hero banner skeleton ── */}
       <section className="overflow-hidden rounded-none border bg-[radial-gradient(circle_at_top_left,_rgba(14,165,233,0.18),_transparent_34%),linear-gradient(135deg,_#0f172a,_#164e63_52%,_#0f172a)] p-6 shadow-xl">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
@@ -1860,7 +1860,7 @@ function ServiceCloudTicketDetailSkeleton() {
       {/* ── Body grid skeleton ── */}
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_390px]">
         {/* Left — Ticket Workspace */}
-        <div className="space-y-4">
+        <div className="space-y-2">
           <Card>
             {/* Card header */}
             <CardHeader className="flex flex-row items-start justify-between gap-4 border-b">
@@ -1918,14 +1918,14 @@ function ServiceCloudTicketDetailSkeleton() {
         </div>
 
         {/* Right — aside cards */}
-        <aside className="space-y-4">
+        <aside className="space-y-2">
           {/* Ticket Properties */}
           <Card>
             <CardHeader>
               <Skeleton className="h-5 w-36" />
               <Skeleton className="mt-1 h-3 w-52" />
             </CardHeader>
-            <div className="space-y-4 px-6 py-4">
+            <div className="space-y-2 px-6 py-4">
               {/* Select rows */}
               {['Status', 'Priority', 'Category', 'Primary owner'].map(
                 (label) => (

@@ -316,15 +316,17 @@ export function AddColumnModal({
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) resetForm(); onOpenChange(v); }}>
       <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-md gap-0">
-        <DialogHeader className="p-4 pb-0 flex flex-col gap-4 text-left">
-          <DialogTitle className="text-lg font-semibold">Toggle Columns</DialogTitle>
+        <DialogHeader>
+          <DialogTitle>Toggle Columns</DialogTitle>          
+        </DialogHeader>
+        <div className='flex flex-col flex-1 p-2 gap-2'>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder="Search Columns..."
               value={columnSearch}
               onChange={(e) => setColumnSearch(e.target.value)}
-              className="pl-9 h-10 w-full"
+              className="pl-9 w-full"
             />
           </div>
 
@@ -333,47 +335,53 @@ export function AddColumnModal({
               <TabsList className="w-full justify-start rounded-none border-b bg-transparent p-0">
                 <TabsTrigger
                   value="create"
-                  className="relative h-10 rounded-none border-b-2 border-b-transparent bg-transparent px-4 pb-3 pt-2 font-semibold text-muted-foreground shadow-none transition-none data-[state=active]:border-b-primary data-[state=active]:text-foreground data-[state=active]:shadow-none"
+                  className="relative h-8 rounded-none border-b-2 border-b-transparent bg-transparent px-4 secondary-text-small-bold shadow-none transition-none data-[state=active]:border-b-primary data-[state=active]:text-foreground data-[state=active]:shadow-none"
                 >
                   Create New
                 </TabsTrigger>
                 <TabsTrigger
                   value="existing"
-                  className="relative h-10 rounded-none border-b-2 border-b-transparent bg-transparent px-4 pb-3 pt-2 font-semibold text-muted-foreground shadow-none transition-none data-[state=active]:border-b-primary data-[state=active]:text-foreground data-[state=active]:shadow-none"
+                  className="relative h-8 rounded-none border-b-2 border-b-transparent bg-transparent px-4 secondary-text-small-bold shadow-none transition-none data-[state=active]:border-b-primary data-[state=active]:text-foreground data-[state=active]:shadow-none"
                 >
                   Add Existing
                 </TabsTrigger>
               </TabsList>
             </Tabs>
           ) : (
-            <div className="h-4" />
+            <div className="h-0" />
           )}
-        </DialogHeader>
+        </div>
 
         <div className="flex-1 flex flex-col overflow-hidden">
           {currentTab === 'existing' ? (
-            <div className="p-6 space-y-6 flex-1 overflow-y-auto">
+            <div className="p-2 space-y-1 flex-1 overflow-y-auto">
               <div className="flex items-center justify-between text-xs font-semibold text-muted-foreground uppercase">
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1 text-[10px]">
                   SHOWN <ChevronDown className="h-3 w-3" />
                 </div>
                 <span>{shownColumnsCount}</span>
               </div>
-              <div className="space-y-4">
-                {filteredColumns.map(column => (
-                  <div key={column.id} className="flex items-center justify-between">
-                    <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">{column.label}</span>
-                    <Switch
-                      checked={visibility[column.id] !== false}
-                      onCheckedChange={() => onToggleColumn?.(column.id)}
-                    />
-                  </div>
-                ))}
+              <div>
+                {filteredColumns.map(column => {
+                  const isLocked = ['S. No.', 'Name'].includes(column.label) || ['s_no', 'name'].includes(column.id);
+                  return (
+                    <div key={column.id} className="flex items-center justify-between py-2">
+                      <span className={cn("primary-text-medium", isLocked ? "text-leadgaze-muted" : "text-leadgaze-dark dark:text-white")}>
+                        {column.label}
+                      </span>
+                      <Switch className="h-4"
+                        checked={visibility[column.id] !== false || isLocked}
+                        onCheckedChange={() => !isLocked && onToggleColumn?.(column.id)}
+                        disabled={isLocked}
+                      />
+                    </div>
+                  );
+                })}
               </div>
             </div>
           ) : (
             <div className="flex flex-col h-full overflow-hidden flex-1">
-              <div className="space-y-6 p-6 flex-1 overflow-y-auto">
+              <div className="p-2 flex-1 overflow-y-auto pt-0 flex flex-col gap-2">
           {/* Field Name */}
           <div className="space-y-2">
             <Label htmlFor="add-col-label">Column Name *</Label>
@@ -435,20 +443,21 @@ export function AddColumnModal({
               id="add-col-required"
               checked={isRequired}
               onCheckedChange={setIsRequired}
+              className="h-4"
             />
           </div>
 
           {/* Access Type */}
           <div className="space-y-3">
             <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Permission Schema</Label>
-            <div className="flex flex-col rounded-md border">
+            <div className="flex flex-col">
               {availableAccessTypes.map((type, index) => (
-                <button
+                <Button
                   key={type}
                   type="button"
-                  onClick={() => setAccessType(type)}
+                  onClick={() => setAccessType(type)}                  
                   className={cn(
-                    'flex items-center gap-3 px-4 py-3 text-left transition-colors bg-card hover:bg-muted',
+                    'flex items-center gap-3 py-3 text-left transition-colors bg-card hover:bg-muted h-8 justify-start px-0',
                     index !== availableAccessTypes.length - 1 && 'border-b'
                   )}
                 >
@@ -464,17 +473,17 @@ export function AddColumnModal({
                       <div className="h-2.5 w-2.5 rounded-full bg-primary" />
                     )}
                   </div>
-                  <span className="text-sm font-medium text-foreground">
+                  <span className="primary-text-regular text-foreground">
                     {ACCESS_TYPE_LABELS[type]}
                   </span>
-                </button>
+                </Button>
               ))}
             </div>
           </div>
 
           {/* Role/User Selection */}
           {accessType !== 'public' && accessType !== 'private' && (
-            <div className="space-y-4 border-t pt-4">
+            <div className="space-y-2 border-t pt-4">
               {/* Roles */}
               <div className="space-y-2">
                 <Label className="flex items-center gap-2">
@@ -613,7 +622,7 @@ export function AddColumnModal({
             </div>
           )}
         </div>
-              <DialogFooter className="mt-auto flex justify-between border-t p-2">
+              <DialogFooter>
                 <Button variant="outline" onClick={() => { resetForm(); onOpenChange(false); }}>
                   Cancel
                 </Button>

@@ -151,3 +151,11 @@
   border-top-width: 1px;
   border-bottom-width: 1px;
 }
+
+@utility dialog-footer-border-top {
+  border-top-color: #E2E8F0 !important;
+  border-top-width: 1px;
+}
+@utility dialog-footer-bg {
+  background-color: #F8FAFC !important;
+}

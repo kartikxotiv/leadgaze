@@ -803,7 +803,7 @@ export default function AdminUsersPage() {
             </div>
           </div>
 
-          <DialogFooter className="gap-2">
+          <DialogFooter>
             <Button
               variant="outline"
               onClick={() => setImpersonateTarget(null)}

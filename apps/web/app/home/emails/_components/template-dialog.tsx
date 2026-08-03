@@ -123,11 +123,11 @@ export function TemplateDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[90vh] flex-col p-0 max-w-3xl overflow-hidden p-0 h-auto flex flex-col">
-        <DialogHeader className="px-6 py-4 border-b border-b p-6 pb-4">
+        <DialogHeader>
           <DialogTitle>{template ? 'Edit Template' : 'Create New Template'}</DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 space-y-4 px-6 py-4">
+        <div className="flex-1 space-y-2 px-6 py-4">
           <div className="space-y-2">
             <Label htmlFor="name">Template Name</Label>
             <Input
@@ -218,7 +218,7 @@ export function TemplateDialog({
         </div>
 
         
-      <DialogFooter className="px-6 py-4 border-t bg-zinc-50 dark:bg-zinc-900/50 border-t p-6 mt-auto">
+      <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSaving}>
             Cancel
           </Button>

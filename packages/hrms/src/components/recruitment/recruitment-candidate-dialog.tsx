@@ -84,8 +84,8 @@ export function RecruitmentCandidateDialog(
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-hidden border-gray-200 bg-white p-0 sm:max-w-[760px] dark:border-slate-800 dark:bg-slate-950">
         <div className="flex max-h-[90vh] flex-col">
-          <DialogHeader className="border-b border-gray-200 bg-white p-6 pb-4 dark:border-slate-800 dark:bg-slate-950">
-            <DialogTitle className="text-2xl pr-12">
+          <DialogHeader>
+            <DialogTitle>
               {props.initialData ? 'Edit Candidate' : 'Add Candidate'}
             </DialogTitle>
             <DialogDescription className="text-base">
@@ -366,7 +366,7 @@ export function RecruitmentCandidateDialog(
             </div>
           </div>
 
-          <DialogFooter className="border-t border-gray-200 bg-white p-2 dark:border-slate-800 dark:bg-slate-950">
+          <DialogFooter>
             <Button
               type="button"
               variant="outline"

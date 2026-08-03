@@ -10,6 +10,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@kit/ui/dialog';
@@ -290,8 +291,8 @@ export default function EditLeadDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="flex max-h-[90vh] flex-col p-0 overflow-hidden border-gray-200 bg-white p-0 sm:max-w-[800px] dark:border-slate-800 dark:bg-slate-950">
         <div className="flex max-h-[90vh] flex-col">
-          <DialogHeader className="border-b border-gray-200 bg-white p-6 pb-4 dark:border-slate-800 dark:bg-slate-950 border-b p-6 pb-4">
-            <DialogTitle className="pr-12">
+          <DialogHeader>
+            <DialogTitle>
               Edit Lead
             </DialogTitle>
             <DialogDescription>
@@ -303,15 +304,14 @@ export default function EditLeadDialog({
             onSubmit={handleSubmit}
             className="flex flex-1 flex-col overflow-hidden"
           >
-            <div className="flex-1 space-y-8 overflow-y-auto p-6">
+            <div className="flex flex-col flex-1 overflow-y-auto p-2 gap-2">
               {/* ── Contact Information ── */}
-              <div className="space-y-4">
-                <h3 className="primary-heading text-leadgaze-dark dark:text-white">
+              <div className="space-y-2">
+                <h3 className="primary-heading text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">
                   Contact Information
-                </h3>
-                <Separator className="bg-gray-200 dark:bg-slate-800" />
+                </h3>                
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-2">
                   <FieldGuard fieldKey="first_name" canEdit={canEdit}>
                     <div>
                       <Label htmlFor="first_name">
@@ -343,7 +343,7 @@ export default function EditLeadDialog({
                   </FieldGuard>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-2">
                   <FieldGuard fieldKey="email" canEdit={canEdit}>
                     <div>
                       <Label htmlFor="email">Email (Optional)</Label>
@@ -374,7 +374,7 @@ export default function EditLeadDialog({
                   </FieldGuard>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-2">
                   <FieldGuard fieldKey="phone" canEdit={canEdit}>
                     <div>
                       <Label htmlFor="phone_number">Phone (Optional)</Label>
@@ -405,13 +405,12 @@ export default function EditLeadDialog({
               </div>
 
               {/* ── Company Information ── */}
-              <div className="space-y-4">
-                <h3 className="primary-heading text-leadgaze-dark dark:text-white">
+              <div className="space-y-2">
+                <h3 className="primary-heading text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">
                   Company Information
-                </h3>
-                <Separator className="bg-gray-200 dark:bg-slate-800" />
+                </h3>                
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-2">
                   <FieldGuard fieldKey="company" canEdit={canEdit}>
                     <div>
                       <Label htmlFor="company_name">Company Name (Optional)</Label>
@@ -440,7 +439,7 @@ export default function EditLeadDialog({
                   </FieldGuard>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-2">
                   <FieldGuard fieldKey="industry" canEdit={canEdit}>
                     <div>
                       <Label htmlFor="industry_id">Industry (Optional)</Label>
@@ -477,7 +476,7 @@ export default function EditLeadDialog({
                   </FieldGuard>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-2">
                   <FieldGuard fieldKey="company_website" canEdit={canEdit}>
                     <div>
                       <Label htmlFor="company_website">Website (Optional)</Label>
@@ -506,7 +505,7 @@ export default function EditLeadDialog({
                   </FieldGuard>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-2">
                   <FieldGuard fieldKey="department" canEdit={canEdit}>
                     <div>
                       <Label htmlFor="department">Department (Optional)</Label>
@@ -535,7 +534,7 @@ export default function EditLeadDialog({
                   </FieldGuard>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-2">
                   <FieldGuard fieldKey="location" canEdit={canEdit}>
                     <div>
                       <Label htmlFor="location">Location (Optional)</Label>
@@ -566,13 +565,12 @@ export default function EditLeadDialog({
               </div>
 
               {/* ── Lead Information ── */}
-              <div className="space-y-4">
-                <h3 className="primary-heading text-leadgaze-dark dark:text-white">
+              <div className="space-y-2">
+                <h3 className="primary-heading text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">
                   Lead Information
-                </h3>
-                <Separator className="bg-gray-200 dark:bg-slate-800" />
+                </h3>                
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-2">
                   {/* Status is always shown — required field */}
                   <div>
                     <Label htmlFor="status_id">
@@ -605,7 +603,7 @@ export default function EditLeadDialog({
                   </FieldGuard>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-2">
                   <FieldGuard fieldKey="trigger" canEdit={canEdit}>
                     <div>
                       <Label htmlFor="trigger">Trigger (Optional)</Label>
@@ -642,11 +640,10 @@ export default function EditLeadDialog({
 
               {/* ── Additional Information ── */}
               <FieldGuard fieldKey="notes" canEdit={canEdit}>
-                <div className="space-y-4">
-                  <h3 className="primary-heading text-leadgaze-dark dark:text-white">
+                <div className="space-y-2">
+                  <h3 className="primary-heading text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">
                     Additional Information
-                  </h3>
-                  <Separator className="bg-gray-200 dark:bg-slate-800" />
+                  </h3>                  
 
                   <div>
                     <Label htmlFor="notes">Notes (Optional)</Label>
@@ -675,29 +672,27 @@ export default function EditLeadDialog({
               />
             </div>
 
-            {/* Form Actions */}
-            <div className="flex justify-end gap-3 border-t border-gray-200 bg-white p-2 dark:border-slate-800 dark:bg-slate-950">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => handleOpenChange(false)}
-                disabled={isLoading}
-                className="border-gray-300 text-gray-900 dark:border-slate-700 dark:text-white"
-              >
-                Cancel
-              </Button>
-              <Button type="submit" form="dialog-form" disabled={isLoading} className="gap-2">
-                {isLoading ? (
-                  <>
-                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                    Saving...
-                  </>
-                ) : (
-                  'Save Changes'
-                )}
-              </Button>
-            </div>
           </form>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => handleOpenChange(false)}
+              disabled={isLoading}                
+            >
+              Cancel
+            </Button>
+            <Button type="submit" form="dialog-form" disabled={isLoading} className="gap-2">
+              {isLoading ? (
+                <>
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  Saving...
+                </>
+              ) : (
+                'Save Changes'
+              )}
+            </Button>
+          </DialogFooter>
         </div>
       </DialogContent>
     </Dialog>

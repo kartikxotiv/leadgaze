@@ -412,7 +412,7 @@ export function ServiceCloudCustomersPage({
     <>
       <Tabs
         defaultValue={tab}
-        className="flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col space-y-4"
+        className="flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col space-y-2"
         onValueChange={(value) => router.push(`${pathname}?tab=${value}`)}
       >
         <TabsContent
@@ -579,14 +579,14 @@ export function ServiceCloudCustomersPage({
         >
           <DialogContent className="max-h-[90vh] overflow-hidden border-gray-200 bg-white p-0 sm:max-w-2xl dark:border-slate-800 dark:bg-slate-950">
             <div className="flex max-h-[90vh] flex-col">
-              <DialogHeader className="border-b border-gray-200 bg-white p-6 pb-4 dark:border-slate-800 dark:bg-slate-950">
+              <DialogHeader>
                 <DialogTitle className="flex items-center gap-2">
                   <Ticket className="h-5 w-5" />
                   New Ticket for Customer
                 </DialogTitle>
               </DialogHeader>
 
-              <div className="flex-1 space-y-4 overflow-y-auto p-6 pb-8">
+              <div className="flex-1 space-y-2 overflow-y-auto p-6 pb-8">
                 <div className="grid gap-4">
                   {/* Customer Selection */}
                   <div className="grid gap-2">
@@ -717,17 +717,15 @@ export function ServiceCloudCustomersPage({
                 </div>
               </div>
 
-              <DialogFooter className="border-t border-gray-200 bg-white p-2 dark:border-slate-800 dark:bg-slate-950">
+              <DialogFooter>
                 <Button
                   variant="outline"
                   onClick={() => setCreateOpen(false)}
-                  className="mb-2"
                 >
                   Cancel
                 </Button>
                 <Button
                   onClick={submitCreateTicket}
-                  className="mb-2"
                   disabled={createTicketMutation.isPending}
                 >
                   {createTicketMutation.isPending ? (
@@ -750,7 +748,7 @@ export function ServiceCloudCustomersPage({
       >
         <DialogContent className="max-h-[90vh] overflow-hidden border-gray-200 bg-white p-0 sm:max-w-4xl lg:max-w-5xl dark:border-slate-800 dark:bg-slate-950">
           <div className="flex max-h-[90vh] w-full min-w-0 max-w-full flex-col">
-            <DialogHeader className="border-b border-gray-200 bg-white p-6 pb-4 dark:border-slate-800 dark:bg-slate-950">
+            <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Ticket className="h-5 w-5" />
                 Tickets for {ticketsModalCustomer?.name}
@@ -892,7 +890,7 @@ export function ServiceCloudCustomersPage({
               )}
             </div>
 
-            <DialogFooter className="border-t border-gray-200 bg-white p-2 dark:border-slate-800 dark:bg-slate-950">
+            <DialogFooter>
               <Button
                 variant="outline"
                 onClick={() => setTicketsModalCustomer(null)}

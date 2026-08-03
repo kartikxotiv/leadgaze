@@ -216,7 +216,7 @@ export function CentralStatusManagementDialog({
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="p-0 sm:max-w-[620px] flex flex-col max-h-[620px] gap-0 pb-1">
-          <DialogHeader className="border-b px-6 py-4 shrink-0">
+          <DialogHeader>
             <div className="flex items-center gap-2">
               <Settings className="h-5 w-5 text-muted-foreground" />
               <DialogTitle>Manage Workspace Statuses</DialogTitle>

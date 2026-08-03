@@ -255,13 +255,13 @@ export function GoogleAdsSettingsPage({
                 <CardHeader className="border-b pb-3">
                   <CardTitle className="text-sm font-semibold">Connections</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4 pt-4">
+                <CardContent className="space-y-2 pt-4">
                   <Skeleton className="h-4 w-full" />
                   <Skeleton className="h-8 w-full" />
                 </CardContent>
               </Card>
             </div>
-            <div className="lg:col-span-3 space-y-4">
+            <div className="lg:col-span-3 space-y-2">
               <Skeleton className="h-10 w-96" />
               <Skeleton className="h-64 w-full" />
             </div>
@@ -302,7 +302,7 @@ export function GoogleAdsSettingsPage({
               <CardHeader className="border-b pb-3">
                 <CardTitle className="text-sm font-semibold">Connected Profiles</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4 pt-4">
+              <CardContent className="space-y-2 pt-4">
                 {googleAccounts.length === 0 ? (
                   <p className="text-xs text-muted-foreground">
                     No Google profiles connected for Ads lead forms.
@@ -419,7 +419,7 @@ export function GoogleAdsSettingsPage({
                       />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-base">Connect Google Ads Profiles</h3>
+                      <h3 className="font-semibold text-base custom-sub-heading-dialog-form">Connect Google Ads Profiles</h3>
                       <p className="text-sm text-muted-foreground mt-1 max-w-sm">
                         Authorize Leadgaze to access your Google Ads profiles and automatically
                         capture leads from your Lead Form Extensions.
@@ -668,7 +668,7 @@ export function GoogleAdsSettingsPage({
             <TabsContent value="setup" className="flex-1 overflow-y-auto min-h-0">
               <Card className="border shadow-sm p-6 space-y-8">
                 <div>
-                  <h3 className="text-base font-bold mb-1">Google Ads Lead Forms Integration Guide</h3>
+                  <h3 className="text-base font-bold mb-1 custom-sub-heading-dialog-form">Google Ads Lead Forms Integration Guide</h3>
                   <p className="text-sm text-muted-foreground">
                     Follow these steps to capture Google Ads leads automatically into Leadgaze CRM.
                   </p>
@@ -878,7 +878,7 @@ Google Key: (leave empty)`}
               Are you sure you want to disconnect <span className="font-semibold text-foreground">{accountToDisconnect?.email}</span>?
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-2">
+          <div className="space-y-2 py-2">
             <div className="flex items-start gap-3 rounded-md bg-destructive/10 border border-destructive/20 p-3">
               <AlertTriangle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
               <div className="text-sm text-destructive space-y-1">

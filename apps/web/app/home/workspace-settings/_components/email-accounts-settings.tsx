@@ -280,7 +280,7 @@ export function EmailAccountsSettings({ workspace }: { workspace: any }) {
                 </DialogTrigger>
                 <DialogContent className="max-h-[90vh] overflow-hidden border-gray-200 bg-white p-0 sm:max-w-[500px] dark:border-slate-800 dark:bg-slate-950">
                   <div className="flex max-h-[90vh] flex-col">
-                  <DialogHeader className="border-b border-gray-200 bg-white p-6 pb-4 dark:border-slate-800 dark:bg-slate-950">
+                  <DialogHeader>
                     <DialogTitle>Connect Email Account</DialogTitle>
                   </DialogHeader>
                   <Tabs value={connectTab} onValueChange={(v) => setConnectTab(v as 'google' | 'smtp')} className="flex flex-1 flex-col overflow-hidden">
@@ -291,7 +291,7 @@ export function EmailAccountsSettings({ workspace }: { workspace: any }) {
                     </TabsList>
                     </div>
                     <div className="flex-1 overflow-y-auto p-6">
-                    <TabsContent value="google" className="space-y-4 pt-4">
+                    <TabsContent value="google" className="space-y-2 pt-4">
                       <div className="mb-4 rounded-md bg-blue-50 p-4 text-sm text-blue-800 dark:bg-blue-950 dark:text-blue-200">
                         Connect your Gmail or Google Workspace account to send
                         emails directly.
@@ -305,7 +305,7 @@ export function EmailAccountsSettings({ workspace }: { workspace: any }) {
                         Connect with Google
                       </Button>
                     </TabsContent>
-                    <TabsContent value="smtp" className="space-y-4 pt-4">
+                    <TabsContent value="smtp" className="space-y-2 pt-4">
                       <SmtpField
                         label="From Name"
                         value={form.from_name}
@@ -320,7 +320,7 @@ export function EmailAccountsSettings({ workspace }: { workspace: any }) {
                           setForm((prev) => ({ ...prev, email }))
                         }
                       />
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-2 gap-2">
                         <SmtpField
                           label="SMTP Host"
                           value={form.host}
@@ -360,7 +360,7 @@ export function EmailAccountsSettings({ workspace }: { workspace: any }) {
                       />
                       <Separator />
                       <div className="text-sm font-medium">IMAP Settings</div>
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-2 gap-2">
                         <SmtpField
                           label="IMAP Host"
                           value={form.imap_host}
@@ -408,11 +408,10 @@ export function EmailAccountsSettings({ workspace }: { workspace: any }) {
                     </div>
                   </Tabs>
                   {connectTab === 'smtp' ? (
-                  <DialogFooter className="border-t border-gray-200 bg-white p-2 dark:border-slate-800 dark:bg-slate-950">
+                  <DialogFooter>
                     <Button
                       onClick={handleSubmitSmtp}
-                      disabled={isSubmitting}
-                      className="w-full"
+                      disabled={isSubmitting}                      
                     >
                       {isSubmitting ? (
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />

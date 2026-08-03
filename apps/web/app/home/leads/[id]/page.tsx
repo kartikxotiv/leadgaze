@@ -874,6 +874,7 @@ export default function LeadDetailsPage() {
                               variant="destructive"
                               disabled={!canAccess('leads', 'delete')}
                               onClick={() => setDeleteDialogOpen(true)}
+                              className="secondary-text-small-bold"
                             >
                               <Trash2 className="mr-2 h-4 w-4" />
                               Delete Lead
@@ -1405,6 +1406,7 @@ export default function LeadDetailsPage() {
                               variant="destructive"
                               disabled={!canAccess('leads', 'delete')}
                               onClick={() => setDeleteDialogOpen(true)}
+                              className="secondary-text-small-bold"
                             >
                               <Trash2 className="mr-2 h-4 w-4" />
                               Delete Lead

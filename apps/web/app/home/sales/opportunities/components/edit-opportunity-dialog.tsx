@@ -158,14 +158,14 @@ export function EditOpportunityDialog({
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-[600px]">
-        <DialogHeader className="border-b p-6 pb-4">
+        <DialogHeader>
           <DialogTitle>Edit Opportunity</DialogTitle>
           <DialogDescription>
-            Update the information for this opportunity.
+            Update the information for this opportunity
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form id="dialog-form" onSubmit={form.handleSubmit(onSubmit)} className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+          <form id="dialog-form" onSubmit={form.handleSubmit(onSubmit)} className="flex-1 overflow-y-auto px-2 space-y-2">
             <FormField
               control={form.control}
               name="opportunity_name"
@@ -180,7 +180,7 @@ export function EditOpportunityDialog({
               )}
             />
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-2">
               <FormField
                 control={form.control}
                 name="amount"
@@ -223,7 +223,7 @@ export function EditOpportunityDialog({
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-2">
               <FormField
                 control={form.control}
                 name="probability"
@@ -252,7 +252,7 @@ export function EditOpportunityDialog({
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-2">
               <FormField
                 control={form.control}
                 name="opportunity_type"
@@ -354,7 +354,7 @@ export function EditOpportunityDialog({
 
             <div className="space-y-3 border-t pt-4">
               <h4 className="text-sm font-medium">Outcome</h4>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-2">
                 <FormField
                   control={form.control}
                   name="is_closed"
@@ -411,17 +411,16 @@ export function EditOpportunityDialog({
             
           </form>
         </Form>
-        <DialogFooter className="border-t p-2 mt-auto">
+        <DialogFooter>
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => onOpenChange(false)}
-                disabled={updateMutation.isPending} 
-                className='mb-2'
+                disabled={updateMutation.isPending}
               >
                 Cancel
               </Button>
-              <Button type="submit" form="dialog-form" disabled={updateMutation.isPending} className='mb-2'>
+              <Button type="submit" form="dialog-form" disabled={updateMutation.isPending}>
                 {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
               </Button>
             </DialogFooter>
