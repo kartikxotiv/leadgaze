@@ -148,7 +148,7 @@ export default function WorkspaceSettingsPage() {
           {canViewGeneralSettings && workspace?.id && (
             <TabsContent
               value="general"
-              className="mt-0 flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col data-[state=active]:flex data-[state=active]:flex-1 data-[state=active]:flex-col data-[state=active]:min-h-0"
+              className="mt-0 flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col data-[state=active]:flex data-[state=active]:flex-1 data-[state=active]:flex-col data-[state=active]:min-h-0 overflow-y-auto pr-2 pb-6"
             >
               {/* <WorkspaceManagement currentWorkspace={workspace} /> */}
               <WorkspaceGeneralSettings workspaceId={workspace.id} />
@@ -158,7 +158,7 @@ export default function WorkspaceSettingsPage() {
           {canViewSettings && workspace?.id && (
             <TabsContent
               value="localization"
-              className="mt-0 flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col data-[state=active]:flex data-[state=active]:flex-1 data-[state=active]:flex-col data-[state=active]:min-h-0"
+              className="mt-0 flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col data-[state=active]:flex data-[state=active]:flex-1 data-[state=active]:flex-col data-[state=active]:min-h-0 overflow-y-auto pr-2 pb-6"
             >
               <WorkspaceLocalizationSettings workspaceId={workspace.id} />
             </TabsContent>
@@ -167,7 +167,7 @@ export default function WorkspaceSettingsPage() {
           {canViewSubscription && (
             <TabsContent
               value="billing"
-              className="mt-0 flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col data-[state=active]:flex data-[state=active]:flex-1 data-[state=active]:flex-col data-[state=active]:min-h-0"
+              className="mt-0 flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col data-[state=active]:flex data-[state=active]:flex-1 data-[state=active]:flex-col data-[state=active]:min-h-0 overflow-y-auto pr-2 pb-6"
             >
               <OrgSubscriptionPage
                 canManageSubscription={canManageSubscription}
@@ -178,7 +178,7 @@ export default function WorkspaceSettingsPage() {
           {canManageEmail && (
             <TabsContent
               value="emails"
-              className="mt-0 flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col data-[state=active]:flex data-[state=active]:flex-1 data-[state=active]:flex-col data-[state=active]:min-h-0"
+              className="mt-0 flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col data-[state=active]:flex data-[state=active]:flex-1 data-[state=active]:flex-col data-[state=active]:min-h-0 overflow-y-auto pr-2 pb-6"
             >
               {/* {shouldUseWebEmailSettings ? (
               <EmailAccountsSettings workspace={workspace} />
@@ -201,7 +201,7 @@ export default function WorkspaceSettingsPage() {
           {showMeetingsTab && (
             <TabsContent
               value="meetings"
-              className="mt-0 flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col data-[state=active]:flex data-[state=active]:flex-1 data-[state=active]:flex-col data-[state=active]:min-h-0"
+              className="mt-0 flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col data-[state=active]:flex data-[state=active]:flex-1 data-[state=active]:flex-col data-[state=active]:min-h-0 overflow-y-auto pr-2 pb-6"
             >
               <MeetingAccountsSettings workspace={workspace} />
             </TabsContent>
@@ -210,7 +210,7 @@ export default function WorkspaceSettingsPage() {
           {isSalesModule && (
             <TabsContent
               value="integrations"
-              className="mt-0 flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col data-[state=active]:flex data-[state=active]:flex-1 data-[state=active]:flex-col data-[state=active]:min-h-0"
+              className="mt-0 flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col data-[state=active]:flex data-[state=active]:flex-1 data-[state=active]:flex-col data-[state=active]:min-h-0 overflow-y-auto pr-2 pb-6"
             >
               <WorkspaceIntegrationsSettings workspace={workspace} />
             </TabsContent>
