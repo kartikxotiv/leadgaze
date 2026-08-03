@@ -5,8 +5,15 @@ import { useMemo, useState } from 'react';
 import { usePathname } from 'next/navigation';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Check, Clock, Edit2, Plus, RotateCcw, Trash2 } from 'lucide-react';
+import { Check, Clock, Edit2, Plus, RotateCcw, Trash2, MoreVertical } from 'lucide-react';
 import { toast } from 'sonner';
+
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@kit/ui/dropdown-menu';
 
 import { Badge } from '@kit/ui/badge';
 import { AddColumnModal } from '@kit/ui/add-column-modal';
@@ -426,7 +433,7 @@ export default function TeamMembersPage() {
             {currentModule && (
               <Card
                 className={cn(
-                  'hover:border-primary/50 bg-card rounded-sm-card inline-flex w-auto shrink-0 cursor-pointer transition-all',
+                  'hover:border-primary/50 rounded-sm-card inline-flex w-auto shrink-0 cursor-pointer transition-all',
                 )}
               >
                 <CardContent className={cn('flex items-center px-1 py-1')}>
@@ -669,62 +676,45 @@ export default function TeamMembersPage() {
                             </TableCell>
                           )}
                           <TableCell className="bg-card sticky right-0 px-4 text-right">
-                            <div className="flex items-center justify-end gap-2">
-                              {member.status === 'pending' && (
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() =>
-                                        handleResendInvitation(member.id)
-                                      }
-                                      className="gap-2"
+                            <div className="flex items-center justify-end">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    className="h-8 w-8 border-0 p-0 focus:outline-none focus-visible:ring-0 focus-visible:outline-none focus-visible:ring-offset-0"
+                                  >
+                                    <MoreVertical className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  {member.status === 'pending' && (
+                                    <DropdownMenuItem
+                                      onClick={() => handleResendInvitation(member.id)}
                                       disabled={resendMutation.isPending}
+                                      className="gap-2 cursor-pointer"
                                     >
-                                      <RotateCcw className="h-4 w-4" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent side="bottom">
-                                    <p>Resend Invitation</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              )}
-                              {canAccess('team_members', 'edit') && (
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
+                                      <RotateCcw className="h-4 w-4" /> Resend Invitation
+                                    </DropdownMenuItem>
+                                  )}
+                                  {canAccess('team_members', 'edit') && (
+                                    <DropdownMenuItem
                                       onClick={() => handleEditMember(member)}
-                                      className="gap-2"
+                                      className="gap-2 cursor-pointer"
                                     >
-                                      <Edit2 className="h-4 w-4" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent side="bottom">
-                                    <p>Edit Member</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              )}
-                              {canAccess('team_members', 'delete') && (
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
+                                      <Edit2 className="h-4 w-4" /> Edit Member
+                                    </DropdownMenuItem>
+                                  )}
+                                  {canAccess('team_members', 'delete') && (
+                                    <DropdownMenuItem
                                       onClick={() => handleRemoveMember(member.id)}
-                                      className="text-destructive hover:bg-destructive/10 hover:text-destructive gap-2"
                                       disabled={removeMutation.isPending}
+                                      className="text-destructive focus:text-destructive cursor-pointer gap-2"
                                     >
-                                      <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent side="bottom">
-                                    <p>Remove Member</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              )}
+                                      <Trash2 className="h-4 w-4" /> Remove Member
+                                    </DropdownMenuItem>
+                                  )}
+                                </DropdownMenuContent>
+                              </DropdownMenu>
                             </div>
                           </TableCell>
                         </TableRow>
@@ -776,34 +766,31 @@ export default function TeamMembersPage() {
                               <span className="text-muted-foreground/50 text-xs">—</span>
                             </TableCell>
                           )}
-                          <TableCell className="bg-card sticky right-0 px-4 text-right">
-                            <div className="flex items-center justify-end gap-2">
-                              <Tooltip>
-                                <TooltipTrigger asChild>
+                          <TableCell className="sticky right-0 px-4 text-right">
+                            <div className="flex items-center justify-end">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
                                   <Button
                                     variant="ghost"
-                                    size="sm"
+                                    className="h-8 w-8 border-0 p-0 focus:outline-none focus-visible:ring-0 focus-visible:outline-none focus-visible:ring-offset-0"
+                                  >
+                                    <MoreVertical className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem
                                     onClick={() =>
                                       resendInvitationEmailMutation.mutate(
                                         invitation.id,
                                       )
                                     }
-                                    className="gap-2"
                                     disabled={resendInvitationEmailMutation.isPending}
+                                    className="gap-2 cursor-pointer"
                                   >
-                                    <RotateCcw className="h-4 w-4" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent side="bottom">
-                                  <p>Resend Invitation</p>
-                                </TooltipContent>
-                              </Tooltip>
-                              {canAccess('team_members', 'delete') && (
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
+                                    <RotateCcw className="h-4 w-4" /> Resend Invitation
+                                  </DropdownMenuItem>
+                                  {canAccess('team_members', 'delete') && (
+                                    <DropdownMenuItem
                                       onClick={() => {
                                         if (
                                           confirm(
@@ -815,17 +802,14 @@ export default function TeamMembersPage() {
                                           );
                                         }
                                       }}
-                                      className="text-destructive hover:bg-destructive/10 hover:text-destructive gap-2"
                                       disabled={deleteInvitationMutation.isPending}
+                                      className="text-destructive focus:text-destructive cursor-pointer gap-2"
                                     >
-                                      <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent side="bottom">
-                                    <p>Delete Invitation</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              )}
+                                      <Trash2 className="h-4 w-4" /> Delete Invitation
+                                    </DropdownMenuItem>
+                                  )}
+                                </DropdownMenuContent>
+                              </DropdownMenu>
                             </div>
                           </TableCell>
                         </TableRow>

@@ -3,8 +3,15 @@
 import React, { useMemo, useState } from 'react';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Edit2, Plus, Trash2, Users, UserPlus } from 'lucide-react';
+import { Edit2, Plus, Trash2, Users, UserPlus, MoreVertical } from 'lucide-react';
 import { toast } from 'sonner';
+
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@kit/ui/dropdown-menu';
 
 import { Button } from '@kit/ui/button';
 import { AddColumnModal } from '@kit/ui/add-column-modal';
@@ -214,7 +221,7 @@ export default function TeamsPage() {
             {isLoading ? (
               <div className="listing-table-container min-w-0 flex-1 overflow-x-auto overflow-y-auto rounded-lg pb-6">
                 <Table className="w-max min-w-full border-separate border-spacing-0 text-sm">
-                  <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
+                  <TableHeader className="sticky top-0 z-10 shadow-sm">
                     <TableRow>
                       <TableHead>Team Name</TableHead>
                       <TableHead>Description</TableHead>
@@ -348,39 +355,44 @@ export default function TeamsPage() {
                         </TableCell>
                       )}
                       <TableCell className="">
-                        <div className="flex items-center justify-end gap-2">
-                          {canAccess('team_members', 'edit') && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleManageMembers(team)}
-                              className="gap-2"
-                            >
-                              <UserPlus className="h-4 w-4" />
-                              Members
-                            </Button>
-                          )}
-                          {canAccess('team_members', 'edit') && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleEditTeam(team)}
-                              className="gap-2"
-                            >
-                              <Edit2 className="h-4 w-4" />
-                            </Button>
-                          )}
-                          {canAccess('team_members', 'delete') && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDeleteTeam(team.id)}
-                              className="text-destructive hover:bg-destructive/10 hover:text-destructive gap-2"
-                              disabled={deleteTeamMutation.isPending}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          )}
+                        <div className="flex items-center justify-end">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                className="h-8 w-8 border-0 p-0 focus:outline-none focus-visible:ring-0 focus-visible:outline-none focus-visible:ring-offset-0"
+                              >
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              {canAccess('team_members', 'edit') && (
+                                <DropdownMenuItem
+                                  onClick={() => handleManageMembers(team)}
+                                  className="gap-2 cursor-pointer"
+                                >
+                                  <UserPlus className="h-4 w-4" /> Members
+                                </DropdownMenuItem>
+                              )}
+                              {canAccess('team_members', 'edit') && (
+                                <DropdownMenuItem
+                                  onClick={() => handleEditTeam(team)}
+                                  className="gap-2 cursor-pointer"
+                                >
+                                  <Edit2 className="h-4 w-4" /> Edit
+                                </DropdownMenuItem>
+                              )}
+                              {canAccess('team_members', 'delete') && (
+                                <DropdownMenuItem
+                                  onClick={() => handleDeleteTeam(team.id)}
+                                  disabled={deleteTeamMutation.isPending}
+                                  className="text-destructive focus:text-destructive cursor-pointer gap-2"
+                                >
+                                  <Trash2 className="h-4 w-4" /> Delete
+                                </DropdownMenuItem>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </TableCell>
                     </TableRow>

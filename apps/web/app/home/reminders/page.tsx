@@ -35,6 +35,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from '@kit/ui/dialog';
 import {
   DropdownMenu,
@@ -1062,7 +1063,7 @@ export default function RemindersPage() {
                             {reminder.updated_by || '-'}
                           </TableCell>
                         )}
-                        <TableCell className="bg-card sticky right-0 px-4 text-right">
+                        <TableCell className="sticky right-0 px-4 text-right">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="icon">
@@ -1269,7 +1270,14 @@ export default function RemindersPage() {
                 />
             </div>
           </div>
-          <div className="mt-auto border-t p-6">
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsCreateDialogOpen(false)}
+              disabled={createMutation.isPending}
+            >
+              Cancel
+            </Button>
             <Button
               onClick={handleCreate}
               disabled={
@@ -1278,15 +1286,13 @@ export default function RemindersPage() {
                 !formData.due_date ||
                 createMutation.isPending
               }
-              className="w-full"
             >
-              {createMutation.isPending ? (
+              {createMutation.isPending && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                'Save Reminder'
               )}
+              Save Reminder
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -1345,6 +1351,15 @@ export default function RemindersPage() {
                   }
                 />
             </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsEditDialogOpen(false)}
+              disabled={updateMutation.isPending}
+            >
+              Cancel
+            </Button>
             <Button
               onClick={handleSave}
               disabled={
@@ -1352,15 +1367,13 @@ export default function RemindersPage() {
                 !formData.due_date ||
                 updateMutation.isPending
               }
-              className="w-full"
             >
-              {updateMutation.isPending ? (
+              {updateMutation.isPending && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                'Update Reminder'
               )}
+              Update Reminder
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>

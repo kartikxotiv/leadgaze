@@ -849,7 +849,7 @@ export default function NotesPage() {
                           {note.updated_by || '-'}
                         </TableCell>
                       )}
-                      <TableCell className="bg-card sticky right-0 px-4 text-right">
+                      <TableCell className="sticky right-0 px-4 text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button
@@ -1023,7 +1023,7 @@ export default function NotesPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="px-2">
+            <div>
               <Label>Note Content</Label>
               <Textarea
                 placeholder="Enter note content..."

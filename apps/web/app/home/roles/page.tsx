@@ -11,8 +11,16 @@ import {
   Plus,
   Shield,
   Trash2,
+  MoreVertical,
 } from 'lucide-react';
 import { toast } from 'sonner';
+
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@kit/ui/dropdown-menu';
 
 import { Badge } from '@kit/ui/badge';
 import { AddColumnModal } from '@kit/ui/add-column-modal';
@@ -542,33 +550,41 @@ export default function RolesPage() {
                           )}
                         </TableCell>
                       )}
-                      <TableCell className="bg-card sticky right-0 px-4 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          {!role.is_system && canAccess('roles', 'edit') && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleEditRole(role)}
-                              className="gap-2"
-                            >
-                              <Edit2 className="h-4 w-4" />
-                            </Button>
-                          )}
-                          {canAccess('roles', 'delete') && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() =>
-                                handleDeleteRole(role.id, role.is_system)
-                              }
-                              className="text-destructive hover:bg-destructive/10 hover:text-destructive gap-2"
-                              disabled={
-                                role.is_system || deleteRoleMutation.isPending
-                              }
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          )}
+                      <TableCell className="sticky right-0 px-4 text-right">
+                        <div className="flex items-center justify-end">
+                          <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    className="h-8 w-8 border-0 p-0 focus:outline-none focus-visible:ring-0 focus-visible:outline-none focus-visible:ring-offset-0"
+                                  >
+                                    <MoreVertical className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              {!role.is_system && canAccess('roles', 'edit') && (
+                                <DropdownMenuItem
+                                  onClick={() => handleEditRole(role)}
+                                  className="gap-2 cursor-pointer"
+                                >
+                                  <Edit2 className="h-4 w-4" /> Edit
+                                </DropdownMenuItem>
+                              )}
+                              {canAccess('roles', 'delete') && (
+                                <DropdownMenuItem
+                                  onClick={() =>
+                                    handleDeleteRole(role.id, role.is_system)
+                                  }
+                                  disabled={
+                                    role.is_system || deleteRoleMutation.isPending
+                                  }
+                                  className="text-destructive focus:text-destructive cursor-pointer gap-2"
+                                >
+                                  <Trash2 className="h-4 w-4" /> Delete
+                                </DropdownMenuItem>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </TableCell>
                     </TableRow>
