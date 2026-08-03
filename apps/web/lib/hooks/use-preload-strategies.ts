@@ -1,8 +1,10 @@
 import { useCallback, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 
-import { getLeadByIdService, getLeadsService } from '~/services/leads.service';
-import { Lead } from '~/services/leads.service';
+import { getLeadByIdService, getLeadsService, Lead } from '~/services/leads.service';
+import { getContactByIdService, getContactsService, Contact } from '~/services/contacts.service';
+import { getAccountByIdService, getAccountsService, Account } from '~/services/accounts.service';
+import { getOpportunityByIdService, getOpportunitiesService, Opportunity } from '~/services/opportunities.service';
 
 /**
  * Hook to provide predictive pre-loading strategies using TanStack Query.
@@ -12,7 +14,7 @@ import { Lead } from '~/services/leads.service';
 export const usePreloadStrategies = () => {
   const queryClient = useQueryClient();
 
-  // Pre-load the leads list
+  // --- LEADS PRELOADING ---
   const preloadLeadsList = useCallback(
     (workspaceId: string, limit: number = 20) => {
       if (!workspaceId) return;
@@ -26,20 +28,96 @@ export const usePreloadStrategies = () => {
     [queryClient],
   );
 
-  // Pre-load a specific lead's details (and optionally related entities like account)
   const preloadLeadDetail = useCallback(
     (workspaceId: string, lead: Partial<Lead>) => {
       if (!workspaceId || !lead?.id) return;
 
-      // Pre-load the lead detail
       queryClient.prefetchQuery({
         queryKey: ['lead', workspaceId, lead.id],
         queryFn: () => getLeadByIdService(lead.id!),
         staleTime: 60000,
       });
+    },
+    [queryClient],
+  );
 
-      // We could add pre-fetching for Account if lead.account_id exists here,
-      // but for now we focus on the core Lead record since getLeadByIdService might fetch related data.
+  // --- CONTACTS PRELOADING ---
+  const preloadContactsList = useCallback(
+    (workspaceId: string, limit: number = 20) => {
+      if (!workspaceId) return;
+
+      queryClient.prefetchQuery({
+        queryKey: ['contacts', workspaceId, { page: 1, limit, searchTerm: '' }],
+        queryFn: () => getContactsService({ workspaceId, page: 1, limit, searchTerm: '' }),
+        staleTime: 60000,
+      });
+    },
+    [queryClient],
+  );
+
+  const preloadContactDetail = useCallback(
+    (workspaceId: string, contact: Partial<Contact>) => {
+      if (!contact?.id) return;
+
+      queryClient.prefetchQuery({
+        queryKey: ['contact', contact.id],
+        queryFn: () => getContactByIdService(contact.id!),
+        staleTime: 60000,
+      });
+    },
+    [queryClient],
+  );
+
+  // --- ACCOUNTS PRELOADING ---
+  const preloadAccountsList = useCallback(
+    (workspaceId: string, limit: number = 20) => {
+      if (!workspaceId) return;
+
+      queryClient.prefetchQuery({
+        queryKey: ['accounts', workspaceId, { page: 1, limit, searchTerm: '' }],
+        queryFn: () => getAccountsService({ workspaceId, page: 1, limit, searchTerm: '' }),
+        staleTime: 60000,
+      });
+    },
+    [queryClient],
+  );
+
+  const preloadAccountDetail = useCallback(
+    (workspaceId: string, account: Partial<Account>) => {
+      if (!account?.id) return;
+
+      queryClient.prefetchQuery({
+        queryKey: ['account', account.id],
+        queryFn: () => getAccountByIdService(account.id!),
+        staleTime: 60000,
+      });
+    },
+    [queryClient],
+  );
+
+  // --- OPPORTUNITIES PRELOADING ---
+  const preloadOpportunitiesList = useCallback(
+    (workspaceId: string, limit: number = 20) => {
+      if (!workspaceId) return;
+
+      queryClient.prefetchQuery({
+        queryKey: ['opportunities', workspaceId, { page: 1, limit, searchTerm: '' }],
+        queryFn: () => getOpportunitiesService({ workspaceId, page: 1, limit, searchTerm: '' }),
+        staleTime: 60000,
+      });
+    },
+    [queryClient],
+  );
+
+  const preloadOpportunityDetail = useCallback(
+    (workspaceId: string, opportunity: Partial<Opportunity>) => {
+      if (!opportunity?.id) return;
+
+      queryClient.prefetchQuery({
+        queryKey: ['opportunity', opportunity.id],
+        queryFn: () => getOpportunityByIdService(opportunity.id!),
+        staleTime: 60000,
+      });
     },
     [queryClient],
   );
@@ -47,6 +125,12 @@ export const usePreloadStrategies = () => {
   return {
     preloadLeadsList,
     preloadLeadDetail,
+    preloadContactsList,
+    preloadContactDetail,
+    preloadAccountsList,
+    preloadAccountDetail,
+    preloadOpportunitiesList,
+    preloadOpportunityDetail,
   };
 };
 

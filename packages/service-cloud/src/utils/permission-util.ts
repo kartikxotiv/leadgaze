@@ -92,22 +92,33 @@ export function useServiceCloudPermissions(workspaceId?: string) {
     }
 
     try {
-      const cachedData = typeof window !== 'undefined' 
-        ? JSON.parse(sessionStorage.getItem(`workspace-${workspaceId}-init`) || '{}') 
+      const cachedData = typeof window !== 'undefined'
+        ? JSON.parse(sessionStorage.getItem(`workspace-${workspaceId}-init`) || '{}')
         : null;
 
-      if (cachedData?.current_workspace?.roles) {
-        const roles = cachedData.current_workspace.roles;
-        const role = roles['service_cloud'] || roles['sales'] || Object.values(roles)[0] as any;
-        
-        if (role) {
-          const permissions = (role.permissions || []).map((p: any) => ({
+      if (cachedData) {
+        const userWorkspaces = cachedData.user_workspaces || [];
+        const currentWs =
+          userWorkspaces.find((w: any) => w.id === workspaceId) ||
+          cachedData.current_workspace?.workspace;
+        const isOwner = currentWs?.owner_id === user.id;
+        const roles = currentWs?.roles || {};
+        const role =
+          roles['service_cloud'] || roles['sales'] || (Object.values(roles)[0] as any);
+
+        const resolvedRoleKey = isOwner ? 'owner' : role?.role_key || '';
+
+        if (role || isOwner) {
+          const permissions = (role?.permissions || []).map((p: any) => ({
             module: p.module,
             feature: p.feature,
             can_access: p.can_access,
           }));
-          
-          setPermissionsResponse({ roleKey: role.role_key, permissions });
+
+          setPermissionsResponse({
+            roleKey: resolvedRoleKey,
+            permissions,
+          });
           setIsLoading(false);
           return;
         }
@@ -115,7 +126,7 @@ export function useServiceCloudPermissions(workspaceId?: string) {
     } catch (e) {
       console.error("Failed to read permissions from sessionStorage", e);
     }
-    
+
     setIsLoading(false);
   }, [workspaceId, user?.id]);
 
@@ -125,13 +136,17 @@ export function useServiceCloudPermissions(workspaceId?: string) {
   const canAccess = useMemo<ServiceCloudCanAccess>(
     () =>
       (moduleKey: string, featureKey = SERVICE_CLOUD_FEATURE_KEYS.view) => {
-        if (roleKey === 'admin') return true;
-        return permissions.some(
-          (p) =>
-            p.module === moduleKey &&
-            p.feature === featureKey &&
-            p.can_access,
-        );
+        const hasAccess =
+          roleKey === 'owner' ||
+          roleKey === 'admin' ||
+          permissions.some(
+            (p) =>
+              p.module === moduleKey &&
+              p.feature === featureKey &&
+              p.can_access,
+          );
+
+        return hasAccess;
       },
     [permissions, roleKey],
   );
