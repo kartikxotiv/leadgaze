@@ -53,6 +53,8 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
+  DialogDescription,
 } from '@kit/ui/dialog';
 import {
   DropdownMenu,
@@ -824,22 +826,21 @@ export function CreateMeetingDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-h-[90vh] max-w-2xl gap-0 overflow-y-auto p-0">
-        <div className="bg-background sticky top-0 z-10 border-b px-6 py-5">
+      <DialogContent className="flex max-h-[90vh] flex-col p-0 overflow-hidden border-gray-200 bg-white sm:max-w-[800px] dark:border-slate-800 dark:bg-slate-950">
           <DialogHeader>
             <DialogTitle>
               Schedule Meeting
             </DialogTitle>
-            <p className="text-muted-foreground text-sm">
-              Setup a new engagement with your lead.
-            </p>
+            <DialogDescription>
+              Setup a new engagement with your lead
+            </DialogDescription>
           </DialogHeader>
-        </div>
+        
 
-        <div className="space-y-5 px-6 py-5">
+        <div className="flex-1 overflow-y-auto space-y-2 px-2">
           {/* Meeting Type */}
           <div className="space-y-2">
-            <Label className="text-xs font-semibold tracking-wider text-gray-500 uppercase">
+            <Label className="text-xs font-semibold text-leadgaze-dark tracking-wider uppercase">
               Meeting Type
             </Label>
             <MeetingTypeToggle value={meetingType} onChange={setMeetingType} />
@@ -847,7 +848,7 @@ export function CreateMeetingDialog({
 
           {/* Provider Selection */}
           <div className="space-y-2">
-            <Label className="text-xs font-semibold tracking-wider text-gray-500 uppercase">
+            <Label className="text-xs font-semibold tracking-wider text-leadgaze-dark uppercase">
               Meeting Provider
             </Label>
             <ProviderSelector
@@ -866,7 +867,7 @@ export function CreateMeetingDialog({
                 Connect As
               </Label>
               {googleAccounts.length === 0 ? (
-                <div className="rounded-lg border border-dashed border-blue-200 bg-blue-50/50 p-3 text-center dark:border-blue-800 dark:bg-blue-950/50">
+                <div className="rounded-lg border border-dashed border-blue-200 bg-blue-50/50 p-2 text-center dark:border-blue-800 dark:bg-blue-950/50">
                   <p className="text-sm">
                     No Google accounts.{' '}
                     <a
@@ -882,7 +883,7 @@ export function CreateMeetingDialog({
                   value={selectedAccountId}
                   onValueChange={setSelectedAccountId}
                 >
-                  <SelectTrigger className="h-11">
+                  <SelectTrigger className="h-9">
                     <SelectValue placeholder="Select Google account" />
                   </SelectTrigger>
                   <SelectContent>
@@ -918,7 +919,7 @@ export function CreateMeetingDialog({
                   value={selectedAccountId}
                   onValueChange={setSelectedAccountId}
                 >
-                  <SelectTrigger className="h-11">
+                  <SelectTrigger className="h-9">
                     <SelectValue placeholder="Select Zoom account" />
                   </SelectTrigger>
                   <SelectContent>
@@ -941,8 +942,7 @@ export function CreateMeetingDialog({
             <Input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. Product Demo with Sales Team"
-              className="h-11"
+              placeholder="e.g. Product Demo with Sales Team"              
             />
           </div>
 
@@ -959,7 +959,7 @@ export function CreateMeetingDialog({
 
           {/* Time Selection */}
           {meetingType === 'scheduled' ? (
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-2 md:grid-cols-2">
               <div className="space-y-2">
                 <Label className="font-medium">
                   Meeting Date & Time <span className="text-red-500">*</span>
@@ -974,7 +974,7 @@ export function CreateMeetingDialog({
                     }
                   }}
                   minDate={new Date()}
-                  className="h-11 w-full"
+                  className="w-full"
                 />
               </div>
               <div className="space-y-2">
@@ -983,7 +983,7 @@ export function CreateMeetingDialog({
                   value={String(duration)}
                   onValueChange={(val) => setDuration(Number(val))}
                 >
-                  <SelectTrigger className="h-11">
+                  <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -997,7 +997,7 @@ export function CreateMeetingDialog({
               </div>
             </div>
           ) : (
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-2 md:grid-cols-2">
               <div className="space-y-2">
                 <Label className="font-medium">
                   Actual Start <span className="text-red-500">*</span>
@@ -1011,7 +1011,7 @@ export function CreateMeetingDialog({
                       setActualStart('');
                     }
                   }}
-                  className="h-11 w-full"
+                  className="w-full"
                 />
               </div>
               <div className="space-y-2">
@@ -1027,18 +1027,18 @@ export function CreateMeetingDialog({
                       setActualEnd('');
                     }
                   }}
-                  className="h-11 w-full"
+                  className="w-full"
                 />
               </div>
             </div>
           )}
 
           {/* Timezone + Location/URL */}
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-2 md:grid-cols-2">
             <div className="space-y-2">
               <Label className="font-medium">Timezone</Label>
               <Select value={timezone} onValueChange={setTimezone}>
-                <SelectTrigger className="h-11">
+                <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -1056,8 +1056,7 @@ export function CreateMeetingDialog({
                 <Input
                   value={meetingUrl}
                   onChange={(e) => setMeetingUrl(e.target.value)}
-                  placeholder="https://..."
-                  className="h-11"
+                  placeholder="https://..."                  
                 />
               </div>
             ) : (
@@ -1069,7 +1068,7 @@ export function CreateMeetingDialog({
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
                     placeholder="Add physical address"
-                    className="h-11 pl-10"
+                    className="pl-10"
                   />
                 </div>
               </div>
@@ -1083,8 +1082,7 @@ export function CreateMeetingDialog({
               <Input
                 value={meetingUrl}
                 onChange={(e) => setMeetingUrl(e.target.value)}
-                placeholder="https://..."
-                className="h-11"
+                placeholder="https://..."                
               />
             </div>
           )}
@@ -1097,8 +1095,7 @@ export function CreateMeetingDialog({
                 <Input
                   value={newEmail}
                   onChange={(e) => setNewEmail(e.target.value)}
-                  placeholder="email@example.com"
-                  className="h-11"
+                  placeholder="email@example.com"                  
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       e.preventDefault();
@@ -1110,7 +1107,7 @@ export function CreateMeetingDialog({
                   type="button"
                   variant="outline"
                   onClick={handleAddEmail}
-                  className="h-11 w-11"
+                  className="h-9 w-9 p-0 shrink-0"
                 >
                   <Plus className="h-4 w-4" />
                 </Button>
@@ -1166,11 +1163,11 @@ export function CreateMeetingDialog({
 
           {/* Related Entity */}
           {!initialEntityId && (
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-2 md:grid-cols-2 mb-2">
               <div className="space-y-2">
                 <Label className="font-medium">Related To</Label>
                 <Select value={entityType} onValueChange={setEntityType}>
-                  <SelectTrigger className="h-11">
+                  <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -1187,7 +1184,7 @@ export function CreateMeetingDialog({
                   value={entityId || undefined}
                   onValueChange={setEntityId}
                 >
-                  <SelectTrigger className="h-11">
+                  <SelectTrigger>
                     <SelectValue placeholder="Select entity" />
                   </SelectTrigger>
                   <SelectContent>
@@ -1232,9 +1229,8 @@ export function CreateMeetingDialog({
           )}
         </div>
 
-        {/* Footer */}
-        <div className="bg-background sticky bottom-0 flex items-center justify-between border-t px-6 py-4">
-          <Button variant="ghost" onClick={handleClose}>
+        <DialogFooter className="bg-background sticky bottom-0 z-10">
+          <Button variant="outline" onClick={handleClose}>
             Cancel
           </Button>
           <Button
@@ -1251,7 +1247,7 @@ export function CreateMeetingDialog({
                   ? 'Log Meeting'
                   : 'Create Meeting'}
           </Button>
-        </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
@@ -1696,8 +1692,8 @@ export function EditMeetingDialog({
             </div>
           </div>
         </div>
-        <div className="bg-background sticky bottom-0 flex items-center justify-between border-t px-6 py-4">
-          <Button variant="ghost" onClick={handleClose}>
+        <DialogFooter className="bg-background sticky bottom-0 z-10">
+          <Button variant="outline" onClick={handleClose}>
             Cancel
           </Button>
           <Button
@@ -1710,7 +1706,7 @@ export function EditMeetingDialog({
             )}
             Save Changes
           </Button>
-        </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
@@ -2738,7 +2734,7 @@ export default function MeetingsPage() {
                               )}
                             </TableCell>
                           )}
-                          <TableCell className="bg-card sticky right-0 px-4 py-0 text-right">
+                          <TableCell className="sticky right-0 px-4 py-0 text-right">
                             <DropdownMenu>
                               <DropdownMenuTrigger
                                 asChild

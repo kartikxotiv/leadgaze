@@ -1203,7 +1203,7 @@ export default function AccountsPage() {
                           </TableCell>
                         ) : null,
                       )}
-                      <TableCell className="bg-card group sticky right-0 px-4 text-right">
+                      <TableCell className="group sticky right-0 px-4 text-right">
                         <div className="flex items-center justify-end gap-2">
                           <EntityActionsDropdown
                             id={account.id}

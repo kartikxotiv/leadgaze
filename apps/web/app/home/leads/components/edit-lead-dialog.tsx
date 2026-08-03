@@ -296,7 +296,7 @@ export default function EditLeadDialog({
               Edit Lead
             </DialogTitle>
             <DialogDescription>
-              Update the lead information.
+              Update the lead information
             </DialogDescription>
           </DialogHeader>
 
@@ -443,7 +443,7 @@ export default function EditLeadDialog({
                   <FieldGuard fieldKey="industry" canEdit={canEdit}>
                     <div>
                       <Label htmlFor="industry_id">Industry (Optional)</Label>
-                      <div className="mt-2">
+                      <div>
                         <IndustrySelect
                           value={formData.industry_id}
                           onValueChange={(value) => handleInputChange('industry_id', value)}
@@ -461,7 +461,7 @@ export default function EditLeadDialog({
                         onValueChange={(value) => handleInputChange('company_size', value)}
                         disabled={isLoading}
                       >
-                        <SelectTrigger className="mt-2 border-gray-300 bg-white text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+                        <SelectTrigger className="border-gray-300 bg-white text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white">
                           <SelectValue placeholder="Select company size" />
                         </SelectTrigger>
                         <SelectContent className="z-50 border-gray-300 bg-white dark:border-slate-700 dark:bg-slate-900">
@@ -576,7 +576,7 @@ export default function EditLeadDialog({
                     <Label htmlFor="status_id">
                       Status <span className="text-red-500">*</span>
                     </Label>
-                    <div className="mt-2">
+                    <div>
                       <ManageableStatusSelect
                         moduleKey="leads"
                         workspaceId={workspace?.id ?? ''}
@@ -590,7 +590,7 @@ export default function EditLeadDialog({
                   <FieldGuard fieldKey="source" canEdit={canEdit}>
                     <div>
                       <Label htmlFor="source_id">Lead Source (Optional)</Label>
-                      <div className="mt-2">
+                      <div>
                         <LeadSourceSelect
                           value={formData.source_id}
                           onValueChange={(value) => handleInputChange('source_id', value)}
@@ -653,7 +653,7 @@ export default function EditLeadDialog({
                       value={formData.notes}
                       onChange={(e) => handleInputChange('notes', e.target.value)}
                       disabled={isLoading}
-                      className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
+                      className="border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
                       rows={4}
                     />
                   </div>

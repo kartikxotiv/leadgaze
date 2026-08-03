@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type React from 'react';
 
 import { useQuery } from '@tanstack/react-query';
-import { Edit2, Loader2, Plus, Trash2 } from 'lucide-react';
+import { Edit2, Loader2, Plus, Trash2, MoreVertical } from 'lucide-react';
 import { toast } from 'sonner';
 
 import {
@@ -19,6 +19,12 @@ import {
 } from '@kit/ui/alert-dialog';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@kit/ui/dropdown-menu';
 import { ColumnHeader } from '@kit/ui/column-header';
 import CustomTableContainer from '@kit/ui/custom-table-container';
 import {
@@ -747,25 +753,35 @@ export function ServiceCloudResourcePage({
                       ))}
                       {canEdit || canDelete ? (
                         <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            {canEdit ? (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => openEdit(record)}
-                              >
-                                <Edit2 className="h-4 w-4" />
-                              </Button>
-                            ) : null}
-                            {canDelete ? (
-                              <Button
-                                variant="ghost"
-                                size="sm"                                
-                                onClick={() => setDeletingRecord(record)}
-                              >
-                                <Trash2 className="text-muted-foreground h-4 w-4" />
-                              </Button>
-                            ) : null}
+                          <div className="flex items-center justify-end">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  className="h-8 w-8 border-0 p-0 focus:outline-none focus-visible:ring-0 focus-visible:outline-none focus-visible:ring-offset-0"
+                                >
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                {canEdit && (
+                                  <DropdownMenuItem
+                                    onClick={() => openEdit(record)}
+                                    className="gap-2 cursor-pointer"
+                                  >
+                                    <Edit2 className="h-4 w-4" /> Edit
+                                  </DropdownMenuItem>
+                                )}
+                                {canDelete && (
+                                  <DropdownMenuItem
+                                    onClick={() => setDeletingRecord(record)}
+                                    className="text-destructive focus:text-destructive cursor-pointer gap-2"
+                                  >
+                                    <Trash2 className="h-4 w-4" /> Delete
+                                  </DropdownMenuItem>
+                                )}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           </div>
                         </TableCell>
                       ) : null}

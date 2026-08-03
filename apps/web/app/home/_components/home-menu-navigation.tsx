@@ -1209,15 +1209,15 @@ export function HomeMenuNavigation() {
                 </button>
               </DialogTrigger>
 
-              <DialogContent className="flex max-h-[90vh] max-w-4xl flex-col overflow-hidden rounded-lg border border-zinc-200 bg-white p-0 shadow-2xl dark:border-zinc-800 dark:bg-zinc-950">
+              <DialogContent className="flex max-h-[90vh] max-w-4xl flex-col overflow-hidden border border-zinc-200 bg-white p-0 shadow-2xl dark:border-zinc-800 dark:bg-zinc-950">
                 <DialogHeader>
                   <DialogTitle className="flex items-center gap-2">
-                    <Grip className="h-[14px] w-[14px] text-blue-600" />
+                    <Grip className="h-[14px] w-[14px] text-white" />
                     App Launcher
                   </DialogTitle>
                 </DialogHeader>
 
-                <div className="overflow-y-auto p-6">
+                <div className="overflow-y-auto p-4 pt-2">
                   {isProductsLoading ? (
                     <div className="py-8 text-center">
                       <Loader2 className="mx-auto h-5 w-5 animate-spin text-zinc-400" />
