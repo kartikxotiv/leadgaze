@@ -212,10 +212,12 @@ export default function NotesPage() {
 
   const { getHeaderProps, getResizeHandleProps } = useColumnResize('notes');
 
-  const { data: notes = [], isLoading } = useQuery({
+  const { data: notesResponse, isLoading } = useQuery({
     queryKey: [
       'notes',
       workspace?.id,
+      currentPage,
+      pageSize,
       statusFilter,
       categoryFilter,
       debouncedSearchTerm,
@@ -224,13 +226,15 @@ export default function NotesPage() {
       computedUpdatedOnDates,
     ],
     queryFn: async () => {
-      if (!workspace?.id) return [];
+      if (!workspace?.id) return { data: [], total: 0 };
       const res = await getNotesService(
         workspace.id,
         categoryFilter === 'all' ? undefined : categoryFilter,
         undefined,
         statusFilter,
         {
+          page: currentPage,
+          limit: pageSize,
           searchTerm: debouncedSearchTerm || undefined,
           createdAtFrom: computedCreatedOnDates?.from,
           createdAtTo: computedCreatedOnDates?.to,
@@ -244,6 +248,16 @@ export default function NotesPage() {
     },
     enabled: !!workspace?.id,
   });
+
+  const notes = useMemo(() => {
+    if (Array.isArray(notesResponse)) return notesResponse;
+    return notesResponse?.data || [];
+  }, [notesResponse]);
+
+  const totalCount = useMemo(() => {
+    if (Array.isArray(notesResponse)) return notesResponse.length;
+    return notesResponse?.total ?? notes.length;
+  }, [notesResponse, notes]);
 
   const { data: leads = [] } = useQuery({
     queryKey: ['leads', workspace?.id],
@@ -303,7 +317,7 @@ export default function NotesPage() {
       setNewNoteContent('');
       setEntityType('lead');
       setEntityId('');
-      queryClient.invalidateQueries({ queryKey: ['notes', workspace?.id] });
+      queryClient.invalidateQueries({ queryKey: ['notes'] });
     },
     onError: () => toast.error('Failed to add note'),
   });
@@ -326,7 +340,7 @@ export default function NotesPage() {
       }
       setIsEditDialogOpen(false);
       setEditingNote(null);
-      queryClient.invalidateQueries({ queryKey: ['notes', workspace?.id] });
+      queryClient.invalidateQueries({ queryKey: ['notes'] });
     },
     onError: () => toast.error('Failed to update note'),
   });
@@ -335,7 +349,7 @@ export default function NotesPage() {
     mutationFn: deleteNoteService,
     onSuccess: () => {
       toast.success('Note deleted');
-      queryClient.invalidateQueries({ queryKey: ['notes', workspace?.id] });
+      queryClient.invalidateQueries({ queryKey: ['notes'] });
     },
     onError: () => toast.error('Failed to delete note'),
   });
@@ -344,22 +358,14 @@ export default function NotesPage() {
     setCurrentPage(1);
   }, [debouncedSearchTerm, categoryFilter, selectedCreatedByIds, pageSize, createdOnRange, updatedOnRange]);
 
-  const filteredNotes = useMemo(() => {
-    return notes;
-  }, [notes]);
-
   const { sortColumn, sortDirection, toggleSort, sortedData } =
-    useTableSort<Note>('notes', filteredNotes, {
+    useTableSort<Note>('notes', notes, {
       onSortChange: () => setCurrentPage(1),
     });
 
-  const paginatedNotes = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage;
-    return sortedData.slice(start, start + itemsPerPage);
-  }, [sortedData, currentPage, itemsPerPage]);
+  const paginatedNotes = sortedData;
 
-  const totalPages = Math.ceil(filteredNotes.length / itemsPerPage);
-  const totalCount = filteredNotes.length;
+  const totalPages = Math.ceil(totalCount / itemsPerPage) || 1;
 
   const handleEdit = (note: Note) => {
     setEditingNote(note);

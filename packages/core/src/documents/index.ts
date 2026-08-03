@@ -1,2 +1,2 @@
-export { CoreEntityPanel } from '../pages';
-
+export * from './documents.types';
+export * from './documents.service';

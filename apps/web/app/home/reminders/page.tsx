@@ -228,10 +228,12 @@ export default function RemindersPage() {
 
   const { getHeaderProps, getResizeHandleProps } = useColumnResize('reminders');
 
-  const { data: reminders = [], isLoading } = useQuery({
+  const { data: remindersResponse, isLoading } = useQuery({
     queryKey: [
       'reminders',
       workspace?.id,
+      currentPage,
+      pageSize,
       statusFilter,
       priorityFilter,
       debouncedSearchTerm,
@@ -240,7 +242,7 @@ export default function RemindersPage() {
       computedUpdatedOnDates,
     ],
     queryFn: () => {
-      if (!workspace?.id) return [];
+      if (!workspace?.id) return { data: [], total: 0 };
       const apiStatus =
         statusFilter === 'completed'
           ? 'completed'
@@ -248,6 +250,8 @@ export default function RemindersPage() {
             ? 'active'
             : undefined;
       return getRemindersService(workspace.id, undefined, undefined, {
+        page: currentPage,
+        limit: pageSize,
         status: apiStatus,
         priority: priorityFilter === 'all' ? undefined : priorityFilter,
         searchTerm: debouncedSearchTerm || undefined,
@@ -260,6 +264,16 @@ export default function RemindersPage() {
     },
     enabled: !!workspace?.id,
   });
+
+  const reminders = useMemo(() => {
+    if (Array.isArray(remindersResponse)) return remindersResponse;
+    return remindersResponse?.data || [];
+  }, [remindersResponse]);
+
+  const totalCount = useMemo(() => {
+    if (Array.isArray(remindersResponse)) return remindersResponse.length;
+    return remindersResponse?.total ?? reminders.length;
+  }, [remindersResponse, reminders]);
 
   const { data: leads = [] } = useQuery({
     queryKey: ['leads', workspace?.id],
@@ -302,16 +316,16 @@ export default function RemindersPage() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (payload: any) =>
+    mutationFn: (data: typeof formData) =>
       createReminderService({
         workspace_id: workspace!.id,
-        entity_type: payload.entity_type,
-        entity_id: payload.entityId,
-        title: payload.title,
-        description: payload.description,
-        priority: payload.priority,
-        due_date: payload.due_date
-          ? new Date(payload.due_date).toISOString()
+        entity_type: data.entity_type,
+        entity_id: data.entityId,
+        title: data.title,
+        description: data.description,
+        priority: data.priority,
+        due_date: data.due_date
+          ? new Date(data.due_date).toISOString()
           : undefined,
       }),
     onSuccess: () => {
@@ -325,28 +339,28 @@ export default function RemindersPage() {
         entity_type: 'lead',
         entityId: '',
       });
-      queryClient.invalidateQueries({ queryKey: ['reminders', workspace?.id] });
+      queryClient.invalidateQueries({ queryKey: ['reminders'] });
     },
     onError: () => toast.error('Failed to add reminder'),
   });
 
   const updateMutation = useMutation({
-    mutationFn: (payload: any) =>
-      updateReminderService(editingReminder!.id, payload),
+    mutationFn: ({ id, ...payload }: { id: string; [key: string]: any }) =>
+      updateReminderService(id, payload),
     onSuccess: () => {
       toast.success('Reminder updated');
       setIsEditDialogOpen(false);
       setEditingReminder(null);
-      queryClient.invalidateQueries({ queryKey: ['reminders', workspace?.id] });
+      queryClient.invalidateQueries({ queryKey: ['reminders'] });
     },
     onError: () => toast.error('Failed to update reminder'),
   });
 
   const deleteMutation = useMutation({
-    mutationFn: deleteReminderService,
+    mutationFn: (id: string) => deleteReminderService(id),
     onSuccess: () => {
       toast.success('Reminder deleted');
-      queryClient.invalidateQueries({ queryKey: ['reminders', workspace?.id] });
+      queryClient.invalidateQueries({ queryKey: ['reminders'] });
     },
     onError: () => toast.error('Failed to delete reminder'),
   });
@@ -372,13 +386,9 @@ export default function RemindersPage() {
       onSortChange: () => setCurrentPage(1),
     });
 
-  const paginatedReminders = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage;
-    return sortedData.slice(start, start + itemsPerPage);
-  }, [sortedData, currentPage, itemsPerPage]);
+  const paginatedReminders = sortedData;
 
-  const totalPages = Math.ceil(filteredReminders.length / itemsPerPage);
-  const totalCount = filteredReminders.length;
+  const totalPages = Math.ceil(totalCount / itemsPerPage) || 1;
 
   const handleCreate = () => {
     if (!formData.title.trim() || !formData.entityId || !formData.due_date)

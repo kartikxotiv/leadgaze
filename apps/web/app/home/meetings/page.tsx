@@ -2135,10 +2135,12 @@ export default function MeetingsPage() {
   // Fetch team members (for Created By filter dropdown)
   const { members } = usePackageMembers();
 
-  const { data: meetings = [], isLoading } = useQuery({
+  const { data: meetingsResponse, isLoading } = useQuery({
     queryKey: [
       'meetings',
       workspace?.id,
+      currentPage,
+      pageSize,
       viewFilter,
       debouncedSearchTerm,
       selectedStatuses,
@@ -2148,8 +2150,7 @@ export default function MeetingsPage() {
       computedUpdatedOnDates,
     ],
     queryFn: () => {
-      if (!workspace?.id) return [];
-      // Include meetings where current user is a participant or host
+      if (!workspace?.id) return { data: [], total: 0 };
       return getMeetingsService(
         workspace.id,
         undefined,
@@ -2159,6 +2160,8 @@ export default function MeetingsPage() {
         undefined,
         viewFilter,
         {
+          page: currentPage,
+          limit: pageSize,
           createdAtFrom: computedCreatedOnDates?.from ?? undefined,
           createdAtTo: computedCreatedOnDates?.to ?? undefined,
           updatedAtFrom: computedUpdatedOnDates?.from ?? undefined,
@@ -2173,6 +2176,18 @@ export default function MeetingsPage() {
     enabled: !!workspace?.id,
   });
 
+  const meetings = useMemo(() => {
+    if (!meetingsResponse) return [];
+    if (Array.isArray(meetingsResponse)) return meetingsResponse;
+    return meetingsResponse?.data || [];
+  }, [meetingsResponse]);
+
+  const totalCount = useMemo(() => {
+    if (!meetingsResponse) return 0;
+    if (Array.isArray(meetingsResponse)) return meetingsResponse.length;
+    return (meetingsResponse as any)?.total ?? meetings.length;
+  }, [meetingsResponse, meetings]);
+
   const meetingViewStatuses = useMemo(
     () => [
       { id: 'team', status_name: "Team Members' Meetings", color: '#3b82f6' },
@@ -2182,9 +2197,9 @@ export default function MeetingsPage() {
 
   const meetingViewBreakdown = useMemo(() => {
     return {
-      team: { count: viewFilter === 'team' ? meetings.length : 0 },
+      team: { count: viewFilter === 'team' ? totalCount : 0 },
     };
-  }, [meetings, viewFilter]);
+  }, [totalCount, viewFilter]);
 
   const { data: integrationAccounts = [] } = useQuery({
     queryKey: ['integration-accounts', workspace?.id],
@@ -2238,7 +2253,7 @@ export default function MeetingsPage() {
       toast.success('Meeting deleted');
       setIsDetailsOpen(false);
       setSelectedMeeting(null);
-      queryClient.invalidateQueries({ queryKey: ['meetings', workspace?.id] });
+      queryClient.invalidateQueries({ queryKey: ['meetings'] });
     },
     onError: () => toast.error('Failed to delete meeting'),
   });
@@ -2247,7 +2262,7 @@ export default function MeetingsPage() {
     mutationFn: (id: string) => cancelMeetingService(workspace!.id, id),
     onSuccess: () => {
       toast.success('Meeting cancelled');
-      queryClient.invalidateQueries({ queryKey: ['meetings', workspace?.id] });
+      queryClient.invalidateQueries({ queryKey: ['meetings'] });
     },
     onError: () => toast.error('Failed to cancel meeting'),
   });
@@ -2273,13 +2288,9 @@ export default function MeetingsPage() {
       onSortChange: () => setCurrentPage(1),
     });
 
-  const paginatedMeetings = useMemo(() => {
-    const start = (currentPage - 1) * pageSize;
-    return sortedData.slice(start, start + pageSize);
-  }, [sortedData, currentPage, pageSize]);
+  const paginatedMeetings = sortedData;
 
-  const totalPages = Math.ceil(filteredMeetings.length / pageSize);
-  const totalCount = filteredMeetings.length;
+  const totalPages = Math.ceil(totalCount / pageSize) || 1;
 
   const statusBreakdown = useMemo(() => {
     const breakdown: Record<string, number> = {};

@@ -26,6 +26,8 @@ function toUiEntityType(type: string): string {
   return type;
 }
 
+import { DocumentsService } from '@kit/core';
+
 /**
  * GET /api/documents
  * Fetch documents for an entity
@@ -53,6 +55,11 @@ export const getDocuments = catchAsync(
     const updatedAtFrom = url.searchParams.get('updatedAtFrom') || '';
     const updatedAtTo = url.searchParams.get('updatedAtTo') || '';
 
+    const pageParam = url.searchParams.get('page');
+    const limitParam = url.searchParams.get('limit');
+    const page = pageParam ? parseInt(pageParam, 10) : null;
+    const limit = limitParam ? parseInt(limitParam, 10) : null;
+
     if (!workspaceId) {
       return NextResponse.json(
         { message: 'workspaceId is required' },
@@ -78,237 +85,61 @@ export const getDocuments = catchAsync(
 
     const isWorkspaceOwner = workspace?.owner_id === user.id;
 
-    let dbDocuments: any[] = [];
+    const documentsService = new DocumentsService(supabase);
+    const result = await documentsService.getDocuments({
+      workspaceId,
+      entityType,
+      entityId,
+      type,
+      searchTerm,
+      createdByIds,
+      createdAtFrom,
+      createdAtTo,
+      updatedAtFrom,
+      updatedAtTo,
+      isWorkspaceOwner,
+      userId: user.id,
+      page,
+      limit,
+    });
 
-    if (entityType && entityId) {
-      // Get all related entity IDs (includes lead conversion chain)
-      const entityIds = await getRelatedEntityIds(supabase, entityType, entityId);
+    const rawList = Array.isArray(result) ? result : (result.data || []);
+    const formattedDocuments = rawList.map((document: any) => ({
+      id: document.id,
+      workspace_id: document.workspace_id,
+      name: document.name,
+      description: document.description,
+      file_path: document.file_path,
+      file_url: document.file_url,
+      file_type: document.file_type,
+      size_bytes: Number(document.file_size || document.size_bytes || 0),
+      category: document.category,
+      is_deleted: document.is_deleted,
+      deleted_at: document.deleted_at,
+      created_by: document.created_by,
+      created_at: document.created_at,
+      updated_at: document.updated_at,
+      created_by_user: document.created_by_user
+        ? { name: document.created_by_user.name || null, email: document.created_by_user.email || null }
+        : null,
+      entity_type: document.entity_type || entityType || 'lead',
+      entity_id: document.entity_id || entityId || '',
+      entity_name: document.entity_name || '',
+    }));
 
-      // Build query - fetch documents for all related entities
-      const documentPromises = entityIds.map(async ({ entity_type, entity_id }) => {
-        const dbType = toDbEntityType(entity_type);
-        // Find relations first
-        const { data: relations } = await supabase
-          .schema('core')
-          .from('document_relations')
-          .select('document_id')
-          .eq('workspace_id', workspaceId)
-          .eq('entity_type', dbType)
-          .eq('entity_id', entity_id);
-
-        if (!relations || relations.length === 0) return [];
-
-        const documentIds = relations.map((r) => r.document_id);
-
-        let query = supabase
-          .schema('core')
-          .from('documents')
-          .select('*')
-          .in('id', documentIds)
-          .eq('workspace_id', workspaceId)
-          .eq('is_deleted', false);
-
-        if (!isWorkspaceOwner) {
-          query = query.eq('created_by', user.id);
-        }
-
-        if (type && type !== 'all') {
-          if (type === 'pdf') {
-            query = query.ilike('file_type', '%pdf%');
-          } else if (type === 'image') {
-            query = query.or('file_type.ilike.%image%,file_type.ilike.%png%,file_type.ilike.%jpg%,file_type.ilike.%jpeg%');
-          } else if (type === 'sheet') {
-            query = query.or('file_type.ilike.%sheet%,file_type.ilike.%excel%,file_type.ilike.%xlsx%,file_type.ilike.%xls%,file_type.ilike.%csv%');
-          } else if (type === 'document') {
-            query = query.not('file_type', 'ilike', '%pdf%')
-                         .not('file_type', 'ilike', '%image%')
-                         .not('file_type', 'ilike', '%png%')
-                         .not('file_type', 'ilike', '%jpg%')
-                         .not('file_type', 'ilike', '%jpeg%')
-                         .not('file_type', 'ilike', '%sheet%')
-                         .not('file_type', 'ilike', '%excel%')
-                         .not('file_type', 'ilike', '%xlsx%')
-                         .not('file_type', 'ilike', '%xls%')
-                         .not('file_type', 'ilike', '%csv%');
-          }
-        }
-        if (createdByIds && createdByIds !== 'all') {
-          const ids = createdByIds.split(',').map((id) => id.trim()).filter(Boolean);
-          if (ids.length > 0) {
-            query = query.in('created_by', ids);
-          }
-        }
-        if (searchTerm) {
-          query = query.or(`name.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`);
-        }
-        if (createdAtFrom) query = query.gte('created_at', (createdAtFrom.includes('T') ? createdAtFrom : `${createdAtFrom}T00:00:00.000Z`));
-        if (createdAtTo) query = query.lte('created_at', (createdAtTo.includes('T') ? createdAtTo : `${createdAtTo}T23:59:59.999Z`));
-        if (updatedAtFrom) query = query.gte('updated_at', (updatedAtFrom.includes('T') ? updatedAtFrom : `${updatedAtFrom}T00:00:00.000Z`));
-        if (updatedAtTo) query = query.lte('updated_at', (updatedAtTo.includes('T') ? updatedAtTo : `${updatedAtTo}T23:59:59.999Z`));
-
-        const { data } = await query;
-        return data || [];
+    if (pageParam || limitParam) {
+      return NextResponse.json({
+        success: true,
+        data: formattedDocuments,
+        count: result.total ?? formattedDocuments.length,
+        total: result.total ?? formattedDocuments.length,
+        page: result.page ?? 1,
+        limit: result.limit ?? formattedDocuments.length,
+        has_more: result.has_more ?? false,
       });
-
-      const results = await Promise.all(documentPromises);
-      const allDocuments = results.flat();
-      dbDocuments = Array.from(
-        new Map(allDocuments.map((doc) => [doc.id, doc])).values(),
-      );
-    } else {
-      // Fetch all documents for the workspace
-      let query = supabase
-        .schema('core')
-        .from('documents')
-        .select('*')
-        .eq('workspace_id', workspaceId)
-        .eq('is_deleted', false);
-
-      if (!isWorkspaceOwner) {
-        query = query.eq('created_by', user.id);
-      }
-
-      if (entityType) {
-        const dbType = toDbEntityType(entityType);
-        const { data: relations } = await supabase
-          .schema('core')
-          .from('document_relations')
-          .select('document_id')
-          .eq('workspace_id', workspaceId)
-          .eq('entity_type', dbType);
-        const documentIds = Array.from(new Set(relations?.map((r) => r.document_id) || []));
-        if (documentIds.length === 0) {
-          query = query.in('id', ['00000000-0000-0000-0000-000000000000']);
-        } else {
-          query = query.in('id', documentIds);
-        }
-      }
-
-      if (type && type !== 'all') {
-        if (type === 'pdf') {
-          query = query.ilike('file_type', '%pdf%');
-        } else if (type === 'image') {
-          query = query.or('file_type.ilike.%image%,file_type.ilike.%png%,file_type.ilike.%jpg%,file_type.ilike.%jpeg%');
-        } else if (type === 'sheet') {
-          query = query.or('file_type.ilike.%sheet%,file_type.ilike.%excel%,file_type.ilike.%xlsx%,file_type.ilike.%xls%,file_type.ilike.%csv%');
-        } else if (type === 'document') {
-          query = query.not('file_type', 'ilike', '%pdf%')
-                       .not('file_type', 'ilike', '%image%')
-                       .not('file_type', 'ilike', '%png%')
-                       .not('file_type', 'ilike', '%jpg%')
-                       .not('file_type', 'ilike', '%jpeg%')
-                       .not('file_type', 'ilike', '%sheet%')
-                       .not('file_type', 'ilike', '%excel%')
-                       .not('file_type', 'ilike', '%xlsx%')
-                       .not('file_type', 'ilike', '%xls%')
-                       .not('file_type', 'ilike', '%csv%');
-        }
-      }
-      if (createdByIds && createdByIds !== 'all') {
-        const ids = createdByIds.split(',').map((id) => id.trim()).filter(Boolean);
-        if (ids.length > 0) {
-          query = query.in('created_by', ids);
-        }
-      }
-      if (searchTerm) {
-        query = query.or(`name.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`);
-      }
-      if (createdAtFrom) query = query.gte('created_at', (createdAtFrom.includes('T') ? createdAtFrom : `${createdAtFrom}T00:00:00.000Z`));
-      if (createdAtTo) query = query.lte('created_at', (createdAtTo.includes('T') ? createdAtTo : `${createdAtTo}T23:59:59.999Z`));
-      if (updatedAtFrom) query = query.gte('updated_at', (updatedAtFrom.includes('T') ? updatedAtFrom : `${updatedAtFrom}T00:00:00.000Z`));
-      if (updatedAtTo) query = query.lte('updated_at', (updatedAtTo.includes('T') ? updatedAtTo : `${updatedAtTo}T23:59:59.999Z`));
-
-      const { data, error } = await query;
-      if (error) throw error;
-      dbDocuments = data || [];
     }
 
-    // Sort by created_at descending
-    dbDocuments.sort(
-      (a, b) =>
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-    );
-
-    // Fetch user details for creator in JS to prevent PostgREST cross-schema join errors
-    const userIds = Array.from(
-      new Set(
-        dbDocuments
-          .map((d) => d.created_by)
-          .filter(Boolean),
-      ),
-    );
-
-    let usersMap: Record<string, { name: string | null; email: string | null }> = {};
-    if (userIds.length > 0) {
-      const { data: accounts } = await supabase
-        .from('accounts')
-        .select('id, name, email')
-        .in('id', userIds);
-
-      if (accounts) {
-        accounts.forEach((acc) => {
-          usersMap[acc.id] = { name: acc.name, email: acc.email };
-        });
-      }
-    }
-
-    // Resolve relations to get entity information
-    const docIds = dbDocuments.map((d) => d.id);
-    let relationsMap: Record<string, { entity_type: string; entity_id: string }> = {};
-    if (docIds.length > 0) {
-      const { data: relations } = await supabase
-        .schema('core')
-        .from('document_relations')
-        .select('document_id, entity_type, entity_id')
-        .in('document_id', docIds);
-
-      if (relations) {
-        relations.forEach((rel) => {
-          relationsMap[rel.document_id] = {
-            entity_type: toUiEntityType(rel.entity_type),
-            entity_id: rel.entity_id,
-          };
-        });
-      }
-    }
-
-    // Add entity names to each document and map response format
-    const documentsWithEntityNames = await Promise.all(
-      dbDocuments.map(async (document) => {
-        const relation = relationsMap[document.id];
-        const currentEntityType = relation?.entity_type || entityType || 'lead';
-        const currentEntityId = relation?.entity_id || entityId || '';
-
-        const entityName = await getEntityName(
-          supabase,
-          currentEntityType,
-          currentEntityId,
-        );
-
-        return {
-          id: document.id,
-          workspace_id: document.workspace_id,
-          name: document.name,
-          description: document.description,
-          file_path: document.file_path,
-          file_url: document.file_url,
-          file_type: document.file_type,
-          size_bytes: Number(document.file_size || 0),
-          category: document.category,
-          is_deleted: document.is_deleted,
-          deleted_at: document.deleted_at,
-          created_by: document.created_by,
-          created_at: document.created_at,
-          updated_at: document.updated_at,
-          created_by_user: document.created_by ? usersMap[document.created_by] || null : null,
-          entity_type: currentEntityType,
-          entity_id: currentEntityId,
-          entity_name: entityName,
-        };
-      }),
-    );
-
-    return successDataResponse('Documents retrieved', documentsWithEntityNames || []);
+    return successDataResponse('Documents retrieved', formattedDocuments || []);
   },
 );
 

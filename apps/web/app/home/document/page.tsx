@@ -217,10 +217,12 @@ export default function DocumentPage() {
 
   const { getHeaderProps, getResizeHandleProps } = useColumnResize('documents');
 
-  const { data: documents = [], isLoading } = useQuery({
+  const { data: documentsResponse, isLoading } = useQuery({
     queryKey: [
       'documents',
       workspace?.id,
+      currentPage,
+      pageSize,
       typeFilter,
       entityTypeFilter,
       debouncedSearchTerm,
@@ -229,12 +231,14 @@ export default function DocumentPage() {
       computedUpdatedOnDates,
     ],
     queryFn: () => {
-      if (!workspace?.id) return [];
+      if (!workspace?.id) return { data: [], total: 0 };
       return getDocumentsService(
         workspace.id,
         entityTypeFilter === 'all' ? undefined : entityTypeFilter,
         undefined,
         {
+          page: currentPage,
+          limit: pageSize,
           type: typeFilter === 'all' ? undefined : typeFilter,
           searchTerm: debouncedSearchTerm || undefined,
           createdAtFrom: computedCreatedOnDates?.from,
@@ -247,6 +251,18 @@ export default function DocumentPage() {
     },
     enabled: !!workspace?.id,
   });
+
+  const documents = useMemo(() => {
+    if (!documentsResponse) return [];
+    if (Array.isArray(documentsResponse)) return documentsResponse;
+    return documentsResponse?.data || [];
+  }, [documentsResponse]);
+
+  const totalCount = useMemo(() => {
+    if (!documentsResponse) return 0;
+    if (Array.isArray(documentsResponse)) return documentsResponse.length;
+    return (documentsResponse as any)?.total ?? documents.length;
+  }, [documentsResponse, documents]);
 
   const { data: leads = [] } = useQuery({
     queryKey: ['leads', workspace?.id],
@@ -306,19 +322,19 @@ export default function DocumentPage() {
       setFile(null);
       setEntityType('lead');
       setEntityId('');
-      queryClient.invalidateQueries({ queryKey: ['documents', workspace?.id] });
+      queryClient.invalidateQueries({ queryKey: ['documents'] });
     },
     onError: () => toast.error('Failed to upload document'),
   });
 
   const updateMutation = useMutation({
-    mutationFn: (name: string) =>
-      updateDocumentService(editingDoc!.id, { name }),
+    mutationFn: ({ id, name }: { id: string; name: string }) =>
+      updateDocumentService(id, { name }),
     onSuccess: () => {
       toast.success('Document renamed');
       setIsEditDialogOpen(false);
       setEditingDoc(null);
-      queryClient.invalidateQueries({ queryKey: ['documents', workspace?.id] });
+      queryClient.invalidateQueries({ queryKey: ['documents'] });
     },
     onError: () => toast.error('Failed to rename document'),
   });
@@ -327,7 +343,7 @@ export default function DocumentPage() {
     mutationFn: deleteDocumentService,
     onSuccess: () => {
       toast.success('Document deleted');
-      queryClient.invalidateQueries({ queryKey: ['documents', workspace?.id] });
+      queryClient.invalidateQueries({ queryKey: ['documents'] });
     },
     onError: () => toast.error('Failed to delete document'),
   });
@@ -343,6 +359,41 @@ export default function DocumentPage() {
     createdOnRange,
     updatedOnRange,
   ]);
+
+  const { sortColumn, sortDirection, toggleSort, sortedData } =
+    useTableSort<Document>('documents', documents, {
+      onSortChange: () => setCurrentPage(1),
+    });
+
+  const paginatedDocs = sortedData;
+
+  const totalPages = Math.ceil(totalCount / itemsPerPage) || 1;
+
+  const handleUpload = () => {
+    if (!file || !entityId) return;
+    createMutation.mutate({
+      file,
+      entity_type: entityType,
+      entity_id: entityId,
+    });
+  };
+
+  const handleEdit = (doc: Document) => {
+    setEditingDoc(doc);
+    setNewName(doc.name);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleSave = () => {
+    if (!editingDoc || !newName.trim()) return;
+    updateMutation.mutate({ id: editingDoc.id, name: newName });
+  };
+
+  const handleDelete = (id: string) => {
+    if (confirm('Are you sure you want to delete this document?')) {
+      deleteMutation.mutate(id);
+    }
+  };
 
   const getFileTypeCategory = (fileType: string): string => {
     const t = (fileType || '').toLowerCase();
@@ -363,49 +414,6 @@ export default function DocumentPage() {
     )
       return 'sheet';
     return 'document';
-  };
-
-  const filteredDocuments = useMemo(() => {
-    return documents;
-  }, [documents]);
-
-  const { sortColumn, sortDirection, toggleSort, sortedData } =
-    useTableSort<Document>('documents', filteredDocuments, {
-      onSortChange: () => setCurrentPage(1),
-    });
-
-  const paginatedDocs = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage;
-    return sortedData.slice(start, start + itemsPerPage);
-  }, [sortedData, currentPage, itemsPerPage]);
-
-  const totalPages = Math.ceil(filteredDocuments.length / itemsPerPage);
-  const totalCount = filteredDocuments.length;
-
-  const handleUpload = () => {
-    if (!file || !entityId) return;
-    createMutation.mutate({
-      file,
-      entity_type: entityType,
-      entity_id: entityId,
-    });
-  };
-
-  const handleEdit = (doc: Document) => {
-    setEditingDoc(doc);
-    setNewName(doc.name);
-    setIsEditDialogOpen(true);
-  };
-
-  const handleSave = () => {
-    if (!editingDoc || !newName.trim()) return;
-    updateMutation.mutate(newName);
-  };
-
-  const handleDelete = (id: string) => {
-    if (confirm('Are you sure you want to delete this document?')) {
-      deleteMutation.mutate(id);
-    }
   };
 
   const getFileIcon = (type: string) => {

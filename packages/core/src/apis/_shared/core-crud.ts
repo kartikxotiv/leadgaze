@@ -122,6 +122,10 @@ export function createCoreControllers(config: CoreResourceConfig) {
     const createdAtTo = url.searchParams.get('createdAtTo');
     const updatedAtFrom = url.searchParams.get('updatedAtFrom');
     const updatedAtTo = url.searchParams.get('updatedAtTo');
+    const pageParam = url.searchParams.get('page');
+    const limitParam = url.searchParams.get('limit');
+    const page = pageParam ? parseInt(pageParam, 10) : null;
+    const limit = limitParam ? parseInt(limitParam, 10) : null;
 
     if (!workspaceId) {
       return NextResponse.json({ success: false, message: 'workspaceId query parameter is required' }, { status: 400 });
@@ -133,6 +137,17 @@ export function createCoreControllers(config: CoreResourceConfig) {
     try {
       const filteredIds = await relationFilteredIds(supabase, config, workspaceId, entityType, entityId);
       if (filteredIds && filteredIds.length === 0) {
+        if (pageParam || limitParam) {
+          return NextResponse.json({
+            success: true,
+            data: id ? null : [],
+            count: 0,
+            total: 0,
+            page: page ?? 1,
+            limit: limit ?? 0,
+            has_more: false,
+          });
+        }
         return successDataResponse(`${config.label} retrieved successfully`, id ? null : []);
       }
 
@@ -159,6 +174,30 @@ export function createCoreControllers(config: CoreResourceConfig) {
         query = query.order(order.column, { ascending: order.ascending });
       }
 
+      let totalRecords = 0;
+      if (pageParam || limitParam) {
+        let countQuery = (supabase as any).schema('core').from(config.table).select('id', { count: 'exact', head: true }).eq('workspace_id', workspaceId);
+        if (config.softDelete !== false) countQuery = countQuery.eq('is_deleted', false);
+        if (statusParam === 'closed' && config.table === 'notes') countQuery = countQuery.eq('is_closed', true);
+        else if (statusParam === 'active' && config.table === 'notes') countQuery = countQuery.eq('is_closed', false);
+        if (id) countQuery = countQuery.eq('id', id);
+        if (!config.relation && entityType) countQuery = countQuery.eq('entity_type', entityType);
+        if (!config.relation && entityId) countQuery = countQuery.eq('entity_id', entityId);
+        if (filteredIds) countQuery = countQuery.in('id', filteredIds);
+        if (createdAtFrom) countQuery = countQuery.gte('created_at', (createdAtFrom.includes('T') ? createdAtFrom : `${createdAtFrom}T00:00:00.000Z`));
+        if (createdAtTo) countQuery = countQuery.lte('created_at', (createdAtTo.includes('T') ? createdAtTo : `${createdAtTo}T23:59:59.999Z`));
+        if (updatedAtFrom) countQuery = countQuery.gte('updated_at', (updatedAtFrom.includes('T') ? updatedAtFrom : `${updatedAtFrom}T00:00:00.000Z`));
+        if (updatedAtTo) countQuery = countQuery.lte('updated_at', (updatedAtTo.includes('T') ? updatedAtTo : `${updatedAtTo}T23:59:59.999Z`));
+
+        const { count: fetchedCount } = await countQuery;
+        totalRecords = fetchedCount ?? 0;
+
+        if (page && limit && limit > 0) {
+          const offset = (page - 1) * limit;
+          query = query.range(offset, offset + limit - 1);
+        }
+      }
+
       const { data, error: fetchError } = await query;
       if (fetchError) {
         console.error(`Fetch core ${config.table} error:`, fetchError);
@@ -166,15 +205,40 @@ export function createCoreControllers(config: CoreResourceConfig) {
       }
 
       if (!config.relation || !data) {
-        return successDataResponse(`${config.label} retrieved successfully`, data ?? (id ? null : []));
+        const resultData = data ?? (id ? null : []);
+        if (pageParam || limitParam) {
+          return NextResponse.json({
+            success: true,
+            data: resultData,
+            count: totalRecords,
+            total: totalRecords,
+            page: page ?? 1,
+            limit: limit ?? totalRecords,
+            has_more: page && limit ? (page * limit) < totalRecords : false,
+          });
+        }
+        return successDataResponse(`${config.label} retrieved successfully`, resultData);
       }
 
       const records = Array.isArray(data) ? data : [data];
       const relations = await fetchRelations(supabase, config, workspaceId, records.map((record: any) => record.id));
+      const attachedData = attachRelations(data, relations, config.relation.foreignKey) ?? (id ? null : []);
+
+      if (pageParam || limitParam) {
+        return NextResponse.json({
+          success: true,
+          data: attachedData,
+          count: totalRecords,
+          total: totalRecords,
+          page: page ?? 1,
+          limit: limit ?? totalRecords,
+          has_more: page && limit ? (page * limit) < totalRecords : false,
+        });
+      }
 
       return successDataResponse(
         `${config.label} retrieved successfully`,
-        attachRelations(data, relations, config.relation.foreignKey) ?? (id ? null : []),
+        attachedData,
       );
     } catch (fetchError) {
       console.error(`Fetch core ${config.table} relations error:`, fetchError);
