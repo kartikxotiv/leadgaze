@@ -1459,15 +1459,13 @@ export function EditMeetingDialog({
         onOpenChange(v);
       }}
     >
-      <DialogContent className="max-h-[90vh] max-w-2xl gap-0 overflow-y-auto p-0">
-        <div className="bg-background sticky top-0 z-10 border-b px-6 py-5">
-          <DialogHeader>
-            <DialogTitle>
-              Edit Meeting
-            </DialogTitle>
-          </DialogHeader>
-        </div>
-        <div className="space-y-5 px-6 py-5">
+      <DialogContent className="flex max-h-[90vh] flex-col p-0 overflow-hidden border-gray-200 bg-white sm:max-w-[800px] dark:border-slate-800 dark:bg-slate-950">
+        <DialogHeader>
+          <DialogTitle>
+            Edit Meeting
+          </DialogTitle>
+        </DialogHeader>
+        <div className="flex-1 overflow-y-auto space-y-2 px-2">
           <div className="space-y-2">
             <Label className="font-medium">
               Title <span className="text-red-500">*</span>
@@ -1475,8 +1473,7 @@ export function EditMeetingDialog({
             <Input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Meeting title"
-              className="h-11"
+              placeholder="Meeting title"              
             />
           </div>
           <div className="space-y-2">
@@ -1516,7 +1513,7 @@ export function EditMeetingDialog({
               })}
             </div>
           </div>
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-2 md:grid-cols-2">
             <div className="space-y-2">
               <Label className="font-medium">Meeting Date & Time</Label>
               <DateTimePicker
@@ -1529,7 +1526,7 @@ export function EditMeetingDialog({
                   }
                 }}
                 minDate={new Date()}
-                className="h-11 w-full"
+                className="w-full"
               />
             </div>
             <div className="space-y-2">
@@ -1538,7 +1535,7 @@ export function EditMeetingDialog({
                 value={String(duration)}
                 onValueChange={(val) => setDuration(Number(val))}
               >
-                <SelectTrigger className="h-11">
+                <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -1551,11 +1548,11 @@ export function EditMeetingDialog({
               </Select>
             </div>
           </div>
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-2 md:grid-cols-2">
             <div className="space-y-2">
               <Label className="font-medium">Timezone</Label>
               <Select value={timezone} onValueChange={setTimezone}>
-                <SelectTrigger className="h-11">
+                <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -1575,7 +1572,7 @@ export function EditMeetingDialog({
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
                   placeholder="Physical location"
-                  className="h-11 pl-10"
+                  className="pl-10"
                 />
               </div>
             </div>
@@ -1587,7 +1584,7 @@ export function EditMeetingDialog({
                 value={selectedAccountId}
                 onValueChange={setSelectedAccountId}
               >
-                <SelectTrigger className="h-11">
+                <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -1610,7 +1607,7 @@ export function EditMeetingDialog({
                 value={selectedAccountId}
                 onValueChange={setSelectedAccountId}
               >
-                <SelectTrigger className="h-11">
+                <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -1632,8 +1629,7 @@ export function EditMeetingDialog({
               <Input
                 value={newEmail}
                 onChange={(e) => setNewEmail(e.target.value)}
-                placeholder="email@example.com"
-                className="h-11"
+                placeholder="email@example.com"                
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     e.preventDefault();
@@ -1645,7 +1641,7 @@ export function EditMeetingDialog({
                 type="button"
                 variant="outline"
                 onClick={handleAddEmail}
-                className="h-11 w-11"
+                className="h-9 w-9 p-0 shrink-0"
               >
                 <Plus className="h-4 w-4" />
               </Button>
@@ -1698,8 +1694,7 @@ export function EditMeetingDialog({
           </Button>
           <Button
             onClick={() => updateMutation.mutate()}
-            disabled={updateMutation.isPending}
-            className="min-w-[140px]"
+            disabled={updateMutation.isPending}            
           >
             {updateMutation.isPending && (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -1786,8 +1781,8 @@ export function MeetingDetailsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] max-w-2xl gap-0 overflow-y-auto p-0">
-        <div className="bg-background sticky top-0 z-10 flex items-center justify-between border-b px-6 py-4">
+      <DialogContent className="flex max-h-[90vh] flex-col p-0 overflow-hidden border-gray-200 bg-white sm:max-w-[800px] dark:border-slate-800 dark:bg-slate-950">
+        <DialogHeader className="flex flex-row items-center justify-between border-b shrink-0">
           <div className="flex items-center gap-3">
             <DialogTitle>
               {meeting.title}
@@ -1796,7 +1791,7 @@ export function MeetingDetailsDialog({
           <div className="flex items-center gap-1">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/10 hover:text-white mr-6">
                   <MoreVertical className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
@@ -1815,17 +1810,20 @@ export function MeetingDetailsDialog({
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-        </div>
+        </DialogHeader>
 
-        <Tabs defaultValue="overview" className="px-6">
-          <TabsList className="mt-4 grid w-full grid-cols-3">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="participants">Participants</TabsTrigger>
-            <TabsTrigger value="notes">Notes</TabsTrigger>
-          </TabsList>
+        <div className="flex-1 overflow-y-auto relative">
+          <Tabs defaultValue="overview" className="px-2">
+          <div className="sticky top-0 z-10 bg-background py-1 mt-0">
+            <TabsList className="grid w-full grid-cols-3 h-9">
+              <TabsTrigger value="overview" className="py-1">Overview</TabsTrigger>
+              <TabsTrigger value="participants" className="py-1">Participants</TabsTrigger>
+              <TabsTrigger value="notes" className="py-1">Notes</TabsTrigger>
+            </TabsList>
+          </div>
 
-          <TabsContent value="overview" className="space-y-2 pb-6">
-            <div className="flex flex-wrap gap-2 pt-2">
+          <TabsContent value="overview" className="space-y-2 pb-4 mt-0">
+            <div className="flex flex-wrap gap-2">
               <Badge
                 variant="outline"
                 className="gap-1"
@@ -1846,10 +1844,10 @@ export function MeetingDetailsDialog({
                 {meeting.meeting_type === 'logged' ? 'Logged' : 'Scheduled'}
               </Badge>
             </div>
-            <div className="flex items-start gap-3 rounded-lg border p-3">
+            <div className="flex items-start gap-2 rounded-lg border p-2">
               <CalendarIcon className="text-muted-foreground mt-0.5 h-5 w-5" />
               <div>
-                <p className="font-medium">
+                <p className="primary-text-medium text-leadgaze-dark dark:text-white">
                   {formatMeetingTime(
                     meeting.meeting_type === 'logged'
                       ? meeting.actual_start
@@ -1861,27 +1859,27 @@ export function MeetingDetailsDialog({
                     userTz,
                   )}
                 </p>
-                <p className="text-muted-foreground text-sm">
+                <p className="text-muted-foreground secondary-text-small">
                   {meeting.timezone}
                 </p>
               </div>
             </div>
             {meeting.description && (
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-gray-500 uppercase">
+                <Label className="primary-text-medium text-leadgaze-dark dark:text-white uppercase">
                   Description
                 </Label>
-                <p className="text-sm">{meeting.description}</p>
+                <p className="text-sm text- leadgaze-dark dark:text-white">{meeting.description}</p>
               </div>
             )}
             {meeting.location && (
-              <div className="flex items-start gap-3 rounded-lg border p-3">
+              <div className="flex items-start gap-2 rounded-lg border p-2">
                 <MapPin className="text-muted-foreground mt-0.5 h-5 w-5" />
                 <p className="text-sm">{meeting.location}</p>
               </div>
             )}
             {meeting.meeting_url && (
-              <div className="flex items-start gap-3 rounded-lg border p-3">
+              <div className="flex items-start gap-2 rounded-lg border p-2">
                 <ExternalLink className="text-muted-foreground mt-0.5 h-5 w-5" />
                 <a
                   href={meeting.meeting_url}
@@ -1894,11 +1892,11 @@ export function MeetingDetailsDialog({
               </div>
             )}
             {meeting.host && (
-              <div className="flex items-start gap-3 rounded-lg border p-3">
+              <div className="flex items-start gap-2 rounded-lg border p-2">
                 <Users className="text-muted-foreground mt-0.5 h-5 w-5" />
                 <div>
-                  <p className="text-sm font-medium">Host</p>
-                  <p className="text-muted-foreground text-sm">
+                  <p className="primary-text-medium text-leadgaze-dark dark:text-white">Host</p>
+                  <p className="text-muted-foreground secondary-text-small">
                     {meeting.host.name || meeting.host.email}
                   </p>
                 </div>
@@ -1906,42 +1904,42 @@ export function MeetingDetailsDialog({
             )}
           </TabsContent>
 
-          <TabsContent value="participants" className="space-y-3 pb-6">
+          <TabsContent value="participants" className="space-y-3 pb-6 mt-0">
             {meeting.participants && meeting.participants.length > 0 ? (
-              <div className="space-y-2 pt-2">
+              <div className="space-y-2">
                 {meeting.participants.map((p) => (
                   <div
                     key={p.id}
-                    className="flex items-center justify-between rounded-lg border p-3"
+                    className="flex items-center justify-between rounded-lg border p-2"
                   >
                     <div className="flex items-center gap-2">
                       <Users className="text-muted-foreground h-4 w-4" />
-                      <span className="text-sm">
+                      <span className="primary-text-medium text-leadgaze-dark">
                         {p.display_name ||
                           p.external_email ||
                           p.internal_user?.name}
                       </span>
                       {p.is_host && (
-                        <Badge variant="outline" className="text-xs">
+                        <Badge variant="outline" className="secondary-text-small">
                           Host
                         </Badge>
                       )}
                     </div>
-                    <Badge variant="outline" className="text-xs">
+                    <Badge variant="outline" className="secondary-text-small">
                       {p.response_status}
                     </Badge>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-muted-foreground pt-4 text-center text-sm">
+              <p className="text-muted-foreground pt-4 text-center secondary-text-small">
                 No participants added
               </p>
             )}
           </TabsContent>
 
-          <TabsContent value="notes" className="space-y-2 pb-6">
-            <div className="space-y-2 pt-2">
+          <TabsContent value="notes" className="space-y-2 pb-4 mt-0">
+            <div className="space-y-2">
               <Label className="font-medium">Add Note</Label>
               <Textarea
                 value={newNote}
@@ -1961,13 +1959,13 @@ export function MeetingDetailsDialog({
               </Button>
             </div>
             {notes.length > 0 ? (
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {notes.map((note: EntityRecord) => (
-                  <div key={note.id} className="rounded-lg border p-3">
-                    <p className="text-sm whitespace-pre-wrap">
+                  <div key={note.id} className="rounded-lg border p-1">
+                    <p className="primary-text-medium text-leadgaze-dark dark:text-white whitespace-pre-wrap">
                       {note.content}
                     </p>
-                    <p className="text-muted-foreground mt-2 text-xs">
+                    <p className="text-muted-foreground mt-1 secondary-text-small">
                       {new Date(note.created_at).toLocaleString()}
                     </p>
                   </div>
@@ -1980,6 +1978,7 @@ export function MeetingDetailsDialog({
             )}
           </TabsContent>
         </Tabs>
+        </div>
       </DialogContent>
     </Dialog>
   );
