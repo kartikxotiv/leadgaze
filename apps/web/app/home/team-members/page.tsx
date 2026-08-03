@@ -766,7 +766,7 @@ export default function TeamMembersPage() {
                               <span className="text-muted-foreground/50 text-xs">—</span>
                             </TableCell>
                           )}
-                          <TableCell className="sticky right-0 px-4 text-right">
+                          <TableCell className="bg-card sticky right-0 px-4 text-right">
                             <div className="flex items-center justify-end">
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>

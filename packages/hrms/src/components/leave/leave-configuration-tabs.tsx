@@ -58,7 +58,7 @@ export function LeaveHolidaysTab(props: {
                   <TableCell className="max-w-[320px] truncate">
                     {holiday.description ?? 'No description'}
                   </TableCell>
-                  <TableCell className="sticky right-0 px-4 text-right">
+                  <TableCell className="bg-card sticky right-0 px-4 text-right">
                     {props.canManageHolidays ? (
                       <div className="flex justify-end gap-2">
                         <Button
@@ -151,7 +151,7 @@ export function LeaveTypesTab(props: {
                   <TableCell className="max-w-[320px] truncate">
                     {leaveType.description ?? 'No description'}
                   </TableCell>
-                  <TableCell className="sticky right-0 px-4 text-right">
+                  <TableCell className="bg-card sticky right-0 px-4 text-right">
                     {props.canManageLeaveTypes ? (
                       <div className="flex justify-end gap-2">
                         <Button

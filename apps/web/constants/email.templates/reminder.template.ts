@@ -3,7 +3,6 @@ const REMINDER_EMAIL_TEMPLATE = ({
   reminderDescription,
   dueDate,
   productName,
-  billingCountry = 'US',
 }: {
   reminderTitle: string;
   reminderDescription?: string;
@@ -20,9 +19,8 @@ const REMINDER_EMAIL_TEMPLATE = ({
     minute: '2-digit',
   });
 
-  const isIndia = billingCountry.toUpperCase() === 'IN';
-  const operatorName = isIndia ? 'Xotiv Pvt. Ltd.' : 'Programea LLC';
-  const operatorUrl = isIndia ? 'https://xotiv.com/' : 'https://programea.com/';
+  const operatorName = 'Xotiv Technologies Pvt. Ltd.';
+  const operatorUrl = 'https://xotiv.com';
 
   return `
 <!DOCTYPE html>
@@ -43,10 +41,11 @@ const REMINDER_EMAIL_TEMPLATE = ({
     <div style="padding: 32px 24px;">
       <p style="margin: 0 0 16px 0; color: #1a202c; font-size: 20px; font-weight: bold; line-height: 1.2;">${reminderTitle}</p>
       
-      ${reminderDescription
-      ? `<p style="margin: 0 0 24px 0; color: #4a5568; font-size: 15px; line-height: 1.6;">${reminderDescription}</p>`
-      : ''
-    }
+      ${
+        reminderDescription
+          ? `<p style="margin: 0 0 24px 0; color: #4a5568; font-size: 15px; line-height: 1.6;">${reminderDescription}</p>`
+          : ''
+      }
       
       <div style="background-color: #f7fafc; border-left: 4px solid #3953E7; padding: 16px; margin: 24px 0; border-radius: 4px;">
         <p style="margin: 0; color: #283BA4; font-size: 14px; font-weight: 600;">⏰ Due Date</p>
