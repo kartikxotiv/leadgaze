@@ -125,7 +125,7 @@ export function CreateContactDialog({
           <DialogHeader>
             <DialogTitle>Create New Contact</DialogTitle>
             <DialogDescription>
-              Add a new person to your workspace.
+              Add a new person to your workspace
             </DialogDescription>
           </DialogHeader>
 

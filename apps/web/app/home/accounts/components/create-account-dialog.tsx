@@ -117,20 +117,19 @@ export function CreateAccountDialog({
         <DialogHeader>
           <DialogTitle>Create New Account</DialogTitle>
           <DialogDescription>
-            Add a new business account to your workspace.
+            Add a new business account to your workspace
           </DialogDescription>
         </DialogHeader>
 
         <form
           id="create-account-form"
           onSubmit={handleSubmit}
-          className="flex-1 space-y-6 overflow-y-auto p-6 py-4"
+          className="flex-1 space-y-2 overflow-y-auto px-2"
         >
           <div className="space-y-2">
             <h3 className="primary-heading text-leadgaze-dark uppercase dark:text-white custom-sub-heading-dialog-form">
               Basic Information
-            </h3>
-            <Separator />
+            </h3>            
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-2">
                 <Label htmlFor="account_name">Account Name *</Label>
@@ -219,11 +218,10 @@ export function CreateAccountDialog({
             </div>
           </div>
 
-          <div className="space-y-2 pt-4">
+          <div className="space-y-2">
             <h3 className="primary-heading text-leadgaze-dark uppercase dark:text-white custom-sub-heading-dialog-form">
               Address Information
-            </h3>
-            <Separator />
+            </h3>            
             <div className="space-y-2">
               <Label htmlFor="billing_street">Street Address</Label>
               <Input
@@ -287,7 +285,7 @@ export function CreateAccountDialog({
             </div>
           </div>
 
-          <div className="space-y-2 pt-4">
+          <div className="space-y-2 pb-1">
             <Label htmlFor="description">Description</Label>
             <Textarea
               id="description"

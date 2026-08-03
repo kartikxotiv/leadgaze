@@ -125,16 +125,15 @@ export function CreateContactDialog({
           <DialogHeader>
             <DialogTitle>Create New Contact</DialogTitle>
             <DialogDescription>
-              Add a new person to your workspace.
+              Add a new person to your workspace
             </DialogDescription>
           </DialogHeader>
 
-          <form id="dialog-form" onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-2 space-y-6 py-4">
+          <form id="dialog-form" onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-2 space-y-2">
             <div className="space-y-2">
               <h3 className="primary-heading text-leadgaze-dark dark:text-white uppercase custom-sub-heading-dialog-form">
                 Personal Details
-              </h3>
-              <Separator />
+              </h3>              
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-2">
                   <Label htmlFor="first_name">First Name *</Label>
@@ -188,11 +187,10 @@ export function CreateContactDialog({
               </div>
             </div>
 
-            <div className="space-y-2 pt-4">
+            <div className="space-y-2">
               <h3 className="primary-heading text-leadgaze-dark dark:text-white uppercase custom-sub-heading-dialog-form">
                 Professional & Status
-              </h3>
-              <Separator />
+              </h3>              
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-2">
                   <Label htmlFor="job_title">Job Title</Label>
@@ -246,7 +244,7 @@ export function CreateContactDialog({
               </div>
             </div>
 
-            <div className="space-y-2 pt-4">
+            <div className="space-y-2">
               <Label htmlFor="notes">Notes</Label>
               <Textarea
                 id="notes"

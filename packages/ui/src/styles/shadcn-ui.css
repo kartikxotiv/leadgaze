@@ -164,5 +164,13 @@
   .custom-sub-heading-dialog-form{
     margin-bottom: 0px !important;
   }
+  .selectFileDetails {
+    font-size: 12px !important;
+    line-height: 16px !important;
+  }
+  .selectFileDetails::file-selector-button {
+    font-size: 14px !important;
+    padding-top:2px;
+  }
 
 }
