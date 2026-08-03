@@ -6,7 +6,7 @@
 -- 1. Create a View for Optimized Leads List
 -- This view pre-joins relational tables so that standard pagination and sorting
 -- work directly in the database without requiring full table fetches.
-CREATE OR REPLACE VIEW public.vw_crm_leads_list AS
+CREATE OR REPLACE VIEW public.vw_crm_leads_list WITH (security_invoker = true) AS
 SELECT 
     l.id,
     l.workspace_id,
@@ -88,8 +88,11 @@ LEFT JOIN public.accounts o ON o.id = l.owner_id
 LEFT JOIN public.accounts cb ON cb.id = l.created_by
 LEFT JOIN public.accounts ub ON ub.id = l.updated_by;
 
--- Enable security definer for access in some RPCs if needed
--- Note: Views do not support RLS directly unless accessed securely. We will query this view using the service_role in our backend.
+-- Enforce invoker security to honor underlying table RLS policies
+ALTER VIEW public.vw_crm_leads_list SET (security_invoker = true);
+
+-- Grant select access
+GRANT SELECT ON public.vw_crm_leads_list TO authenticated, anon, service_role;
 
 -- 2. Create RPC for fast related entities fetching
 CREATE OR REPLACE FUNCTION get_lead_related_entities(p_lead_id UUID, p_workspace_id UUID)

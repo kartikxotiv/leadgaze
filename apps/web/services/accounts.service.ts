@@ -192,6 +192,16 @@ const importAccountsService = asyncHandlerClient(
   },
 );
 
+const getAccountsMetaService = asyncHandlerClient(
+  async (params: { workspaceId: string; userId: string; productKey?: string }) => {
+    const { workspaceId, userId, productKey = 'sales' } = params;
+    const response = await ApiClient.get(
+      `/accounts/meta?workspaceId=${workspaceId}&userId=${userId}&productKey=${productKey}`
+    );
+    return response.data;
+  }
+);
+
 export {
   getAccountsService,
   getAccountByIdService,
@@ -205,4 +215,5 @@ export {
   updateAccountTypeService,
   deleteAccountTypeService,
   importAccountsService,
+  getAccountsMetaService,
 };
