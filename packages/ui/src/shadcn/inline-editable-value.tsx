@@ -146,7 +146,7 @@ export function InlineEditableValue({
       type="button"
       disabled={disabled}
       className={cn(
-        'group inline-flex w-full items-center justify-start rounded-[4px] text-left outline-none transition-colors',
+        'group inline-flex w-full min-h-[32px] py-1 px-2 items-center justify-start rounded-[4px] text-left outline-none transition-colors',
         'focus-visible:ring-ring focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-background',
         {
           'cursor-text': !disabled,
