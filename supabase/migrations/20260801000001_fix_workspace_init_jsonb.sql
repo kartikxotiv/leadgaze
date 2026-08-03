@@ -68,9 +68,9 @@ BEGIN
     GROUP BY um.workspace_id, um.role_id, um.product_key
   ),
   workspace_roles_with_permissions AS (
-    SELECT DISTINCT ON (um.workspace_id, COALESCE(um.product_key, 'sales'))
+    SELECT DISTINCT ON (um.workspace_id, p.prod_key)
       um.workspace_id,
-      um.product_key,
+      p.prod_key as target_product_key,
       um.role_id,
       um.role_workspace_id,
       um.role_key,
@@ -79,23 +79,25 @@ BEGIN
       um.is_system,
       COALESCE(wp.permissions, '[]'::jsonb) as permissions
     FROM user_memberships um
+    CROSS JOIN (VALUES ('sales'), ('service_cloud'), ('hrms'), ('inventory'), ('funds')) AS p(prod_key)
     LEFT JOIN workspace_permissions wp ON wp.workspace_id = um.workspace_id 
       AND wp.role_id = um.role_id
-      AND COALESCE(wp.product_key, 'sales') = COALESCE(um.product_key, 'sales')
-    ORDER BY um.workspace_id, COALESCE(um.product_key, 'sales'), um.hierarchy_level DESC
+      AND (wp.product_key = p.prod_key OR wp.product_key IS NULL)
+    WHERE um.product_key IS NULL OR um.product_key = p.prod_key
+    ORDER BY um.workspace_id, p.prod_key, um.hierarchy_level DESC
   ),
   workspace_roles_grouped AS (
     SELECT 
       workspace_id,
       jsonb_object_agg(
-        COALESCE(product_key, 'sales')::text,
+        target_product_key::text,
         jsonb_build_object(
           'id', role_id,
           'workspace_id', role_workspace_id,
           'role_key', role_key,
           'role_name', role_name,
           'hierarchy_level', hierarchy_level,
-          'product_key', product_key,
+          'product_key', target_product_key,
           'is_system', is_system,
           'permissions', permissions
         )

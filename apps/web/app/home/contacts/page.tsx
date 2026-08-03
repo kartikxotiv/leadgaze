@@ -56,6 +56,7 @@ import { useLocalization } from '~/lib/localization/localization-provider';
 import { ModuleGuard } from '~/lib/rbac/module-guard';
 import { useModuleRoles, useRBAC } from '~/lib/rbac/rbac-provider';
 import { useTeamMembers } from '~/lib/hooks/use-team-members';
+import { usePreloadStrategies, usePreloadHoverHandlers } from '~/lib/hooks/use-preload-strategies';
 import { Contact, getContactsService, importContactsService } from '~/services/contacts.service';
 
 import { DeleteEntityDialog } from '../_components/delete-entity-dialog';
@@ -146,6 +147,8 @@ export default function ContactsPage() {
   const queryClient = useQueryClient();
   const { currentWorkspace: workspace, canAccess, user } = useRBAC();
   const { formatDate } = useLocalization();
+  const { preloadContactDetail } = usePreloadStrategies();
+  const { handleMouseEnter, handleMouseLeave } = usePreloadHoverHandlers();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCreatedByIds, setSelectedCreatedByIds] = useState<string[]>(
     [],
@@ -1029,6 +1032,12 @@ export default function ContactsPage() {
                       onClick={() =>
                         router.push(`/home/sales/contacts/${contact.id}`)
                       }
+                      onMouseEnter={() =>
+                        handleMouseEnter(() =>
+                          preloadContactDetail(workspace?.id || '', contact)
+                        )
+                      }
+                      onMouseLeave={handleMouseLeave}
                     >
                       {/* Checkbox */}
                       <TableCell
