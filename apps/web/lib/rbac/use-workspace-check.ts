@@ -4,66 +4,25 @@ import { useEffect } from 'react';
 
 import { useRouter } from 'next/navigation';
 
-import { useQuery } from '@tanstack/react-query';
-
-import { useSupabase } from '@kit/supabase/hooks/use-supabase';
 import { useUser } from '@kit/supabase/hooks/use-user';
+import { useRBAC } from '~/lib/rbac/rbac-provider';
 
 import pathsConfig from '~/config/paths.config';
 
 export function useWorkspaceCheck() {
   const { data: user, isLoading: isUserLoading } = useUser();
   const router = useRouter();
-  const supabase = useSupabase();
+  const { workspaces, isInitialized, isLoading: rbacLoading, error } = useRBAC();
 
-  const {
-    data: workspaceCheckData,
-    isLoading: isWorkspaceLoading,
-    isFetching: isWorkspaceFetching,
-    isError,
-    refetch,
-  } = useQuery({
-    queryKey: ['userHasWorkspace', user?.id],
-    queryFn: async () => {
-      if (!user?.id) return { hasWorkspace: false, isOnboardingFinished: true };
-
-      const { data, error } = await supabase
-        .from('workspace_members')
-        .select('workspace_id, workspaces!inner(is_onboarding_finished)')
-        .eq('user_id', user.id)
-        .eq('status', 'accepted')
-        .limit(1)
-        .maybeSingle();
-
-      if (error) {
-        console.error('Workspace check error:', error);
-        throw error;
-      }
-
-      const hasWorkspace = !!data;
-      const isOnboardingFinished =
-        (data?.workspaces as any)?.is_onboarding_finished ?? true;
-
-      return { hasWorkspace, isOnboardingFinished };
-    },
-    enabled: !!user?.id,
-    staleTime: 30 * 1000, // 30 s — set synchronously via setQueryData after onboarding
-    refetchOnWindowFocus: false,
-  });
-
-  // isLoading  = true only on the very first fetch (no cached data yet)
-  // isFetching = true also during background refetches (e.g. after invalidation)
-  // We treat both as "loading" so the redirect effect never fires on stale data.
-  const isLoading =
-    isUserLoading || (!!user?.id && (isWorkspaceLoading || isWorkspaceFetching));
-
-  const hasWorkspace = workspaceCheckData?.hasWorkspace ?? false;
-  const isOnboardingFinished = workspaceCheckData?.isOnboardingFinished ?? true;
+  const isLoading = isUserLoading || (!isInitialized && rbacLoading);
+  const hasWorkspace = workspaces.length > 0;
+  
+  // Find if any workspace has onboarding finished (or check current workspace if needed)
+  const isOnboardingFinished = workspaces.length === 0 || workspaces.some((w: any) => w.is_onboarding_finished !== false);
 
   useEffect(() => {
-    // Never redirect while any fetch is in flight — stale data may still be
-    // in cache from a previous page, causing false-negative redirects.
-    if (isLoading || isError || !user?.id) return;
+    // Never redirect while any fetch is in flight
+    if (isLoading || error || !user?.id || !isInitialized) return;
 
     // No workspace at all → go create one
     if (hasWorkspace === false) {
@@ -75,12 +34,12 @@ export function useWorkspaceCheck() {
     if (hasWorkspace === true && !isOnboardingFinished) {
       router.push(pathsConfig.app.workspaceSetup);
     }
-  }, [isLoading, isError, user?.id, hasWorkspace, isOnboardingFinished, router]);
+  }, [isLoading, error, user?.id, isInitialized, hasWorkspace, isOnboardingFinished, router]);
 
   return {
-    hasWorkspace: user?.id ? (hasWorkspace ?? null) : null,
+    hasWorkspace: user?.id && isInitialized ? hasWorkspace : null,
     isOnboardingFinished,
     isLoading,
-    refetch,
+    refetch: () => {}, // No-op since refetch is handled by RBACProvider now
   };
 }

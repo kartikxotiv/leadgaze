@@ -225,7 +225,7 @@ export default function LeadDetailsPage() {
       const res = await getLeadAssignees(leadId);
       return res?.data ?? [];
     },
-    enabled: !!leadId,
+    enabled: !!leadId && isAssignModalOpen,
   });
   const pageAssignMutation = useMutation({
     mutationFn: (userId: string) =>
@@ -257,13 +257,13 @@ export default function LeadDetailsPage() {
   const { data: coreEmailAccounts = [] } = useQuery({
     queryKey: ['core-email-accounts', workspace?.id],
     queryFn: () => getCoreEmailAccountsService(workspace!.id),
-    enabled: canManageEmail && !!workspace?.id,
+    enabled: canManageEmail && !!workspace?.id && !!lead,
   });
 
   const { data: industries = [] } = useQuery({
     queryKey: ['industries', workspace?.id],
     queryFn: () => getIndustriesService(workspace?.id || ''),
-    enabled: !!workspace?.id,
+    enabled: !!workspace?.id && !!lead,
   });
 
   const { data: user } = useUser();
@@ -283,7 +283,7 @@ export default function LeadDetailsPage() {
       if (!workspace?.id) return Promise.resolve([]);
       return getLeadStatusesService({ workspaceId: workspace.id });
     },
-    enabled: !!workspace?.id,
+    enabled: !!workspace?.id && !!lead,
   });
 
   const scoringResult = useMemo(() => {
@@ -307,14 +307,15 @@ export default function LeadDetailsPage() {
   const { canView } = useFieldPermissions({
     entityType: 'leads',
     workspaceId: workspace?.id,
-    enabled: !!workspace?.id,
+    enabled: !!workspace?.id && !!lead,
   });
 
   const { fields = [] } = useDynamicColumns({
     entityType: 'leads',
     workspaceId: workspace?.id,
     userId: user?.id,
-    enabled: !!workspace?.id,
+    enabled: !!workspace?.id && !!lead,
+    staleTime: 5 * 60 * 1000,
   });
 
   const customFieldsToShow = useMemo(() => {
