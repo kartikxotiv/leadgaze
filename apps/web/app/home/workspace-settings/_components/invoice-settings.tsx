@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { FileText, Download } from 'lucide-react';
+import { FileText, Download, Eye } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@kit/ui/card';
 import { CustomTableContainer } from '@kit/ui/custom-table-container';
 import { TablePagination } from '@kit/ui/table-pagination';
@@ -108,7 +108,7 @@ export function WorkspaceInvoiceSettings() {
                 paginatedData.map((invoice, index) => (
                   <TableRow key={index}>
                     <TableCell>{invoice.date}</TableCell>
-                    <TableCell className="text-blue-500 font-medium">{invoice.id}</TableCell>
+                    <TableCell className="text-leadgaze-primary font-medium">{invoice.id}</TableCell>
                     <TableCell>{invoice.paymentMethod}</TableCell>
                     <TableCell>{invoice.amount}</TableCell>
                     <TableCell>
@@ -117,12 +117,17 @@ export function WorkspaceInvoiceSettings() {
                       </span>
                     </TableCell>
                     <TableCell>
-                      <button className="text-blue-500 hover:text-blue-700 transition-colors">
-                        <Download className="h-4 w-4 mx-auto" />
-                      </button>
+                      <div className="flex items-center space-x-2">
+                        <button className="text-leadgaze-primary transition-colors">
+                          <Download className="h-4 w-4" />
+                        </button>
+                        <button className="text-leadgaze-primary transition-colors">
+                          <Eye className="h-4 w-4" />
+                        </button>
+                      </div>
                     </TableCell>
                     <TableCell>
-                      <button className="text-blue-500 hover:text-blue-700 transition-colors">
+                      <button className="text-leadgaze-primary transition-colors">
                         <Download className="h-4 w-4 mx-auto" />
                       </button>
                     </TableCell>

@@ -132,7 +132,7 @@ export default function WorkspaceSettingsPage() {
                 Invoice
               </TabsTrigger>
             )}
-            {isSalesModule && (
+            {canViewSettings && (
               <TabsTrigger
                 value="integrations"
                 className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
@@ -179,7 +179,7 @@ export default function WorkspaceSettingsPage() {
             </TabsContent>
           )}
 
-          {isSalesModule && (
+          {canViewSettings && (
             <TabsContent
               value="integrations"
               className="mt-0 flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col data-[state=active]:flex data-[state=active]:flex-1 data-[state=active]:flex-col data-[state=active]:min-h-0 overflow-y-auto pr-2 pb-6"
