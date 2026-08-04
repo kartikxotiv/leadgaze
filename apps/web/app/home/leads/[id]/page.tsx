@@ -444,8 +444,15 @@ export default function LeadDetailsPage() {
   };
 
   const handleConvertSuccess = () => {
-    refetch(); // usage of refetch() implies we stay on page, but converted lead might be locked or different view?
-    // For now, refreshing data is fine.
+    // Conversion can create a contact, account, and opportunity. Mark every
+    // affected list stale so navigating to it never displays the 60-second
+    // React Query cache from before the conversion.
+    queryClient.invalidateQueries({ queryKey: ['contacts'] });
+    queryClient.invalidateQueries({ queryKey: ['accounts'] });
+    queryClient.invalidateQueries({ queryKey: ['opportunities'] });
+    queryClient.invalidateQueries({ queryKey: ['leads'] });
+    queryClient.invalidateQueries({ queryKey: ['leads-kanban'] });
+    refetch();
   };
 
   if (isLoading) {
