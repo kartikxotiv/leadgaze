@@ -151,9 +151,7 @@ BEGIN
   
   -- Auto-select workspace if not specified and user has only one
   IF p_workspace_id IS NULL AND v_workspace_count = 1 THEN
-    SELECT (jsonb_array_elements(v_user_workspaces)->>'id')::UUID INTO p_workspace_id
-    FROM (SELECT v_user_workspaces) t
-    LIMIT 1;
+    p_workspace_id := ((v_user_workspaces->0)->>'id')::UUID;
   END IF;
 
   IF p_workspace_id IS NOT NULL THEN
