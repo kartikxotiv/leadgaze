@@ -3,6 +3,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
+import ONBOARDING_TEMPLATE from '~/constants/email.templates/onboarding.template';
+import { transporter } from '~/utils/send-mail';
+
 import {
   catchAsync,
   successDataResponse,
@@ -370,6 +373,46 @@ async function createTrialSeats(workspaceId: string, ownerUserId: string) {
 }
 
 
+async function sendOnboardingEmail(
+  supabase: Pick<ReturnType<typeof getSupabaseServerClient>, 'auth'>,
+  workspaceName: string,
+): Promise<string | null> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user?.email) {
+    return 'Unable to find an email for the current user';
+  }
+
+  const productName = process.env.NEXT_PUBLIC_PRODUCT_NAME || 'Leadgaze';
+  const userName =
+    user.user_metadata?.full_name ||
+    user.user_metadata?.name ||
+    user.email.split('@')[0] ||
+    'there';
+
+  try {
+    await transporter.sendMail({
+      from: process.env.SMTP_USER,
+      to: user.email,
+      replyTo: process.env.SMTP_USER,
+      subject: `Welcome to ${productName} - ${workspaceName} is ready`,
+      html: ONBOARDING_TEMPLATE({
+        userName,
+        workspaceName,
+        productName,
+        appUrl: process.env.NEXT_PUBLIC_APP_URL,
+      }),
+    });
+
+    return null;
+  } catch (error) {
+    console.error('Onboarding email error:', error);
+    return 'Failed to send onboarding email';
+  }
+}
+
 const updateWorkspace = catchAsync(
   async ({
     request,
@@ -380,12 +423,41 @@ const updateWorkspace = catchAsync(
   }) => {
     const supabase = getSupabaseServerClient() as any;
     const body = await request.json();
-    
+
     if (!params?.id) {
       return NextResponse.json(
         { message: 'Workspace ID is required' },
         { status: 400 },
       );
+    }
+
+    if (body.is_onboarding_finished === true) {
+      const { data: existingWorkspace, error: existingWorkspaceError } =
+        await supabase
+          .from('workspaces')
+          .select('id, name, is_onboarding_finished')
+          .eq('id', params.id)
+          .single();
+
+      if (existingWorkspaceError || !existingWorkspace) {
+        return NextResponse.json(
+          { message: 'Workspace not found' },
+          { status: 404 },
+        );
+      }
+
+      // Only send on the initial false -> true transition. Sending before the
+      // update keeps onboarding retryable when SMTP is temporarily unavailable.
+      if (!existingWorkspace.is_onboarding_finished) {
+        const emailError = await sendOnboardingEmail(
+          supabase,
+          existingWorkspace.name,
+        );
+
+        if (emailError) {
+          return NextResponse.json({ message: emailError }, { status: 500 });
+        }
+      }
     }
 
     const { data: workspace, error } = await supabase
