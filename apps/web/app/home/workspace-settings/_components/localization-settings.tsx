@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Globe, Loader2, Save } from 'lucide-react';
+import { CalendarClock, CircleDollarSign, Loader2, Save } from 'lucide-react';
 
 import {
   type WorkspaceLocalizationPreferences,
@@ -39,6 +39,7 @@ import {
   updateWorkspaceCurrencyService,
   deleteWorkspaceCurrencyService,
 } from '~/services/workspace-currencies.service';
+import { Label } from '@kit/ui/label';
 
 // =====================================================
 // CONSTANTS
@@ -309,10 +310,10 @@ export function WorkspaceLocalizationSettings({
     <div className="space-y-6">
       {/* Date & Time Settings */}
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between p-4 pb-3">
+        <CardHeader className="flex flex-row items-center justify-between p-2 border-b border-slate-200">
           <div>
             <CardTitle className="mb-0 flex items-center gap-2 text-base">
-              <Globe className="h-4 w-4" />
+              <CalendarClock className="h-4 w-4" />
               Date &amp; Time
             </CardTitle>
             <CardDescription>
@@ -322,28 +323,28 @@ export function WorkspaceLocalizationSettings({
           <div className="flex gap-2">
             <Button
               variant="outline"
-              size="sm"
               onClick={handleCancelDateTime}
               disabled={!isDateTimeDirty || updateMutation.isPending}
+              className="secondary-text-small-bold gap-1.5 px-2"
             >
               Cancel
             </Button>
             <Button
-              size="sm"
+              
               onClick={handleSave}
               disabled={!isDateTimeDirty || updateMutation.isPending}
-              className="bg-primary text-primary-foreground hover:bg-primary/90"
+              className="bg-leadgaze-primary hover:bg-leadgaze-primary text-white secondary-text-small-bold gap-1.5 px-2"
             >
-              {updateMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              {updateMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
               Save Changes
             </Button>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4 p-4 pt-0">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <CardContent className="space-y-2 p-2 main-dialog">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
             {/* Timezone */}
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium">Timezone</label>
+            <div>
+              <Label>Timezone</Label>
               <Select
                 value={form.timezone}
                 onValueChange={(v) => handleChange('timezone', v)}
@@ -362,8 +363,8 @@ export function WorkspaceLocalizationSettings({
             </div>
 
             {/* Date Format */}
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium">Date Format</label>
+            <div>
+              <Label>Date Format</Label>
               <Select
                 value={form.dateFormat}
                 onValueChange={(v) => handleChange('dateFormat', v)}
@@ -382,8 +383,8 @@ export function WorkspaceLocalizationSettings({
             </div>
 
             {/* Time Format */}
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium">Time Format</label>
+            <div>
+              <Label>Time Format</Label>
               <Select
                 value={form.timeFormat}
                 onValueChange={(v) =>
@@ -408,9 +409,12 @@ export function WorkspaceLocalizationSettings({
 
       {/* Currency Settings */}
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between p-4 pb-3">
+        <CardHeader className="flex flex-row items-center justify-between p-2 border-b border-slate-200">
           <div>
-            <CardTitle className="mb-0 text-base">Currencies</CardTitle>
+            <CardTitle className="mb-0 flex items-center gap-2 text-base">
+              <CircleDollarSign className="h-4 w-4" />
+              Currencies
+            </CardTitle>
             <CardDescription>
               Manage currencies enabled for this workspace.
             </CardDescription>
@@ -418,28 +422,27 @@ export function WorkspaceLocalizationSettings({
           <div className="flex gap-2">
             <Button
               variant="outline"
-              size="sm"
               onClick={handleCancelCurrency}
               disabled={!isCurrencyDirty || updateMutation.isPending}
+              className="secondary-text-small-bold gap-1.5 px-2"
             >
               Cancel
             </Button>
             <Button
-              size="sm"
               onClick={handleSave}
               disabled={!isCurrencyDirty || updateMutation.isPending}
-              className="bg-primary text-primary-foreground hover:bg-primary/90"
+              className="bg-leadgaze-primary hover:bg-leadgaze-primary text-white secondary-text-small-bold gap-1.5 px-2"
             >
-              {updateMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              {updateMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
               Save Changes
             </Button>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4 p-4 pt-0">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <CardContent className="space-y-2 p-2">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2 main-dialog">
             {/* Default Currency */}
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium">Default Currency</label>
+            <div>
+              <Label>Default Currency</Label>
               <Select
                 value={form.defaultCurrency}
                 onValueChange={(v) => handleChange('defaultCurrency', v)}
@@ -464,8 +467,8 @@ export function WorkspaceLocalizationSettings({
             </div>
 
             {/* Add Currency */}
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium">Add Currency</label>
+            <div>
+              <Label>Add Currency</Label>
               <Select
                 onValueChange={(v) => handleAddCurrency(v)}
                 disabled={addCurrencyMutation.isPending}
@@ -495,8 +498,8 @@ export function WorkspaceLocalizationSettings({
             </div>
             
             {/* Display Enable Currencies */}
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium">Enable Currencies</label>
+            <div>
+              <Label>Enable Currencies</Label>
               <Select disabled value={form.defaultCurrency}>
                 <SelectTrigger className="w-full">
                   <SelectValue />
@@ -509,7 +512,7 @@ export function WorkspaceLocalizationSettings({
           </div>
 
           {/* Enabled Currencies List */}
-          <div className="space-y-2 pt-2">
+          <div className="space-y-2">
             {isCurrenciesLoading ? (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -526,14 +529,14 @@ export function WorkspaceLocalizationSettings({
                     <Badge
                       key={currency.id}
                       variant={isDefault ? 'default' : 'secondary'}
-                      className="flex items-center gap-1.5 py-1.5 px-3 text-sm font-normal animate-in fade-in-50 duration-200"
+                      className="flex items-center gap-1.5 py-1.5 px-2 text-sm font-normal animate-in fade-in-50 duration-200 h-8"
                     >
                       <span className="font-semibold">{currency.currency_code}</span>
-                      <span className="text-muted-foreground/80 text-xs">
+                      <span>
                         ({currencyInfo?.symbol || currency.currency_code})
                       </span>
                       {isDefault ? (
-                        <span className="bg-primary-foreground text-primary ml-1 rounded-full px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider">
+                        <span className="bg-primary-foreground text-primary ml-1 rounded-full px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider pt-1">
                           Default
                         </span>
                       ) : deleteCurrencyMutation.isPending && deleteCurrencyMutation.variables === currency.id ? (

@@ -366,19 +366,18 @@ export function WorkspaceGeneralSettings({ workspaceId }: WorkspaceGeneralSettin
           <div className="flex gap-2">
             <Button
               variant="outline"
-              size="sm"
+              className="secondary-text-small-bold gap-1.5 px-2"
               onClick={handleCancel}
               disabled={!isDirty || isSaving}
             >
               Cancel
             </Button>
             <Button
-              size="sm"
               onClick={handleSave}
               disabled={!isDirty || isSaving}
-              className="bg-primary text-primary-foreground hover:bg-primary/90"
+              className="bg-leadgaze-primary hover:bg-leadgaze-primary text-white secondary-text-small-bold gap-1.5 px-2"
             >
-              {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
               Save Changes
             </Button>
           </div>
