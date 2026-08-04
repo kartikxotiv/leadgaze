@@ -42,7 +42,7 @@ export function CountrySelect({ value, onValueChange, disabled }: CountrySelectP
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="w-full justify-between"
+          className="w-full justify-between h-9"
           disabled={disabled}
         >
           {selectedCountry ? selectedCountry.name : 'Select country...'}

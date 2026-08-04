@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { UploadCloud, X } from 'lucide-react';
+import { Download, UploadCloud, X } from 'lucide-react';
 import Image from 'next/image';
 
 interface LogoUploaderProps {
@@ -54,8 +54,8 @@ export function LogoUploader({ companyName, onFileSelect, disabled, initialLogoU
   };
 
   return (
-    <div className="flex items-center gap-6 mb-6">
-      <div className={`relative h-20 w-20 shrink-0 overflow-hidden rounded-2xl ${previewUrl ? '' : 'bg-[linear-gradient(135deg,var(--color-leadgaze-primary)_0%,#283BA4_100%)]'} shadow-[var(--color-leadgaze-primary)]/20 shadow-lg flex items-center justify-center text-white text-3xl font-semibold`}>
+    <div className="flex items-center gap-2 mb-2">
+      <div className={`relative h-14 w-14 shrink-0 overflow-hidden ${previewUrl ? '' : 'bg-[linear-gradient(135deg,var(--color-leadgaze-primary)_0%,#283BA4_100%)]'} shadow-[var(--color-leadgaze-primary)]/20 shadow-lg flex items-center justify-center text-white text-3xl font-semibold`}>
         {previewUrl ? (
           <Image src={previewUrl} alt="Logo preview" fill className="object-cover" />
         ) : (
@@ -63,8 +63,19 @@ export function LogoUploader({ companyName, onFileSelect, disabled, initialLogoU
         )}
       </div>
 
-      <div className="flex flex-col gap-2">
-        <p className="text-sm font-medium text-slate-700">Company logo</p>
+      <div className="flex flex-col gap-1 justify-center">
+        <div className="flex items-center gap-2">
+          <p className="primary-heading text-leadgaze-dark tracking-tight dark:text-white">Company logo</p>
+          <button
+            type="button"
+            className="text-slate-500 hover:text-slate-700 disabled:opacity-50 transition-colors"
+            onClick={() => inputRef.current?.click()}
+            disabled={disabled}
+            title="Upload Logo"
+          >
+            <Download className="h-4 w-4 rotate-180" />
+          </button>
+        </div>
         <p className="text-xs text-slate-500">We support PNGs, JPEGs and GIFs under 2MB. Recommended size is 400x400px.</p>
 
         <div className="flex gap-2 items-center mt-1">
@@ -76,18 +87,10 @@ export function LogoUploader({ companyName, onFileSelect, disabled, initialLogoU
             onChange={handleFileChange}
             disabled={disabled}
           />
-          <button
-            type="button"
-            className="text-sm px-3 py-1.5 rounded-md border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-medium disabled:opacity-50 transition-colors"
-            onClick={() => inputRef.current?.click()}
-            disabled={disabled}
-          >
-            Upload logo
-          </button>
           {previewUrl && (
             <button
               type="button"
-              className="text-sm px-3 py-1.5 rounded-md text-red-600 hover:bg-red-50 font-medium disabled:opacity-50 transition-colors"
+              className="text-sm px-3 py-1.5 rounded-md text-red-600 hover:bg-red-50 font-medium disabled:opacity-50 transition-colors mt-2"
               onClick={handleClear}
               disabled={disabled}
             >

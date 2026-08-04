@@ -149,13 +149,13 @@ export function WebsiteConnectorListPage({
 
   const CreateConnectorForm = () => (
     <>
-      <DialogHeader>
-        <DialogTitle>Create Website Connector</DialogTitle>
-        <DialogDescription>
+      <DialogHeader className="bg-blue-600 px-6 py-4">
+        <DialogTitle className="text-white">Create Website Connector</DialogTitle>
+        <DialogDescription className="text-white/80">
           Configure a new endpoint structure for web integration.
         </DialogDescription>
       </DialogHeader>
-      <div className="space-y-2 py-4">
+      <div className="space-y-4 px-6 py-4">
         <div className="space-y-2">
           <Label htmlFor="cname">Connector Name</Label>
           <Input
@@ -181,11 +181,11 @@ export function WebsiteConnectorListPage({
           </Select>
         </div>
       </div>
-      <DialogFooter>
+      <DialogFooter className="px-6 py-4 border-t">
         <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
           Cancel
         </Button>
-        <Button onClick={handleCreateConnector} disabled={isCreating}>
+        <Button onClick={handleCreateConnector} disabled={isCreating} className="bg-blue-600 hover:bg-blue-700 text-white">
           {isCreating ? 'Creating...' : 'Create Connector'}
         </Button>
       </DialogFooter>
@@ -217,7 +217,7 @@ export function WebsiteConnectorListPage({
                 <Plus className="h-4 w-4" /> Add Connector
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md">
+            <DialogContent className="max-w-md p-0 overflow-hidden gap-0 [&>button]:text-white [&>button:hover]:text-white/80 [&>button:hover]:bg-white/20">
               {CreateConnectorForm()}
             </DialogContent>
           </Dialog>
@@ -260,7 +260,7 @@ export function WebsiteConnectorListPage({
               <DialogTrigger asChild>
                 <Button>Create First Connector</Button>
               </DialogTrigger>
-              <DialogContent className="max-w-md">
+              <DialogContent className="max-w-md p-0 overflow-hidden gap-0 [&>button]:text-white [&>button:hover]:text-white/80 [&>button:hover]:bg-white/20">
                 {CreateConnectorForm()}
               </DialogContent>
             </Dialog>
