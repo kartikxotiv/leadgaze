@@ -1,9 +1,17 @@
 'use client';
 
-import { useEffect, useMemo, useState, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { LayoutTemplate, Loader2, Send, Variable, Bold, Italic, Underline } from 'lucide-react';
+import {
+  Bold,
+  Italic,
+  LayoutTemplate,
+  Loader2,
+  Send,
+  Underline,
+  Variable,
+} from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@kit/ui/button';
@@ -24,13 +32,16 @@ import {
   SelectValue,
 } from '@kit/ui/select';
 
-
 import type { CoreEmailAccount } from '../../services/email-accounts.service';
 import { sendCoreEmailService } from '../../services/email-activity.service';
 import {
   getCoreEmailTemplatesService,
   getCoreEmailVariablesService,
 } from '../../services/email-templates.service';
+import {
+  EmailAttachmentPicker,
+  useEmailAttachments,
+} from './email-attachments';
 import { renderEmailContent, renderEmailTemplate } from './template-helpers';
 
 function normalizeRecipients(value: unknown): string[] {
@@ -95,6 +106,14 @@ export function CoreEmailReplyDialog({
   const [body, setBody] = useState('');
   const [templateId, setTemplateId] = useState('');
   const editorRef = useRef<HTMLDivElement>(null);
+  const {
+    files: attachmentFiles,
+    addFiles: addAttachmentFiles,
+    removeFile: removeAttachmentFile,
+    clearFiles: clearAttachmentFiles,
+    uploadFiles: uploadAttachmentFiles,
+    removeUploadedFiles,
+  } = useEmailAttachments(workspaceId);
 
   const handleFormat = (command: string) => {
     if (editorRef.current) {
@@ -123,18 +142,32 @@ export function CoreEmailReplyDialog({
       setSubject(replySubject(email?.subject));
       setBody('');
       setTemplateId('');
+      clearAttachmentFiles();
       setTimeout(() => {
         if (editorRef.current) {
           editorRef.current.innerHTML = '';
         }
       }, 0);
     }
-  }, [email, open, sendableAccounts]);
+  }, [clearAttachmentFiles, email, open, sendableAccounts]);
 
   const mutation = useMutation({
-    mutationFn: sendCoreEmailService,
+    mutationFn: async (payload: Record<string, unknown>) => {
+      const uploadedAttachments = await uploadAttachmentFiles();
+
+      try {
+        return await sendCoreEmailService({
+          ...payload,
+          attachments: uploadedAttachments,
+        });
+      } catch (error) {
+        await removeUploadedFiles(uploadedAttachments);
+        throw error;
+      }
+    },
     onSuccess: async () => {
       toast.success('Reply sent');
+      clearAttachmentFiles();
       await queryClient.invalidateQueries({
         queryKey: ['core-email-activity', workspaceId],
       });
@@ -224,161 +257,174 @@ export function CoreEmailReplyDialog({
 
           <div className="flex-1 space-y-4 overflow-y-auto p-6 pb-8">
             <div className="grid gap-4">
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="grid gap-2">
-              <Label>Template</Label>
-              <Select value={templateId} onValueChange={applyTemplate}>
-                <SelectTrigger>
-                  <div className="flex items-center gap-2">
-                    <LayoutTemplate className="h-4 w-4 text-blue-500" />
-                    <SelectValue placeholder="Use email template" />
-                  </div>
-                </SelectTrigger>
-                <SelectContent>
-                  {templates.length === 0 ? (
-                    <SelectItem value="no-template" disabled>
-                      No templates found
-                    </SelectItem>
-                  ) : (
-                    templates.map((template: any) => (
-                      <SelectItem key={template.id} value={String(template.id)}>
-                        {template.name}
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="grid gap-2">
+                  <Label>Template</Label>
+                  <Select value={templateId} onValueChange={applyTemplate}>
+                    <SelectTrigger>
+                      <div className="flex items-center gap-2">
+                        <LayoutTemplate className="h-4 w-4 text-blue-500" />
+                        <SelectValue placeholder="Use email template" />
+                      </div>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {templates.length === 0 ? (
+                        <SelectItem value="no-template" disabled>
+                          No templates found
+                        </SelectItem>
+                      ) : (
+                        templates.map((template: any) => (
+                          <SelectItem
+                            key={template.id}
+                            value={String(template.id)}
+                          >
+                            {template.name}
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="grid gap-2">
+                  <Label>Insert Variable</Label>
+                  <Select value="" onValueChange={insertVariable}>
+                    <SelectTrigger>
+                      <div className="flex items-center gap-2">
+                        <Variable className="h-4 w-4 text-emerald-500" />
+                        <SelectValue placeholder="Add variable to message" />
+                      </div>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {variables.length === 0 ? (
+                        <SelectItem value="no-variable" disabled>
+                          No variables found
+                        </SelectItem>
+                      ) : (
+                        variables.map((variable: any) => (
+                          <SelectItem
+                            key={variable.id}
+                            value={`{{${variable.key}}}`}
+                          >
+                            {`{{${variable.key}}}`}
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid gap-2">
+                <Label>From</Label>
+                <Select
+                  value={emailAccountId}
+                  onValueChange={setEmailAccountId}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose sending account" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {sendableAccounts.map((account) => (
+                      <SelectItem key={account.id} value={String(account.id)}>
+                        {account.email}
                       </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
-            </div>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <div className="grid gap-2">
-              <Label>Insert Variable</Label>
-              <Select value="" onValueChange={insertVariable}>
-                <SelectTrigger>
-                  <div className="flex items-center gap-2">
-                    <Variable className="h-4 w-4 text-emerald-500" />
-                    <SelectValue placeholder="Add variable to message" />
-                  </div>
-                </SelectTrigger>
-                <SelectContent>
-                  {variables.length === 0 ? (
-                    <SelectItem value="no-variable" disabled>
-                      No variables found
-                    </SelectItem>
-                  ) : (
-                    variables.map((variable: any) => (
-                      <SelectItem
-                        key={variable.id}
-                        value={`{{${variable.key}}}`}
-                      >
-                        {`{{${variable.key}}}`}
-                      </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="grid gap-2">
-            <Label>From</Label>
-            <Select value={emailAccountId} onValueChange={setEmailAccountId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Choose sending account" />
-              </SelectTrigger>
-              <SelectContent>
-                {sendableAccounts.map((account) => (
-                  <SelectItem key={account.id} value={String(account.id)}>
-                    {account.email}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="text-muted-foreground rounded-md border p-3 text-sm">
-            Replying to{' '}
-            <span className="font-medium">
-              {recipients.join(', ') || 'No recipient'}
-            </span>
-            <br />
-            {replyAllCcRecipients.length > 0 ? (
-              <>
-                Cc{' '}
+              <div className="text-muted-foreground rounded-md border p-3 text-sm">
+                Replying to{' '}
                 <span className="font-medium">
-                  {replyAllCcRecipients.join(', ')}
+                  {recipients.join(', ') || 'No recipient'}
                 </span>
                 <br />
-              </>
-            ) : null}
-            Original Bcc: <span className="font-medium">{bccDisplay}</span>
-            <br />
-            Subject: {subject}
-          </div>
-
-          <div className="grid gap-2">
-            <Label>Reply mode</Label>
-            <RadioGroup
-              value={replyMode}
-              onValueChange={(value) =>
-                setReplyMode(value as 'reply' | 'reply_all')
-              }
-              className="grid gap-2 sm:grid-cols-2"
-            >
-              <Label className="flex cursor-pointer items-center gap-2 rounded-md border p-3">
-                <RadioGroupItem value="reply" />
-                <span>Reply to sender</span>
-              </Label>
-              <Label className="flex cursor-pointer items-center gap-2 rounded-md border p-3">
-                <RadioGroupItem value="reply_all" />
-                <span>Reply all</span>
-              </Label>
-            </RadioGroup>
-          </div>
-
-          <div className="grid gap-2">
-            <Label>Message</Label>
-            <div className="overflow-hidden rounded-md border border-gray-200 dark:border-slate-800">
-              <div className="flex items-center gap-1 border-b bg-zinc-50 p-1 dark:bg-zinc-900/50">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 p-0"
-                  onClick={() => handleFormat('bold')}
-                  title="Bold"
-                >
-                  <Bold className="h-4 w-4" />
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 p-0"
-                  onClick={() => handleFormat('italic')}
-                  title="Italic"
-                >
-                  <Italic className="h-4 w-4" />
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 p-0"
-                  onClick={() => handleFormat('underline')}
-                  title="Underline"
-                >
-                  <Underline className="h-4 w-4" />
-                </Button>
+                {replyAllCcRecipients.length > 0 ? (
+                  <>
+                    Cc{' '}
+                    <span className="font-medium">
+                      {replyAllCcRecipients.join(', ')}
+                    </span>
+                    <br />
+                  </>
+                ) : null}
+                Original Bcc: <span className="font-medium">{bccDisplay}</span>
+                <br />
+                Subject: {subject}
               </div>
-              <div
-                ref={editorRef}
-                contentEditable
-                onInput={(event) => setBody(event.currentTarget.innerHTML)}
-                className="min-h-48 bg-white p-4 text-sm outline-none dark:bg-slate-950"
-                style={{ minHeight: '12rem' }}
+
+              <div className="grid gap-2">
+                <Label>Reply mode</Label>
+                <RadioGroup
+                  value={replyMode}
+                  onValueChange={(value) =>
+                    setReplyMode(value as 'reply' | 'reply_all')
+                  }
+                  className="grid gap-2 sm:grid-cols-2"
+                >
+                  <Label className="flex cursor-pointer items-center gap-2 rounded-md border p-3">
+                    <RadioGroupItem value="reply" />
+                    <span>Reply to sender</span>
+                  </Label>
+                  <Label className="flex cursor-pointer items-center gap-2 rounded-md border p-3">
+                    <RadioGroupItem value="reply_all" />
+                    <span>Reply all</span>
+                  </Label>
+                </RadioGroup>
+              </div>
+
+              <div className="grid gap-2">
+                <Label>Message</Label>
+                <div className="overflow-hidden rounded-md border border-gray-200 dark:border-slate-800">
+                  <div className="flex items-center gap-1 border-b bg-zinc-50 p-1 dark:bg-zinc-900/50">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0"
+                      onClick={() => handleFormat('bold')}
+                      title="Bold"
+                    >
+                      <Bold className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0"
+                      onClick={() => handleFormat('italic')}
+                      title="Italic"
+                    >
+                      <Italic className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0"
+                      onClick={() => handleFormat('underline')}
+                      title="Underline"
+                    >
+                      <Underline className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <div
+                    ref={editorRef}
+                    contentEditable
+                    onInput={(event) => setBody(event.currentTarget.innerHTML)}
+                    className="min-h-48 bg-white p-4 text-sm outline-none dark:bg-slate-950"
+                    style={{ minHeight: '12rem' }}
+                  />
+                </div>
+              </div>
+
+              <EmailAttachmentPicker
+                files={attachmentFiles}
+                disabled={mutation.isPending}
+                onAddFiles={addAttachmentFiles}
+                onRemoveFile={removeAttachmentFile}
               />
-            </div>
-          </div>
             </div>
           </div>
 
