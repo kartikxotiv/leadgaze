@@ -65,7 +65,7 @@ export function LogoUploader({ companyName, onFileSelect, disabled, initialLogoU
 
       <div className="flex flex-col gap-1 justify-center">
         <div className="flex items-center gap-2">
-          <p className="primary-heading text-leadgaze-dark tracking-tight dark:text-white">Company logo</p>
+          <p className="primary-text-big-regular text-leadgaze-dark tracking-tight dark:text-white">Company logo</p>
           <button
             type="button"
             className="text-slate-500 hover:text-slate-700 disabled:opacity-50 transition-colors"

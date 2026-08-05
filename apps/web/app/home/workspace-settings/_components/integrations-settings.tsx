@@ -164,62 +164,65 @@ export function WorkspaceIntegrationsSettings({ workspace }: WorkspaceIntegratio
   ];
   
   const renderIntegrationItem = (integration: any) => (
-    <CardWidgetListItem
+    <div
       key={integration.id}
-      icon={
-        <div className="p-2 rounded-lg bg-primary/10">
-          {integration.icon}
-        </div>
-      }
-      title={integration.name}
-      badge={<Badge variant="default" className="bg-blue-600">{integration.badge}</Badge>}
-      content={
-        <div className="flex flex-col h-full justify-between">
-          <p className="text-sm text-muted-foreground mt-1 mb-4 h-12">
-            {integration.description}
-          </p>
-          <div 
-            className="flex items-center text-sm font-medium cursor-pointer text-foreground hover:text-foreground/80"
-            onClick={() => router.push(integration.path)}
-          >
-            Configure Settings
-            <ArrowRight className="ml-1 h-4 w-4" />
+      className="flex flex-col border border-slate-200 rounded-md bg-white overflow-hidden shadow-sm"
+    >
+      <div className="p-4 flex-1 flex flex-col">
+        <div className="flex justify-between items-start mb-4">
+          <div className="w-8 h-8 flex items-center justify-center border border-slate-100 rounded-md shadow-sm">
+            {integration.icon}
           </div>
+          <Badge className="bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs px-2.5 py-0.5 rounded-sm border-0">
+            {integration.badge}
+          </Badge>
         </div>
-      }
-      className="p-4"
-    />
+        <div className="primary-text-medium font-bold text-slate-800 mb-2">
+          {integration.name}
+        </div>
+        <div className="text-[13px] text-slate-500 flex-1 leading-relaxed">
+          {integration.description}
+        </div>
+      </div>
+      <div 
+        className="px-4 py-3 border-t border-slate-100 flex items-center justify-between secondary-text-small-bold cursor-pointer text-slate-800 hover:bg-slate-50 transition-colors"
+        onClick={() => router.push(integration.path)}
+      >
+        <span>Configure Settings</span>
+        <ArrowRight className="h-4 w-4 text-slate-600" />
+      </div>
+    </div>
   );
 
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader className="p-4 pb-3">
-          <CardTitle className="mb-0 flex items-center gap-2 text-base">
+        <CardHeader className="p-2 pb-4 border-b border-slate-200">
+          <CardTitle className="mb-0 flex items-center gap-2 primary-text-big-regular text-leadgaze-dark dark:text-white">
             Work Space Integration
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="mt-1">
             Connect external channels to automatically ingest CRM Leads and Service Cloud support tickets.
           </CardDescription>
         </CardHeader>
-        <CardContent className="p-4 pt-0 space-y-6">
+        <CardContent className="p-2 space-y-6">
           
-          <div className="space-y-3">
-            <h3 className="font-semibold text-sm border-b pb-2">Lead Integration</h3>
+          <div className="space-y-2">
+            <h3 className="primary-text-big-regular text-leadgaze-dark dark:text-white pb-2 mb-0">Lead Integration</h3>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {leadIntegrations.map(renderIntegrationItem)}
             </div>
           </div>
 
-          <div className="space-y-3">
-            <h3 className="font-semibold text-sm border-b pb-2">Email Integration</h3>
+          <div className="space-y-2 border-t">
+            <h3 className="primary-text-big-regular text-leadgaze-dark dark:text-white pb-2 mb-0 mt-2">Email Integration</h3>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {emailIntegrations.map(renderIntegrationItem)}
             </div>
           </div>
 
-          <div className="space-y-3">
-            <h3 className="font-semibold text-sm border-b pb-2">Meeting Integration</h3>
+          <div className="space-y-2 border-t">
+            <h3 className="primary-text-big-regular text-leadgaze-dark dark:text-white pb-2 mb-0 mt-2">Meeting Integration</h3>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {meetingIntegrations.map(renderIntegrationItem)}
             </div>

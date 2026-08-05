@@ -146,7 +146,7 @@ export default function WorkspaceSettingsPage() {
           {canViewGeneralSettings && workspace?.id && (
             <TabsContent
               value="general"
-              className="mt-0 flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col data-[state=active]:flex data-[state=active]:flex-1 data-[state=active]:flex-col data-[state=active]:min-h-0 overflow-y-auto pr-2 pb-6"
+              className="mt-0 flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col data-[state=active]:flex data-[state=active]:flex-1 data-[state=active]:flex-col data-[state=active]:min-h-0 overflow-y-auto pb-0 mb-0"
             >
               <WorkspaceGeneralSettings workspaceId={workspace.id} />
             </TabsContent>
@@ -155,7 +155,7 @@ export default function WorkspaceSettingsPage() {
           {canViewSettings && workspace?.id && (
             <TabsContent
               value="localization"
-              className="mt-0 flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col data-[state=active]:flex data-[state=active]:flex-1 data-[state=active]:flex-col data-[state=active]:min-h-0 overflow-y-auto pr-2 pb-6"
+              className="mt-0 flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col data-[state=active]:flex data-[state=active]:flex-1 data-[state=active]:flex-col data-[state=active]:min-h-0 overflow-y-auto pb-0 mb-0"
             >
               <WorkspaceLocalizationSettings workspaceId={workspace.id} />
             </TabsContent>
@@ -164,7 +164,7 @@ export default function WorkspaceSettingsPage() {
           {canViewSubscription && (
             <TabsContent
               value="subscription"
-              className="mt-0 flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col data-[state=active]:flex data-[state=active]:flex-1 data-[state=active]:flex-col data-[state=active]:min-h-0 overflow-y-auto pr-2 pb-6"
+              className="mt-0 flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col data-[state=active]:flex data-[state=active]:flex-1 data-[state=active]:flex-col data-[state=active]:min-h-0 overflow-y-auto pb-0 mb-0"
             >
               <WorkspaceSubscriptionSettings />
             </TabsContent>
@@ -173,7 +173,7 @@ export default function WorkspaceSettingsPage() {
           {canViewSubscription && (
             <TabsContent
               value="invoice"
-              className="mt-0 flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col data-[state=active]:flex data-[state=active]:flex-1 data-[state=active]:flex-col data-[state=active]:min-h-0 overflow-y-auto pr-2 pb-6"
+              className="mt-0 flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col data-[state=active]:flex data-[state=active]:flex-1 data-[state=active]:flex-col data-[state=active]:min-h-0 overflow-y-auto pb-0 mb-0"
             >
               <WorkspaceInvoiceSettings />
             </TabsContent>
@@ -182,7 +182,7 @@ export default function WorkspaceSettingsPage() {
           {canViewSettings && (
             <TabsContent
               value="integrations"
-              className="mt-0 flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col data-[state=active]:flex data-[state=active]:flex-1 data-[state=active]:flex-col data-[state=active]:min-h-0 overflow-y-auto pr-2 pb-6"
+              className="mt-0 flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col data-[state=active]:flex data-[state=active]:flex-1 data-[state=active]:flex-col data-[state=active]:min-h-0 overflow-y-auto pb-0 mb-0"
             >
               <WorkspaceIntegrationsSettings workspace={workspace} />
             </TabsContent>

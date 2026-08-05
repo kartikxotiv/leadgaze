@@ -337,7 +337,7 @@ export function WorkspaceGeneralSettings({ workspaceId }: WorkspaceGeneralSettin
         <Card>
           <CardHeader className="p-2 flex flex-row items-center justify-between space-y-0">
             <div>
-              <CardTitle className="mb-0 flex items-center gap-2 text-base">
+              <CardTitle className="mb-0 flex items-center gap-2 text-base primary-text-big-regular">
                 <Building2 className="h-4 w-4" />
                 Workspace Management
               </CardTitle>
@@ -354,8 +354,8 @@ export function WorkspaceGeneralSettings({ workspaceId }: WorkspaceGeneralSettin
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between p-2 border-b border-slate-200">
-          <div>
-            <CardTitle className="mb-0 flex items-center gap-2 text-base">
+          <div className="mb-0">
+            <CardTitle className="mb-0 flex items-center gap-2 text-base primary-text-big-regular">
               <Building2 className="h-4 w-4" />
               Company Profile
             </CardTitle>
@@ -452,7 +452,7 @@ export function WorkspaceGeneralSettings({ workspaceId }: WorkspaceGeneralSettin
           </div>
 
           <div className="border-t pt-2">
-            <h3 className="primary-heading text-leadgaze-dark tracking-tight dark:text-white">Invoice Details</h3>
+            <h3 className="primary-text-big-regular text-leadgaze-dark tracking-tight dark:text-white">Invoice Details</h3>
             <div className="space-y-2">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                 <div>
@@ -529,7 +529,7 @@ export function WorkspaceGeneralSettings({ workspaceId }: WorkspaceGeneralSettin
           </div>
 
           <div className="border-t pt-2">
-            <h3 className="primary-heading text-leadgaze-dark tracking-tight dark:text-white">Workspace Settings</h3>
+            <h3 className="primary-text-big-regular text-leadgaze-dark tracking-tight dark:text-white">Workspace Settings</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               <div>
                 <Label>

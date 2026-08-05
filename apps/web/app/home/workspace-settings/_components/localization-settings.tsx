@@ -311,8 +311,8 @@ export function WorkspaceLocalizationSettings({
       {/* Date & Time Settings */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between p-2 border-b border-slate-200">
-          <div>
-            <CardTitle className="mb-0 flex items-center gap-2 text-base">
+          <div className="mb-0">
+            <CardTitle className="mb-0 flex items-center gap-2 primary-text-big-regular">
               <CalendarClock className="h-4 w-4" />
               Date &amp; Time
             </CardTitle>
@@ -410,8 +410,8 @@ export function WorkspaceLocalizationSettings({
       {/* Currency Settings */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between p-2 border-b border-slate-200">
-          <div>
-            <CardTitle className="mb-0 flex items-center gap-2 text-base">
+          <div className='mb-0'>
+            <CardTitle className="mb-0 flex items-center gap-2 primary-text-big-regular">
               <CircleDollarSign className="h-4 w-4" />
               Currencies
             </CardTitle>

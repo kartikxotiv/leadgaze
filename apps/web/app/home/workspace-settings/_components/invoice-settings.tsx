@@ -47,7 +47,7 @@ export function WorkspaceInvoiceSettings() {
   return (
     <div className="flex flex-col h-full flex-1 min-h-0 border border-slate-200 overflow-hidden bg-white">
       <div className="p-2 border-b border-slate-200 bg-white shrink-0">
-        <h3 className="mb-0 flex items-center gap-2 primary-text-medium text-leadgaze-dark dark:text-white">
+        <h3 className="mb-0 flex items-center gap-2 primary-text-big-regular text-leadgaze-dark dark:text-white">
           <FileText className="h-4 w-4" />
           Invoice History
         </h3>

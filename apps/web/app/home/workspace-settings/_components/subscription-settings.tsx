@@ -28,11 +28,11 @@ export function WorkspaceSubscriptionSettings() {
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between p-2 border-b border-slate-200 pb-1">
-          <CardTitle className="primary-text-big-regular text-leadgaze-dark dark:text-white">Your Modules</CardTitle>
+          <CardTitle className="primary-text-big-regular text-leadgaze-dark dark:text-white mb-0">Your Modules</CardTitle>
           <div className="secondary-text-small-bold text-leadgaze-dark dark:text-white">2 MODULES</div>
         </CardHeader>
-        <CardContent className="pb-0">
-          <div className="grid grid-cols-[2fr_1fr_1.5fr_1fr_1fr_auto] gap-2 px-2 py-3 border-b border-slate-200 secondary-text-small-bold text-leadgaze-dark dark:text-white uppercase">
+        <CardContent className="p-0">
+          <div className="grid grid-cols-[2fr_1fr_1.5fr_1fr_1fr_auto] gap-2 px-2 py-2 border-b border-slate-200 secondary-text-small-bold text-leadgaze-dark dark:text-white uppercase">
             <div>Module</div>
             <div>Status</div>
             <div className="text-center">Seats</div>
@@ -139,11 +139,11 @@ export function WorkspaceSubscriptionSettings() {
                 <div className="p-2 space-y-2 bg-white">
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 text-[10px] font-bold">
+                      <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 secondary-text-small-bold font-bold">
                         S
                       </div>
                       <div>
-                        <div className="text-xs font-semibold text-slate-800">Sales Manager</div>
+                        <div className="primary-text-medium text-slate-800">Sales Manager</div>
                         <div className="text-[10px] text-slate-500">sales.manager.staging@yopmail.com</div>
                       </div>
                     </div>
@@ -152,11 +152,11 @@ export function WorkspaceSubscriptionSettings() {
                   
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-700 text-[10px] font-bold">
+                      <div className="w-9 h-9 rounded-full bg-purple-100 flex items-center justify-center text-purple-700 secondary-text-small-bold font-bold">
                         K
                       </div>
                       <div>
-                        <div className="text-xs font-semibold text-slate-800">kartik</div>
+                        <div className="primary-text-medium text-slate-800">kartik</div>
                         <div className="text-[10px] text-slate-500">kartik.staging1@yopmail.com</div>
                       </div>
                     </div>
@@ -172,7 +172,7 @@ export function WorkspaceSubscriptionSettings() {
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between p-2 border-b border-slate-200">
-          <div>
+          <div className="mb-0">
             <CardTitle className="mb-0 primary-text-big-regular text-leadgaze-dark dark:text-white">Payment Method</CardTitle>
             <CardDescription className="text-xs">
               Payment for domains, emails, and other usage are made using the default card.
