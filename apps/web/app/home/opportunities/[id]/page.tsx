@@ -191,7 +191,7 @@ export default function OpportunityDetailsPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isLogCallDialogOpen, setIsLogCallDialogOpen] = useState(false);
   const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
-  const [openAccordion, setOpenAccordion] = useState<string>('');
+  const [openAccordions, setOpenAccordions] = useState<string[]>(['details', 'additional', 'assignees']);
   const [isManageStagesOpen, setIsManageStagesOpen] = useState(false);
   const [isEditingAmount, setIsEditingAmount] = useState(false);
   const [isEditingCloseDate, setIsEditingCloseDate] = useState(false);
@@ -475,24 +475,21 @@ export default function OpportunityDetailsPage() {
 
   return (
     <ModuleGuard module="opportunities">
-      <div className="flex flex-wrap items-start gap-2 pb-2 pt-4 sm:flex-nowrap sm:items-center sm:justify-between">
+      <div className="flex flex-wrap items-center gap-2 py-2 sm:flex-nowrap sm:justify-between">
         <div className="flex items-center gap-2">
           <Button
             variant="ghost"
-            size="sm"
+            size="icon"
             asChild
-            className="border-leadgaze-border border p-0"
+            className="h-8 w-8"
           >
             <Link href="/home/sales/opportunities">
-              <ArrowLeft className="ml-2 mr-2 h-4 w-4" />
+              <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
-          <div className="flex flex-col">
-            <h1 className="text-lg font-semibold">Opportunity details</h1>
-            <p className="text-leadgaze-muted text-sm">
-              View and edit opportunity information
-            </p>
-          </div>
+          <h1 className="text-leadgaze-dark text-lg font-bold dark:text-white">
+            Opportunity Details
+          </h1>
         </div>
         <div className="flex items-center gap-2">
           {canEdit && (
@@ -747,8 +744,8 @@ export default function OpportunityDetailsPage() {
           <div className="w-full space-y-4 lg:w-[65%] lg:overflow-y-auto">
             <DetailHeader
               avatar={
-                <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-gradient-to-br from-blue-400 to-blue-600 text-white">
-                  <FileText className="h-8 w-8 text-white" />
+                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-blue-400 to-blue-600 text-white">
+                  <FileText className="h-6 w-6 text-white" />
                 </div>
               }
               title={opportunity.opportunity_name}
@@ -1024,11 +1021,10 @@ export default function OpportunityDetailsPage() {
           <div className="w-full space-y-4 lg:w-[35%] lg:overflow-y-auto">
             {/* Accordion Sections */}
             <Accordion
-              type="single"
-              collapsible
+              type="multiple"
               className="space-y-2"
-              value={openAccordion}
-              onValueChange={setOpenAccordion}
+              value={openAccordions}
+              onValueChange={setOpenAccordions}
             >
               {/* Opportunity Details */}
               <AccordionItem
@@ -1498,7 +1494,7 @@ export default function OpportunityDetailsPage() {
                     <ChevronDown
                       className={cn(
                         'text-muted-foreground h-4 w-4 shrink-0 transition-transform duration-200',
-                        openAccordion === 'assignees' && 'rotate-180',
+                        openAccordions.includes('assignees') && 'rotate-180',
                       )}
                     />
                   </AccordionTrigger>

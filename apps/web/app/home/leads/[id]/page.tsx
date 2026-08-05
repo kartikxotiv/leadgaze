@@ -209,7 +209,7 @@ export default function LeadDetailsPage() {
   const [isLogCallDialogOpen, setIsLogCallDialogOpen] = useState(false);
   const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [openAccordion, setOpenAccordion] = useState<string>('');
+  const [openAccordions, setOpenAccordions] = useState<string[]>(['company', 'contact']);
   const [isEditingCompanySize, setIsEditingCompanySize] = useState(false);
 
   const queryClient = useQueryClient();
@@ -500,26 +500,20 @@ export default function LeadDetailsPage() {
 
   return (
     <ModuleGuard module="leads">
-      <div className="flex flex-wrap items-start gap-2 pt-4 pb-2 sm:flex-nowrap sm:items-center sm:justify-between">
+      <div className="flex flex-wrap items-center gap-2 py-2 sm:flex-nowrap sm:justify-between">
         <div className="flex items-center gap-2">
           <Button
             variant="ghost"
-            size="sm"
             asChild
-            className="border-leadgaze-border border p-0"
+            
           >
             <Link href="/home/sales/leads">
-              <ArrowLeft className="mr-2 ml-2 h-4 w-4" />
+              <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
-          <div className="flex flex-col">
-            <h1 className="text-leadgaze-dark text-lg font-bold dark:text-white">
-              Lead details
-            </h1>
-            <p className="text-leadgaze-muted text-sm">
-              View and edit lead information
-            </p>
-          </div>
+          <h1 className="text-leadgaze-dark text-lg font-bold dark:text-white">
+            Lead Details
+          </h1>
         </div>
         <div className="flex items-center gap-2">
           {canEdit && (
@@ -644,7 +638,7 @@ export default function LeadDetailsPage() {
           <div className="w-full space-y-4 lg:w-[65%] lg:overflow-y-auto">
             <DetailHeader
               avatar={
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-blue-400 to-blue-600 text-lg font-semibold text-white">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-blue-400 to-blue-600 text-base font-semibold text-white">
                   {lead.first_name?.charAt(0)}
                   {lead.last_name?.charAt(0)}
                 </div>
@@ -898,11 +892,10 @@ export default function LeadDetailsPage() {
           <div className="w-full space-y-4 lg:w-[35%] lg:overflow-y-auto">
             {/* Accordion Sections */}
             <Accordion
-              type="single"
-              collapsible
+              type="multiple"
               className="space-y-2"
-              value={openAccordion}
-              onValueChange={setOpenAccordion}
+              value={openAccordions}
+              onValueChange={setOpenAccordions}
             >
               {/* Company */}
               <AccordionItem
@@ -1267,12 +1260,12 @@ export default function LeadDetailsPage() {
                         Assign Member
                       </Button>
                     </div>
-                    <ChevronDown
-                      className={cn(
-                        'text-muted-foreground h-4 w-4 shrink-0 transition-transform duration-200',
-                        openAccordion === 'assignees' && 'rotate-180',
-                      )}
-                    />
+                      <ChevronDown
+                        className={cn(
+                          'h-4 w-4 shrink-0 text-gray-500 transition-transform duration-200 dark:text-gray-400',
+                          openAccordions.includes('assignees') && 'rotate-180',
+                        )}
+                      />
                   </AccordionTrigger>
                   <AccordionContent className="px-4 pb-4">
                     <LeadAssignees

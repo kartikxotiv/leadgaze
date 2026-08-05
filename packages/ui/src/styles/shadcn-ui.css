@@ -172,5 +172,8 @@
     font-size: 14px !important;
     padding-top:2px;
   }
+  .border-b-accordion {
+    border-color: #f1f5f9;
+  }
 
 }

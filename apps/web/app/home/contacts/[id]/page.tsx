@@ -176,7 +176,7 @@ export default function ContactDetailsPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isLogCallDialogOpen, setIsLogCallDialogOpen] = useState(false);
   const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
-  const [openAccordion, setOpenAccordion] = useState<string>('');
+  const [openAccordions, setOpenAccordions] = useState<string[]>(['contact', 'account']);
 
   const { currentWorkspace: workspace, canAccess } = useRBAC();
   const canManageEmail = canAccess('emails', 'manage_email');
@@ -353,24 +353,21 @@ export default function ContactDetailsPage() {
 
   return (
     <ModuleGuard module="contacts">
-      <div className="flex flex-wrap items-start gap-2 pt-4 pb-2 sm:flex-nowrap sm:items-center sm:justify-between">
+      <div className="flex flex-wrap items-center gap-2 py-2 sm:flex-nowrap sm:justify-between">
         <div className="flex items-center gap-2">
           <Button
             variant="ghost"
-            size="sm"
+            size="icon"
             asChild
-            className="border-leadgaze-border border p-0"
+            className="h-8 w-8"
           >
             <Link href="/home/sales/contacts">
-              <ArrowLeft className="mr-2 ml-2 h-4 w-4" />
+              <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
-          <div className="flex flex-col">
-            <h1 className="text-lg font-semibold">Contact details</h1>
-            <p className="text-leadgaze-muted text-sm">
-              View and edit contact information
-            </p>
-          </div>
+          <h1 className="text-leadgaze-dark text-lg font-bold dark:text-white">
+            Contact Details
+          </h1>
         </div>
         <div className="flex items-center gap-2">
           {canEdit && (
@@ -448,7 +445,7 @@ export default function ContactDetailsPage() {
           <div className="w-full space-y-4 lg:w-[65%] lg:overflow-y-auto">
             <DetailHeader
               avatar={
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-blue-400 to-blue-600 text-lg font-semibold text-white">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-blue-400 to-blue-600 text-base font-semibold text-white">
                   {contact.first_name.charAt(0)}
                   {contact.last_name?.charAt(0)}
                 </div>
@@ -687,11 +684,10 @@ export default function ContactDetailsPage() {
           <div className="w-full space-y-4 lg:w-[35%] lg:overflow-y-auto">
             {/* Accordion Sections */}
             <Accordion
-              type="single"
-              collapsible
+              type="multiple"
               className="space-y-2"
-              value={openAccordion}
-              onValueChange={setOpenAccordion}
+              value={openAccordions}
+              onValueChange={setOpenAccordions}
             >
               {/* Contact Info */}
               <AccordionItem

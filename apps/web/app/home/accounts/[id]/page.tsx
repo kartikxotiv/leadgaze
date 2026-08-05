@@ -176,7 +176,7 @@ export default function AccountDetailsPage() {
   const [isOpportunityDialogOpen, setIsOpportunityDialogOpen] = useState(false);
   const [isLogCallDialogOpen, setIsLogCallDialogOpen] = useState(false);
   const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
-  const [openAccordion, setOpenAccordion] = useState<string>('');
+  const [openAccordions, setOpenAccordions] = useState<string[]>(['details', 'additional', 'contacts']);
   const [isEditingAccountType, setIsEditingAccountType] = useState(false);
   const [isEditingRevenue, setIsEditingRevenue] = useState(false);
 
@@ -456,24 +456,21 @@ export default function AccountDetailsPage() {
 
   return (
     <ModuleGuard module="accounts">
-      <div className="flex flex-wrap items-start gap-2 pb-2 pt-4 sm:flex-nowrap sm:items-center sm:justify-between">
+      <div className="flex flex-wrap items-center gap-2 py-2 sm:flex-nowrap sm:justify-between">
         <div className="flex items-center gap-2">
           <Button
             variant="ghost"
-            size="sm"
+            size="icon"
             asChild
-            className="border-leadgaze-border border p-0"
+            className="h-8 w-8"
           >
             <Link href="/home/sales/accounts">
-              <ArrowLeft className="ml-2 mr-2 h-4 w-4" />
+              <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
-          <div className="flex flex-col">
-            <h1 className="text-lg font-semibold">Account details</h1>
-            <p className="text-leadgaze-muted text-sm">
-              View and edit account information
-            </p>
-          </div>
+          <h1 className="text-leadgaze-dark text-lg font-bold dark:text-white">
+            Account Details
+          </h1>
         </div>
         <div className="flex items-center gap-2">
           {canEdit && (
@@ -556,8 +553,8 @@ export default function AccountDetailsPage() {
           <div className="w-full space-y-4 lg:w-[65%] lg:overflow-y-auto">
             <DetailHeader
               avatar={
-                <div className="bg-primary/10 flex h-16 w-16 items-center justify-center rounded-lg">
-                  <Building2 className="text-primary h-8 w-8" />
+                <div className="bg-primary/10 flex h-12 w-12 items-center justify-center rounded-lg">
+                  <Building2 className="text-primary h-6 w-6" />
                 </div>
               }
               title={account.account_name}
@@ -814,11 +811,10 @@ export default function AccountDetailsPage() {
           <div className="w-full space-y-4 lg:w-[35%] lg:overflow-y-auto">
             {/* Accordion Sections */}
             <Accordion
-              type="single"
-              collapsible
+              type="multiple"
               className="space-y-2"
-              value={openAccordion}
-              onValueChange={setOpenAccordion}
+              value={openAccordions}
+              onValueChange={setOpenAccordions}
             >
               {/* Account Details */}
               <AccordionItem

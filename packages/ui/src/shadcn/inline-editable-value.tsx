@@ -87,7 +87,7 @@ export function InlineEditableValue({
         autoFocus
         disabled={disabled || isSaving}
         className={cn(
-          'w-full min-h-[32px] resize-y text-right py-1.5 px-2 border-black/20 dark:border-white/20 focus-visible:border-gray-200 dark:focus-visible:border-gray-600 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0',
+          'w-full min-h-[34px] resize-y text-right py-1.5 px-2 border-black/20 dark:border-white/20 focus-visible:border-gray-200 dark:focus-visible:border-gray-600 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0',
           inputClassName
         )}
         value={draft}
@@ -146,7 +146,7 @@ export function InlineEditableValue({
       type="button"
       disabled={disabled}
       className={cn(
-        'group inline-flex w-full min-h-[32px] py-1 px-2 items-center justify-start rounded-[4px] text-left outline-none transition-colors',
+        'group inline-flex w-full min-h-[34px] py-1 px-2 items-center justify-start rounded-[4px] text-left outline-none transition-colors',
         'focus-visible:ring-ring focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-background',
         {
           'cursor-text': !disabled,

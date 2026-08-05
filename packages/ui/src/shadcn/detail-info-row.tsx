@@ -58,5 +58,5 @@ export interface DetailInfoListProps {
  * Applies consistent spacing between rows.
  */
 export function DetailInfoList({ children, className }: DetailInfoListProps) {
-  return <div className={cn('space-y-1', className)}>{children}</div>;
+  return <div className={cn('flex flex-col divide-y divide-slate-100 dark:divide-slate-800', className)}>{children}</div>;
 }
