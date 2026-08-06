@@ -6,7 +6,11 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Clock, FileText, Loader2, Mail, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { CoreEmailComposeDialog, CoreEmailDetailDialog } from '@kit/core/pages';
+import {
+  CoreEmailComposeDialog,
+  CoreEmailDetailDialog,
+  CoreEmailReplyDialog,
+} from '@kit/core/pages';
 import {
   deleteCoreEmailActivityService,
   getCoreEmailAccountsService,
@@ -51,6 +55,7 @@ export function EntityEmails({
   const [composeRecipientEmail, setComposeRecipientEmail] = useState('');
   const [selectedEmail, setSelectedEmail] = useState<any>(null); // eslint-disable-line @typescript-eslint/no-explicit-any
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [isReplyOpen, setIsReplyOpen] = useState(false);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -227,7 +232,7 @@ export function EntityEmails({
                           </Badge>
                           {item.direction !== 'inbound' &&
                             item.status !== 'sent' && (
-                              <span className="ml-1 text-[10px] italic text-blue-500 opacity-0 transition-opacity group-hover:opacity-100">
+                              <span className="ml-1 text-[10px] text-blue-500 italic opacity-0 transition-opacity group-hover:opacity-100">
                                 • Click to Edit
                               </span>
                             )}
@@ -273,8 +278,7 @@ export function EntityEmails({
                           )}
                           {item.status === 'scheduled' && item.scheduled_at && (
                             <span className="font-semibold text-blue-600">
-                              Due:{' '}
-                              {formatDate(item.scheduled_at)}
+                              Due: {formatDate(item.scheduled_at)}
                             </span>
                           )}
                         </div>
@@ -308,10 +312,31 @@ export function EntityEmails({
         onReply={(email) => {
           setSelectedEmail(email);
           setIsDetailOpen(false);
-          setComposeRecipientEmail(
-            email.direction === 'inbound' ? email.from_email : email.to_emails,
-          );
-          setIsComposeOpen(true);
+          setIsReplyOpen(true);
+        }}
+      />
+
+      <CoreEmailReplyDialog
+        open={isReplyOpen}
+        onOpenChange={(open) => {
+          setIsReplyOpen(open);
+          if (!open) {
+            queryClient.invalidateQueries({
+              queryKey: [
+                'core-entity-emails',
+                workspace?.id,
+                entityType,
+                entityId,
+              ],
+            });
+          }
+        }}
+        workspaceId={workspace?.id || ''}
+        accounts={coreEmailAccounts}
+        email={selectedEmail}
+        templateContext={{
+          entity_name: entityName,
+          entity_email: entityEmail,
         }}
       />
 

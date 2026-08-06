@@ -11,6 +11,11 @@ export async function sendMail(options: {
   html?: string;
   text?: string;
   headers?: Record<string, string>;
+  attachments?: Array<{
+    filename: string;
+    path: string;
+    contentType?: string;
+  }>;
 }) {
   const { account } = options;
 

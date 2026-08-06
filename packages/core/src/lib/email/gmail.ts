@@ -40,6 +40,7 @@ export async function sendGmailOAuth({
   html,
   text,
   headers,
+  attachments,
 }: {
   account: Record<string, any>;
   from: string;
@@ -50,6 +51,11 @@ export async function sendGmailOAuth({
   html?: string;
   text?: string;
   headers?: Record<string, string>;
+  attachments?: Array<{
+    filename: string;
+    path: string;
+    contentType?: string;
+  }>;
 }) {
   if (!account.refresh_token) {
     throw new Error(
@@ -128,5 +134,6 @@ export async function sendGmailOAuth({
     html,
     text,
     headers,
+    attachments,
   });
 }
