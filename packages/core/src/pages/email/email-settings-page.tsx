@@ -325,8 +325,8 @@ export function CoreEmailSettingsPage({
                       }}
                     >
                       <DialogTrigger asChild>
-                        <Button variant="outline" size="icon">
-                          <Plus className="h-4 w-4" />
+                        <Button className="bg-leadgaze-primary hover:bg-leadgaze-primary text-white secondary-text-small-bold gap-1.5 px-2">
+                          <Plus className="h-4 w-4" /> Add
                         </Button>
                       </DialogTrigger>
                       <DialogContent className="max-h-[90vh] overflow-hidden border-gray-200 bg-white p-0 sm:max-w-[540px] dark:border-slate-800 dark:bg-slate-950">

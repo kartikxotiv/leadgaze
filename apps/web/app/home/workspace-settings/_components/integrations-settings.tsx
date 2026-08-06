@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import {
   Globe,
@@ -47,8 +48,8 @@ export function WorkspaceIntegrationsSettings({ workspace }: WorkspaceIntegratio
   if (view === 'emails' && canManageEmail) {
     return (
       <div className="flex flex-col h-full space-y-4">
-        <div className="flex items-center">
-          <Button variant="ghost" className="px-2 font-semibold" onClick={() => router.push('?tab=integrations')}>
+        <div className="flex items-center border-y-[1px] border-solid card-seperator-border py-1 mb-2">
+          <Button variant="ghost" className="px-2 primary-heading-extra text-leadgaze-dark dark:text-white" onClick={() => router.push('?tab=integrations')}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Email Accounts
           </Button>
@@ -75,8 +76,8 @@ export function WorkspaceIntegrationsSettings({ workspace }: WorkspaceIntegratio
   if (view === 'meetings') {
     return (
       <div className="flex flex-col h-full space-y-4">
-        <div className="flex items-center">
-          <Button variant="ghost" className="px-2 font-semibold" onClick={() => router.push('?tab=integrations')}>
+        <div className="flex items-center border-y-[1px] border-solid card-seperator-border py-1 mb-2">
+          <Button variant="ghost" className="px-2 primary-heading-extra text-leadgaze-dark dark:text-white" onClick={() => router.push('?tab=integrations')}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Meeting Accounts
           </Button>
@@ -95,7 +96,7 @@ export function WorkspaceIntegrationsSettings({ workspace }: WorkspaceIntegratio
       id: 'website-connector',
       name: 'Website Connector',
       description: 'Capture leads & support tickets from your website through embedded forms or direct API submissions.',
-      icon: <Globe className="h-6 w-6 text-primary" />,
+      icon: <Image src="/images/web-icon.png" width={24} height={24} alt="Website Connector" className="object-contain" />,
       badge: 'Available',
       path: `/home/sales/workspace-settings/integrations/website-connector`,
     },
@@ -103,7 +104,7 @@ export function WorkspaceIntegrationsSettings({ workspace }: WorkspaceIntegratio
       id: 'zapier',
       name: 'Zapier Integration',
       description: 'Connect over 5,000+ apps using out-of-the-box automation triggers.',
-      icon: <CheckCircle2 className="h-6 w-6 text-orange-500" />,
+      icon: <Image src="/images/zapier-icon.png" width={24} height={24} alt="Zapier Integration" className="object-contain" />,
       badge: 'Available',
       path: `/home/sales/workspace-settings/integrations/zapier`,
     },
@@ -111,7 +112,7 @@ export function WorkspaceIntegrationsSettings({ workspace }: WorkspaceIntegratio
       id: 'google-ads',
       name: 'Google Ads Lead Forms',
       description: 'Sync Google Ads lead form extensions directly with Leadgaze CRM automatically.',
-      icon: <BarChart3 className="h-6 w-6 text-blue-500" />,
+      icon: <Image src="/images/google-ads-icon.png" width={24} height={24} alt="Google Ads Lead Forms" className="object-contain" />,
       badge: 'Available',
       path: `/home/sales/workspace-settings/integrations/google-ads`,
     },
@@ -119,7 +120,7 @@ export function WorkspaceIntegrationsSettings({ workspace }: WorkspaceIntegratio
       id: 'meta-ads',
       name: 'Meta Lead Ads',
       description: 'Automatically import Facebook and Instagram leads in real-time via webhooks.',
-      icon: <Share2 className="h-6 w-6 text-blue-600" />,
+      icon: <Image src="/images/meta-icon.png" width={24} height={24} alt="Meta Lead Ads" className="object-contain" />,
       badge: 'Available',
       path: `/home/sales/workspace-settings/integrations/meta-ads`,
     },
@@ -127,7 +128,7 @@ export function WorkspaceIntegrationsSettings({ workspace }: WorkspaceIntegratio
       id: 'whatsapp',
       name: 'WhatsApp Business',
       description: 'Receive WhatsApp messages in a shared inbox and capture leads from conversations.',
-      icon: <MessageSquare className="h-6 w-6 text-green-500" />,
+      icon: <Image src="/images/whatsapp-icon.png" width={24} height={24} alt="WhatsApp Business" className="object-contain" />,
       badge: 'Available',
       path: `/home/sales/workspace-settings/integrations/whatsapp`,
     },
@@ -138,7 +139,7 @@ export function WorkspaceIntegrationsSettings({ workspace }: WorkspaceIntegratio
       id: 'email-accounts',
       name: 'Email Accounts',
       description: 'Receive Email messages in a shared inbox and capture leads from conversations.',
-      icon: <Mail className="h-6 w-6 text-green-500" />,
+      icon: <Image src="/images/email-icon.png" width={24} height={24} alt="Email Accounts" className="object-contain" />,
       badge: 'Available',
       path: `?tab=integrations&view=emails`,
     }
@@ -149,7 +150,7 @@ export function WorkspaceIntegrationsSettings({ workspace }: WorkspaceIntegratio
       id: 'google-meet',
       name: 'Google Meet Integration',
       description: 'Join and manage Google Meet calls from a shared inbox and capture action items from conversations.',
-      icon: <Video className="h-6 w-6 text-blue-500" />,
+      icon: <Image src="/images/google-meet-icon.png" width={24} height={24} alt="Google Meet Integration" className="object-contain" />,
       badge: 'Available',
       path: `?tab=integrations&view=meetings`,
     },
@@ -157,7 +158,7 @@ export function WorkspaceIntegrationsSettings({ workspace }: WorkspaceIntegratio
       id: 'zoom',
       name: 'Zoom Integration',
       description: 'Schedule and sync Zoom meetings directly from your CRM to streamline client calls and follow-ups.',
-      icon: <Video className="h-6 w-6 text-blue-500" />,
+      icon: <Image src="/images/zoom-icon.png" width={24} height={24} alt="Zoom Integration" className="object-contain" />,
       badge: 'Available',
       path: `?tab=integrations&view=meetings`,
     }
@@ -168,12 +169,12 @@ export function WorkspaceIntegrationsSettings({ workspace }: WorkspaceIntegratio
       key={integration.id}
       className="flex flex-col border border-slate-200 rounded-md bg-white overflow-hidden shadow-sm"
     >
-      <div className="p-4 flex-1 flex flex-col">
+      <div className="p-2 flex-1 flex flex-col">
         <div className="flex justify-between items-start mb-4">
-          <div className="w-8 h-8 flex items-center justify-center border border-slate-100 rounded-md shadow-sm">
+          <div className="w-7 h-7 flex items-center justify-center ">
             {integration.icon}
           </div>
-          <Badge className="bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs px-2.5 py-0.5 rounded-sm border-0">
+          <Badge className="bg-leadgaze-primary text-white font-medium text-xs px-2.5 py-0.5 rounded-sm border-0">
             {integration.badge}
           </Badge>
         </div>
@@ -185,7 +186,7 @@ export function WorkspaceIntegrationsSettings({ workspace }: WorkspaceIntegratio
         </div>
       </div>
       <div 
-        className="px-4 py-3 border-t border-slate-100 flex items-center justify-between secondary-text-small-bold cursor-pointer text-slate-800 hover:bg-slate-50 transition-colors"
+        className="px-2 py-2 border-t border-slate-100 flex items-center justify-between secondary-text-small-bold cursor-pointer text-slate-800 hover:bg-slate-50 transition-colors"
         onClick={() => router.push(integration.path)}
       >
         <span>Configure Settings</span>

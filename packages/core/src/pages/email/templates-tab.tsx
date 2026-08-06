@@ -48,8 +48,7 @@ import {
   getCoreEmailVariablesService,
   saveCoreEmailTemplateService,
 } from '../../services/email-templates.service';
-import { ListToolBar } from '@kit/ui/list-toolbar';
-import CustomTableContainer from '@kit/ui/custom-table-container';
+import { CardWidgetContainer } from '@kit/ui/card-widget-container';
 import { useColumnResize } from '@kit/ui/use-column-resize';
 import { useTableSort } from '@kit/ui/use-table-sort';
 import { SortableTableHead } from '@kit/ui/sortable-table-head';
@@ -102,26 +101,15 @@ export function CoreEmailTemplatesTab({
 
   return (
     <div className="flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col space-y-2">
-      {/* Full-width search / filter / actions toolbar */}
-              <div className="w-full max-w-full min-w-0 shrink-0 border-b">
-                <ListToolBar
-                  showSearch
-                  searchPlaceholder="Search templates..."
-                  searchValue={searchTerm}
-                  onSearchChange={setSearchTerm}
-                  actions={[
-                    {
-                      key: 'add',
-                      label: 'New Template',
-                      icon: Plus,
-                      onClick: () => {setSelectedTemplate(null); setIsDialogOpen(true);},
-                      show: true,
-                      buttonVariant: 'default',
-                    },
-                  ]}                  
-                />
-              </div>
-       <CustomTableContainer>      
+      <CardWidgetContainer title="Templates" icon2={
+          <Button
+            className="bg-leadgaze-primary hover:bg-leadgaze-primary text-white secondary-text-small-bold gap-1.5 px-2"
+            onClick={() => {setSelectedTemplate(null); setIsDialogOpen(true);}}
+          >
+            <Plus className="h-4 w-4" /> Add
+          </Button>
+      }>
+          <div className="mb-2">
           <Table>
             <TableHeader>
               <TableRow>
@@ -220,7 +208,8 @@ export function CoreEmailTemplatesTab({
               )}
             </TableBody>
           </Table>
-        </CustomTableContainer>
+        </div>
+      </CardWidgetContainer>
 
       <CoreTemplateDialog
         open={isDialogOpen}

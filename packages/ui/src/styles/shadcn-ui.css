@@ -175,5 +175,8 @@
   .border-b-accordion {
     border-color: #f1f5f9;
   }
+  .data-\[state\=active\]\:text-foreground[data-state="active"] {
+    color: var(--custom-popover-foreground) !important;
+  }
 
 }
