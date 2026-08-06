@@ -548,6 +548,14 @@ export function CreateMeetingDialog({
   const resolvedAccounts = ((crmAccounts && crmAccounts.length > 0) ? crmAccounts : fetchedAccounts) || [];
   const resolvedOpportunities = ((opportunities && opportunities.length > 0) ? opportunities : fetchedOpportunities) || [];
 
+  const googleAccounts = resolvedIntegrationAccounts.filter(
+    (acc: IntegrationAccountRow) =>
+      acc.connection?.provider === 'GOOGLE',
+  );
+  const zoomAccounts = resolvedIntegrationAccounts.filter(
+    (acc: IntegrationAccountRow) => acc.connection?.provider === 'ZOOM',
+  );
+
   const [meetingType, setMeetingType] = useState<MeetingType>(initialType);
   const [provider, setProvider] = useState<MeetingProvider>('GOOGLE');
   const [title, setTitle] = useState('');
@@ -628,6 +636,19 @@ export function CreateMeetingDialog({
 
   const createMutation = useMutation({
     mutationFn: async () => {
+      if (
+        meetingType === 'scheduled' &&
+        provider === 'GOOGLE' &&
+        !googleAccounts.some(
+          (account: IntegrationAccountRow) =>
+            account.id === selectedAccountId,
+        )
+      ) {
+        throw new Error(
+          'Select a connected Google account to create this meeting',
+        );
+      }
+
       const utcScheduledStart = scheduledStart
         ? convertLocalTimeToUTC(scheduledStart, timezone)
         : '';
@@ -794,7 +815,11 @@ export function CreateMeetingDialog({
     },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     onError: (error: any) => {
-      toast.error(error?.response?.data?.message || 'Failed to create meeting');
+      toast.error(
+        error?.response?.data?.message ||
+          error?.message ||
+          'Failed to create meeting',
+      );
     },
   });
 
@@ -811,15 +836,22 @@ export function CreateMeetingDialog({
       toast.error('Start and end times are required');
       return;
     }
+    if (meetingType === 'scheduled' && provider === 'GOOGLE') {
+      if (googleAccounts.length === 0) {
+        toast.error('Connect a Google account before creating a meeting');
+        return;
+      }
+      if (
+        !googleAccounts.some(
+          (account: IntegrationAccountRow) => account.id === selectedAccountId,
+        )
+      ) {
+        toast.error('Select a Google account');
+        return;
+      }
+    }
     createMutation.mutate();
   };
-
-  const googleAccounts = resolvedIntegrationAccounts.filter(
-    (acc: any) => acc.connection?.provider === 'GOOGLE',
-  );
-  const zoomAccounts = resolvedIntegrationAccounts.filter(
-    (acc: any) => acc.connection?.provider === 'ZOOM',
-  );
   const isBusy =
     createMutation.isPending ||
     isCreatingGoogleMeeting ||
@@ -1236,7 +1268,12 @@ export function CreateMeetingDialog({
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={isBusy}
+            disabled={
+              isBusy ||
+              (meetingType === 'scheduled' &&
+                provider === 'GOOGLE' &&
+                googleAccounts.length === 0)
+            }
             className="min-w-[160px]"
           >
             {isBusy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
