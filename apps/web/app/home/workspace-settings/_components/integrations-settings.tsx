@@ -200,7 +200,7 @@ export function WorkspaceIntegrationsSettings({ workspace }: WorkspaceIntegratio
       <Card>
         <CardHeader className="p-2 pb-4 border-b border-slate-200">
           <CardTitle className="mb-0 flex items-center gap-2 primary-text-big-regular text-leadgaze-dark dark:text-white">
-            Work Space Integration
+            Workspace Integration
           </CardTitle>
           <CardDescription className="mt-1">
             Connect external channels to automatically ingest CRM Leads and Service Cloud support tickets.

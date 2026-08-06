@@ -139,7 +139,7 @@ export function ZapierSettingsPage({
       <>
         <PageHeader
           title={
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-0">
               <Button variant="ghost" size="icon" className="h-8 w-8" disabled>
                 <ArrowLeft className="h-4 w-4" />
               </Button>
@@ -150,11 +150,11 @@ export function ZapierSettingsPage({
         />
 
         <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden py-4 pb-6 h-[calc(100vh-120px)]">
-          <div className="grid gap-6 lg:grid-cols-4 h-full min-h-0 flex-1 overflow-hidden">
-            <div className="space-y-6 lg:col-span-1 overflow-y-auto h-full pr-1 shrink-0">
+          <div className="grid gap-2 lg:grid-cols-4 h-full min-h-0 flex-1 overflow-hidden">
+            <div className="space-y-2 lg:col-span-1 overflow-y-auto h-full pr-1 shrink-0">
               <Card>
-                <CardHeader className="border-b pb-3">
-                  <CardTitle className="text-sm font-semibold">Config &amp; Routing</CardTitle>
+                <CardHeader className="border-b p-2">
+                  <CardTitle className="text-sm font-semibold text-leadgaze-dark dark:text-white">Config &amp; Routing</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2 pt-4">
                   <Skeleton className="h-4 w-full" />
@@ -198,7 +198,7 @@ export function ZapierSettingsPage({
     <>
       <PageHeader
         title={
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-0">
             <Button
               variant="ghost"
               size="icon"
@@ -213,15 +213,15 @@ export function ZapierSettingsPage({
         description="Connect Leadgaze with external apps using standard Zapier triggers and actions."
       />
 
-      <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden py-4 pb-6 h-[calc(100vh-120px)]">
-        <div className="grid gap-6 lg:grid-cols-4 h-full min-h-0 flex-1 overflow-hidden">
+      <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden p-0 pt-2 h-[calc(100vh-120px)]">
+        <div className="grid gap-2 lg:grid-cols-4 h-full min-h-0 flex-1 overflow-hidden">
           {/* Config column */}
-          <div className="space-y-6 lg:col-span-1 overflow-y-auto h-full pr-1 shrink-0">
+          <div className="space-y-2 lg:col-span-1 overflow-y-auto h-full pr-1 shrink-0">
             <Card className="glassmorphic border shadow-sm">
-              <CardHeader className="border-b pb-3">
-                <CardTitle className="text-sm font-semibold">Config &amp; Routing</CardTitle>
+              <CardHeader className="border-b p-2">
+                <CardTitle className="text-sm font-semibold text-leadgaze-dark dark:text-white">Config &amp; Routing</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-2 pt-4">
+              <CardContent className="space-y-2 p-2">
                 <div className="flex items-center justify-between">
                   <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                     Status
@@ -238,7 +238,7 @@ export function ZapierSettingsPage({
                   </div>
                 </div>
 
-                 <div className="space-y-2 border-t pt-4">
+                 <div className="space-y-2 border-t pt-2">
                   <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block">
                     Zapier API Key
                   </Label>
@@ -289,7 +289,7 @@ export function ZapierSettingsPage({
                   )}
                 </div>
 
-                <div className="space-y-2 border-t pt-4">
+                <div className="space-y-2 border-t pt-2">
                   <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block">
                     Workspace Identifier
                   </Label>
@@ -315,16 +315,16 @@ export function ZapierSettingsPage({
 
           {/* Tabs Container */}
           <Tabs defaultValue="tutorial" className="lg:col-span-3 h-full min-h-0 flex flex-col overflow-hidden">
-            <TabsList className="w-max bg-muted/40 p-1 rounded-lg shrink-0 mb-6">
+            <TabsList className="w-max bg-muted/40 p-1 rounded-lg shrink-0 mb-0">
               <TabsTrigger value="tutorial">Setup Guide</TabsTrigger>
               <TabsTrigger value="logs">Activity Logs</TabsTrigger>
             </TabsList>
 
             {/* ---- TUTORIAL SETUP GUIDE ---- */}
             <TabsContent value="tutorial" className="flex-1 overflow-y-auto min-h-0">
-              <Card className="border shadow-sm bg-card p-6 space-y-6">
+              <Card className="border shadow-sm bg-card p-2 space-y-2">
                 <div>
-                  <h3 className="text-base font-bold mb-1 custom-sub-heading-dialog-form">Zapier Integration Tutorial</h3>
+                  <h3 className="text-base font-semibold text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">Zapier Integration Tutorial</h3>
                   <p className="text-sm text-muted-foreground">
                     Follow these steps to connect your custom third-party platforms with Leadgaze CRM via Zapier.
                   </p>
@@ -387,8 +387,8 @@ X-Zapier-Api-Key: ${activeKey?.masked_key || 'YOUR_ZAPIER_API_KEY'}`}
                   </div>
 
                   {/* developer curl test */}
-                  <div className="space-y-2 border-t pt-4">
-                    <h4 className="flex items-center gap-2 text-sm font-semibold">
+                  <div className="space-y-2 border-t pt-2">
+                    <h4 className="flex items-center gap-2 text-sm text-sm font-semibold text-leadgaze-dark dark:text-white	">
                       <Play className="h-4 w-4 text-primary" /> Test locally with cURL
                     </h4>
                     <pre className="overflow-x-auto rounded-lg bg-zinc-950 p-4 font-mono text-xs text-zinc-100">
@@ -414,8 +414,8 @@ X-Zapier-Api-Key: ${activeKey?.masked_key || 'YOUR_ZAPIER_API_KEY'}`}
             {/* ---- ACTIVITY LOGS ---- */}
             <TabsContent value="logs" className="flex-1 flex flex-col overflow-hidden min-h-0">
               <Card className="overflow-hidden border shadow-sm flex-1 flex flex-col min-h-0">
-                <CardHeader className="border-b pb-3 shrink-0">
-                  <CardTitle className="text-sm font-semibold">Activity Logs</CardTitle>
+                <CardHeader className="border-b p-2 shrink-0">
+                  <CardTitle className="text-sm font-semibold text-leadgaze-dark dark:text-white">Activity Logs</CardTitle>
                   <CardDescription>
                     Incoming requests and status checks received from Zapier integrations.
                   </CardDescription>

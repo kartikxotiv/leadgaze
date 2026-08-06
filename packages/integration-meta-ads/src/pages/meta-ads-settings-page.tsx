@@ -234,11 +234,11 @@ export function MetaAdsSettingsPage({
           description="Connect your Facebook Pages to capture leads from Meta Lead Ads automatically."
         />
         <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden py-4 pb-6 h-[calc(100vh-120px)]">
-          <div className="grid gap-6 lg:grid-cols-4 h-full min-h-0 flex-1 overflow-hidden">
-            <div className="space-y-6 lg:col-span-1 overflow-y-auto h-full pr-1 shrink-0">
+          <div className="grid gap-2 lg:grid-cols-4 h-full min-h-0 flex-1 overflow-hidden">
+            <div className="space-y-2 lg:col-span-1 overflow-y-auto h-full pr-1 shrink-0">
               <Card>
-                <CardHeader className="border-b pb-3">
-                  <CardTitle className="text-sm font-semibold">Connections</CardTitle>
+                <CardHeader className="border-b p-2">
+                  <CardTitle className="text-sm font-semibold text-leadgaze-dark dark:text-white">Connections</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2 pt-4">
                   <Skeleton className="h-4 w-full" />
@@ -263,11 +263,10 @@ export function MetaAdsSettingsPage({
     <>
       <PageHeader
         title={
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-0">
             <Button
               variant="ghost"
-              size="icon"
-              className="h-8 w-8"
+              className="secondary-text-small-bold text-leadgaze-dark dark:text-white gap-1.5 px-2"
               onClick={onNavigateBack}
             >
               <ArrowLeft className="h-4 w-4" />
@@ -278,16 +277,16 @@ export function MetaAdsSettingsPage({
         description="Connect your Facebook Pages to automatically capture leads from Meta Lead Ads."
       />
 
-      <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden py-4 pb-6 h-[calc(100vh-120px)]">
-        <div className="grid gap-6 lg:grid-cols-4 h-full min-h-0 flex-1 overflow-hidden">
+      <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden p-0 pt-2 h-[calc(100vh-120px)]">
+        <div className="grid gap-2 lg:grid-cols-4 h-full min-h-0 flex-1 overflow-hidden">
 
           {/* ---- LEFT SIDEBAR: Connected Pages ---- */}
-          <div className="space-y-6 lg:col-span-1 overflow-y-auto h-full pr-1 shrink-0">
+          <div className="space-y-2 lg:col-span-1 overflow-y-auto h-full pr-1 shrink-0">
             <Card className="border shadow-sm">
-              <CardHeader className="border-b pb-3">
-                <CardTitle className="text-sm font-semibold">Connected Pages</CardTitle>
+              <CardHeader className="border-b p-2">
+                <CardTitle className="text-sm font-semibold text-leadgaze-dark dark:text-white">Connected Pages</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-2 pt-4">
+              <CardContent className="space-y-2 p-2">
                 {pages.length === 0 ? (
                   <p className="text-xs text-muted-foreground">
                     No Facebook Pages connected yet.
@@ -298,14 +297,14 @@ export function MetaAdsSettingsPage({
                       <div
                         key={page.id}
                         onClick={() => setSelectedPageId(page.id)}
-                        className={`flex items-center justify-between p-2 rounded-md border text-xs cursor-pointer transition-colors ${
+                        className={`flex items-center justify-between p-2 rounded-md border text-xs cursor-pointer transition-colors h-[36px] ${
                           selectedPageId === page.id
                             ? 'border-primary bg-primary/5 font-medium'
                             : 'border-border bg-transparent hover:bg-accent/5'
                         }`}
                       >
                         <div className="flex flex-col flex-1 pr-2 overflow-hidden">
-                          <span className="truncate font-medium">{page.display_name}</span>
+                          <span className="truncate font-medium dark:text-white">{page.display_name}</span>
                           <span className="truncate text-[10px] text-muted-foreground font-mono">
                             {page.metadata?.page_id}
                           </span>
@@ -328,8 +327,7 @@ export function MetaAdsSettingsPage({
                 )}
 
                 <Button
-                  size="sm"
-                  className="w-full gap-1.5 text-xs"
+                  className="w-full secondary-text-small-bold text-white gap-1.5 px-2"
                   onClick={handleConnect}
                   disabled={isMutating}
                 >
@@ -346,32 +344,32 @@ export function MetaAdsSettingsPage({
             {/* Stats */}
             {hasConnectedPages && (
               <Card className="border shadow-sm">
-                <CardHeader className="border-b pb-3">
-                  <CardTitle className="text-sm font-semibold">Overview</CardTitle>
+                <CardHeader className="border-b p-2">
+                  <CardTitle className="text-sm font-semibold text-leadgaze-dark dark:text-white">Overview</CardTitle>
                 </CardHeader>
-                <CardContent className="pt-4 space-y-3">
+                <CardContent className="space-y-2 p-2">
                   <div className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-2 text-muted-foreground">
+                    <div className="flex items-center gap-2 text-leadgaze-dark dark:text-white">
                       <Users className="h-3.5 w-3.5" />
-                      <span className="text-xs">Pages Connected</span>
+                      <span className="primary-text-medium text-leadgaze-dark dark:text-white">Pages Connected</span>
                     </div>
-                    <span className="text-xs font-semibold">{pages.length}</span>
+                    <span className="text-xs font-semibold dark:text-white">{pages.length}</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-2 text-muted-foreground">
+                    <div className="flex items-center gap-2 text-leadgaze-dark dark:text-white">
                       <FileText className="h-3.5 w-3.5" />
-                      <span className="text-xs">Active Forms</span>
+                      <span className="primary-text-medium text-leadgaze-dark dark:text-white">Active Forms</span>
                     </div>
-                    <span className="text-xs font-semibold">
+                    <span className="text-xs font-semibold dark:text-white">
                       {forms.filter((f) => f.is_active).length}
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-2 text-muted-foreground">
+                    <div className="flex items-center gap-2 text-leadgaze-dark dark:text-white">
                       <BarChart3 className="h-3.5 w-3.5" />
-                      <span className="text-xs">Leads Synced</span>
+                      <span className="primary-text-medium text-leadgaze-dark dark:text-white">Leads Synced</span>
                     </div>
-                    <span className="text-xs font-semibold">
+                    <span className="text-xs font-semibold dark:text-white">
                       {logs.filter((l) => l.status === 'success').length}
                     </span>
                   </div>
@@ -385,7 +383,7 @@ export function MetaAdsSettingsPage({
             defaultValue="overview"
             className="lg:col-span-3 h-full min-h-0 flex flex-col overflow-hidden"
           >
-            <TabsList className="w-max bg-muted/40 p-1 rounded-lg shrink-0 mb-6">
+            <TabsList className="w-max bg-muted/40 p-1 rounded-lg shrink-0 mb-0">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="forms" disabled={!hasConnectedPages}>Lead Forms</TabsTrigger>
               <TabsTrigger value="field-mapping" disabled={!hasConnectedPages}>Field Mapping</TabsTrigger>
@@ -436,8 +434,8 @@ export function MetaAdsSettingsPage({
                 <>
                   {/* Selected Page info */}
                   <Card className="border shadow-sm">
-                    <CardHeader className="border-b pb-3">
-                      <CardTitle className="text-sm font-semibold">
+                    <CardHeader className="border-b p-2">
+                      <CardTitle className="text-sm font-semibold text-leadgaze-dark dark:text-white">
                         Selected Page: {selectedPage?.display_name}
                       </CardTitle>
                       <CardDescription className="text-xs">
@@ -447,16 +445,15 @@ export function MetaAdsSettingsPage({
                         </span>
                       </CardDescription>
                     </CardHeader>
-                    <CardContent className="pt-4">
+                    <CardContent className="p-2">
                       <div className="flex flex-wrap items-center gap-3">
-                        <Badge variant="default" className="gap-1 text-xs">
-                          <CheckCircle2 className="h-3 w-3" />
+                        <Badge variant="default" className="gap-1 text-xs py-1">
+                          <CheckCircle2 className="h-4 w-4" />
                           Connected
                         </Badge>
                         <Button
                           variant="outline"
-                          size="sm"
-                          className="gap-1.5 text-xs"
+                          className="gap-1.5 secondary-text-small-bold text-leadgaze-dark dark:text-white gap-1.5 px-2"
                           onClick={handleSubscribePage}
                           disabled={isSubscribing || !selectedPageId}
                         >
@@ -474,8 +471,8 @@ export function MetaAdsSettingsPage({
                   {/* Configured Forms Table */}
                   {forms.length > 0 && (
                     <Card className="border shadow-sm">
-                      <CardHeader className="border-b pb-3">
-                        <CardTitle className="text-sm font-semibold">Configured Lead Forms</CardTitle>
+                      <CardHeader className="border-b p-2">
+                        <CardTitle className="text-sm font-semibold text-leadgaze-dark dark:text-white">Configured Lead Forms</CardTitle>
                         <CardDescription>
                           Forms currently configured to sync leads to Leadgaze CRM.
                         </CardDescription>
@@ -524,17 +521,16 @@ export function MetaAdsSettingsPage({
             {/* ---- LEAD FORMS ---- */}
             <TabsContent value="forms" className="flex-1 overflow-y-auto min-h-0 space-y-2">
               <Card className="border shadow-sm">
-                <CardHeader className="border-b pb-3 flex flex-row items-center justify-between">
+                <CardHeader className="border-b p-2 flex flex-row items-center justify-between">
                   <div className="space-y-1">
-                    <CardTitle className="text-sm font-semibold">Lead Form Selection</CardTitle>
+                    <CardTitle className="text-sm font-semibold text-leadgaze-dark dark:text-white mb-0">Lead Form Selection</CardTitle>
                     <CardDescription className="text-xs">
                       Fetch lead forms from the selected Facebook Page and select which ones to sync.
                     </CardDescription>
                   </div>
                   <Button
                     variant="outline"
-                    size="sm"
-                    className="gap-1.5 text-xs shrink-0"
+                    className="gap-1.5 secondary-text-small-bold text-leadgaze-dark dark:text-white gap-1.5 px-2"
                     onClick={handleFetchForms}
                     disabled={isFetchingForms || !selectedPageId}
                   >
@@ -546,7 +542,7 @@ export function MetaAdsSettingsPage({
                     Fetch Forms
                   </Button>
                 </CardHeader>
-                <CardContent className="pt-6">
+                <CardContent className="p-2">
                   {pageForms.length === 0 ? (
                     <div className="rounded-lg border border-dashed border-muted-foreground/30 p-8 text-center space-y-3">
                       <FileText className="h-8 w-8 mx-auto text-muted-foreground/50" />
@@ -637,8 +633,8 @@ export function MetaAdsSettingsPage({
             {/* ---- FIELD MAPPING ---- */}
             <TabsContent value="field-mapping" className="flex-1 overflow-y-auto min-h-0">
               <Card className="border shadow-sm">
-                <CardHeader className="border-b pb-3">
-                  <CardTitle className="text-sm font-semibold">Field Mapping</CardTitle>
+                <CardHeader className="border-b p-2">
+                  <CardTitle className="text-sm font-semibold text-leadgaze-dark dark:text-white mb-0">Field Mapping</CardTitle>
                   <CardDescription>
                     Default mapping of Meta lead form fields to Leadgaze CRM fields.
                     Supports standard Meta fields and custom questions.
@@ -648,22 +644,22 @@ export function MetaAdsSettingsPage({
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="px-6 py-2.5 text-xs w-1/2">Meta Field</TableHead>
-                        <TableHead className="px-6 py-2.5 text-xs w-1/2">Leadgaze CRM Field</TableHead>
+                        <TableHead className="w-1/2">Meta Field</TableHead>
+                        <TableHead className="w-1/2">Leadgaze CRM Field</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {DEFAULT_FIELD_MAPPINGS.map((mapping) => (
                         <TableRow key={mapping.meta_field} className="hover:bg-accent/5">
-                          <TableCell className="px-6 py-3">
+                          <TableCell className="py-1">
                             <div className="space-y-0.5">
                               <p className="text-xs font-semibold">{mapping.label}</p>
-                              <p className="font-mono text-[10px] text-muted-foreground">
+                              <p className="text-[10px] text-muted-foreground">
                                 {mapping.meta_field}
                               </p>
                             </div>
                           </TableCell>
-                          <TableCell className="px-6 py-3">
+                          <TableCell className="py-1">
                             <div className="flex items-center gap-2">
                               <span className="inline-flex items-center rounded-md bg-primary/10 px-2 py-1 font-mono text-[11px] text-primary font-medium">
                                 {mapping.leadgaze_field}
@@ -686,9 +682,9 @@ export function MetaAdsSettingsPage({
 
             {/* ---- SETUP GUIDE ---- */}
             <TabsContent value="setup" className="flex-1 overflow-y-auto min-h-0">
-              <Card className="border shadow-sm p-6 space-y-8">
+              <Card className="border shadow-sm p-2 space-y-2">
                 <div>
-                  <h3 className="text-base font-bold mb-1 custom-sub-heading-dialog-form">Meta Ads Lead Forms Integration Guide</h3>
+                  <h3 className="primary-heading custom-sub-heading-dialog-form dark:text-white">Meta Ads Lead Forms Integration Guide</h3>
                   <p className="text-sm text-muted-foreground">
                     Follow these steps to capture Facebook and Instagram leads automatically into Leadgaze CRM.
                   </p>
@@ -696,7 +692,7 @@ export function MetaAdsSettingsPage({
 
                 {/* Step 1 */}
                 <div className="space-y-1.5 border-l-2 border-primary pl-4">
-                  <h4 className="text-sm font-semibold">1. Create a Meta Developer App</h4>
+                  <h4 className="text-sm font-semibold text-leadgaze-dark dark:text-white">1. Create a Meta Developer App</h4>
                   <p className="text-xs text-muted-foreground">
                     Go to <a href="https://developers.facebook.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">developers.facebook.com</a> and create a Business type app.
                     Enable <strong>Facebook Login</strong> and <strong>Webhooks</strong> products.
@@ -712,7 +708,7 @@ export function MetaAdsSettingsPage({
 
                 {/* Step 2 */}
                 <div className="space-y-1.5 border-l-2 border-primary pl-4">
-                  <h4 className="text-sm font-semibold">2. Connect Your Facebook Account</h4>
+                  <h4 className="text-sm font-semibold text-leadgaze-dark dark:text-white">2. Connect Your Facebook Account</h4>
                   <p className="text-xs text-muted-foreground">
                     Click <strong>&quot;Link Facebook Account&quot;</strong> from the sidebar.
                     You will be redirected to Facebook&apos;s OAuth consent screen.
@@ -729,7 +725,7 @@ export function MetaAdsSettingsPage({
 
                 {/* Step 3 */}
                 <div className="space-y-1.5 border-l-2 border-primary pl-4">
-                  <h4 className="text-sm font-semibold">3. Pages Auto-Subscribed</h4>
+                  <h4 className="text-sm font-semibold text-leadgaze-dark dark:text-white">3. Pages Auto-Subscribed</h4>
                   <p className="text-xs text-muted-foreground">
                     After you connect, Leadgaze automatically subscribes all your Pages to receive
                     lead notifications. You can manually re-subscribe from the Overview tab if needed.
@@ -738,7 +734,7 @@ export function MetaAdsSettingsPage({
 
                 {/* Step 4: Configure Webhook */}
                 <div className="space-y-2 border-l-2 border-primary pl-4">
-                  <h4 className="text-sm font-semibold">4. Configure Meta Webhook</h4>
+                  <h4 className="text-sm font-semibold text-leadgaze-dark dark:text-white">4. Configure Meta Webhook</h4>
                   <p className="text-xs text-muted-foreground">
                     In your Meta Developer App, go to <strong>Webhooks → Subscribe to Page events</strong>.
                     Add the following:
@@ -762,7 +758,7 @@ Subscribe to: leadgen`}
 
                 {/* Step 5 */}
                 <div className="space-y-1.5 border-l-2 border-primary pl-4">
-                  <h4 className="text-sm font-semibold">5. Fetch & Configure Lead Forms</h4>
+                  <h4 className="text-sm font-semibold text-leadgaze-dark dark:text-white">5. Fetch & Configure Lead Forms</h4>
                   <p className="text-xs text-muted-foreground">
                     Go to the <strong>Lead Forms</strong> tab, select a Page, and click{' '}
                     <strong>&quot;Fetch Forms&quot;</strong>. Once fetched, forms are registered for lead routing.
@@ -771,7 +767,7 @@ Subscribe to: leadgen`}
 
                 {/* Step 6 */}
                 <div className="space-y-1.5 border-l-2 border-primary pl-4">
-                  <h4 className="text-sm font-semibold">6. Test the Integration</h4>
+                  <h4 className="text-sm font-semibold text-leadgaze-dark dark:text-white">6. Test the Integration</h4>
                   <p className="text-xs text-muted-foreground">
                     Use the <strong>Lead Ads Testing Tool</strong> in Meta&apos;s developer platform to submit a test lead.
                     Check <strong>Activity Logs</strong> to confirm the lead was synced.
@@ -788,8 +784,8 @@ Subscribe to: leadgen`}
                 </div>
 
                 {/* Example webhook payload */}
-                <div className="space-y-2 border-t pt-6">
-                  <h4 className="text-sm font-semibold">Example Meta Webhook Payload</h4>
+                <div className="space-y-3 border-t pt-6">
+                  <h4 className="text-sm font-semibold text-leadgaze-dark dark:text-white">Example Meta Webhook Payload</h4>
                   <pre className="overflow-x-auto rounded-lg bg-zinc-950 p-4 font-mono text-xs text-zinc-100">
 {`{
   "object": "page",
@@ -812,7 +808,7 @@ Subscribe to: leadgen`}
                 </div>
 
                 {/* App Review reminder */}
-                <div className="flex items-start gap-3 rounded-md bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900/30 p-4 border-t mt-4">
+                <div className="flex items-start gap-3 rounded-md bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900/30 p-4">
                   <AlertTriangle className="h-4 w-4 text-blue-600 mt-0.5 shrink-0" />
                   <div className="text-xs text-blue-700 dark:text-blue-400 space-y-1">
                     <p><strong>App Review Required for Production:</strong></p>
@@ -830,8 +826,8 @@ Subscribe to: leadgen`}
             {/* ---- ACTIVITY LOGS ---- */}
             <TabsContent value="logs" className="flex-1 overflow-y-auto min-h-0">
               <Card className="border shadow-sm">
-                <CardHeader className="border-b pb-3">
-                  <CardTitle className="text-sm font-semibold">Activity Logs</CardTitle>
+                <CardHeader className="border-b p-2">
+                  <CardTitle className="text-sm font-semibold text-leadgaze-dark dark:text-white mb-0">Activity Logs</CardTitle>
                   <CardDescription>Recent lead sync events for this workspace.</CardDescription>
                 </CardHeader>
                 <CardContent className="p-0">
@@ -843,11 +839,11 @@ Subscribe to: leadgen`}
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead className="px-6 py-2.5 text-xs">Leadgen ID</TableHead>
-                          <TableHead className="px-6 py-2.5 text-xs">Form</TableHead>
-                          <TableHead className="px-6 py-2.5 text-xs">Status</TableHead>
-                          <TableHead className="px-6 py-2.5 text-xs">Error</TableHead>
-                          <TableHead className="px-6 py-2.5 text-xs">Received At</TableHead>
+                          <TableHead>Leadgen ID</TableHead>
+                          <TableHead>Form</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Error</TableHead>
+                          <TableHead>Received At</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -855,21 +851,21 @@ Subscribe to: leadgen`}
                           const badge = STATUS_BADGE[log.status] ?? { label: 'Unknown', variant: 'outline' as const };
                           return (
                             <TableRow key={log.id} className="hover:bg-accent/5">
-                              <TableCell className="px-6 py-2.5 text-xs font-mono text-muted-foreground">
+                              <TableCell className="py-1 text-xs font-mono text-muted-foreground">
                                 {log.leadgen_id}
                               </TableCell>
-                              <TableCell className="px-6 py-2.5 text-xs font-mono text-muted-foreground">
+                              <TableCell className="py-1 text-xs font-mono text-muted-foreground">
                                 {log.form_id}
                               </TableCell>
-                              <TableCell className="px-6 py-2.5">
+                              <TableCell className="py-1">
                                 <Badge variant={badge.variant} className="text-[10px] px-1.5 py-0">
                                   {badge.label}
                                 </Badge>
                               </TableCell>
-                              <TableCell className="px-6 py-2.5 text-xs text-destructive max-w-xs truncate">
+                              <TableCell className="py-1 text-xs text-destructive max-w-xs truncate">
                                 {log.error_message ?? '—'}
                               </TableCell>
-                              <TableCell className="px-6 py-2.5 text-xs text-muted-foreground">
+                              <TableCell className="py-1 text-xs text-muted-foreground">
                                 {formatDateTime(log.created_at)}
                               </TableCell>
                             </TableRow>

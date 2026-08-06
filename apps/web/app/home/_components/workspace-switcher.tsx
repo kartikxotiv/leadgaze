@@ -45,7 +45,7 @@ export function WorkspaceSwitcher() {
               <div className="bg-primary/10 text-primary flex h-6 w-6 items-center justify-center rounded transition-colors">
                 <Building2 className="h-3.5 w-3.5" />
               </div>
-              <span className="truncate text-sm">
+              <span className="truncate text-sm dark:text-white">
                 {currentWorkspace.name}
               </span>
             </div>

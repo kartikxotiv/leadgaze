@@ -149,14 +149,14 @@ export function WebsiteConnectorListPage({
 
   const CreateConnectorForm = () => (
     <>
-      <DialogHeader className="bg-blue-600 px-6 py-4">
+      <DialogHeader className="bg-blue-600 p-2">
         <DialogTitle className="text-white">Create Website Connector</DialogTitle>
         <DialogDescription className="text-white/80">
           Configure a new endpoint structure for web integration.
         </DialogDescription>
       </DialogHeader>
-      <div className="space-y-4 px-6 py-4">
-        <div className="space-y-2">
+      <div className="space-y-4 px-2">
+        <div className="space-y-2 mb-0">
           <Label htmlFor="cname">Connector Name</Label>
           <Input
             id="cname"
@@ -165,7 +165,7 @@ export function WebsiteConnectorListPage({
             onChange={(e) => setNewConnectorName(e.target.value)}
           />
         </div>
-        <div className="space-y-2">
+        <div className="space-y-2 mb-2">
           <Label htmlFor="cowner">Default Owner</Label>
           <Select value={newConnectorOwner} onValueChange={setNewConnectorOwner}>
             <SelectTrigger className="w-full">
@@ -181,11 +181,11 @@ export function WebsiteConnectorListPage({
           </Select>
         </div>
       </div>
-      <DialogFooter className="px-6 py-4 border-t">
+      <DialogFooter className="px-2 border-t">
         <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
           Cancel
         </Button>
-        <Button onClick={handleCreateConnector} disabled={isCreating} className="bg-blue-600 hover:bg-blue-700 text-white">
+        <Button onClick={handleCreateConnector} disabled={isCreating}>
           {isCreating ? 'Creating...' : 'Create Connector'}
         </Button>
       </DialogFooter>
@@ -196,11 +196,11 @@ export function WebsiteConnectorListPage({
     <>
       <PageHeader
         title={
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1">
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8"
+              className="h-7 w-7"
               onClick={onNavigateBack}
             >
               <ArrowLeft className="h-4 w-4" />
@@ -213,7 +213,7 @@ export function WebsiteConnectorListPage({
         <PageHeaderActions>
           <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
             <DialogTrigger asChild>
-              <Button className="gap-2">
+              <Button className="bg-leadgaze-primary hover:bg-leadgaze-primary text-white secondary-text-small-bold gap-1.5 px-2">
                 <Plus className="h-4 w-4" /> Add Connector
               </Button>
             </DialogTrigger>
@@ -224,24 +224,24 @@ export function WebsiteConnectorListPage({
         </PageHeaderActions>
       </PageHeader>
 
-      <PageBody className="flex min-w-0 flex-1 shrink-0 flex-col gap-6 py-6 pb-12">
+      <PageBody className="flex min-w-0 flex-1 shrink-0 flex-col p-2 px-0">
         {isConnectorsLoading ? (
           <Card className="overflow-hidden border shadow-sm">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="px-6 py-2.5 font-semibold text-xs">Name</TableHead>
-                  <TableHead className="px-6 py-2.5 font-semibold text-xs">Status</TableHead>
-                  <TableHead className="px-6 py-2.5 font-semibold text-xs">Default Assignee</TableHead>
-                  <TableHead className="px-6 py-2.5 font-semibold text-xs">Created At</TableHead>
-                  <TableHead className="px-6 py-2.5 text-right font-semibold text-xs">Actions</TableHead>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Default Assignee</TableHead>
+                  <TableHead>Created At</TableHead>
+                  <TableHead className="text-right font-semibold text-xs">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {[...Array(5)].map((_, i) => (
                   <TableRow key={i}>
-                    <TableCell className="px-6 py-3" colSpan={5}>
-                      <Skeleton className="h-5 w-full" />
+                    <TableCell className="px-4" colSpan={5}>
+                      <Skeleton className="h-4 w-full" />
                     </TableCell>
                   </TableRow>
                 ))}
@@ -270,11 +270,11 @@ export function WebsiteConnectorListPage({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="px-6 py-2.5 font-semibold text-xs">Name</TableHead>
-                  <TableHead className="px-6 py-2.5 font-semibold text-xs">Status</TableHead>
-                  <TableHead className="px-6 py-2.5 font-semibold text-xs">Default Assignee</TableHead>
-                  <TableHead className="px-6 py-2.5 font-semibold text-xs">Created At</TableHead>
-                  <TableHead className="px-6 py-2.5 text-right font-semibold text-xs">Actions</TableHead>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Default Assignee</TableHead>
+                  <TableHead>Created At</TableHead>
+                  <TableHead className="px-4 py-2.5 text-right font-semibold text-xs">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -284,7 +284,7 @@ export function WebsiteConnectorListPage({
                   );
                   return (
                     <TableRow key={c.id} className="hover:bg-accent/5">
-                      <TableCell className="px-6 py-2 font-medium text-sm">
+                      <TableCell>
                         <button
                           onClick={() => onNavigateToConnector(c.id)}
                           className="text-left font-medium text-primary hover:underline"
@@ -292,29 +292,28 @@ export function WebsiteConnectorListPage({
                           {c.name}
                         </button>
                       </TableCell>
-                      <TableCell className="px-6 py-2">
+                      <TableCell>
                         <Badge
                           variant={
                             c.status === 'active' ? 'default' : 'secondary'
                           }
-                          className="text-[10px] px-2 py-0"
+                          className="text-[10px] px-2 py-1"
                         >
                           {c.status === 'active' ? 'Enabled' : 'Disabled'}
                         </Badge>
                       </TableCell>
-                      <TableCell className="px-6 py-2 text-xs text-muted-foreground">
+                      <TableCell className="text-xs text-muted-foreground">
                         {assignee
                           ? assignee.name || assignee.email
                           : 'Unassigned'}
                       </TableCell>
-                      <TableCell className="px-6 py-2 text-xs text-muted-foreground">
+                      <TableCell className="text-xs text-muted-foreground">
                         {formatDate(c.created_at)}
                       </TableCell>
-                      <TableCell className="px-6 py-2 text-right">
+                      <TableCell className="px-6 text-right">
                         <Button
                           variant="outline"
-                          size="sm"
-                          className="h-8 text-xs"
+                          className="secondary-text-small-bold text-leadgaze-dark dark:text-white gap-1.5 px-2"
                           onClick={() => onNavigateToConnector(c.id)}
                         >
                           Configure

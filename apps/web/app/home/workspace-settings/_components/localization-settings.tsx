@@ -325,7 +325,7 @@ export function WorkspaceLocalizationSettings({
               variant="outline"
               onClick={handleCancelDateTime}
               disabled={!isDateTimeDirty || updateMutation.isPending}
-              className="secondary-text-small-bold gap-1.5 px-2"
+              className="secondary-text-small-bold gap-1.5 px-2 dark:text-white"
             >
               Cancel
             </Button>
@@ -424,7 +424,7 @@ export function WorkspaceLocalizationSettings({
               variant="outline"
               onClick={handleCancelCurrency}
               disabled={!isCurrencyDirty || updateMutation.isPending}
-              className="secondary-text-small-bold gap-1.5 px-2"
+              className="secondary-text-small-bold gap-1.5 px-2 dark:text-white"
             >
               Cancel
             </Button>

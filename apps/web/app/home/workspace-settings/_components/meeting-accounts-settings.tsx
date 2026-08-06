@@ -170,8 +170,8 @@ export function MeetingAccountsSettings({
 
           return (
             <Card key={provider.id} className="overflow-hidden">
-              <CardHeader className="pb-3">
-                <div className="flex items-center gap-3">
+              <CardHeader className="pb-3 p-2">
+                <div className="flex items-center gap-2">
                   <div
                     className="flex h-12 w-12 items-center justify-center rounded-xl"
                     style={{ backgroundColor: `${provider.color}15` }}
@@ -180,13 +180,13 @@ export function MeetingAccountsSettings({
                   </div>
                   <div className="flex-1">
                     <CardTitle className="text-lg">{provider.name}</CardTitle>
-                    <CardDescription className="mt-0.5 text-xs">
+                    <CardDescription className="mt-0 text-xs">
                       {provider.description}
                     </CardDescription>
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-2">
+              <CardContent className="space-y-2 p-2">
                 {/* Connected Accounts */}
                 {providerAccounts.length > 0 ? (
                   <div className="space-y-2">
@@ -210,7 +210,7 @@ export function MeetingAccountsSettings({
                 {/* Connect Button */}
                 <Button
                   variant="outline"
-                  className="w-full"
+                  className="w-full secondary-text-small-bold text-leadgaze-dark dark:text-white gap-1.5 px-2"
                   onClick={() => handleOpenConnect(provider)}
                 >
                   <Plus className="mr-2 h-4 w-4" />
@@ -281,7 +281,7 @@ function AccountRow({
   isDeleting: boolean;
 }) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-lg border bg-gray-50/50 p-3 dark:bg-gray-900/50">
+    <div className="flex items-center justify-between gap-3 rounded-lg border bg-gray-50/50 p-2 dark:bg-gray-900/50">
       <div className="flex min-w-0 items-center gap-3">
         <div className="flex h-9 w-9 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
           {account.connection?.provider === 'GOOGLE' ? (
@@ -305,7 +305,7 @@ function AccountRow({
           )}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium">
+          <p className="truncate text-sm font-medium dark:text-white">
             {account.email || account.display_name || 'Unknown account'}
           </p>
           <div className="flex items-center gap-2">

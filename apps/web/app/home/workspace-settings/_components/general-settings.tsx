@@ -366,7 +366,7 @@ export function WorkspaceGeneralSettings({ workspaceId }: WorkspaceGeneralSettin
           <div className="flex gap-2">
             <Button
               variant="outline"
-              className="secondary-text-small-bold gap-1.5 px-2"
+              className="secondary-text-small-bold gap-1.5 px-2 dark:text-white"
               onClick={handleCancel}
               disabled={!isDirty || isSaving}
             >
