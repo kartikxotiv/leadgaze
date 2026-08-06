@@ -38,6 +38,7 @@ import { useColumnResize } from '@kit/ui/use-column-resize';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
 import { useTableSort } from '@kit/ui/use-table-sort';
 import { cn } from '@kit/ui/utils';
+import { CustomDeleteDialog } from '@kit/ui/custom-delete-dialog';
 
 import { useDebounce } from '~/lib/hooks/use-debounce';
 import { ModuleGuard } from '~/lib/rbac/module-guard';
@@ -150,6 +151,12 @@ export default function TeamMembersPage() {
   >('');
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
+
+  const [isRemoveMemberDialogOpen, setIsRemoveMemberDialogOpen] = useState(false);
+  const [memberToRemove, setMemberToRemove] = useState<string | null>(null);
+
+  const [isDeleteInvitationDialogOpen, setIsDeleteInvitationDialogOpen] = useState(false);
+  const [invitationToDelete, setInvitationToDelete] = useState<string | null>(null);
 
   // Fetch workspace subscription status for seat capacity
   const { data: subscriptionData } = useQuery({
@@ -274,9 +281,13 @@ export default function TeamMembersPage() {
         queryKey: ['workspaceMembers', currentWorkspace?.id],
       });
       toast.success('Member removed successfully');
+      setIsRemoveMemberDialogOpen(false);
+      setMemberToRemove(null);
     },
     onError: (error: Error) => {
       toast.error(error?.message || 'Failed to remove member');
+      setIsRemoveMemberDialogOpen(false);
+      setMemberToRemove(null);
     },
   });
 
@@ -340,9 +351,13 @@ export default function TeamMembersPage() {
         queryKey: ['pendingInvitations', currentWorkspace?.id],
       });
       toast.success('Invitation deleted successfully');
+      setIsDeleteInvitationDialogOpen(false);
+      setInvitationToDelete(null);
     },
     onError: (error: Error) => {
       toast.error(error?.message || 'Failed to delete invitation');
+      setIsDeleteInvitationDialogOpen(false);
+      setInvitationToDelete(null);
     },
   });
 
@@ -361,9 +376,8 @@ export default function TeamMembersPage() {
   });
 
   const handleRemoveMember = (memberId: string) => {
-    if (confirm('Are you sure you want to remove this member?')) {
-      removeMutation.mutate(memberId);
-    }
+    setMemberToRemove(memberId);
+    setIsRemoveMemberDialogOpen(true);
   };
 
   const handleResendInvitation = (memberId: string) => {
@@ -706,7 +720,10 @@ export default function TeamMembersPage() {
                                   )}
                                   {canAccess('team_members', 'delete') && (
                                     <DropdownMenuItem
-                                      onClick={() => handleRemoveMember(member.id)}
+                                      onClick={() => {
+                                        setMemberToRemove(member.id);
+                                        setIsRemoveMemberDialogOpen(true);
+                                      }}
                                       disabled={removeMutation.isPending}
                                       className="text-destructive focus:text-destructive cursor-pointer gap-2"
                                     >
@@ -792,15 +809,8 @@ export default function TeamMembersPage() {
                                   {canAccess('team_members', 'delete') && (
                                     <DropdownMenuItem
                                       onClick={() => {
-                                        if (
-                                          confirm(
-                                            'Are you sure you want to delete this invitation?',
-                                          )
-                                        ) {
-                                          deleteInvitationMutation.mutate(
-                                            invitation.id,
-                                          );
-                                        }
+                                        setInvitationToDelete(invitation.id);
+                                        setIsDeleteInvitationDialogOpen(true);
                                       }}
                                       disabled={deleteInvitationMutation.isPending}
                                       className="text-destructive focus:text-destructive cursor-pointer gap-2"
@@ -845,6 +855,32 @@ export default function TeamMembersPage() {
         visibility={visibility}
         onToggleColumn={toggleVisibility}
         onResetColumns={reset}
+      />
+      
+      <CustomDeleteDialog
+        isOpen={isRemoveMemberDialogOpen}
+        onOpenChange={setIsRemoveMemberDialogOpen}
+        title="Remove Member"
+        description="Are you sure you want to remove this member? This action cannot be undone."
+        onConfirm={() => {
+          if (memberToRemove) {
+            removeMutation.mutate(memberToRemove);
+          }
+        }}
+        isDeleting={removeMutation.isPending}
+      />
+      
+      <CustomDeleteDialog
+        isOpen={isDeleteInvitationDialogOpen}
+        onOpenChange={setIsDeleteInvitationDialogOpen}
+        title="Delete Invitation"
+        description="Are you sure you want to delete this invitation? This action cannot be undone."
+        onConfirm={() => {
+          if (invitationToDelete) {
+            deleteInvitationMutation.mutate(invitationToDelete);
+          }
+        }}
+        isDeleting={deleteInvitationMutation.isPending}
       />
       </PageBody>
     </ModuleGuard>

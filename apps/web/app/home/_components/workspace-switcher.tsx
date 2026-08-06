@@ -37,15 +37,15 @@ export function WorkspaceSwitcher() {
   }
 
   return (
-    <div className="px-2 py-2">
+    <div className="">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <button className="hover:bg-accent group flex w-full items-center justify-between rounded-md px-3 py-2 pr-1 transition-colors">
+          <button className="hover:bg-accent group flex w-full items-center justify-between rounded-md px-3 py-2 pr-1 transition-colors h-8">
             <div className="flex min-w-0 items-center gap-2">
               <div className="bg-primary/10 text-primary flex h-6 w-6 items-center justify-center rounded transition-colors">
                 <Building2 className="h-3.5 w-3.5" />
               </div>
-              <span className="truncate text-sm font-semibold">
+              <span className="truncate text-sm dark:text-white">
                 {currentWorkspace.name}
               </span>
             </div>

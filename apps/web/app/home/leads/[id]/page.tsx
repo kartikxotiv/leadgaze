@@ -209,7 +209,7 @@ export default function LeadDetailsPage() {
   const [isLogCallDialogOpen, setIsLogCallDialogOpen] = useState(false);
   const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [openAccordion, setOpenAccordion] = useState<string>('');
+  const [openAccordions, setOpenAccordions] = useState<string[]>(['company', 'contact']);
   const [isEditingCompanySize, setIsEditingCompanySize] = useState(false);
 
   const queryClient = useQueryClient();
@@ -507,26 +507,20 @@ export default function LeadDetailsPage() {
 
   return (
     <ModuleGuard module="leads">
-      <div className="flex flex-wrap items-start gap-2 pt-4 pb-2 sm:flex-nowrap sm:items-center sm:justify-between">
+      <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap sm:justify-between">
         <div className="flex items-center gap-2">
           <Button
             variant="ghost"
-            size="sm"
             asChild
-            className="border-leadgaze-border border p-0"
+            className="w-6 h-6 border-leadgaze-border border p-0"
           >
             <Link href="/home/sales/leads">
-              <ArrowLeft className="mr-2 ml-2 h-4 w-4" />
+              <ArrowLeft className="h-3 w-3" />
             </Link>
           </Button>
-          <div className="flex flex-col">
-            <h1 className="text-leadgaze-dark text-lg font-bold dark:text-white">
-              Lead details
-            </h1>
-            <p className="text-leadgaze-muted text-sm">
-              View and edit lead information
-            </p>
-          </div>
+          <h1 className="primary-heading-extra text-leadgaze-dark dark:text-white">
+            Lead Details
+          </h1>
         </div>
         <div className="flex items-center gap-2">
           {canEdit && (
@@ -535,9 +529,8 @@ export default function LeadDetailsPage() {
                 <TooltipTrigger asChild>
                   <Button
                     variant="outline"
-                    size="sm"
                     onClick={() => setStatusModalOpen(true)}
-                    className="gap-2"
+                    className="secondary-text-small-bold text-leadgaze-dark dark:text-white gap-1.5 px-2"
                     disabled={isSaving}
                   >
                     <Flag
@@ -560,9 +553,8 @@ export default function LeadDetailsPage() {
                 <TooltipTrigger asChild>
                   <Button
                     variant="outline"
-                    size="sm"
                     onClick={() => setIsLogCallDialogOpen(true)}
-                    className="gap-2"
+                    className="secondary-text-small-bold text-leadgaze-dark dark:text-white gap-1.5 px-2"
                     title="Log a call"
                   >
                     <Phone className="h-4 w-4" />
@@ -580,8 +572,7 @@ export default function LeadDetailsPage() {
                 <TooltipTrigger asChild>
                   <Button
                     variant="outline"
-                    size="sm"
-                    className={`gap-2 ${!lead.email ? 'opacity-50' : ''}`}
+                    className={`secondary-text-small-bold text-leadgaze-dark dark:text-white gap-1.5 px-2 ${!lead.email ? 'opacity-50' : ''}`}
                     disabled={!lead.email}
                     onClick={() => lead.email && setIsEmailDialogOpen(true)}
                     title={
@@ -607,9 +598,8 @@ export default function LeadDetailsPage() {
                 <TooltipTrigger asChild>
                   <Button
                     variant="outline"
-                    size="sm"
                     onClick={handleConvertLead}
-                    className="gap-2"
+                    className="secondary-text-small-bold text-leadgaze-dark dark:text-white gap-1.5 px-2"
                     disabled={isSaving}
                   >
                     <RefreshCw className="h-4 w-4" />
@@ -626,9 +616,8 @@ export default function LeadDetailsPage() {
           {canEdit && (
             <Button
               variant="default"
-              size="sm"
               onClick={() => setIsEditDialogOpen(true)}
-              className="gap-2"
+              className="secondary-text-small-bold bg-leadgaze-primary hover:bg-leadgaze-primary text-white gap-1.5 px-2"
             >
               <Edit2 className="h-4 w-4" />
               <span className="hidden sm:inline">Edit Profile</span>
@@ -637,7 +626,7 @@ export default function LeadDetailsPage() {
         </div>
       </div>
 
-      <PageBody className="pb-6 lg:overflow-hidden">
+      <PageBody className="pb-2 lg:overflow-hidden">
         <DeleteEntityDialog
           isOpen={deleteDialogOpen}
           onOpenChange={setDeleteDialogOpen}
@@ -646,12 +635,12 @@ export default function LeadDetailsPage() {
           entityName={`${lead.first_name} ${lead.last_name || ''}`}
           onSuccess={() => router.push('/home/sales/leads')}
         />
-        <div className="flex w-full flex-col gap-4 lg:min-h-0 lg:flex-1 lg:flex-row">
+        <div className="flex w-full flex-col gap-2 lg:min-h-0 lg:flex-1 lg:flex-row">
           {/* Main Content */}
           <div className="w-full space-y-4 lg:w-[65%] lg:overflow-y-auto">
             <DetailHeader
               avatar={
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-blue-400 to-blue-600 text-lg font-semibold text-white">
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-leadgaze-primary text-base font-semibold text-white">
                   {lead.first_name?.charAt(0)}
                   {lead.last_name?.charAt(0)}
                 </div>
@@ -695,11 +684,11 @@ export default function LeadDetailsPage() {
               right={
                 lead.lead_score !== null ? (
                   <div className="mx-auto flex flex-col items-center gap-1 lg:mx-0">
-                    <span className="primary-text-medium text-leadgaze-dark dark:text-white">
+                    <span className="text-xs font-medium text-leadgaze-dark dark:text-white">
                       Lead Score
                     </span>
 
-                    <div className="relative h-15 w-15 shrink-0">
+                    <div className="relative h-12 w-12 shrink-0">
                       <svg
                         className="h-full w-full -rotate-90 transform"
                         viewBox="0 0 100 100"
@@ -725,7 +714,7 @@ export default function LeadDetailsPage() {
                         />
                       </svg>
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <span className="primary-heading text-gray-900 dark:text-white">
+                        <span className="primary-text-medium text-leadgaze-dark dark:text-white">
                           {scoringResult?.totalScore ?? lead.lead_score}
                         </span>
                       </div>
@@ -737,9 +726,9 @@ export default function LeadDetailsPage() {
             {/* Tabs Section */}
             <Tabs
               defaultValue={canManageEmail ? 'email' : 'notes'}
-              className="space-y-4"
+              className="space-y-4 mb-2"
             >
-              <TabsList className="mb-2 h-auto w-full justify-start gap-3 overflow-x-auto rounded-none border-b bg-transparent p-0 [-ms-overflow-style:none] [scrollbar-width:none] sm:gap-6 [&::-webkit-scrollbar]:hidden">
+              <TabsList className="mb-0 h-auto w-full justify-start gap-3 overflow-x-auto rounded-none border-b bg-transparent p-0 [-ms-overflow-style:none] [scrollbar-width:none] sm:gap-6 [&::-webkit-scrollbar]:hidden">
                 {canManageEmail && (
                   <TabsTrigger
                     value="email"
@@ -864,11 +853,11 @@ export default function LeadDetailsPage() {
             {/* Danger Zone */}
             {canAccess('leads', 'delete') && (
               <Card className="border-destructive/50 hidden border-solid lg:block">
-                <CardContent>
-                  <div className="mt-6 flex flex-col items-center justify-between md:flex-row">
-                    <div className="mb-2 space-y-1">
-                      <p className="font-medium dark:text-white">Delete Lead</p>
-                      <p className="text-muted-foreground text-sm">
+                <CardContent className="p-2">
+                  <div className="flex flex-col items-center justify-between md:flex-row">
+                    <div className="mb-0 space-y-1">
+                      <p className="primary-text-medium dark:text-white">Delete Lead</p>
+                      <p className="text-muted-foreground secondary-text-small">
                         Once you delete a lead, there is no going back. Please
                         be certain.
                       </p>
@@ -905,26 +894,25 @@ export default function LeadDetailsPage() {
           <div className="w-full space-y-4 lg:w-[35%] lg:overflow-y-auto">
             {/* Accordion Sections */}
             <Accordion
-              type="single"
-              collapsible
+              type="multiple"
               className="space-y-2"
-              value={openAccordion}
-              onValueChange={setOpenAccordion}
+              value={openAccordions}
+              onValueChange={setOpenAccordions}
             >
               {/* Company */}
               <AccordionItem
                 value="company"
-                className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
+                className="overflow-hidden border bg-white dark:bg-zinc-900"
               >
-                <AccordionTrigger className="px-4 py-3 hover:no-underline">
-                  <span className="primary-heading text-leadgaze-dark flex items-center gap-2 dark:text-white">
+                <AccordionTrigger className="px-2 pb-2 border-b border-b-accordion hover:no-underline py-3">
+                  <span className="primary-text-big-regular text-leadgaze-dark flex items-center gap-2 dark:text-white">
                     <Building2 className="text-leadgaze-dark h-5 w-5 dark:text-white" />
                     Company Details
                   </span>
                 </AccordionTrigger>
-                <AccordionContent className="px-4 pb-4">
+                <AccordionContent className="px-2 pb-2">
                   <DetailInfoList>
-                    <div className="flex items-center justify-between gap-2 py-2.5">
+                    <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2">
                         <Building2 className="text-muted-foreground h-5 w-5 shrink-0" />
                         <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
@@ -938,7 +926,7 @@ export default function LeadDetailsPage() {
                           disabled={!canEdit}
                           placeholder="-"
                           className="justify-end"
-                          displayClassName="truncate text-sm text-gray-900 dark:text-white"
+                          displayClassName="primary-text-regular text-leadgaze-dark dark:text-white"
                           inputClassName="text-right"
                           onCommit={async (nextValue) => {
                             await commitLeadField('company_name', nextValue);
@@ -947,7 +935,7 @@ export default function LeadDetailsPage() {
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between gap-2 py-2.5">
+                    <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2">
                         <Factory className="text-muted-foreground h-5 w-5 shrink-0" />
                         <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
@@ -961,7 +949,7 @@ export default function LeadDetailsPage() {
                           disabled={!canEdit}
                           placeholder="-"
                           className="justify-end"
-                          displayClassName="truncate text-sm text-gray-900 dark:text-white"
+                          displayClassName="primary-text-regular text-leadgaze-dark dark:text-white"
                           inputClassName="text-right"
                           onCommit={async (nextValue) => {
                             await commitLeadField('industry', nextValue);
@@ -970,7 +958,7 @@ export default function LeadDetailsPage() {
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between gap-2 py-2.5">
+                    <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2">
                         <Users className="text-muted-foreground h-5 w-5 shrink-0" />
                         <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
@@ -1013,7 +1001,7 @@ export default function LeadDetailsPage() {
                             disabled={!canEdit}
                             onClick={() => setIsEditingCompanySize(true)}
                             className={cn(
-                              'group inline-flex w-full items-center justify-end rounded-[4px] text-right outline-none transition-colors',
+                              'group inline-flex w-full min-h-[34px] py-1 px-2 items-center justify-start rounded-[4px] text-left outline-none transition-colors',
                               {
                                 'cursor-text': canEdit,
                                 'text-muted-foreground': !lead.company_size,
@@ -1029,7 +1017,7 @@ export default function LeadDetailsPage() {
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between gap-2 py-2.5">
+                    <div className="flex items-center justify-between gap-2 border-b border-b-accordion">
                       <div className="flex items-center gap-2">
                         <Globe className="text-muted-foreground h-5 w-5 shrink-0" />
                         <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
@@ -1058,18 +1046,18 @@ export default function LeadDetailsPage() {
               {/* Contact */}
               <AccordionItem
                 value="contact"
-                className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
+                className="overflow-hidden border bg-white dark:bg-zinc-900"
               >
-                <AccordionTrigger className="px-4 py-3 hover:no-underline">
-                  <span className="primary-heading text-leadgaze-dark flex items-center gap-2">
+                <AccordionTrigger className="px-2 pb-2 border-b border-b-accordion hover:no-underline py-3">
+                  <span className="primary-text-big-regular text-leadgaze-dark flex items-center gap-2 dark:text-white">
                     <User className="text-leadgaze-dark h-5 w-5 dark:text-white" />
                     Contact Details
                   </span>
                 </AccordionTrigger>
-                <AccordionContent className="px-4 pb-4">
+                <AccordionContent className="px-2 pb-2">
                   <DetailInfoList>
                     {canView('email') && (
-                      <div className="flex items-center justify-between gap-2 py-2.5">
+                      <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
                           <Mail className="text-muted-foreground h-5 w-5 shrink-0" />
                           <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
@@ -1094,7 +1082,7 @@ export default function LeadDetailsPage() {
                     )}
 
                     {canView('alt_email') && (
-                      <div className="flex items-center justify-between gap-2 py-2.5">
+                      <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
                           <Mail className="text-muted-foreground h-5 w-5 shrink-0" />
                           <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
@@ -1119,7 +1107,7 @@ export default function LeadDetailsPage() {
                     )}
 
                     {canView('phone') && (
-                      <div className="flex items-center justify-between gap-2 py-2.5">
+                      <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
                           <Phone className="text-muted-foreground h-5 w-5 shrink-0" />
                           <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
@@ -1133,7 +1121,7 @@ export default function LeadDetailsPage() {
                             disabled={!canEdit}
                             placeholder="-"
                             className="justify-end"
-                            displayClassName="truncate text-sm text-gray-900 dark:text-white"
+                            displayClassName="primary-text-regular text-leadgaze-dark dark:text-white"
                             inputClassName="text-right"
                             onCommit={async (nextValue) => {
                               await commitLeadField('phone_number', nextValue);
@@ -1144,7 +1132,7 @@ export default function LeadDetailsPage() {
                     )}
 
                     {canView('mobile') && (
-                      <div className="flex items-center justify-between gap-2 py-2.5">
+                      <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
                           <Phone className="text-muted-foreground h-5 w-5 shrink-0" />
                           <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
@@ -1158,7 +1146,7 @@ export default function LeadDetailsPage() {
                             disabled={!canEdit}
                             placeholder="-"
                             className="justify-end"
-                            displayClassName="truncate text-sm text-gray-900 dark:text-white"
+                            displayClassName="primary-text-regular text-leadgaze-dark dark:text-white"
                             inputClassName="text-right"
                             onCommit={async (nextValue) => {
                               await commitLeadField('mobile_number', nextValue);
@@ -1169,7 +1157,7 @@ export default function LeadDetailsPage() {
                     )}
 
                     {canView('location') && (
-                      <div className="flex items-center justify-between gap-2 py-2.5">
+                      <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
                           <MapPin className="text-muted-foreground h-5 w-5 shrink-0" />
                           <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
@@ -1183,7 +1171,7 @@ export default function LeadDetailsPage() {
                             disabled={!canEdit}
                             placeholder="-"
                             className="justify-end"
-                            displayClassName="truncate text-sm text-gray-900 dark:text-white"
+                            displayClassName="primary-text-regular text-leadgaze-dark dark:text-white"
                             inputClassName="text-right"
                             onCommit={async (nextValue) => {
                               await commitLeadField('location', nextValue);
@@ -1194,7 +1182,7 @@ export default function LeadDetailsPage() {
                     )}
 
                     {canView('timezone') && (
-                      <div className="flex items-center justify-between gap-2 py-2.5">
+                      <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
                           <Clock className="text-muted-foreground h-5 w-5 shrink-0" />
                           <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
@@ -1208,7 +1196,7 @@ export default function LeadDetailsPage() {
                             disabled={!canEdit}
                             placeholder="-"
                             className="justify-end"
-                            displayClassName="truncate text-sm text-gray-900 dark:text-white"
+                            displayClassName="primary-text-regular text-leadgaze-dark dark:text-white"
                             inputClassName="text-right"
                             onCommit={async (nextValue) => {
                               await commitLeadField('timezone', nextValue);
@@ -1219,7 +1207,7 @@ export default function LeadDetailsPage() {
                     )}
 
                     {canView('linkedin') && (
-                      <div className="flex items-center justify-between gap-2 py-2.5">
+                      <div className="flex items-center justify-between gap-2 border-b border-b-accordion">
                         <div className="flex items-center gap-2">
                           <Linkedin className="text-muted-foreground h-5 w-5 shrink-0" />
                           <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
@@ -1250,20 +1238,19 @@ export default function LeadDetailsPage() {
               {workspace?.id && (
                 <AccordionItem
                   value="assignees"
-                  className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
+                  className="overflow-hidden border bg-white dark:bg-zinc-900"
                 >
                   <AccordionTrigger
                     hideChevron
-                    className="px-4 py-3 hover:no-underline"
+                    className="px-2 pb-2 border-b border-b-accordion hover:no-underline py-2"
                   >
                     <div className="flex w-full justify-between">
-                      <span className="primary-heading text-leadgaze-dark flex items-center gap-2">
+                      <span className="primary-text-big-regular text-leadgaze-dark flex items-center gap-2 dark:text-white">
                         <Users className="text-leadgaze-dark h-5 w-5 dark:text-white" />
                         Assigned Members
                       </span>
                       <Button
-                        size="sm"
-                        className="mr-3 ml-2 shrink-0 gap-2"
+                        className="bg-leadgaze-primary hover:bg-leadgaze-primary text-white secondary-text-small-bold gap-1.5 px-2 mr-2"
                         onPointerDown={(e) => e.stopPropagation()}
                         onClick={(e) => {
                           e.stopPropagation();
@@ -1274,14 +1261,14 @@ export default function LeadDetailsPage() {
                         Assign Member
                       </Button>
                     </div>
-                    <ChevronDown
-                      className={cn(
-                        'text-muted-foreground h-4 w-4 shrink-0 transition-transform duration-200',
-                        openAccordion === 'assignees' && 'rotate-180',
-                      )}
-                    />
+                      <ChevronDown
+                        className={cn(
+                          'h-4 w-4 shrink-0 text-gray-500 transition-transform duration-200 dark:text-gray-400',
+                          openAccordions.includes('assignees') && 'rotate-180',
+                        )}
+                      />
                   </AccordionTrigger>
-                  <AccordionContent className="px-4 pb-4">
+                  <AccordionContent className="px-0 pb-2">
                     <LeadAssignees
                       leadId={leadId}
                       workspaceId={workspace.id}
@@ -1295,15 +1282,15 @@ export default function LeadDetailsPage() {
               {lead.owner && (
                 <AccordionItem
                   value="owner"
-                  className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
+                  className="overflow-hidden border bg-white dark:bg-zinc-900"
                 >
-                  <AccordionTrigger className="px-4 py-3 hover:no-underline">
-                    <span className="primary-heading text-leadgaze-dark flex items-center gap-2">
-                      <User className="text-leadgaze-dark h-4 w-4 dark:text-white" />
+                  <AccordionTrigger className="px-2 pb-2 border-b border-b-accordion hover:no-underline py-3">
+                    <span className="primary-text-big-regular text-leadgaze-dark flex items-center gap-2 dark:text-white">
+                      <User className="text-leadgaze-dark h-5 w-5 dark:text-white" />
                       Lead Owner
                     </span>
                   </AccordionTrigger>
-                  <AccordionContent className="px-4 pb-4">
+                  <AccordionContent className="px-2 pb-2">
                     <div className="flex items-center gap-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-blue-400 to-blue-600 text-sm font-semibold text-white">
                         {lead.owner.name?.charAt(0) || 'U'}
@@ -1325,15 +1312,15 @@ export default function LeadDetailsPage() {
               {customFieldsToShow.length > 0 && (
                 <AccordionItem
                   value="additional"
-                  className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
+                  className="overflow-hidden border bg-white dark:bg-zinc-900"
                 >
-                  <AccordionTrigger className="px-4 py-3 hover:no-underline">
-                    <span className="primary-heading text-leadgaze-dark flex items-center gap-2">
+                  <AccordionTrigger className="px-2 pb-2 border-b border-b-accordion hover:no-underline py-3">
+                    <span className="primary-text-big-regular text-leadgaze-dark flex items-center gap-2 dark:text-white">
                       <FileText className="text-leadgaze-dark h-4 w-4 dark:text-white" />
                       Additional Data
                     </span>
                   </AccordionTrigger>
-                  <AccordionContent className="px-4 pb-4">
+                  <AccordionContent className="px-2 pb-2">
                     <DetailInfoList>
                       {customFieldsToShow.map((field) => {
                         const val = (lead.custom_fields as Record<string, unknown>)?.[field.field_key];
@@ -1351,14 +1338,14 @@ export default function LeadDetailsPage() {
               )}
 
               {/* Details / Metadata */}
-              {/* <AccordionItem value="details" className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900">
+              {/* <AccordionItem value="details" className="overflow-hidden border bg-white dark:bg-zinc-900">
                 <AccordionTrigger className="hover:no-underline px-4 py-3">
-                  <span className="primary-heading text-leadgaze-dark flex items-center gap-2">
+                  <span className="primary-text-big-regular text-leadgaze-dark flex items-center gap-2 dark:text-white">
                     <Clock className="text-leadgaze-dark h-4 w-4 dark:text-white" />
                     Details
                   </span>
                 </AccordionTrigger>
-                <AccordionContent className="px-4 pb-4">
+                <AccordionContent className="px-2 pb-2">
                   <div className="space-y-3">
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">
@@ -1396,11 +1383,11 @@ export default function LeadDetailsPage() {
           <div className="w-full lg:hidden">
             {canAccess('leads', 'delete') && (
               <Card className="border-destructive/50 border-solid">
-                <CardContent>
-                  <div className="mt-6 flex flex-col items-center justify-between md:flex-row">
-                    <div className="mb-2 space-y-1">
-                      <p className="font-medium dark:text-white">Delete Lead</p>
-                      <p className="text-muted-foreground text-sm">
+                <CardContent className="p-2">
+                  <div className="flex flex-col items-center justify-between md:flex-row">
+                    <div className="mb-0 space-y-1">
+                      <p className="primary-text-medium dark:text-white">Delete Lead</p>
+                      <p className="text-muted-foreground secondary-text-small">
                         Once you delete a lead, there is no going back. Please
                         be certain.
                       </p>

@@ -38,6 +38,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@kit/ui/select';
+import { CustomDeleteDialog } from '@kit/ui/custom-delete-dialog';
 
 import { useLocalization } from '~/lib/localization/localization-provider';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
@@ -88,6 +89,10 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
   // View logs states
   const [viewLogsTask, setViewLogsTask] = useState<Task | null>(null);
   const [isViewLogsOpen, setIsViewLogsOpen] = useState(false);
+
+  // Delete dialog states
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
 
   // Queries
   const { data: tasks = [], isLoading } = useQuery<Task[]>({
@@ -146,9 +151,15 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
     mutationFn: deleteTaskService,
     onSuccess: () => {
       toast.success('Task deleted successfully');
+      setIsDeleteDialogOpen(false);
+      setTaskToDelete(null);
       invalidateTasks();
     },
-    onError: () => toast.error('Failed to delete task'),
+    onError: () => {
+      toast.error('Failed to delete task');
+      setIsDeleteDialogOpen(false);
+      setTaskToDelete(null);
+    },
   });
 
   const toggleMutation = useMutation({
@@ -244,6 +255,7 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
     <CardWidgetContainer
       title="Tasks & Checklist"
       hideHeaderBorder={true}
+      headerClassName="p-2 xl:p-2 2xl:p-2"
       icon={<CheckSquare className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
       icon2={
         <div className="flex items-center gap-2">
@@ -349,7 +361,7 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
         </div>
       }
     >
-      <div className="px-6 py-3">
+      <div className="px-2 mb-2">
         {isLoading ? (
           <div className="flex justify-center py-4">
             <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
@@ -359,6 +371,7 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
             {tasks.map((task) => (
               <CardWidgetListItem
                 key={task.id}
+                className="gap-2"
                 icon={
                   toggleMutation.isPending && toggleMutation.variables?.id === task.id ? (
                     <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
@@ -377,12 +390,12 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
                   <div className="flex items-center gap-2">
                     <span
                       className={`text-sm font-medium ${
-                        task.is_completed ? 'line-through text-gray-400' : 'text-gray-900 dark:text-gray-100'
+                        task.is_completed ? 'line-through text-leadgaze-dark dark:text-white' : 'text-leadgaze-dark dark:text-white'
                       }`}
                     >
                       {task.title}
                     </span>
-                    <Badge variant={task.priority === 'high' ? 'destructive' : task.priority === 'medium' ? 'default' : 'secondary'} className="text-[10px] py-0 px-1.5 uppercase font-semibold">
+                    <Badge variant={task.priority === 'high' ? 'destructive' : task.priority === 'medium' ? 'default' : 'secondary'} className="text-[10px] py-0 px-1.5 uppercase font-semibold rounded-[4px] h-[20px]">
                       {task.priority}
                     </Badge>
                   </div>
@@ -451,9 +464,8 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
                       size="icon"
                       variant="ghost"
                       onClick={() => {
-                        if (confirm('Are you sure you want to delete this task?')) {
-                          deleteMutation.mutate(task.id);
-                        }
+                        setTaskToDelete(task.id);
+                        setIsDeleteDialogOpen(true);
                       }}
                       className="h-7 w-7 text-gray-400 hover:text-red-500"
                     >
@@ -619,6 +631,19 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <CustomDeleteDialog
+        isOpen={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        title="Delete Task"
+        description="Are you sure you want to delete this task? This action cannot be undone."
+        onConfirm={() => {
+          if (taskToDelete) {
+            deleteMutation.mutate(taskToDelete);
+          }
+        }}
+        isDeleting={deleteMutation.isPending}
+      />
     </CardWidgetContainer>
   );
 }

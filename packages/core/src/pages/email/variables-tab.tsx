@@ -32,8 +32,7 @@ import {
   getCoreEmailVariablesService,
   saveCoreEmailVariableService,
 } from '../../services/email-templates.service';
-import { ListToolBar } from '@kit/ui/list-toolbar';
-import CustomTableContainer from '@kit/ui/custom-table-container';
+import { CardWidgetContainer } from '@kit/ui/card-widget-container';
 import { useColumnResize } from '@kit/ui/use-column-resize';
 import { useTableSort } from '@kit/ui/use-table-sort';
 import { SortableTableHead } from '@kit/ui/sortable-table-head';
@@ -77,28 +76,15 @@ export function CoreEmailVariablesTab({ workspaceId }: { workspaceId: string }) 
 
   return (
     <div className="flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col space-y-2">
-      {/* Full-width search / filter / actions toolbar */}
-                          <div className="w-full max-w-full min-w-0 shrink-0 border-b">
-                            <ListToolBar
-                              showSearch
-                              searchPlaceholder="Search variables..."
-                              searchValue={searchTerm}
-                              onSearchChange={setSearchTerm}
-                              actions={[
-                                {
-                                  key: 'add',
-                                  label: 'New Variable',
-                                  icon: Plus,
-                                  onClick: () => {setSelectedVariable(null); setIsDialogOpen(true);          },
-                                  show: true,
-                                  buttonVariant: 'default',
-                                },
-                              ]}                  
-                            />
-                          </div>
-            
-      
-            <CustomTableContainer>
+      <CardWidgetContainer headerClassName="p-2 xl:p-2 2xl:p-2" title="Variables" icon2={
+          <Button
+            className="bg-leadgaze-primary hover:bg-leadgaze-primary text-white secondary-text-small-bold gap-1.5 px-2"
+            onClick={() => {setSelectedVariable(null); setIsDialogOpen(true);}}
+          >
+            <Plus className="h-4 w-4" /> Add
+          </Button>
+      }>
+          <div className="mb-2">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -175,7 +161,8 @@ export function CoreEmailVariablesTab({ workspaceId }: { workspaceId: string }) 
                   )}
                 </TableBody>
               </Table>
-            </CustomTableContainer>
+            </div>
+          </CardWidgetContainer>
 
       <CoreVariableDialog open={isDialogOpen} onOpenChange={setIsDialogOpen} variable={selectedVariable} workspaceId={workspaceId} />
     </div>
@@ -238,7 +225,7 @@ function CoreVariableDialog({
           <DialogHeader>
             <DialogTitle>{variable ? 'Edit Variable' : 'Create Variable'}</DialogTitle>
           </DialogHeader>
-          <div className="flex-1 space-y-2 overflow-y-auto p-6 pb-8">
+          <div className="flex-1 space-y-2 overflow-y-auto p-2">
           <div className="space-y-2">
             <Label>Variable Key</Label>
             <Input value={key} onChange={(event) => setKey(event.target.value)} placeholder="company_address" />
@@ -250,8 +237,8 @@ function CoreVariableDialog({
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSaving}>Cancel</Button>
-            <Button onClick={handleSave} disabled={isSaving}>
-              {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+            <Button onClick={handleSave} disabled={isSaving} className="gap-1.5 px-2">
+              {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
               Save
             </Button>
           </DialogFooter>

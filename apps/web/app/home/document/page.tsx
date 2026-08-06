@@ -70,6 +70,7 @@ import { useColumnResize } from '@kit/ui/use-column-resize';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
 import { useDateRangeFilter } from '@kit/ui/use-date-range-filter';
 import { useTableSort } from '@kit/ui/use-table-sort';
+import { CustomDeleteDialog } from '@kit/ui/custom-delete-dialog';
 
 import { useLocalization } from '~/lib/localization/localization-provider';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
@@ -182,6 +183,9 @@ export default function DocumentPage() {
   const [file, setFile] = useState<File | null>(null);
   const [entityType, setEntityType] = useState('lead');
   const [entityId, setEntityId] = useState('');
+
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [documentToDelete, setDocumentToDelete] = useState<string | null>(null);
 
   const documentColumns = useMemo(
     () => [
@@ -344,8 +348,14 @@ export default function DocumentPage() {
     onSuccess: () => {
       toast.success('Document deleted');
       queryClient.invalidateQueries({ queryKey: ['documents'] });
+      setIsDeleteDialogOpen(false);
+      setDocumentToDelete(null);
     },
-    onError: () => toast.error('Failed to delete document'),
+    onError: () => {
+      toast.error('Failed to delete document');
+      setIsDeleteDialogOpen(false);
+      setDocumentToDelete(null);
+    },
   });
 
   useEffect(() => {
@@ -390,9 +400,8 @@ export default function DocumentPage() {
   };
 
   const handleDelete = (id: string) => {
-    if (confirm('Are you sure you want to delete this document?')) {
-      deleteMutation.mutate(id);
-    }
+    setDocumentToDelete(id);
+    setIsDeleteDialogOpen(true);
   };
 
   const getFileTypeCategory = (fileType: string): string => {
@@ -1185,6 +1194,19 @@ export default function DocumentPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      
+      <CustomDeleteDialog
+        isOpen={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        title="Delete Document"
+        description="Are you sure you want to delete this document? This action cannot be undone."
+        onConfirm={() => {
+          if (documentToDelete) {
+            deleteMutation.mutate(documentToDelete);
+          }
+        }}
+        isDeleting={deleteMutation.isPending}
+      />
     </>
   );
 }

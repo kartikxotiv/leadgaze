@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from '@kit/ui/select';
 import {
+  Table,
   TableBody,
   TableCell,
   TableHead,
@@ -40,6 +41,7 @@ import {
   getTeamMembersService,
   removeTeamMemberService,
 } from '~/services/teams.service';
+import { CustomDeleteDialog } from '@kit/ui/custom-delete-dialog';
 
 interface ManageTeamMembersDialogProps {
   team: Team;
@@ -55,6 +57,9 @@ export function ManageTeamMembersDialog({
   const { currentWorkspace } = useRBAC();
   const queryClient = useQueryClient();
   const [selectedUserId, setSelectedUserId] = useState<string>('');
+
+  const [isRemoveMemberDialogOpen, setIsRemoveMemberDialogOpen] = useState(false);
+  const [memberToRemove, setMemberToRemove] = useState<string | null>(null);
 
   // Fetch all workspace members
   const { data: workspaceMembersData = [] } = useQuery({
@@ -117,9 +122,13 @@ export function ManageTeamMembersDialog({
       queryClient.invalidateQueries({ queryKey: ['teamMembers', team.id] });
       queryClient.invalidateQueries({ queryKey: ['workspaceTeams', currentWorkspace?.id] });
       toast.success('Member removed from team');
+      setIsRemoveMemberDialogOpen(false);
+      setMemberToRemove(null);
     },
     onError: (error: any) => {
       toast.error(error?.message || 'Failed to remove member');
+      setIsRemoveMemberDialogOpen(false);
+      setMemberToRemove(null);
     },
   });
 
@@ -143,9 +152,9 @@ export function ManageTeamMembersDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex flex-col gap-6 pt-4">
+        <div className="flex flex-col gap-2">
           {/* Add Member Section */}
-          <div className="flex items-end gap-4 rounded-lg border bg-muted/30 p-4">
+          <div className="flex items-end gap-2 rounded-lg border bg-muted/30 p-2">
             <div className="flex-1 space-y-2">
               <label className="text-sm font-medium">Add Workspace Member</label>
               <Select value={selectedUserId} onValueChange={setSelectedUserId}>
@@ -167,20 +176,22 @@ export function ManageTeamMembersDialog({
               </Select>
             </div>
 
+            <div className="pb-1">
             <Button
               onClick={handleAddMember}
               disabled={!selectedUserId || addMemberMutation.isPending}
-              className="gap-2"
+              className="bg-leadgaze-primary hover:bg-leadgaze-primary text-white secondary-text-small-bold gap-1.5 px-2"
             >
               <UserPlus className="h-4 w-4" />
               Add to Team
             </Button>
+            </div>
           </div>
 
           {/* Members List */}
           <div className="rounded-md border">
-            <table className="w-full text-sm">
-              <TableHeader className="bg-muted/50">
+            <Table>
+              <TableHeader>
                 <TableRow>
                   <TableHead>Member</TableHead>
                   <TableHead>Email</TableHead>
@@ -225,9 +236,8 @@ export function ManageTeamMembersDialog({
                             variant="ghost"
                             size="sm"
                             onClick={() => {
-                              if (confirm('Remove this member from the team?')) {
-                                removeMemberMutation.mutate(member.user_id);
-                              }
+                              setMemberToRemove(member.user_id);
+                              setIsRemoveMemberDialogOpen(true);
                             }}
                             disabled={removeMemberMutation.isPending}
                             className="text-destructive hover:bg-destructive/10 hover:text-destructive"
@@ -240,10 +250,22 @@ export function ManageTeamMembersDialog({
                   })
                 )}
               </TableBody>
-            </table>
+            </Table>
           </div>
         </div>
       </DialogContent>
+      <CustomDeleteDialog
+        isOpen={isRemoveMemberDialogOpen}
+        onOpenChange={setIsRemoveMemberDialogOpen}
+        title="Remove Member"
+        description="Are you sure you want to remove this member from the team? This action cannot be undone."
+        onConfirm={() => {
+          if (memberToRemove) {
+            removeMemberMutation.mutate(memberToRemove);
+          }
+        }}
+        isDeleting={removeMemberMutation.isPending}
+      />
     </Dialog>
   );
 }

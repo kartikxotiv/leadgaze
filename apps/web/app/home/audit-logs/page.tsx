@@ -411,7 +411,7 @@ export default function AuditLogsPage() {
                             {isVisible('date_time') && (
                               <TableCell className="align-middle">
                                 <div className="flex flex-col gap-0.5">
-                                  <span className="text-sm font-medium">
+                                  <span className="text-sm font-medium text-leadgaze-dark dark:text-white">
                                     {formatDate(log.created_at)}
                                   </span>
                                   <span className="text-muted-foreground text-xs font-normal">
@@ -427,7 +427,7 @@ export default function AuditLogsPage() {
                             )}
                             {isVisible('actor') && (
                               <TableCell className="align-middle">
-                                <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-2">
                                   <div className="bg-primary/10 text-primary flex h-6 w-6 shrink-0 items-center justify-center rounded-full secondary-text-small ring-1 ring-primary/20">
                                     {log.actor?.name?.[0] ||
                                       log.actor?.email?.[0] ||
@@ -506,15 +506,15 @@ export default function AuditLogsPage() {
         open={!!selectedLog}
         onOpenChange={(open) => !open && setSelectedLog(null)}
       >
-        <SheetContent className="overflow-y-auto sm:max-w-[500px]">
-          <SheetHeader>
-            <SheetTitle>Transaction Details</SheetTitle>
+        <SheetContent className="overflow-y-auto sm:max-w-[500px] p-2">
+          <SheetHeader className="gap-0">
+            <SheetTitle className="primary-heading text-leadgaze-dark dark:text-white">Transaction Details</SheetTitle>
             <SheetDescription>Full audit data for this event</SheetDescription>
           </SheetHeader>
 
           {selectedLog && (
-            <div className="mt-6 space-y-6">
-              <div className="grid grid-cols-2 gap-4">
+            <div className="mt-4 space-y-4">
+              <div className="grid grid-cols-2 gap-2">
                 <div>
                   <p className="text-muted-foreground text-xs font-medium uppercase">
                     Action
@@ -531,21 +531,21 @@ export default function AuditLogsPage() {
                     );
                   })()}
                 </div>
-                <div>
+                <div className="mb-2">
                   <p className="text-muted-foreground text-xs font-medium uppercase">
                     Module
                   </p>
-                  <p className="mt-1 text-sm font-semibold">
+                  <p className="mt-1 text-sm font-semibold text-leadgaze-dark dark:text-white">
                     {getModuleLabel(selectedLog.module)}
                   </p>
                 </div>
               </div>
 
-              <div>
+              <div className="mb-2">
                 <p className="text-muted-foreground text-xs font-medium uppercase">
                   Entity
                 </p>
-                <p className="mt-1 text-sm font-semibold">
+                <p className="mt-1 text-sm font-semibold text-leadgaze-dark dark:text-white">
                   {selectedLog.entity_name || 'N/A'}
                 </p>
                 <p className="text-muted-foreground font-mono text-xs">
@@ -592,16 +592,16 @@ export default function AuditLogsPage() {
                 </div>
               </div>
 
-              <Separator />
+              <Separator className="mb-1"/>
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 <div className="bg-primary/10 text-primary flex h-10 w-10 items-center justify-center rounded-full font-bold">
                   {selectedLog.actor?.name?.[0] ||
                     selectedLog.actor?.email?.[0] ||
                     '?'}
                 </div>
                 <div>
-                  <p className="text-sm font-medium">
+                  <p className="text-sm font-medium text-leadgaze-dark dark:text-white">
                     {selectedLog.actor?.name || 'System'}
                   </p>
                   <p className="text-muted-foreground text-xs">

@@ -9,6 +9,7 @@ import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { CardWidgetContainer } from '@kit/ui/card-widget-container';
 import { CardWidgetList, CardWidgetListItem } from '@kit/ui/card-widget-list';
+import { CustomDeleteDialog } from '@kit/ui/custom-delete-dialog';
 
 import { useLocalization } from '~/lib/localization/localization-provider';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
@@ -26,6 +27,9 @@ export function EntityCalls({ entityType, entityId }: EntityCallsProps) {
     const [isOpen, setIsOpen] = useState(false);
     const queryClient = useQueryClient();
 
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [callToDelete, setCallToDelete] = useState<string | null>(null);
+
     const { data: calls = [], isLoading } = useQuery({
         queryKey: ['calls', workspace?.id, entityType, entityId],
         queryFn: () => {
@@ -39,23 +43,26 @@ export function EntityCalls({ entityType, entityId }: EntityCallsProps) {
         enabled: !!workspace?.id,
     });
 
-    const { mutate: deleteCall } = useMutation({
+    const deleteCallMutation = useMutation({
         mutationFn: deleteCallService,
         onSuccess: () => {
             toast.success('Call deleted');
+            setIsDeleteDialogOpen(false);
+            setCallToDelete(null);
             queryClient.invalidateQueries({
                 queryKey: ['calls', workspace?.id, entityType, entityId],
             });
         },
         onError: (error: any) => {
             toast.error(error.message || 'Failed to delete call');
+            setIsDeleteDialogOpen(false);
+            setCallToDelete(null);
         }
     });
 
     const handleDelete = (id: string) => {
-        if (confirm('Are you sure you want to delete this call log?')) {
-            deleteCall(id);
-        }
+        setCallToDelete(id);
+        setIsDeleteDialogOpen(true);
     };
 
     const handleSuccess = async () => {
@@ -118,6 +125,7 @@ export function EntityCalls({ entityType, entityId }: EntityCallsProps) {
         <CardWidgetContainer
             title="Call Logs"
             hideHeaderBorder={true}
+            headerClassName="p-2 xl:p-2 2xl:p-2"
             icon={<Phone className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
             icon2={
                 <Button
@@ -131,7 +139,7 @@ export function EntityCalls({ entityType, entityId }: EntityCallsProps) {
                 </Button>
             }
         >
-            <div className="px-6 py-3">
+            <div className="px-2 mb-2">
                 {isLoading ? (
                     <div className="flex justify-center py-4">
                         <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
@@ -145,10 +153,11 @@ export function EntityCalls({ entityType, entityId }: EntityCallsProps) {
                                 iconAlignTop={true}
                                 title={call.call_type === 'inbound' ? 'Inbound Call' : 'Outbound Call'}
                                 badge={getCallStatusBadge(call.status)}
+                                actionStyle="slide"
                                 content={
                                     <>
                                         {call.subject && (
-                                            <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap">
+                                            <p className="text-sm text-leadgaze-dark dark:text-white whitespace-pre-wrap">
                                                 {call.subject}
                                             </p>
                                         )}
@@ -195,6 +204,19 @@ export function EntityCalls({ entityType, entityId }: EntityCallsProps) {
                     workspaceId={workspace.id}
                 />
             )}
+
+            <CustomDeleteDialog
+                isOpen={isDeleteDialogOpen}
+                onOpenChange={setIsDeleteDialogOpen}
+                title="Delete Call Log"
+                description="Are you sure you want to delete this call log? This action cannot be undone."
+                onConfirm={() => {
+                    if (callToDelete) {
+                        deleteCallMutation.mutate(callToDelete);
+                    }
+                }}
+                isDeleting={deleteCallMutation.isPending}
+            />
         </CardWidgetContainer>
     );
 }

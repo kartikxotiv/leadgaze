@@ -172,5 +172,14 @@
     font-size: 14px !important;
     padding-top:2px;
   }
+  .border-b-accordion {
+    border-color: #f1f5f9;
+  }
+  .data-\[state\=active\]\:text-foreground[data-state="active"] {
+    color: var(--custom-popover-foreground) !important;
+  }
+  .dark .data-\[state\=active\]\:text-foreground[data-state="active"] {
+    color: white !important;
+  }
 
 }

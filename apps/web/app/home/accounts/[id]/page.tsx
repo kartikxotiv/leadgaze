@@ -96,6 +96,7 @@ import { EntityCalls } from '../../_components/entity-calls';
 import { EntityEmails } from '../../_components/entity-emails';
 import { EntityNotes } from '../../_components/entity-notes';
 import { EntityTasks } from '../../_components/entity-tasks';
+import { EntityActivityLogs } from '../../_components/entity-activity-logs';
 import { AssignUserModal } from '../../leads/components/assign-user-modal';
 import { LogCallDialog } from '../../leads/components/log-call-dialog';
 import { OpportunityDialog } from '../../opportunities/components/opportunity-dialog';
@@ -176,7 +177,7 @@ export default function AccountDetailsPage() {
   const [isOpportunityDialogOpen, setIsOpportunityDialogOpen] = useState(false);
   const [isLogCallDialogOpen, setIsLogCallDialogOpen] = useState(false);
   const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
-  const [openAccordion, setOpenAccordion] = useState<string>('');
+  const [openAccordions, setOpenAccordions] = useState<string[]>(['details', 'additional', 'contacts']);
   const [isEditingAccountType, setIsEditingAccountType] = useState(false);
   const [isEditingRevenue, setIsEditingRevenue] = useState(false);
 
@@ -456,24 +457,20 @@ export default function AccountDetailsPage() {
 
   return (
     <ModuleGuard module="accounts">
-      <div className="flex flex-wrap items-start gap-2 pb-2 pt-4 sm:flex-nowrap sm:items-center sm:justify-between">
+      <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap sm:justify-between">
         <div className="flex items-center gap-2">
           <Button
             variant="ghost"
-            size="sm"
             asChild
-            className="border-leadgaze-border border p-0"
+            className="w-6 h-6 border-leadgaze-border border p-0"
           >
             <Link href="/home/sales/accounts">
-              <ArrowLeft className="ml-2 mr-2 h-4 w-4" />
+              <ArrowLeft className="h-3 w-3" />
             </Link>
           </Button>
-          <div className="flex flex-col">
-            <h1 className="text-lg font-semibold">Account details</h1>
-            <p className="text-leadgaze-muted text-sm">
-              View and edit account information
-            </p>
-          </div>
+          <h1 className="primary-heading-extra text-leadgaze-dark dark:text-white">
+            Account Details
+          </h1>
         </div>
         <div className="flex items-center gap-2">
           {canEdit && (
@@ -482,9 +479,8 @@ export default function AccountDetailsPage() {
                 <TooltipTrigger asChild>
                   <Button
                     variant="outline"
-                    size="sm"
                     onClick={() => setIsLogCallDialogOpen(true)}
-                    className="gap-2"
+                    className="secondary-text-small-bold text-leadgaze-dark dark:text-white gap-1.5 px-2"
                     title="Log a call"
                   >
                     <Phone className="h-4 w-4" />
@@ -502,8 +498,7 @@ export default function AccountDetailsPage() {
                 <TooltipTrigger asChild>
                   <Button
                     variant="outline"
-                    size="sm"
-                    className={`gap-2 ${accountEmailRecipients.length === 0 ? 'opacity-50' : ''}`}
+                    className={`secondary-text-small-bold text-leadgaze-dark dark:text-white gap-1.5 px-2 ${accountEmailRecipients.length === 0 ? 'opacity-50' : ''}`}                    
                     disabled={accountEmailRecipients.length === 0}
                     onClick={() =>
                       accountEmailRecipients.length > 0 &&
@@ -531,9 +526,8 @@ export default function AccountDetailsPage() {
           {canEdit && (
             <Button
               variant="default"
-              size="sm"
               onClick={() => setIsEditDialogOpen(true)}
-              className="gap-2"
+              className="secondary-text-small-bold bg-leadgaze-primary hover:bg-leadgaze-primary text-white gap-1.5 px-2"
             >
               <Edit2 className="h-4 w-4" />
               <span className="hidden sm:inline">Edit Profile</span>
@@ -551,13 +545,13 @@ export default function AccountDetailsPage() {
           entityName={account.account_name}
           onSuccess={() => router.push('/home/sales/accounts')}
         />
-        <div className="flex w-full flex-col gap-4 lg:min-h-0 lg:flex-1 lg:flex-row">
+        <div className="flex w-full flex-col gap-2 lg:min-h-0 lg:flex-1 lg:flex-row">
           {/* Main Content */}
           <div className="w-full space-y-4 lg:w-[65%] lg:overflow-y-auto">
             <DetailHeader
               avatar={
-                <div className="bg-primary/10 flex h-16 w-16 items-center justify-center rounded-lg">
-                  <Building2 className="text-primary h-8 w-8" />
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-leadgaze-primary text-base font-semibold text-white">
+                  <Building2 className="text-white h-6 w-6" />
                 </div>
               }
               title={account.account_name}
@@ -608,9 +602,9 @@ export default function AccountDetailsPage() {
             {/* Tabs Section */}
             <Tabs
               defaultValue={canManageEmail ? 'email' : 'notes'}
-              className="space-y-4"
+              className="space-y-4 mb-2"
             >
-              <TabsList className="mb-2 h-auto w-full justify-start gap-3 overflow-x-auto rounded-none border-b bg-transparent p-0 [-ms-overflow-style:none] [scrollbar-width:none] sm:gap-6 [&::-webkit-scrollbar]:hidden">
+              <TabsList className="mb-0 h-auto w-full justify-start gap-3 overflow-x-auto rounded-none border-b bg-transparent p-0 [-ms-overflow-style:none] [scrollbar-width:none] sm:gap-6 [&::-webkit-scrollbar]:hidden">
                 {canManageEmail && (
                   <TabsTrigger
                     value="email"
@@ -728,56 +722,20 @@ export default function AccountDetailsPage() {
               </TabsContent>
 
               <TabsContent value="activity">
-                <CardWidgetContainer
-                  title="Activity"
-                  hideHeaderBorder={true}
-                  icon={
-                    <Clock className="text-leadgaze-dark h-5 w-5 dark:text-white" />
-                  }
-                >
-                  <CardContent className="px-6 py-3">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3 dark:bg-slate-900">
-                        <div className="h-2 w-2 rounded-full bg-green-500" />
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm font-medium text-gray-900 dark:text-white">
-                            Account Created
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            {formatDate(account.created_at)}
-                          </p>
-                        </div>
-                      </div>
-                      {account.updated_at &&
-                        account.updated_at !== account.created_at && (
-                          <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3 dark:bg-slate-900">
-                            <div className="h-2 w-2 rounded-full bg-blue-500" />
-                            <div className="min-w-0 flex-1">
-                              <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                Account Updated
-                              </p>
-                              <p className="text-xs text-gray-500">
-                                {formatDate(account.updated_at)}
-                              </p>
-                            </div>
-                          </div>
-                        )}
-                    </div>
-                  </CardContent>
-                </CardWidgetContainer>
+                <EntityActivityLogs entityType="account" entityId={id} />
               </TabsContent>
             </Tabs>
 
             {/* Danger Zone */}
             {rbacCanAccess('accounts', 'delete') && (
               <Card className="border-destructive/50 hidden border-solid lg:block">
-                <CardContent>
-                  <div className="mt-6 flex flex-col items-center justify-between md:flex-row">
-                    <div className="mb-2 space-y-1">
-                      <p className="font-medium dark:text-white">
+                <CardContent className="p-2">
+                  <div className="flex flex-col items-center justify-between md:flex-row">
+                    <div className="mb-0 space-y-1">
+                      <p className="primary-text-medium dark:text-white">
                         Delete Account
                       </p>
-                      <p className="text-muted-foreground text-sm">
+                      <p className="text-muted-foreground secondary-text-small">
                         Once you delete an account, there is no going back.
                         Please be certain.
                       </p>
@@ -814,27 +772,27 @@ export default function AccountDetailsPage() {
           <div className="w-full space-y-4 lg:w-[35%] lg:overflow-y-auto">
             {/* Accordion Sections */}
             <Accordion
-              type="single"
-              collapsible
+              type="multiple"
               className="space-y-2"
-              value={openAccordion}
-              onValueChange={setOpenAccordion}
+              value={openAccordions}
+              onValueChange={setOpenAccordions}
             >
               {/* Account Details */}
               <AccordionItem
                 value="details"
-                className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
+                className="overflow-hidden border bg-white dark:bg-zinc-900"
               >
-                <AccordionTrigger className="px-4 py-3 hover:no-underline">
-                  <span className="primary-heading text-leadgaze-dark flex items-center gap-2 dark:text-white">
+                <AccordionTrigger className="px-2 pb-2 border-b border-b-accordion hover:no-underline py-3">
+                  <span className="primary-text-big-regular text-leadgaze-dark flex items-center gap-2 dark:text-white">
+
                     <Building2 className="text-leadgaze-dark h-5 w-5 dark:text-white" />
                     Account Details
                   </span>
                 </AccordionTrigger>
-                <AccordionContent className="px-4 pb-4">
+                <AccordionContent className="px-2 pb-2">
                   <DetailInfoList>
                     {canView('phone') && (
-                      <div className="flex items-center justify-between gap-2 py-2.5">
+                      <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
                           <Phone className="text-muted-foreground h-5 w-5 shrink-0" />
                           <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
@@ -859,7 +817,7 @@ export default function AccountDetailsPage() {
 
                     {canView('employee_count') && (
                       <>
-                        <div className="flex items-center justify-between gap-2 py-2.5">
+                        <div className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-2">
                             <Users className="text-muted-foreground h-5 w-5 shrink-0" />
                             <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
@@ -873,7 +831,7 @@ export default function AccountDetailsPage() {
                               placeholder="-"
                               type="number"
                               className="justify-end"
-                              displayClassName="truncate text-sm text-gray-900 dark:text-white"
+                              displayClassName="primary-text-regular text-leadgaze-dark dark:text-white"
                               inputClassName="text-right"
                               onCommit={async (nextValue) => {
                                 const val = nextValue.trim() ? parseInt(nextValue) : null;
@@ -883,7 +841,7 @@ export default function AccountDetailsPage() {
                           </div>
                         </div>
 
-                        <div className="flex items-center justify-between gap-2 py-2.5">
+                        <div className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-2">
                             <Users className="text-muted-foreground h-5 w-5 shrink-0" />
                             <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
@@ -896,7 +854,7 @@ export default function AccountDetailsPage() {
                               disabled={!canEdit}
                               placeholder="-"
                               className="justify-end"
-                              displayClassName="truncate text-sm text-gray-900 dark:text-white"
+                              displayClassName="primary-text-regular text-leadgaze-dark dark:text-white"
                               inputClassName="text-right"
                               onCommit={async (nextValue) => {
                                 await commitAccountField('company_size', nextValue);
@@ -908,7 +866,7 @@ export default function AccountDetailsPage() {
                     )}
 
                     {canView('annual_revenue') && (
-                      <div className="flex items-center justify-between gap-2 py-2.5">
+                      <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
                           <DollarSign className="text-muted-foreground h-5 w-5 shrink-0" />
                           <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
@@ -942,7 +900,7 @@ export default function AccountDetailsPage() {
                               disabled={!canEdit}
                               onClick={() => setIsEditingRevenue(true)}
                               className={cn(
-                                'group inline-flex w-full items-center justify-end rounded-[4px] text-right outline-none transition-colors',
+                                'group inline-flex w-full items-center justify-end rounded-[4px] text-right outline-none transition-colors h-[34px]',
                                 {
                                   'cursor-text': canEdit,
                                   'hover:bg-accent/20': canEdit,
@@ -967,7 +925,7 @@ export default function AccountDetailsPage() {
                     )}
 
                     {canView('account_type') && (
-                      <div className="flex items-center justify-between gap-2 py-2.5">
+                      <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
                           <Tag className="text-muted-foreground h-5 w-5 shrink-0" />
                           <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
@@ -999,7 +957,7 @@ export default function AccountDetailsPage() {
                               disabled={!canEdit}
                               onClick={() => setIsEditingAccountType(true)}
                               className={cn(
-                                'group inline-flex w-full items-center justify-end rounded-[4px] text-right outline-none transition-colors',
+                                'group inline-flex w-full items-center justify-end rounded-[4px] text-right outline-none transition-colors h-[34px]',
                                 {
                                   'cursor-text': canEdit,
                                   'text-muted-foreground': !account.account_type,
@@ -1023,7 +981,7 @@ export default function AccountDetailsPage() {
                     )}
 
                     {canView('linkedin') && (
-                      <div className="flex items-center justify-between gap-2 py-2.5">
+                      <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
                           <Linkedin className="text-muted-foreground h-5 w-5 shrink-0" />
                           <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
@@ -1047,7 +1005,7 @@ export default function AccountDetailsPage() {
                     )}
 
                     {canView('description') && (
-                      <div className="flex items-center justify-between gap-2 py-2.5">
+                      <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
                           <FileText className="text-muted-foreground h-5 w-5 shrink-0" />
                           <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
@@ -1060,7 +1018,7 @@ export default function AccountDetailsPage() {
                             disabled={!canEdit}
                             placeholder="-"
                             className="justify-end"
-                            displayClassName="truncate text-sm text-gray-900 dark:text-white"
+                            displayClassName="primary-text-regular text-leadgaze-dark dark:text-white"
                             inputClassName="text-right"
                             multiline
                             onCommit={async (nextValue) => {
@@ -1072,7 +1030,7 @@ export default function AccountDetailsPage() {
                     )}
 
                     {canView('billing_street') && (
-                      <div className="flex items-center justify-between gap-2 py-2.5">
+                      <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
                           <MapPin className="text-muted-foreground h-5 w-5 shrink-0" />
                           <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
@@ -1085,7 +1043,7 @@ export default function AccountDetailsPage() {
                             disabled={!canEdit}
                             placeholder="-"
                             className="justify-end"
-                            displayClassName="truncate text-sm text-gray-900 dark:text-white"
+                            displayClassName="primary-text-regular text-leadgaze-dark dark:text-white"
                             inputClassName="text-right"
                             onCommit={async (nextValue) => {
                               const parts = nextValue.split(',').map((p) => p.trim());
@@ -1104,7 +1062,7 @@ export default function AccountDetailsPage() {
                     )}
 
                     {canView('shipping_street') && (
-                      <div className="flex items-center justify-between gap-2 py-2.5">
+                      <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
                           <MapPin className="text-muted-foreground h-5 w-5 shrink-0" />
                           <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
@@ -1117,7 +1075,7 @@ export default function AccountDetailsPage() {
                             disabled={!canEdit}
                             placeholder="-"
                             className="justify-end"
-                            displayClassName="truncate text-sm text-gray-900 dark:text-white"
+                            displayClassName="primary-text-regular text-leadgaze-dark dark:text-white"
                             inputClassName="text-right"
                             onCommit={async (nextValue) => {
                               const parts = nextValue.split(',').map((p) => p.trim());
@@ -1142,15 +1100,15 @@ export default function AccountDetailsPage() {
               {customFieldsToShow.length > 0 && (
                 <AccordionItem
                   value="additional"
-                  className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
+                  className="overflow-hidden border bg-white dark:bg-zinc-900"
                 >
-                  <AccordionTrigger className="px-4 py-3 hover:no-underline">
-                    <span className="primary-heading text-leadgaze-dark flex items-center gap-2">
+                  <AccordionTrigger className="px-2 pb-2 border-b border-b-accordion hover:no-underline py-3">
+                    <span className="primary-text-big-regular text-leadgaze-dark flex items-center gap-2 dark:text-white">
                       <FileText className="text-leadgaze-dark h-4 w-4 dark:text-white" />
                       Additional Data
                     </span>
                   </AccordionTrigger>
-                  <AccordionContent className="px-4 pb-4">
+                  <AccordionContent className="px-2 pb-2">
                     <DetailInfoList>
                       {customFieldsToShow.map((field) => {
                         const val = (
@@ -1178,36 +1136,46 @@ export default function AccountDetailsPage() {
               {/* Contacts */}
               <AccordionItem
                 value="contacts"
-                className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
+                className="overflow-hidden border bg-white dark:bg-zinc-900"
               >
-                <div className="flex items-center justify-between px-4 py-3">
-                  <AccordionTrigger className="hover:no-underline">
-                    <span className="primary-heading text-leadgaze-dark flex items-center gap-2">
+                <AccordionTrigger
+                  hideChevron
+                  className="px-2 pb-2 border-b border-b-accordion hover:no-underline py-2"
+                >
+                  <div className="flex w-full justify-between items-center">
+                    <span className="primary-text-big-regular text-leadgaze-dark flex items-center gap-2 dark:text-white">
                       <Users className="text-leadgaze-dark h-5 w-5 dark:text-white" />
                       Contacts
                     </span>
-                  </AccordionTrigger>
-                  {rbacCanAccess('accounts', 'add_contact') && (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setIsContactDialogOpen(true);
-                      }}
-                      className="focus-visible:ring-ring ring-offset-background bg-primary text-primary-foreground hover:bg-primary/90 inline-flex h-8 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
-                    >
-                      <Plus className="h-4 w-4" />
-                      <span>Add Contact</span>
-                    </button>
-                  )}
-                </div>
-                <AccordionContent className="px-4 pb-4">
+                    {rbacCanAccess('accounts', 'add_contact') && (
+                      <Button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsContactDialogOpen(true);
+                        }}
+                        className="bg-leadgaze-primary hover:bg-leadgaze-primary text-white secondary-text-small-bold gap-1.5 px-2 disabled:pointer-events-none disabled:opacity-50 mr-2"                        
+                      >
+                        <Plus className="h-4 w-4" />
+                        <span>Add Contact</span>
+                      </Button>
+                    )}
+                  </div>
+                  <ChevronDown
+                    className={cn(
+                      'h-4 w-4 shrink-0 text-gray-500 transition-transform duration-200 dark:text-gray-400',
+                      openAccordions.includes('contacts') && 'rotate-180'
+                    )}
+                  />
+                </AccordionTrigger>
+                <AccordionContent className="px-2 pb-2">
                   {rbacCanAccess('accounts', 'view_contacts') ? (
                     contacts && contacts.length > 0 ? (
                       <CardWidgetList>
                         {contacts.map((contact: any) => (
                           <CardWidgetListItem
                             key={contact.id}
+                            iconAlignTop={true}
                             icon={
                               <div className="bg-primary/10 text-primary flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold">
                                 {contact.first_name[0]}
@@ -1261,40 +1229,50 @@ export default function AccountDetailsPage() {
               {/* Opportunities */}
               <AccordionItem
                 value="opportunities"
-                className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
+                className="overflow-hidden border bg-white dark:bg-zinc-900"
               >
-                <div className="flex items-center justify-between px-4 py-3">
-                  <AccordionTrigger className="hover:no-underline">
-                    <span className="primary-heading text-leadgaze-dark flex items-center gap-2">
+                <AccordionTrigger
+                  hideChevron
+                  className="px-2 pb-2 border-b border-b-accordion hover:no-underline py-2"
+                >
+                  <div className="flex w-full justify-between items-center">
+                    <span className="primary-text-big-regular text-leadgaze-dark flex items-center gap-2 dark:text-white">
                       <Briefcase className="text-leadgaze-dark h-5 w-5 dark:text-white" />
                       Opportunities
                     </span>
-                  </AccordionTrigger>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setIsOpportunityDialogOpen(true);
-                    }}
-                    className="focus-visible:ring-ring ring-offset-background bg-primary text-primary-foreground hover:bg-primary/90 inline-flex h-8 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
-                  >
-                    <Plus className="h-4 w-4" />
-                    <span>New Opportunity</span>
-                  </button>
-                </div>
-                <AccordionContent className="px-4 pb-4">
+                    <Button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsOpportunityDialogOpen(true);
+                      }}
+                      className="bg-leadgaze-primary hover:bg-leadgaze-primary text-white secondary-text-small-bold gap-1.5 px-2 disabled:pointer-events-none disabled:opacity-50 mr-2"
+                    >
+                      <Plus className="h-4 w-4" />
+                      <span>New Opportunity</span>
+                    </Button>
+                  </div>
+                  <ChevronDown
+                    className={cn(
+                      'h-4 w-4 shrink-0 text-gray-500 transition-transform duration-200 dark:text-gray-400',
+                      openAccordions.includes('opportunities') && 'rotate-180'
+                    )}
+                  />
+                </AccordionTrigger>
+                <AccordionContent className="px-2 pb-2">
                   {rbacCanAccess('accounts', 'view_opportunities') ? (
                     opportunities && opportunities.length > 0 ? (
                       <CardWidgetList>
                         {opportunities.map((opp: any) => (
                           <CardWidgetListItem
                             key={opp.id}
+                            actionStyle="slide"
                             title={opp.opportunity_name}
                             badge={
                               opp.stage && (
                                 <Badge
                                   variant="outline"
-                                  className="h-5 text-[10px]"
+                                  className="h-5 text-[10px] text-leadgaze-dark dark:text-white"
                                 >
                                   {opp.stage.status_name}
                                 </Badge>
@@ -1392,28 +1370,37 @@ export default function AccountDetailsPage() {
               {workspace?.id && (
                 <AccordionItem
                   value="assignees"
-                  className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
+                  className="overflow-hidden border bg-white dark:bg-zinc-900"
                 >
-                  <div className="flex items-center justify-between px-4 py-3">
-                    <AccordionTrigger className="hover:no-underline">
-                      <span className="primary-heading text-leadgaze-dark flex items-center gap-2">
+                  <AccordionTrigger
+                    hideChevron
+                    className="px-2 pb-2 border-b border-b-accordion hover:no-underline py-2"
+                  >
+                    <div className="flex w-full justify-between items-center">
+                      <span className="primary-text-big-regular text-leadgaze-dark flex items-center gap-2 dark:text-white">
                         <Users className="text-leadgaze-dark h-5 w-5 dark:text-white" />
                         Assigned Members
                       </span>
-                    </AccordionTrigger>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setIsAssignModalOpen(true);
-                      }}
-                      className="focus-visible:ring-ring ring-offset-background bg-primary text-primary-foreground hover:bg-primary/90 inline-flex h-8 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
-                    >
-                      <Plus className="h-4 w-4" />
-                      <span>Assign Member</span>
-                    </button>
-                  </div>
-                  <AccordionContent className="px-4 pb-4">
+                      <Button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsAssignModalOpen(true);
+                        }}
+                        className="bg-leadgaze-primary hover:bg-leadgaze-primary text-white secondary-text-small-bold gap-1.5 px-2 mr-2"
+                      >
+                        <Plus className="h-4 w-4" />
+                        <span>Assign Member</span>
+                      </Button>
+                    </div>
+                    <ChevronDown
+                      className={cn(
+                        'h-4 w-4 shrink-0 text-gray-500 transition-transform duration-200 dark:text-gray-400',
+                        openAccordions.includes('assignees') && 'rotate-180'
+                      )}
+                    />
+                  </AccordionTrigger>
+                  <AccordionContent className="px-0 pb-2">
                     <AccountAssignees
                       accountId={id}
                       workspaceId={workspace.id}
@@ -1426,15 +1413,16 @@ export default function AccountDetailsPage() {
               {/* System Info */}
               <AccordionItem
                 value="system"
-                className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
+                className="overflow-hidden border bg-white dark:bg-zinc-900"
               >
-                <AccordionTrigger className="px-4 py-3 hover:no-underline">
-                  <span className="primary-heading text-leadgaze-dark flex items-center gap-2 dark:text-white">
+                <AccordionTrigger className="px-2 pb-2 border-b border-b-accordion hover:no-underline py-3">
+                  <span className="primary-text-big-regular text-leadgaze-dark flex items-center gap-2 dark:text-white">
+
                     <Clock className="text-leadgaze-dark h-5 w-5 dark:text-white" />
                     System Info
                   </span>
                 </AccordionTrigger>
-                <AccordionContent className="px-4 pb-4">
+                <AccordionContent className="px-2 pb-2">
                   <DetailInfoList>
                     <DetailInfoRow
                       icon={<User className="h-5 w-5" />}
@@ -1460,7 +1448,7 @@ export default function AccountDetailsPage() {
                       }
                     />
 
-                    <div className="flex items-center justify-between gap-2 py-2.5">
+                    <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2">
                         <Globe className="text-muted-foreground h-5 w-5 shrink-0" />
                         <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
@@ -1482,7 +1470,7 @@ export default function AccountDetailsPage() {
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between gap-2 py-2.5">
+                    <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2">
                         <FileText className="text-muted-foreground h-5 w-5 shrink-0" />
                         <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
@@ -1495,7 +1483,7 @@ export default function AccountDetailsPage() {
                           disabled={!canEdit}
                           placeholder="-"
                           className="justify-end"
-                          displayClassName="truncate text-sm text-gray-900 dark:text-white"
+                          displayClassName="primary-text-regular text-leadgaze-dark dark:text-white"
                           inputClassName="text-right"
                           renderDisplay={(val) =>
                             val ? (
@@ -1529,13 +1517,13 @@ export default function AccountDetailsPage() {
           <div className="w-full lg:hidden">
             {rbacCanAccess('accounts', 'delete') && (
               <Card className="border-destructive/50 border-solid">
-                <CardContent>
-                  <div className="mt-6 flex flex-col items-center justify-between md:flex-row">
-                    <div className="mb-2 space-y-1">
-                      <p className="font-medium dark:text-white">
+                <CardContent className="p-2">
+                  <div className="flex flex-col items-center justify-between md:flex-row">
+                    <div className="mb-0 space-y-1">
+                      <p className="primary-text-medium dark:text-white">
                         Delete Account
                       </p>
-                      <p className="text-muted-foreground text-sm">
+                      <p className="text-muted-foreground secondary-text-small">
                         Once you delete an account, there is no going back.
                         Please be certain.
                       </p>

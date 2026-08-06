@@ -1192,7 +1192,7 @@ export function HomeMenuNavigation() {
       {/* Left side: Logo & App Launcher & Navigation Items */}
       <div className="flex min-w-0 flex-1 items-center space-x-3 overflow-hidden md:space-x-4">
         <div className="flex shrink-0 items-center space-x-2 md:space-x-3">
-          <AppLogo className="max-h-8 w-auto" />
+          <AppLogo className="max-h-8 w-auto py-1" />
           {!isOrgRoute && (
             <div className="hidden h-6 w-px bg-white/25 md:block" />
           )}

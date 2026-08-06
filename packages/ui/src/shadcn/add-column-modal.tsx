@@ -354,7 +354,7 @@ export function AddColumnModal({
 
         <div className="flex-1 flex flex-col overflow-hidden">
           {currentTab === 'existing' ? (
-            <div className="p-2 space-y-1 flex-1 overflow-y-auto">
+            <div className="p-2 pt-0 space-y-1 flex-1 overflow-y-auto">
               <div className="flex items-center justify-between text-xs font-semibold text-muted-foreground uppercase">
                 <div className="flex items-center gap-1 text-[10px]">
                   SHOWN <ChevronDown className="h-3 w-3" />
@@ -437,7 +437,7 @@ export function AddColumnModal({
           </div>
 
           {/* Required toggle */}
-          <div className="flex items-center justify-between py-2">
+          <div className="flex items-center justify-between pb-2">
             <Label htmlFor="add-col-required">Required Field</Label>
             <Switch
               id="add-col-required"

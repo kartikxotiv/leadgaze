@@ -1,7 +1,5 @@
 import { NextResponse } from 'next/server';
 
-import { getSupabaseServerClient } from '@kit/supabase/server-client';
-
 import { getSendableEmailAccountById } from '../../lib/email/account-access';
 import { sendMail } from '../../lib/email/mailer';
 import { catchAsync, successDataResponse } from '../../utils/response-handler';
@@ -18,6 +16,60 @@ function normalizeRecipients(value: unknown): string[] {
     .split(',')
     .map((item) => item.trim())
     .filter(Boolean);
+}
+
+const EMAIL_ATTACHMENTS_BUCKET = 'email_attachments';
+const MAX_EMAIL_ATTACHMENT_COUNT = 5;
+const MAX_EMAIL_ATTACHMENT_SIZE = 10 * 1024 * 1024;
+const MAX_TOTAL_EMAIL_ATTACHMENT_SIZE = 15 * 1024 * 1024;
+
+type EmailAttachmentInput = {
+  name: string;
+  path: string;
+  contentType: string;
+  size: number;
+};
+
+function normalizeAttachments(value: unknown): EmailAttachmentInput[] | null {
+  if (value === undefined || value === null) return [];
+  if (!Array.isArray(value) || value.length > MAX_EMAIL_ATTACHMENT_COUNT) {
+    return null;
+  }
+
+  const attachments: EmailAttachmentInput[] = [];
+
+  for (const item of value) {
+    if (!item || typeof item !== 'object') return null;
+
+    const attachment = item as Record<string, unknown>;
+    const rawName = String(attachment.name ?? '').trim();
+    const name = rawName.split(/[\\/]/).pop()?.slice(0, 255) ?? '';
+    const path = String(attachment.path ?? '').trim();
+    const contentType =
+      String(attachment.contentType ?? 'application/octet-stream')
+        .trim()
+        .slice(0, 255) || 'application/octet-stream';
+    const size = Number(attachment.size);
+
+    if (
+      !name ||
+      !path ||
+      !Number.isFinite(size) ||
+      size <= 0 ||
+      size > MAX_EMAIL_ATTACHMENT_SIZE
+    ) {
+      return null;
+    }
+
+    attachments.push({ name, path, contentType, size });
+  }
+
+  const totalSize = attachments.reduce(
+    (sum, attachment) => sum + attachment.size,
+    0,
+  );
+
+  return totalSize <= MAX_TOTAL_EMAIL_ATTACHMENT_SIZE ? attachments : null;
 }
 
 export const sendCoreEmailController = catchAsync(async ({ request }) => {
@@ -43,12 +95,24 @@ export const sendCoreEmailController = catchAsync(async ({ request }) => {
   const entityId = body.entityId ?? body.entity_id;
   const emailAccountId = body.emailAccountId ?? body.email_account_id;
   const templateId = body.templateId ?? body.template_id ?? null;
+  const attachmentMetadata = normalizeAttachments(body.attachments);
 
   if (!workspaceId || toEmails.length === 0 || !subject || !htmlBody) {
     return NextResponse.json(
       {
         success: false,
         message: 'workspaceId, recipient, subject, and body are required',
+      },
+      { status: 400 },
+    );
+  }
+
+  if (!attachmentMetadata) {
+    return NextResponse.json(
+      {
+        success: false,
+        message:
+          'Attachments must be valid files within the 5-file and 15 MB limits',
       },
       { status: 400 },
     );
@@ -84,6 +148,90 @@ export const sendCoreEmailController = catchAsync(async ({ request }) => {
     );
   }
 
+  const mailAttachments: Array<{
+    filename: string;
+    path: string;
+    contentType: string;
+  }> = [];
+  const validatedAttachmentMetadata: EmailAttachmentInput[] = [];
+  const attachmentBucket = supabase.storage.from(EMAIL_ATTACHMENTS_BUCKET);
+  let validatedTotalSize = 0;
+
+  for (const attachment of attachmentMetadata) {
+    const pathParts = attachment.path.split('/');
+    if (
+      pathParts[0] !== workspaceId ||
+      pathParts.length !== 2 ||
+      pathParts.includes('..')
+    ) {
+      return NextResponse.json(
+        { success: false, message: 'Invalid attachment path' },
+        { status: 400 },
+      );
+    }
+
+    const objectName = pathParts[1]!;
+    const { data: storedObjects, error: storedObjectError } =
+      await attachmentBucket.list(workspaceId, {
+        limit: MAX_EMAIL_ATTACHMENT_COUNT,
+        search: objectName,
+      });
+    const storedObject = storedObjects?.find(
+      (object) => object.name === objectName,
+    );
+    const storedSize = Number(storedObject?.metadata?.size);
+
+    if (
+      storedObjectError ||
+      !storedObject ||
+      !Number.isFinite(storedSize) ||
+      storedSize <= 0 ||
+      storedSize > MAX_EMAIL_ATTACHMENT_SIZE
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: `Attachment is unavailable or too large: ${attachment.name}`,
+        },
+        { status: 400 },
+      );
+    }
+
+    validatedTotalSize += storedSize;
+    if (validatedTotalSize > MAX_TOTAL_EMAIL_ATTACHMENT_SIZE) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'The combined attachment size cannot exceed 15 MB',
+        },
+        { status: 400 },
+      );
+    }
+
+    const { data: signedUrlData, error: signedUrlError } =
+      await attachmentBucket.createSignedUrl(attachment.path, 5 * 60);
+
+    if (signedUrlError || !signedUrlData?.signedUrl) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: `Attachment is unavailable: ${attachment.name}`,
+        },
+        { status: 400 },
+      );
+    }
+
+    mailAttachments.push({
+      filename: attachment.name,
+      path: signedUrlData.signedUrl,
+      contentType: attachment.contentType,
+    });
+    validatedAttachmentMetadata.push({
+      ...attachment,
+      size: storedSize,
+    });
+  }
+
   const isScheduled = scheduledAt && new Date(scheduledAt) > new Date();
   let sendInfo: any = null;
 
@@ -102,6 +250,7 @@ export const sendCoreEmailController = catchAsync(async ({ request }) => {
             References: body.references ?? body.inReplyTo,
           }
         : undefined,
+      attachments: mailAttachments,
     });
   }
 
@@ -132,6 +281,7 @@ export const sendCoreEmailController = catchAsync(async ({ request }) => {
     thread_key: body.threadKey ?? body.thread_key ?? body.inReplyTo ?? null,
     in_reply_to: body.inReplyTo ?? body.in_reply_to ?? null,
     email_references: body.references ?? body.email_references ?? null,
+    attachments: validatedAttachmentMetadata,
     created_by: user.id,
     updated_by: user.id,
   };
@@ -173,6 +323,7 @@ export const sendCoreEmailController = catchAsync(async ({ request }) => {
       rendered_text: body.text_body ?? null,
       provider_message_id: sendInfo?.messageId ?? null,
       thread_key: emailPayload.thread_key,
+      attachments: validatedAttachmentMetadata,
       status: isScheduled ? 'queued' : 'sent',
       created_by: user.id,
     });
