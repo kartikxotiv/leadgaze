@@ -55,7 +55,7 @@ export function LogoUploader({ companyName, onFileSelect, disabled, initialLogoU
 
   return (
     <div className="flex items-center gap-2 mb-2">
-      <div className={`relative h-14 w-14 shrink-0 overflow-hidden ${previewUrl ? '' : 'bg-[linear-gradient(135deg,var(--color-leadgaze-primary)_0%,#283BA4_100%)]'} shadow-[var(--color-leadgaze-primary)]/20 shadow-lg flex items-center justify-center text-white text-3xl font-semibold`}>
+      <div className={`relative h-14 w-14 shrink-0 overflow-hidden ${previewUrl ? '' : 'bg-leadgaze-primary'} shadow-[var(--color-leadgaze-primary)]/20 shadow-lg flex items-center justify-center text-white text-3xl font-semibold`}>
         {previewUrl ? (
           <Image src={previewUrl} alt="Logo preview" fill className="object-cover" />
         ) : (

@@ -93,6 +93,7 @@ import { useColumnResize } from '@kit/ui/use-column-resize';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
 import { useDateRangeFilter } from '@kit/ui/use-date-range-filter';
 import { useTableSort } from '@kit/ui/use-table-sort';
+import { CustomDeleteDialog } from '@kit/ui/custom-delete-dialog';
 
 import { usePackageMembers } from '~/lib/hooks/use-package-members';
 import { useDebounce } from '~/lib/hooks/use-debounce';
@@ -2131,6 +2132,9 @@ export default function MeetingsPage() {
   );
   const [isEditOpen, setIsEditOpen] = useState(false);
 
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [meetingToDelete, setMeetingToDelete] = useState<string | null>(null);
+
   // Fetch team members (for Created By filter dropdown)
   const { members } = usePackageMembers();
 
@@ -2250,11 +2254,21 @@ export default function MeetingsPage() {
     mutationFn: (id: string) => deleteMeetingService(workspace!.id, id),
     onSuccess: () => {
       toast.success('Meeting deleted');
-      setIsDetailsOpen(false);
-      setSelectedMeeting(null);
-      queryClient.invalidateQueries({ queryKey: ['meetings'] });
+      queryClient.invalidateQueries({
+        queryKey: ['meetings', workspace?.id],
+      });
+      if (selectedMeeting) {
+        setIsDetailsOpen(false);
+        setSelectedMeeting(null);
+      }
+      setIsDeleteDialogOpen(false);
+      setMeetingToDelete(null);
     },
-    onError: () => toast.error('Failed to delete meeting'),
+    onError: () => {
+      toast.error('Failed to delete meeting');
+      setIsDeleteDialogOpen(false);
+      setMeetingToDelete(null);
+    },
   });
 
   const cancelMutation = useMutation({
@@ -2806,8 +2820,8 @@ export default function MeetingsPage() {
                                 <DropdownMenuItem
                                   className="text-destructive"
                                   onClick={() => {
-                                    if (confirm('Are you sure?'))
-                                      deleteMutation.mutate(meeting.id);
+                                    setMeetingToDelete(meeting.id);
+                                    setIsDeleteDialogOpen(true);
                                   }}
                                 >
                                   <Trash2 className="mr-2 h-4 w-4" />
@@ -2856,7 +2870,8 @@ export default function MeetingsPage() {
             setIsEditOpen(true);
           }}
           onDelete={(id) => {
-            if (confirm('Are you sure?')) deleteMutation.mutate(id);
+            setMeetingToDelete(id);
+            setIsDeleteDialogOpen(true);
           }}
         />
 
@@ -2886,6 +2901,18 @@ export default function MeetingsPage() {
         onToggleColumn={toggleVisibility}
         onResetColumns={reset}
       />
+      <CustomDeleteDialog
+          isOpen={isDeleteDialogOpen}
+          onOpenChange={setIsDeleteDialogOpen}
+          title="Delete Meeting"
+          description="Are you sure you want to delete this meeting? This action cannot be undone."
+          onConfirm={() => {
+            if (meetingToDelete) {
+              deleteMutation.mutate(meetingToDelete);
+            }
+          }}
+          isDeleting={deleteMutation.isPending}
+        />
       </PageBody>
     </>
   );

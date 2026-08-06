@@ -69,6 +69,8 @@ import { useColumnVisibility } from '@kit/ui/use-column-visibility';
 import { useDateRangeFilter } from '@kit/ui/use-date-range-filter';
 import { useTableSort } from '@kit/ui/use-table-sort';
 
+import { CustomDeleteDialog } from '@kit/ui/custom-delete-dialog';
+
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { useDebounce } from '~/lib/hooks/use-debounce';
 import { usePackageMembers } from '~/lib/hooks/use-package-members';
@@ -180,6 +182,10 @@ export default function NotesPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingNote, setEditingNote] = useState<Note | null>(null);
   const [editContent, setEditContent] = useState('');
+
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [noteToDelete, setNoteToDelete] = useState<string | null>(null);
+
   const { formatDate } = useLocalization();
 
   const noteColumns = useMemo(
@@ -350,8 +356,14 @@ export default function NotesPage() {
     onSuccess: () => {
       toast.success('Note deleted');
       queryClient.invalidateQueries({ queryKey: ['notes'] });
+      setIsDeleteDialogOpen(false);
+      setNoteToDelete(null);
     },
-    onError: () => toast.error('Failed to delete note'),
+    onError: () => {
+      toast.error('Failed to delete note');
+      setIsDeleteDialogOpen(false);
+      setNoteToDelete(null);
+    },
   });
 
   useEffect(() => {
@@ -388,9 +400,8 @@ export default function NotesPage() {
   };
 
   const handleDelete = (id: string) => {
-    if (confirm('Are you sure you want to delete this note?')) {
-      deleteMutation.mutate(id);
-    }
+    setNoteToDelete(id);
+    setIsDeleteDialogOpen(true);
   };
 
   const getCategoryBadge = (type: string) => {
@@ -1096,6 +1107,19 @@ export default function NotesPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      
+      <CustomDeleteDialog
+        isOpen={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        title="Delete Note"
+        description="Are you sure you want to delete this note? This action cannot be undone."
+        onConfirm={() => {
+          if (noteToDelete) {
+            deleteMutation.mutate(noteToDelete);
+          }
+        }}
+        isDeleting={deleteMutation.isPending}
+      />
     </>
   );
 }

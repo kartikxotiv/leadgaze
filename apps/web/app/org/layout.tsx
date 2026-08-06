@@ -35,7 +35,7 @@ function OrgLayout({ children }: React.PropsWithChildren) {
                   Workspace
                 </span>
               </div>
-              <h1 className="text-foreground text-2xl font-bold tracking-tight sm:text-3xl">
+              <h1 className="primary-heading-number text-leadgaze-dark dark:text-white tracking-tight">
                 {currentWorkspace?.name ?? 'Your Workspace'}
               </h1>
               <p className="primary-text-regular text-muted-foreground">

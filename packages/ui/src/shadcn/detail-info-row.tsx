@@ -27,7 +27,7 @@ export function DetailInfoRow({
   labelWidth = 'w-26',
 }: DetailInfoRowProps) {
   return (
-    <div className={cn('flex items-center gap-2 py-2.5 justify-between', className)}>
+    <div className={cn('flex items-center gap-2 py-2 justify-between', className)}>
         <div className="flex gap-2">
         <span className="text-muted-foreground shrink-0">{icon}</span>
         <span
@@ -39,7 +39,7 @@ export function DetailInfoRow({
             {label}
         </span>
       </div>
-      <span className="truncate text-sm text-gray-900 dark:text-white">
+      <span className="primary-text-regular text-leadgaze-dark dark:text-white">
         {value}
       </span>
     </div>

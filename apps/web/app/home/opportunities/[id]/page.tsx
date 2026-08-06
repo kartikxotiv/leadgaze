@@ -106,6 +106,7 @@ import { EntityCalls } from '../../_components/entity-calls';
 import { EntityEmails } from '../../_components/entity-emails';
 import { EntityNotes } from '../../_components/entity-notes';
 import { EntityTasks } from '../../_components/entity-tasks';
+import { EntityActivityLogs } from '../../_components/entity-activity-logs';
 import { ManageableStatusSelect } from '../../_components/manageable-status-select';
 import { AssignUserModal } from '../../leads/components/assign-user-modal';
 import { LogCallDialog } from '../../leads/components/log-call-dialog';
@@ -475,19 +476,18 @@ export default function OpportunityDetailsPage() {
 
   return (
     <ModuleGuard module="opportunities">
-      <div className="flex flex-wrap items-center gap-2 py-2 sm:flex-nowrap sm:justify-between">
+      <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap sm:justify-between">
         <div className="flex items-center gap-2">
           <Button
             variant="ghost"
-            size="icon"
             asChild
-            className="h-8 w-8"
+            className="w-6 h-6 border-leadgaze-border border p-0"
           >
             <Link href="/home/sales/opportunities">
-              <ArrowLeft className="h-4 w-4" />
+              <ArrowLeft className="h-3 w-3" />
             </Link>
           </Button>
-          <h1 className="text-leadgaze-dark text-lg font-bold dark:text-white">
+          <h1 className="primary-heading-extra text-leadgaze-dark dark:text-white">
             Opportunity Details
           </h1>
         </div>
@@ -498,9 +498,8 @@ export default function OpportunityDetailsPage() {
                 <TooltipTrigger asChild>
                   <Button
                     variant="outline"
-                    size="sm"
                     onClick={() => setIsLogCallDialogOpen(true)}
-                    className="gap-2"
+                    className="secondary-text-small-bold text-leadgaze-dark dark:text-white gap-1.5 px-2"
                     title="Log a call"
                   >
                     <Phone className="h-4 w-4" />
@@ -518,8 +517,7 @@ export default function OpportunityDetailsPage() {
                 <TooltipTrigger asChild>
                   <Button
                     variant="outline"
-                    size="sm"
-                    className={`gap-2 ${opportunityEmailRecipients.length === 0 ? 'opacity-50' : ''}`}
+                    className={`secondary-text-small-bold text-leadgaze-dark dark:text-white gap-1.5 px-2 ${opportunityEmailRecipients.length === 0 ? 'opacity-50' : ''}`}                    
                     disabled={opportunityEmailRecipients.length === 0}
                     onClick={() =>
                       opportunityEmailRecipients.length > 0 &&
@@ -552,9 +550,8 @@ export default function OpportunityDetailsPage() {
                     <PopoverTrigger asChild>
                       <Button
                         variant="outline"
-                        size="sm"
                         disabled={!canChangeStage}
-                        className="gap-2"
+                        className="secondary-text-small-bold text-leadgaze-dark dark:text-white gap-1.5 px-2"
                       >
                         <Workflow className="h-4 w-4" />
                         <span className="hidden lg:inline">Update Stage</span>
@@ -637,8 +634,8 @@ export default function OpportunityDetailsPage() {
                 <TooltipTrigger asChild>
                   <Button
                     variant="outline"
-                    size="sm"
-                    className="border-green-600 text-green-600 hover:bg-green-50"
+                    className="secondary-text-small-bold border-green-600 text-green-600 hover:bg-green-50 h-7 gap-1.5 px-2"
+                                        
                     disabled={!canCloseWon}
                     onClick={async () => {
                       const wonStage = stages.find(
@@ -661,7 +658,7 @@ export default function OpportunityDetailsPage() {
                       }
                     }}
                   >
-                    <CheckCircle className="h-4 w-4 lg:mr-2" />
+                    <CheckCircle className="h-4 w-4" />
                     <span className="hidden lg:inline">Close as Won</span>
                   </Button>
                 </TooltipTrigger>
@@ -676,8 +673,7 @@ export default function OpportunityDetailsPage() {
                 <TooltipTrigger asChild>
                   <Button
                     variant="outline"
-                    size="sm"
-                    className="border-red-600 text-red-600 hover:bg-red-50"
+                    className="secondary-text-small-bold border-red-600 text-red-600 hover:bg-red-50 h-7 gap-1.5 px-2"
                     disabled={!canCloseLost}
                     onClick={async () => {
                       const lostStage = stages.find(
@@ -700,7 +696,7 @@ export default function OpportunityDetailsPage() {
                       }
                     }}
                   >
-                    <Flag className="h-4 w-4 lg:mr-2" />
+                    <Flag className="h-4 w-4" />
                     <span className="hidden lg:inline">Close as Lost</span>
                   </Button>
                 </TooltipTrigger>
@@ -715,9 +711,8 @@ export default function OpportunityDetailsPage() {
                 <TooltipTrigger asChild>
                   <Button
                     variant="default"
-                    size="sm"
                     onClick={() => setIsEditDialogOpen(true)}
-                    className="gap-2"
+                    className="secondary-text-small-bold bg-leadgaze-primary hover:bg-leadgaze-primary text-white gap-1.5 px-2"
                   >
                     <Edit2 className="h-4 w-4" />
                     <span className="hidden lg:inline">Edit Profile</span>
@@ -739,12 +734,12 @@ export default function OpportunityDetailsPage() {
           entityName={opportunity.opportunity_name}
           onSuccess={() => router.push('/home/sales/opportunities')}
         />
-        <div className="flex w-full flex-col gap-4 lg:min-h-0 lg:flex-1 lg:flex-row">
+        <div className="flex w-full flex-col gap-2 lg:min-h-0 lg:flex-1 lg:flex-row">
           {/* Main Content */}
           <div className="w-full space-y-4 lg:w-[65%] lg:overflow-y-auto">
             <DetailHeader
               avatar={
-                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-blue-400 to-blue-600 text-white">
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-leadgaze-primary text-base font-semibold text-white">
                   <FileText className="h-6 w-6 text-white" />
                 </div>
               }
@@ -813,9 +808,9 @@ export default function OpportunityDetailsPage() {
             {/* Tabs Section */}
             <Tabs
               defaultValue={canManageEmail ? 'email' : 'notes'}
-              className="space-y-4"
+              className="space-y-4 mb-2"
             >
-              <TabsList className="mb-2 h-auto w-full justify-start gap-3 overflow-x-auto rounded-none border-b bg-transparent p-0 [-ms-overflow-style:none] [scrollbar-width:none] sm:gap-6 [&::-webkit-scrollbar]:hidden">
+              <TabsList className="mb-0 h-auto w-full justify-start gap-3 overflow-x-auto rounded-none border-b bg-transparent p-0 [-ms-overflow-style:none] [scrollbar-width:none] sm:gap-6 [&::-webkit-scrollbar]:hidden">
                 {canManageEmail && (
                   <TabsTrigger
                     value="email"
@@ -933,56 +928,20 @@ export default function OpportunityDetailsPage() {
               </TabsContent>
 
               <TabsContent value="activity">
-                <CardWidgetContainer
-                  title="Activity"
-                  hideHeaderBorder={true}
-                  icon={
-                    <Clock className="text-leadgaze-dark h-5 w-5 dark:text-white" />
-                  }
-                >
-                  <CardContent className="px-6 py-3">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3 dark:bg-slate-900">
-                        <div className="h-2 w-2 rounded-full bg-green-500" />
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm font-medium text-gray-900 dark:text-white">
-                            Opportunity Created
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            {formatDate(opportunity.created_at)}
-                          </p>
-                        </div>
-                      </div>
-                      {opportunity.updated_at &&
-                        opportunity.updated_at !== opportunity.created_at && (
-                          <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3 dark:bg-slate-900">
-                            <div className="h-2 w-2 rounded-full bg-blue-500" />
-                            <div className="min-w-0 flex-1">
-                              <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                Opportunity Updated
-                              </p>
-                              <p className="text-xs text-gray-500">
-                                {formatDate(opportunity.updated_at)}
-                              </p>
-                            </div>
-                          </div>
-                        )}
-                    </div>
-                  </CardContent>
-                </CardWidgetContainer>
+                <EntityActivityLogs entityType="opportunity" entityId={id} />
               </TabsContent>
             </Tabs>
 
             {/* Danger Zone */}
             {rbacCanAccess('opportunities', 'delete') && (
               <Card className="border-destructive/50 hidden border-solid lg:block">
-                <CardContent>
-                  <div className="mt-6 flex flex-col items-center justify-between md:flex-row">
-                    <div className="mb-2 space-y-1">
-                      <p className="font-medium dark:text-white">
+                <CardContent className="p-2">
+                  <div className="flex flex-col items-center justify-between md:flex-row">
+                    <div className="mb-0 space-y-1">
+                      <p className="primary-text-medium dark:text-white">
                         Delete Opportunity
                       </p>
-                      <p className="text-muted-foreground text-sm">
+                      <p className="text-muted-foreground secondary-text-small">
                         Once you delete an opportunity, there is no going back.
                         Please be certain.
                       </p>
@@ -1029,18 +988,19 @@ export default function OpportunityDetailsPage() {
               {/* Opportunity Details */}
               <AccordionItem
                 value="details"
-                className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
+                className="overflow-hidden border bg-white dark:bg-zinc-900"
               >
-                <AccordionTrigger className="px-4 py-3 hover:no-underline">
-                  <span className="primary-heading text-leadgaze-dark flex items-center gap-2 dark:text-white">
+                <AccordionTrigger className="px-2 pb-2 border-b border-b-accordion hover:no-underline py-3">
+                  <span className="primary-text-big-regular text-leadgaze-dark flex items-center gap-2 dark:text-white">
+
                     <Wallet className="text-leadgaze-dark h-5 w-5 dark:text-white" />
                     Details
                   </span>
                 </AccordionTrigger>
-                <AccordionContent className="px-4 pb-4">
+                <AccordionContent className="px-2 pb-2">
                   <DetailInfoList>
                     {canView('amount') && (
-                      <div className="flex items-center justify-between gap-2 py-2.5">
+                      <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
                           <Wallet className="text-muted-foreground h-5 w-5 shrink-0" />
                           <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
@@ -1075,14 +1035,14 @@ export default function OpportunityDetailsPage() {
                               disabled={!canEdit}
                               onClick={() => setIsEditingAmount(true)}
                               className={cn(
-                                'group inline-flex w-full items-center justify-end rounded-[4px] text-right outline-none transition-colors',
+                                'group inline-flex w-full items-center justify-end rounded-[4px] text-right outline-none transition-colors h-[35px]',
                                 {
                                   'cursor-text': canEdit,
                                   'hover:bg-accent/20': canEdit,
                                 },
                               )}
                             >
-                              <span className="block w-full rounded-[4px] px-0 py-0 text-right text-sm text-gray-900 dark:text-white transition-colors group-hover:text-foreground">
+                              <span className="block w-full rounded-[4px] px-0 py-0 text-right primary-text-regular text-leadgaze-dark dark:text-white">
                                 {(() => {
                                   const workspaceCurrency =
                                     currenciesData?.find((c) => c.is_default)
@@ -1131,7 +1091,7 @@ export default function OpportunityDetailsPage() {
                     )}
 
                     {canView('expected_close_date') && (
-                      <div className="flex items-center justify-between gap-2 py-2.5">
+                      <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
                           <Calendar className="text-muted-foreground h-5 w-5 shrink-0" />
                           <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
@@ -1164,14 +1124,14 @@ export default function OpportunityDetailsPage() {
                               disabled={!canEdit}
                               onClick={() => setIsEditingCloseDate(true)}
                               className={cn(
-                                'group inline-flex w-full items-center justify-end rounded-[4px] text-right outline-none transition-colors',
+                                'group inline-flex w-full items-center justify-end rounded-[4px] text-right outline-none transition-colors h-[35px]',
                                 {
                                   'cursor-text': canEdit,
                                   'hover:bg-accent/20': canEdit,
                                 },
                               )}
                             >
-                              <span className="block w-full rounded-[4px] px-0 py-0 text-right text-sm text-gray-900 dark:text-white transition-colors group-hover:text-foreground">
+                              <span className="block w-full rounded-[4px] px-0 py-0 text-right primary-text-regular text-leadgaze-dark dark:text-white">
                                 {opportunity.expected_close_date
                                   ? formatDate(opportunity.expected_close_date)
                                   : '-'}
@@ -1183,7 +1143,7 @@ export default function OpportunityDetailsPage() {
                     )}
 
                     {canView('probability') && (
-                      <div className="flex items-center justify-between gap-2 py-2.5">
+                      <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
                           <CheckCircle className="text-muted-foreground h-5 w-5 shrink-0" />
                           <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
@@ -1219,14 +1179,14 @@ export default function OpportunityDetailsPage() {
                               disabled={!canEdit}
                               onClick={() => setIsEditingProbability(true)}
                               className={cn(
-                                'group inline-flex w-full items-center justify-end rounded-[4px] text-right outline-none transition-colors',
+                                'group inline-flex w-full items-center justify-end rounded-[4px] text-right outline-none transition-colors h-[35px]',
                                 {
                                   'cursor-text': canEdit,
                                   'hover:bg-accent/20': canEdit,
                                 },
                               )}
                             >
-                              <span className="block w-full rounded-[4px] px-0 py-0 text-right text-sm text-gray-900 dark:text-white transition-colors group-hover:text-foreground">
+                              <span className="block w-full rounded-[4px] px-0 py-0 text-right primary-text-regular text-leadgaze-dark dark:text-white">
                                 {opportunity.probability !== null && opportunity.probability !== undefined
                                   ? `${opportunity.probability}%`
                                   : '-'}
@@ -1238,7 +1198,7 @@ export default function OpportunityDetailsPage() {
                     )}
 
                     {canView('priority') && (
-                      <div className="flex items-center justify-between gap-2 py-2.5">
+                      <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
                           <Flag className="text-muted-foreground h-5 w-5 shrink-0" />
                           <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
@@ -1276,7 +1236,7 @@ export default function OpportunityDetailsPage() {
                               disabled={!canEdit}
                               onClick={() => setIsEditingPriority(true)}
                               className={cn(
-                                'group inline-flex w-full items-center justify-end rounded-[4px] text-right outline-none transition-colors',
+                                'group inline-flex w-full items-center justify-end rounded-[4px] text-right outline-none transition-colors h-[35px]',
                                 {
                                   'cursor-text': canEdit,
                                   'text-muted-foreground': !opportunity.priority,
@@ -1284,7 +1244,7 @@ export default function OpportunityDetailsPage() {
                                 },
                               )}
                             >
-                              <span className="block w-full rounded-[4px] px-0 py-0 text-right text-sm text-gray-900 dark:text-white transition-colors group-hover:text-foreground">
+                              <span className="block w-full rounded-[4px] px-0 py-0 text-right primary-text-regular text-leadgaze-dark dark:text-white">
                                 {opportunity.priority
                                   ? opportunity.priority.charAt(0).toUpperCase() + opportunity.priority.slice(1)
                                   : '-'}
@@ -1296,7 +1256,7 @@ export default function OpportunityDetailsPage() {
                     )}
 
                     {canView('opportunity_type') && (
-                      <div className="flex items-center justify-between gap-2 py-2.5">
+                      <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
                           <Tag className="text-muted-foreground h-5 w-5 shrink-0" />
                           <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
@@ -1333,7 +1293,7 @@ export default function OpportunityDetailsPage() {
                               disabled={!canEdit}
                               onClick={() => setIsEditingType(true)}
                               className={cn(
-                                'group inline-flex w-full items-center justify-end rounded-[4px] text-right outline-none transition-colors',
+                                'group inline-flex w-full items-center justify-end rounded-[4px] text-right outline-none transition-colors h-[35px]',
                                 {
                                   'cursor-text': canEdit,
                                   'text-muted-foreground': !opportunity.opportunity_type,
@@ -1341,7 +1301,7 @@ export default function OpportunityDetailsPage() {
                                 },
                               )}
                             >
-                              <span className="block w-full rounded-[4px] px-0 py-0 text-right text-sm text-gray-900 dark:text-white transition-colors group-hover:text-foreground">
+                              <span className="block w-full rounded-[4px] px-0 py-0 text-right primary-text-regular text-leadgaze-dark dark:text-white">
                                 {opportunity.opportunity_type || '-'}
                               </span>
                             </button>
@@ -1351,7 +1311,7 @@ export default function OpportunityDetailsPage() {
                     )}
 
                     {canView('lead_source') && (
-                      <div className="flex items-center justify-between gap-2 py-2.5">
+                      <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
                           <Tag className="text-muted-foreground h-5 w-5 shrink-0" />
                           <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
@@ -1364,7 +1324,7 @@ export default function OpportunityDetailsPage() {
                             disabled={!canEdit}
                             placeholder="-"
                             className="justify-end"
-                            displayClassName="truncate text-sm text-gray-900 dark:text-white"
+                            displayClassName="primary-text-regular text-leadgaze-dark dark:text-white"
                             inputClassName="text-right"
                             onCommit={async (nextValue) => {
                               await commitOpportunityField('lead_source', nextValue);
@@ -1375,7 +1335,7 @@ export default function OpportunityDetailsPage() {
                     )}
 
                     {canView('description') && (
-                      <div className="flex items-center justify-between gap-2 py-2.5">
+                      <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
                           <FileText className="text-muted-foreground h-5 w-5 shrink-0" />
                           <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
@@ -1388,7 +1348,7 @@ export default function OpportunityDetailsPage() {
                             disabled={!canEdit}
                             placeholder="-"
                             className="justify-end"
-                            displayClassName="truncate text-sm text-gray-900 dark:text-white"
+                            displayClassName="primary-text-regular text-leadgaze-dark dark:text-white"
                             inputClassName="text-right"
                             multiline
                             onCommit={async (nextValue) => {
@@ -1400,7 +1360,7 @@ export default function OpportunityDetailsPage() {
                     )}
 
                     {canView('competitor') && (
-                      <div className="flex items-center justify-between gap-2 py-2.5">
+                      <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
                           <Target className="text-muted-foreground h-5 w-5 shrink-0" />
                           <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
@@ -1413,7 +1373,7 @@ export default function OpportunityDetailsPage() {
                             disabled={!canEdit}
                             placeholder="-"
                             className="justify-end"
-                            displayClassName="truncate text-sm text-gray-900 dark:text-white"
+                            displayClassName="primary-text-regular text-leadgaze-dark dark:text-white"
                             inputClassName="text-right"
                             onCommit={async (nextValue) => {
                               await commitOpportunityField('competitor', nextValue);
@@ -1430,15 +1390,15 @@ export default function OpportunityDetailsPage() {
               {customFieldsToShow.length > 0 && (
                 <AccordionItem
                   value="additional"
-                  className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
+                  className="overflow-hidden border bg-white dark:bg-zinc-900"
                 >
-                  <AccordionTrigger className="px-4 py-3 hover:no-underline">
-                    <span className="primary-heading text-leadgaze-dark flex items-center gap-2">
+                  <AccordionTrigger className="px-2 pb-2 border-b border-b-accordion hover:no-underline py-3">
+                    <span className="primary-text-big-regular text-leadgaze-dark flex items-center gap-2 dark:text-white">
                       <FileText className="text-leadgaze-dark h-4 w-4 dark:text-white" />
                       Additional Data
                     </span>
                   </AccordionTrigger>
-                  <AccordionContent className="px-4 pb-4">
+                  <AccordionContent className="px-2 pb-2">
                     <DetailInfoList>
                       {customFieldsToShow.map((field) => {
                         const val = (
@@ -1467,20 +1427,19 @@ export default function OpportunityDetailsPage() {
               {currentWorkspace?.id && (
                 <AccordionItem
                   value="assignees"
-                  className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
+                  className="overflow-hidden border bg-white dark:bg-zinc-900"
                 >
                   <AccordionTrigger
                     hideChevron
-                    className="px-4 py-3 hover:no-underline"
+                    className="px-2 pb-2 border-b border-b-accordion hover:no-underline py-2"
                   >
                     <div className="flex w-full justify-between">
-                      <span className="primary-heading text-leadgaze-dark flex items-center gap-2">
+                      <span className="primary-text-big-regular text-leadgaze-dark flex items-center gap-2 dark:text-white">
                         <Users className="text-leadgaze-dark h-5 w-5 dark:text-white" />
                         Assigned Members
                       </span>
                       <Button
-                        size="sm"
-                        className="ml-2 mr-3 shrink-0 gap-2"
+                        className="bg-leadgaze-primary hover:bg-leadgaze-primary text-white secondary-text-small-bold gap-1.5 px-2 mr-2"
                         onPointerDown={(e) => e.stopPropagation()}
                         onClick={(e) => {
                           e.stopPropagation();
@@ -1498,7 +1457,7 @@ export default function OpportunityDetailsPage() {
                       )}
                     />
                   </AccordionTrigger>
-                  <AccordionContent className="px-4 pb-4">
+                  <AccordionContent className="px-0 pb-2">
                     <OpportunityAssignees
                       opportunityId={id}
                       workspaceId={currentWorkspace.id}
@@ -1511,15 +1470,16 @@ export default function OpportunityDetailsPage() {
               {/* System Info */}
               <AccordionItem
                 value="system"
-                className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
+                className="overflow-hidden border bg-white dark:bg-zinc-900"
               >
-                <AccordionTrigger className="px-4 py-3 hover:no-underline">
-                  <span className="primary-heading text-leadgaze-dark flex items-center gap-2 dark:text-white">
+                <AccordionTrigger className="px-2 pb-2 border-b border-b-accordion hover:no-underline py-3">
+                  <span className="primary-text-big-regular text-leadgaze-dark flex items-center gap-2 dark:text-white">
+
                     <Clock className="text-leadgaze-dark h-5 w-5 dark:text-white" />
                     System Info
                   </span>
                 </AccordionTrigger>
-                <AccordionContent className="px-4 pb-4">
+                <AccordionContent className="px-2 pb-2">
                   <DetailInfoList>
                     <DetailInfoRow
                       icon={<User className="h-5 w-5" />}
@@ -1563,13 +1523,13 @@ export default function OpportunityDetailsPage() {
           <div className="w-full lg:hidden">
             {rbacCanAccess('opportunities', 'delete') && (
               <Card className="border-destructive/50 border-solid">
-                <CardContent>
-                  <div className="mt-6 flex flex-col items-center justify-between md:flex-row">
-                    <div className="mb-2 space-y-1">
-                      <p className="font-medium dark:text-white">
+                <CardContent className="p-2">
+                  <div className="flex flex-col items-center justify-between md:flex-row">
+                    <div className="mb-0 space-y-1">
+                      <p className="primary-text-medium dark:text-white">
                         Delete Opportunity
                       </p>
-                      <p className="text-muted-foreground text-sm">
+                      <p className="text-muted-foreground secondary-text-small">
                         Once you delete an opportunity, there is no going back.
                         Please be certain.
                       </p>

@@ -71,6 +71,7 @@ import { useColumnVisibility } from '@kit/ui/use-column-visibility';
 import { useDateRangeFilter } from '@kit/ui/use-date-range-filter';
 import { useTableSort } from '@kit/ui/use-table-sort';
 import { cn } from '@kit/ui/utils';
+import { CustomDeleteDialog } from '@kit/ui/custom-delete-dialog';
 
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { useDebounce } from '~/lib/hooks/use-debounce';
@@ -184,6 +185,10 @@ export default function RemindersPage() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingReminder, setEditingReminder] = useState<Reminder | null>(null);
+  
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [reminderToDelete, setReminderToDelete] = useState<string | null>(null);
+
   const { formatDate } = useLocalization();
   const [formData, setFormData] = useState({
     title: '',
@@ -361,8 +366,14 @@ export default function RemindersPage() {
     onSuccess: () => {
       toast.success('Reminder deleted');
       queryClient.invalidateQueries({ queryKey: ['reminders'] });
+      setIsDeleteDialogOpen(false);
+      setReminderToDelete(null);
     },
-    onError: () => toast.error('Failed to delete reminder'),
+    onError: () => {
+      toast.error('Failed to delete reminder');
+      setIsDeleteDialogOpen(false);
+      setReminderToDelete(null);
+    },
   });
 
   useEffect(() => {
@@ -425,9 +436,8 @@ export default function RemindersPage() {
   };
 
   const handleDelete = (id: string) => {
-    if (confirm('Are you sure you want to delete this reminder?')) {
-      deleteMutation.mutate(id);
-    }
+    setReminderToDelete(id);
+    setIsDeleteDialogOpen(true);
   };
 
   const toggleCompletion = (reminder: Reminder) => {
@@ -1386,6 +1396,19 @@ export default function RemindersPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      
+      <CustomDeleteDialog
+        isOpen={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        title="Delete Reminder"
+        description="Are you sure you want to delete this reminder? This action cannot be undone."
+        onConfirm={() => {
+          if (reminderToDelete) {
+            deleteMutation.mutate(reminderToDelete);
+          }
+        }}
+        isDeleting={deleteMutation.isPending}
+      />
     </>
   );
 }

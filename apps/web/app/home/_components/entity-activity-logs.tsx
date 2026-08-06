@@ -155,6 +155,7 @@ export function EntityActivityLogs({ entityType, entityId }: EntityActivityLogsP
     <CardWidgetContainer
       title="Activity"
       hideHeaderBorder={true}
+      headerClassName="p-2 xl:p-2 2xl:p-2"
       icon={<Clock className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
       icon2={
         <Button
@@ -170,7 +171,7 @@ export function EntityActivityLogs({ entityType, entityId }: EntityActivityLogsP
         </Button>
       }
     >
-      <div className="px-6 py-2">
+      <div className="px-2 mb-2">
         {isLoading ? (
           <div className="flex justify-center py-4">
             <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
@@ -190,7 +191,7 @@ export function EntityActivityLogs({ entityType, entityId }: EntityActivityLogsP
                     <div className="shrink-0">
                       {getModuleIcon(log.module)}
                     </div>
-                    <span className="font-semibold text-gray-900 shrink-0 dark:text-gray-100 text-xs">
+                    <span className="font-semibold text-leadgaze-dark shrink-0 dark:text-white text-xs">
                       {getModuleLabel(log.module)}
                     </span>
                     {getActionBadge(log.action)}

@@ -190,15 +190,16 @@ function TicketCustomFieldsSection({
   return (
     <AccordionItem
       value="custom-fields"
-      className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
+      className="overflow-hidden border bg-white dark:bg-zinc-900"
     >
-      <AccordionTrigger className="px-4 py-3 hover:no-underline">
-        <span className="primary-heading text-leadgaze-dark flex items-center gap-2 dark:text-white">
+      <AccordionTrigger className="px-2 pb-2 border-b border-b-accordion hover:no-underline py-3">
+        <span className="primary-text-big-regular text-leadgaze-dark flex items-center gap-2 dark:text-white">
+
           <Settings className="text-leadgaze-dark h-5 w-5 dark:text-white" />
           Additional Data
         </span>
       </AccordionTrigger>
-      <AccordionContent className="px-4 pb-4">
+      <AccordionContent className="px-2 pb-2">
         <div className="space-y-2 pt-2">
           <LeadCustomFieldInputs
             fields={fields}
@@ -1141,11 +1142,12 @@ export function ServiceCloudTicketDetailPage({
           >
             <AccordionItem
               value="ticket-properties"
-              className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
+              className="overflow-hidden border bg-white dark:bg-zinc-900"
             >
-              <AccordionTrigger className="px-4 py-3 hover:no-underline">
+              <AccordionTrigger className="px-2 pb-2 border-b border-b-accordion hover:no-underline py-3">
                 <div className="flex flex-col items-start gap-1">
-                  <span className="primary-heading text-leadgaze-dark flex items-center gap-2 dark:text-white">
+                  <span className="primary-text-big-regular text-leadgaze-dark flex items-center gap-2 dark:text-white">
+
                     <Settings className="text-leadgaze-dark h-5 w-5 dark:text-white" />
                     Ticket Properties
                   </span>
@@ -1154,7 +1156,7 @@ export function ServiceCloudTicketDetailPage({
                   </span>
                 </div>
               </AccordionTrigger>
-              <AccordionContent className="px-4 pb-4">
+              <AccordionContent className="px-2 pb-2">
                 <div className="space-y-2 pt-2">
                   {(!canViewField || canViewField('status_id')) && (
                     <EditableSelect
@@ -1262,7 +1264,7 @@ export function ServiceCloudTicketDetailPage({
 
             <AccordionItem
               value="sla-snapshot"
-              className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
+              className="overflow-hidden border bg-white dark:bg-zinc-900"
               style={
                 ticket.priority?.color
                   ? {
@@ -1272,9 +1274,10 @@ export function ServiceCloudTicketDetailPage({
                   : undefined
               }
             >
-              <AccordionTrigger className="px-4 py-3 hover:no-underline">
+              <AccordionTrigger className="px-2 pb-2 border-b border-b-accordion hover:no-underline py-3">
                 <div className="flex w-full items-center justify-between gap-4 pr-4">
-                  <span className="primary-heading text-leadgaze-dark flex items-center gap-2 dark:text-white">
+                  <span className="primary-text-big-regular text-leadgaze-dark flex items-center gap-2 dark:text-white">
+
                     <Timer className="text-leadgaze-dark h-5 w-5 dark:text-white" />
                     SLA Snapshot
                   </span>
@@ -1305,7 +1308,7 @@ export function ServiceCloudTicketDetailPage({
                   ) : null}
                 </div>
               </AccordionTrigger>
-              <AccordionContent className="px-4 pb-4">
+              <AccordionContent className="px-2 pb-2">
                 <div className="space-y-3 pt-2 text-sm">
                   {(!canViewField || canViewField('priority_id')) && (
                     <Metric
@@ -1331,15 +1334,16 @@ export function ServiceCloudTicketDetailPage({
 
             <AccordionItem
               value="customer-details"
-              className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
+              className="overflow-hidden border bg-white dark:bg-zinc-900"
             >
-              <AccordionTrigger className="px-4 py-3 hover:no-underline">
-                <span className="primary-heading text-leadgaze-dark flex items-center gap-2 dark:text-white">
+              <AccordionTrigger className="px-2 pb-2 border-b border-b-accordion hover:no-underline py-3">
+                <span className="primary-text-big-regular text-leadgaze-dark flex items-center gap-2 dark:text-white">
+
                   <UserRound className="text-leadgaze-dark h-5 w-5 dark:text-white" />
                   Customer Details
                 </span>
               </AccordionTrigger>
-              <AccordionContent className="px-4 pb-4">
+              <AccordionContent className="px-2 pb-2">
                 <div className="space-y-3 pt-2 text-sm">
                   {(!canViewField || canViewField('customer')) && (
                     <>
@@ -1380,15 +1384,16 @@ export function ServiceCloudTicketDetailPage({
 
             <AccordionItem
               value="record-details"
-              className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
+              className="overflow-hidden border bg-white dark:bg-zinc-900"
             >
-              <AccordionTrigger className="px-4 py-3 hover:no-underline">
-                <span className="primary-heading text-leadgaze-dark flex items-center gap-2 dark:text-white">
+              <AccordionTrigger className="px-2 pb-2 border-b border-b-accordion hover:no-underline py-3">
+                <span className="primary-text-big-regular text-leadgaze-dark flex items-center gap-2 dark:text-white">
+
                   <Building2 className="text-leadgaze-dark h-5 w-5 dark:text-white" />
                   Record Details
                 </span>
               </AccordionTrigger>
-              <AccordionContent className="px-4 pb-4">
+              <AccordionContent className="px-2 pb-2">
                 <div className="space-y-3 pt-2 text-sm">
                   <Metric label="Source" value={ticket.source ?? '-'} />
                   <Metric

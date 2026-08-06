@@ -35,6 +35,7 @@ import { useTableSort } from '@kit/ui/use-table-sort';
 import { SortableTableHead } from '@kit/ui/sortable-table-head';
 import { ListToolBar } from '@kit/ui/list-toolbar';
 import { StatusFilterDropdown } from '@kit/ui/status-filter-dropdown';
+import { CustomDeleteDialog } from '@kit/ui/custom-delete-dialog';
 
 import { Skeleton } from '@kit/ui/skeleton';
 
@@ -63,6 +64,9 @@ export default function TeamsPage() {
   const [managingMembersTeam, setManagingMembersTeam] = useState<Team | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
+
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [teamToDelete, setTeamToDelete] = useState<string | null>(null);
 
   // Virtual team statuses for filtering
   const teamStatuses = useMemo(
@@ -149,7 +153,6 @@ export default function TeamsPage() {
     filteredTeams,
   );
 
-  // Delete team mutation
   const deleteTeamMutation = useMutation({
     mutationFn: deleteTeamService,
     onSuccess: () => {
@@ -157,16 +160,19 @@ export default function TeamsPage() {
         queryKey: ['workspaceTeams', currentWorkspace?.id],
       });
       toast.success('Team deleted successfully');
+      setIsDeleteDialogOpen(false);
+      setTeamToDelete(null);
     },
     onError: (error: any) => {
       toast.error(error?.message || 'Failed to delete team');
+      setIsDeleteDialogOpen(false);
+      setTeamToDelete(null);
     },
   });
 
   const handleDeleteTeam = (teamId: string) => {
-    if (confirm('Are you sure you want to delete this team? All team associations will be lost.')) {
-      deleteTeamMutation.mutate(teamId);
-    }
+    setTeamToDelete(teamId);
+    setIsDeleteDialogOpen(true);
   };
 
   const handleEditTeam = (team: Team) => {
@@ -433,6 +439,19 @@ export default function TeamsPage() {
         visibility={visibility}
         onToggleColumn={toggleVisibility}
         onResetColumns={reset}
+      />
+      
+      <CustomDeleteDialog
+        isOpen={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        title="Delete Team"
+        description="Are you sure you want to delete this team? All team associations will be lost. This action cannot be undone."
+        onConfirm={() => {
+          if (teamToDelete) {
+            deleteTeamMutation.mutate(teamToDelete);
+          }
+        }}
+        isDeleting={deleteTeamMutation.isPending}
       />
       </PageBody>
     </ModuleGuard>

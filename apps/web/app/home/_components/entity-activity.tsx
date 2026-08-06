@@ -47,6 +47,7 @@ import {
 import { Badge } from '@kit/ui/badge';
 import { Textarea } from '@kit/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@kit/ui/tabs';
+import { CustomDeleteDialog } from '@kit/ui/custom-delete-dialog';
 
 import { useLocalization } from '~/lib/localization/localization-provider';
 import { useHasPermission } from '~/lib/permissions/use-permissions';
@@ -96,9 +97,13 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
   const [formData, setFormData] = useState({
     title: '',
     due_date: '',
+    due_date: '',
     priority: 'medium',
   });
   const [editingReminder, setEditingReminder] = useState<any>(null);
+
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [reminderToDelete, setReminderToDelete] = useState<string | null>(null);
 
   const { data: reminders = [], isLoading } = useQuery({
     queryKey: ['reminders', entityType, entityId, workspace?.id, reminderTab],
@@ -169,6 +174,8 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
     mutationFn: deleteReminderService,
     onSuccess: () => {
       toast.success('Reminder deleted');
+      setIsDeleteDialogOpen(false);
+      setReminderToDelete(null);
       queryClient.invalidateQueries({
         queryKey: ['reminders', entityType, entityId, workspace?.id],
       });
@@ -176,7 +183,11 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
         queryKey: ['reminders'],
       });
     },
-    onError: () => toast.error('Failed to delete reminder'),
+    onError: () => {
+      toast.error('Failed to delete reminder');
+      setIsDeleteDialogOpen(false);
+      setReminderToDelete(null);
+    },
   });
 
   const handleSave = () => {
@@ -228,6 +239,7 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
     <CardWidgetContainer
       title="Reminders"
       hideHeaderBorder={true}
+      headerClassName="p-2 xl:p-2 2xl:p-2"
       icon={<AlertCircle className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
       icon2={
         <Dialog
@@ -303,9 +315,9 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
         </Dialog>
       }
     >
-      <div className="px-6 py-3">
+      <div className="px-2 mb-2">
         {/* Active / Sent toggle (mirrors Notes pattern) */}
-        <div className="flex bg-gray-100/60 dark:bg-gray-800/60 p-0.5 rounded-lg mb-4 w-fit border border-gray-200/20">
+        <div className="flex bg-gray-100/60 dark:bg-gray-800/60 p-0.5 rounded-lg mb-2 w-fit border border-gray-200/20">
           <button
             onClick={() => setReminderTab('active')}
             className={`rounded px-2.5 py-1 text-[11px] font-medium transition-all ${
@@ -392,13 +404,8 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
                       size="icon"
                       variant="ghost"
                       onClick={() => {
-                        if (
-                          confirm(
-                            'Are you sure you want to delete this reminder?',
-                          )
-                        ) {
-                          deleteMutation.mutate(reminder.id);
-                        }
+                        setReminderToDelete(reminder.id);
+                        setIsDeleteDialogOpen(true);
                       }}
                       className="h-7 w-7 text-gray-400 hover:text-red-500"
                     >
@@ -416,6 +423,18 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
           </div>
         )}
       </div>
+      <CustomDeleteDialog
+        isOpen={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        title="Delete Reminder"
+        description="Are you sure you want to delete this reminder? This action cannot be undone."
+        onConfirm={() => {
+          if (reminderToDelete) {
+            deleteMutation.mutate(reminderToDelete);
+          }
+        }}
+        isDeleting={deleteMutation.isPending}
+      />
     </CardWidgetContainer>
   );
 }
@@ -462,6 +481,9 @@ export function EntityMeetings({ entityType, entityId }: EntityActivityProps) {
   const [selectedMeeting, setSelectedMeeting] = useState<CoreMeeting | null>(null);
   const [activeTab, setActiveTab] = useState<'upcoming' | 'past'>('upcoming');
 
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [meetingToDelete, setMeetingToDelete] = useState<string | null>(null);
+
   // Fetch meetings - include meetings where user is a participant
   const { data: meetings = [], isLoading } = useQuery({
     queryKey: ['meetings', entityType, entityId, workspace?.id],
@@ -491,9 +513,15 @@ export function EntityMeetings({ entityType, entityId }: EntityActivityProps) {
       toast.success('Meeting deleted');
       setIsDetailsOpen(false);
       setSelectedMeeting(null);
+      setIsDeleteDialogOpen(false);
+      setMeetingToDelete(null);
       queryClient.invalidateQueries({ queryKey: ['meetings'] });
     },
-    onError: () => toast.error('Failed to delete meeting'),
+    onError: () => {
+      toast.error('Failed to delete meeting');
+      setIsDeleteDialogOpen(false);
+      setMeetingToDelete(null);
+    },
   });
 
   const formatMeetingDate = (meeting: CoreMeeting) => {
@@ -614,14 +642,15 @@ export function EntityMeetings({ entityType, entityId }: EntityActivityProps) {
       );
     }
     return (
-      <CardWidgetList>
-        {items.map((meeting: CoreMeeting) => (
+      <div className="max-h-[280px] overflow-y-auto mb-2 pr-1">
+        <CardWidgetList>
+          {items.map((meeting: CoreMeeting) => (
           <CardWidgetListItem
             key={meeting.id}
             title={
               <div className="flex items-center gap-2">
                 <span
-                  className="text-sm font-medium text-gray-900 dark:text-gray-100 cursor-pointer hover:text-blue-600"
+                  className="primary-text-medium text-leadgaze-dark dark:text-white cursor-pointer hover:text-blue-600"
                   onClick={() => {
                     setSelectedMeeting(meeting);
                     setIsDetailsOpen(true);
@@ -633,7 +662,7 @@ export function EntityMeetings({ entityType, entityId }: EntityActivityProps) {
               </div>
             }
             content={
-              <div className="mt-1 flex items-center gap-2 text-xs text-gray-500">
+              <div className="mt-0 flex items-center gap-2 text-xs text-gray-500">
                 {getProviderBadge(meeting)}
                 {meeting.location && (
                   <>
@@ -688,9 +717,8 @@ export function EntityMeetings({ entityType, entityId }: EntityActivityProps) {
                       size="icon"
                       variant="ghost"
                       onClick={() => {
-                        if (confirm('Are you sure you want to delete this meeting?')) {
-                          deleteMutation.mutate(meeting.id);
-                        }
+                        setMeetingToDelete(meeting.id);
+                        setIsDeleteDialogOpen(true);
                       }}
                       className="h-7 w-7 text-gray-400 hover:text-red-500"
                     >
@@ -703,6 +731,7 @@ export function EntityMeetings({ entityType, entityId }: EntityActivityProps) {
           />
         ))}
       </CardWidgetList>
+      </div>
     );
   };
 
@@ -710,6 +739,7 @@ export function EntityMeetings({ entityType, entityId }: EntityActivityProps) {
     <CardWidgetContainer
       title="Meetings"
       hideHeaderBorder={true}
+      headerClassName="p-2 xl:p-2 2xl:p-2"
       icon={<Calendar className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
       icon2={
         canScheduleMeeting && (
@@ -725,16 +755,16 @@ export function EntityMeetings({ entityType, entityId }: EntityActivityProps) {
         )
       }
     >
-      <div className="px-6 py-3">
+      <div className="px-2 mb-2">
         {isLoading ? (
           <div className="flex justify-center py-4">
             <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
           </div>
         ) : (
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-4">
-              <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
-              <TabsTrigger value="past">Previous</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="upcoming" className="h-8" >Upcoming</TabsTrigger>
+              <TabsTrigger value="past" className="h-8" >Previous</TabsTrigger>
             </TabsList>
             <TabsContent value="upcoming">
               {renderMeetingsList(filteredMeetings)}
@@ -776,9 +806,24 @@ export function EntityMeetings({ entityType, entityId }: EntityActivityProps) {
             setIsDetailsOpen(false);
             setIsEditOpen(true);
           }}
-          onDelete={(id) => deleteMutation.mutate(id)}
+          onDelete={(id) => {
+            setMeetingToDelete(id);
+            setIsDeleteDialogOpen(true);
+          }}
         />
       )}
+      <CustomDeleteDialog
+        isOpen={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        title="Delete Meeting"
+        description="Are you sure you want to delete this meeting? This action cannot be undone."
+        onConfirm={() => {
+          if (meetingToDelete) {
+            deleteMutation.mutate(meetingToDelete);
+          }
+        }}
+        isDeleting={deleteMutation.isPending}
+      />
     </CardWidgetContainer>
   );
 }
@@ -793,6 +838,9 @@ export function EntityDocuments({ entityType, entityId }: EntityActivityProps) {
   const [file, setFile] = useState<File | null>(null);
   const [editingDoc, setEditingDoc] = useState<any>(null);
   const [newName, setNewName] = useState('');
+
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [documentToDelete, setDocumentToDelete] = useState<string | null>(null);
 
   const { data: documents = [], isLoading } = useQuery({
     queryKey: ['documents', entityType, entityId, workspace?.id],
@@ -847,6 +895,8 @@ export function EntityDocuments({ entityType, entityId }: EntityActivityProps) {
     mutationFn: deleteDocumentService,
     onSuccess: () => {
       toast.success('Document deleted');
+      setIsDeleteDialogOpen(false);
+      setDocumentToDelete(null);
       queryClient.invalidateQueries({
         queryKey: ['documents', entityType, entityId, workspace?.id],
       });
@@ -854,7 +904,11 @@ export function EntityDocuments({ entityType, entityId }: EntityActivityProps) {
         queryKey: ['documents'],
       });
     },
-    onError: () => toast.error('Failed to delete document'),
+    onError: () => {
+      toast.error('Failed to delete document');
+      setIsDeleteDialogOpen(false);
+      setDocumentToDelete(null);
+    },
   });
 
   const handleSave = () => {
@@ -875,6 +929,7 @@ export function EntityDocuments({ entityType, entityId }: EntityActivityProps) {
     <CardWidgetContainer
       title="Documents"
       hideHeaderBorder={true}
+      headerClassName="p-2 xl:p-2 2xl:p-2"
       icon={<Download className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
       icon2={
         <Dialog
@@ -950,7 +1005,7 @@ export function EntityDocuments({ entityType, entityId }: EntityActivityProps) {
         </Dialog>
       }
     >
-      <div className="px-6 py-3">
+      <div className="px-2 mb-2">
         {isLoading ? (
           <div className="flex justify-center py-4">
             <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
@@ -961,7 +1016,7 @@ export function EntityDocuments({ entityType, entityId }: EntityActivityProps) {
               <CardWidgetListItem
                 key={doc.id}
                 icon={
-                  <div className="rounded border bg-white p-2 dark:bg-slate-800">
+                  <div className="rounded border border-gray-200/50 bg-white p-2 dark:bg-slate-800">
                     <File className="h-4 w-4 text-blue-500" />
                   </div>
                 }
@@ -1005,13 +1060,8 @@ export function EntityDocuments({ entityType, entityId }: EntityActivityProps) {
                       size="icon"
                       variant="ghost"
                       onClick={() => {
-                        if (
-                          confirm(
-                            'Are you sure you want to delete this document?',
-                          )
-                        ) {
-                          deleteMutation.mutate(doc.id);
-                        }
+                        setDocumentToDelete(doc.id);
+                        setIsDeleteDialogOpen(true);
                       }}
                       className="h-7 w-7 text-gray-400 hover:text-red-500"
                     >
@@ -1059,6 +1109,18 @@ export function EntityDocuments({ entityType, entityId }: EntityActivityProps) {
           </div>
         )}
       </div>
+      <CustomDeleteDialog
+        isOpen={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        title="Delete Document"
+        description="Are you sure you want to delete this document? This action cannot be undone."
+        onConfirm={() => {
+          if (documentToDelete) {
+            deleteMutation.mutate(documentToDelete);
+          }
+        }}
+        isDeleting={deleteMutation.isPending}
+      />
     </CardWidgetContainer>
   );
 }

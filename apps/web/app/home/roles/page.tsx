@@ -43,6 +43,7 @@ import { useColumnVisibility } from '@kit/ui/use-column-visibility';
 import { useColumnResize } from '@kit/ui/use-column-resize';
 import { useTableSort } from '@kit/ui/use-table-sort';
 import { SortableTableHead } from '@kit/ui/sortable-table-head';
+import { CustomDeleteDialog } from '@kit/ui/custom-delete-dialog';
 
 import { useDebounce } from '~/lib/hooks/use-debounce';
 import { ModuleGuard } from '~/lib/rbac/module-guard';
@@ -74,6 +75,9 @@ export default function RolesPage() {
   const [typeFilter, setTypeFilter] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('');
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
+
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [roleToDelete, setRoleToDelete] = useState<string | null>(null);
 
   const columns = useMemo(
     () => [
@@ -246,9 +250,13 @@ export default function RolesPage() {
         queryKey: ['workspaceRoles', currentWorkspace?.id, productKey],
       });
       toast.success('Role deleted successfully');
+      setIsDeleteDialogOpen(false);
+      setRoleToDelete(null);
     },
     onError: (error: any) => {
       toast.error(error?.message || 'Failed to delete role');
+      setIsDeleteDialogOpen(false);
+      setRoleToDelete(null);
     },
   });
 
@@ -258,9 +266,8 @@ export default function RolesPage() {
       return;
     }
 
-    if (confirm('Are you sure you want to delete this role?')) {
-      deleteRoleMutation.mutate(roleId);
-    }
+    setRoleToDelete(roleId);
+    setIsDeleteDialogOpen(true);
   };
 
   const handleEditRole = (role: Role) => {
@@ -619,6 +626,19 @@ export default function RolesPage() {
         visibility={visibility}
         onToggleColumn={toggleVisibility}
         onResetColumns={reset}
+      />
+      
+      <CustomDeleteDialog
+        isOpen={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        title="Delete Role"
+        description="Are you sure you want to delete this role? This action cannot be undone."
+        onConfirm={() => {
+          if (roleToDelete) {
+            deleteRoleMutation.mutate(roleToDelete);
+          }
+        }}
+        isDeleting={deleteRoleMutation.isPending}
       />
       </PageBody>
     </ModuleGuard>

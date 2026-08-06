@@ -55,7 +55,7 @@ export function DetailHeader({
               <Mail className="text-muted-foreground h-3.5 w-3.5" />
               <a
                 href={`mailto:${email}`}
-                className="text-blue-600 hover:underline dark:text-blue-400 primary-text-regular"
+                className="text-leadgaze-primary hover:underline primary-text-regular"
               >
                 {email}
               </a>
