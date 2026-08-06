@@ -316,6 +316,7 @@ export function CoreEmailSettingsPage({
               >
                 <CardWidgetContainer
                   className="flex-1 min-h-0"
+                  headerClassName="p-2 xl:p-2 2xl:p-2"
                   title="Email Accounts"
                   desc="Connect Gmail or SMTP/IMAP accounts for Core email." icon2={<Dialog
                       open={isConnectDialogOpen}
@@ -335,7 +336,7 @@ export function CoreEmailSettingsPage({
                           <DialogTitle>Connect Email Account</DialogTitle>
                         </DialogHeader>
                         <Tabs value={connectTab} onValueChange={(v) => setConnectTab(v as 'google' | 'smtp')} className="flex flex-1 flex-col overflow-hidden">
-                          <div className="shrink-0 px-6 pt-4">
+                          <div className="shrink-0 p-2">
                           <TabsList className="grid w-full grid-cols-2">
                             <TabsTrigger value="google">
                               Google / Gmail
@@ -343,10 +344,10 @@ export function CoreEmailSettingsPage({
                             <TabsTrigger value="smtp">SMTP / IMAP</TabsTrigger>
                           </TabsList>
                           </div>
-                          <div className="flex-1 overflow-y-auto p-6">
+                          <div className="flex-1 overflow-y-auto p-2 pt-0">
                           <TabsContent
                             value="google"
-                            className="space-y-2 pt-4"
+                            className="space-y-2 pt-0 mt-0"
                           >
                             <div className="rounded-md bg-blue-50 p-4 text-sm text-blue-800 dark:bg-blue-950 dark:text-blue-200">
                               Connect Gmail or Google Workspace for sending and
@@ -354,14 +355,14 @@ export function CoreEmailSettingsPage({
                             </div>
                             <Button
                               onClick={handleGoogleConnect}
-                              className="w-full"
+                              className="w-full secondary-text-small-bold text-leadgaze-dark dark:text-white gap-1.5 px-2"
                               variant="outline"
                             >
                               <Mail className="mr-2 h-4 w-4" />
                               Connect with Google
                             </Button>
                           </TabsContent>
-                          <TabsContent value="smtp" className="space-y-2 pt-4">
+                          <TabsContent value="smtp" className="space-y-2 pt-0 mt-0">
                             <SmtpField
                               label="From Name"
                               value={form.from_name}
@@ -478,9 +479,10 @@ export function CoreEmailSettingsPage({
                           <Button
                             onClick={handleSubmitSmtp}
                             disabled={isSubmitting}                            
+                            className="gap-1.5 px-2"
                           >
                             {isSubmitting ? (
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              <Loader2 className="h-4 w-4 animate-spin" />
                             ) : null}
                             Connect SMTP Account
                           </Button>
@@ -603,6 +605,7 @@ export function CoreEmailSettingsPage({
                             <TableRow key={account.id}>
                               <TableCell>
                                 <Badge
+                                  className="text-leadgaze-dark dark:text-white"
                                   variant={
                                     account.provider === 'google'
                                       ? 'secondary'
@@ -650,13 +653,13 @@ export function CoreEmailSettingsPage({
                                     </SelectContent>
                                   </Select>
                                 ) : (
-                                  <Badge
+                                  <Badge                                  
                                     variant={
                                       account.access_scope === 'workspace'
                                         ? 'secondary'
                                         : 'outline'
                                     }
-                                    className="gap-1"
+                                    className="gap-1 text-leadgaze-dark dark:text-white"
                                   >
                                     {account.access_scope === 'workspace' ? (
                                       <Globe2 className="h-3 w-3" />

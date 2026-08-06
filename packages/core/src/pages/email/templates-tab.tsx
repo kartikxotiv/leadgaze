@@ -101,7 +101,7 @@ export function CoreEmailTemplatesTab({
 
   return (
     <div className="flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col space-y-2">
-      <CardWidgetContainer title="Templates" icon2={
+      <CardWidgetContainer headerClassName="p-2 xl:p-2 2xl:p-2" title="Templates" icon2={
           <Button
             className="bg-leadgaze-primary hover:bg-leadgaze-primary text-white secondary-text-small-bold gap-1.5 px-2"
             onClick={() => {setSelectedTemplate(null); setIsDialogOpen(true);}}
@@ -301,7 +301,7 @@ function CoreTemplateDialog({
               {template ? 'Edit Template' : 'Create Template'}
             </DialogTitle>
           </DialogHeader>
-          <div className="flex-1 space-y-2 overflow-y-auto px-6 pb-8">
+          <div className="flex-1 space-y-2 overflow-y-auto px-2">
           <div className="space-y-2">
             <Label>Template Name</Label>
             <Input
@@ -350,7 +350,7 @@ function CoreTemplateDialog({
               </TooltipProvider>
             </div>
             <div className="overflow-hidden rounded-md border">
-              <div className="border-b bg-zinc-50 p-1 dark:bg-zinc-800/50">
+              <div className="border-b bg-zinc-200 p-1 dark:bg-zinc-800/50">
                 {['bold', 'italic', 'underline'].map((command) => (
                   <Button
                     key={command}
@@ -378,11 +378,11 @@ function CoreTemplateDialog({
             >
               Cancel
             </Button>
-            <Button onClick={handleSave} disabled={isSaving}>
+            <Button onClick={handleSave} disabled={isSaving} className="secondary-text-small-bold gap-1.5 px-2">
               {isSaving ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-                <Save className="mr-2 h-4 w-4" />
+                <Save className="h-4 w-4" />
               )}
               Save
             </Button>
