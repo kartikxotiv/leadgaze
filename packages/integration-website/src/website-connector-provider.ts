@@ -20,6 +20,31 @@ import type {
   WebsiteSubmitInput,
 } from './types';
 
+const WORTHLIFT_SCORE_SOURCE = 'worthlift';
+const LEAD_SCORE_SOURCE_FIELD = 'lead_score_source';
+const LEAD_SCORE_OVERRIDE_FIELD = 'lead_score_override';
+
+/**
+ * Resolves a Worthlift-provided score without allowing ordinary website
+ * submissions to replace LeadGaze's score.
+ */
+export function resolveWorthliftScore(
+  payload: WebsiteSubmitInput,
+): number | null {
+  if (payload.score_source !== WORTHLIFT_SCORE_SOURCE) return null;
+
+  if (
+    typeof payload.score !== 'number' ||
+    !Number.isFinite(payload.score) ||
+    payload.score < 0 ||
+    payload.score > 100
+  ) {
+    throw new Error('Worthlift score must be a number between 0 and 100.');
+  }
+
+  return Math.round(payload.score);
+}
+
 // ---------------------------------------------------------------------------
 // Payload Normalization
 // ---------------------------------------------------------------------------
@@ -312,6 +337,24 @@ export async function ingestLeadToCrm(
   const phoneVal = payload.phone || payload.phone_number || payload.mobile_number;
   const companyVal = payload.company || payload.company_name;
   const notesVal = payload.message || payload.notes || payload.description;
+  const worthliftScore = resolveWorthliftScore(payload);
+  const submittedCustomFields =
+    payload.custom_fields &&
+    typeof payload.custom_fields === 'object' &&
+    !Array.isArray(payload.custom_fields)
+      ? payload.custom_fields
+      : {};
+  const safeCustomFields = { ...submittedCustomFields };
+  delete safeCustomFields[LEAD_SCORE_SOURCE_FIELD];
+  delete safeCustomFields[LEAD_SCORE_OVERRIDE_FIELD];
+  const customFields =
+    worthliftScore === null
+      ? safeCustomFields
+      : {
+          ...safeCustomFields,
+          [LEAD_SCORE_SOURCE_FIELD]: WORTHLIFT_SCORE_SOURCE,
+          [LEAD_SCORE_OVERRIDE_FIELD]: worthliftScore,
+        };
 
   // Resolve prerequisite IDs in parallel where possible
   const [statusId, creatorId] = await Promise.all([
@@ -346,6 +389,8 @@ export async function ingestLeadToCrm(
       status_id: statusId,
       created_by: creatorId,
       source_id: leadSourceId,
+      lead_score: worthliftScore ?? 0,
+      custom_fields: customFields,
     })
     .select()
     .single();
