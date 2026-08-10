@@ -563,11 +563,11 @@ export function ServiceCloudResourcePage({
         )}
       >
         {tabsSlot ? (
-          <div className="shrink-0 flex items-center pr-4">
-            {tabsSlot}
-          </div>
+          <>
+            {typeof tabsSlot === 'function' ? tabsSlot(data) : tabsSlot}
+          </>
         ) : null}
-        <div className="p-[2px] flex flex-1 justify-end min-w-0">
+        
           <ListToolBar
             align="right"
             className="border-none bg-transparent p-0"
@@ -596,7 +596,7 @@ export function ServiceCloudResourcePage({
                 : [])
             }
           />
-        </div>
+        
       </div>
       <PageBody className="sticky flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col overflow-hidden">
         <div className="flex min-h-0 w-full min-w-0 max-w-full flex-1 gap-0">

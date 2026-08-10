@@ -602,7 +602,7 @@ export function ServiceCloudTicketsPage({
   if (!canView) return <ServiceCloudAccessDenied label="tickets" />;
 
   const tabsSlot = (
-    <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide shrink-0">
+    <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide">
       <button
         onClick={() => {
           setSelectedStatusIds([]);
