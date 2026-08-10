@@ -59,6 +59,7 @@ import {
   ServiceCloudResourcePage,
   StatusBadge,
 } from '../_components/resource-page';
+import CustomTableContainer from '@kit/ui/custom-table-container';
 
 export function ServiceCloudCustomersPage({
   workspaceId,
@@ -770,6 +771,8 @@ export function ServiceCloudCustomersPage({
                   No tickets found for this customer.
                 </div>
               ) : (
+                <CustomTableContainer>
+                <div className="mb-2">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -891,6 +894,8 @@ export function ServiceCloudCustomersPage({
                     ))}
                   </TableBody>
                 </Table>
+                </div>
+                </CustomTableContainer>
               )}
             </div>
 
