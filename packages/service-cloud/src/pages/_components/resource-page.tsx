@@ -561,7 +561,7 @@ export function ServiceCloudResourcePage({
     <>
       {pageHeaderTitle && (
         <div className="flex items-center justify-between pb-0">
-          <PageHeader title={pageHeaderTitle} className={`w-full ${pageHeaderTitle === 'Service Settings' ? 'mb-2' : ''}`}>
+          <PageHeader title={pageHeaderTitle} className={`w-full`}>
             {canCreate && (
               <Button
                 onClick={openCreate}
@@ -855,7 +855,7 @@ export function ServiceCloudResourcePage({
                 </DialogTitle>
               </DialogHeader>
               <div className="flex-1 space-y-2 overflow-y-auto p-2">
-                <div className="grid gap-2">
+                <div className="grid gap-2 sm:grid-cols-2">
                   {fields
                     // Hide field if canViewField is provided AND returns false
                     .filter((field) => !canViewField || canViewField(field.key))
@@ -995,6 +995,13 @@ export function ServiceCloudResourcePage({
                 </div>
               </div>
               <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => setOpen(false)}
+                  disabled={saving}
+                >
+                  Cancel
+                </Button>
                 <Button onClick={save} disabled={saving}>
                   {saving ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />

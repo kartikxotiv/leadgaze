@@ -363,13 +363,17 @@ export function CoreEmailReplyDialog({
                   }
                   className="grid gap-2 sm:grid-cols-2"
                 >
-                  <Label className="flex cursor-pointer items-center gap-2 rounded-md border p-3">
+                  <Label className="flex cursor-pointer items-center gap-2 rounded-md border p-2">
+                    <div className="flex gap-2 items-center">
                     <RadioGroupItem value="reply" />
                     <span>Reply to sender</span>
+                    </div>
                   </Label>
-                  <Label className="flex cursor-pointer items-center gap-2 rounded-md border p-3">
+                  <Label className="flex cursor-pointer items-center gap-2 rounded-md border p-2">
+                    <div className="flex gap-2 items-center">
                     <RadioGroupItem value="reply_all" />
                     <span>Reply all</span>
+                    </div>
                   </Label>
                 </RadioGroup>
               </div>

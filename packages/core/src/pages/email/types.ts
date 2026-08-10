@@ -24,4 +24,6 @@ export type CoreEmailPageProps = {
   embedded?: boolean;
   renderEmailActions?: (email: any) => ReactNode;
   templateContext?: Record<string, unknown>;
+  pageTitle?: string;
+  pageDescription?: string;
 };

@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { Loader2, Plus, Ticket, TicketIcon } from 'lucide-react';
+import { Loader2, Plus, PlusIcon, Ticket, TicketIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { useLocalization } from '@kit/shared/localization';
@@ -380,15 +380,15 @@ export function ServiceCloudCustomersPage({
         <Button
           type="button"
           onClick={openDialog}
-          variant="default"
-          className="secondary-text-small-bold shrink-0 gap-1.5 px-2"
+          variant="outline"
+          className="secondary-text-small-bold shrink-0 gap-1.5 px-2 text-leadgaze-dark dark:text-white"
         >
-          <TicketIcon className="h-4 w-4" />
-          New Ticket
+          <PlusIcon className="h-4 w-4" />
+          New Tickets
         </Button>
       </TooltipTrigger>
       <TooltipContent side="bottom">
-        <span>New Ticket</span>
+        <span>New Tickets</span>
       </TooltipContent>
     </Tooltip>
   ) : null;
@@ -423,7 +423,8 @@ export function ServiceCloudCustomersPage({
             workspaceId={workspaceId}
             resource="customers"
             title="Customers"
-            createLabel="New Customer"
+            pageHeaderTitle="Customers"
+            createLabel="New Customers"
             description="People who contact support."
             canCreate={canCreate}
             canEdit={canEdit}
@@ -495,13 +496,14 @@ export function ServiceCloudCustomersPage({
         </TabsContent>
         <TabsContent
           value="organizations"
-          className="mt-0 flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col data-[state=active]:flex data-[state=active]:flex-1 data-[state=active]:flex-col data-[state=active]:min-h-0"
+          className="mt-0 flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col data-[state=active]:flex data-[state=active]:flex-1 data-[state=active]:flex-col data-[state=active]:min-h-0 gap-2"
         >
           <ServiceCloudResourcePage
             workspaceId={workspaceId}
             resource="organizations"
             title="Organizations"
-            createLabel="New Organization"
+            pageHeaderTitle="Customers"
+            createLabel="New Organizations"
             description="Companies and customer accounts supported by the team."
             canCreate={canCreate}
             canEdit={canEdit}
@@ -581,13 +583,13 @@ export function ServiceCloudCustomersPage({
             <div className="flex max-h-[90vh] flex-col">
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2">
-                  <Ticket className="h-5 w-5" />
+                  {/* <Ticket className="h-5 w-5" /> */}
                   New Ticket for Customer
                 </DialogTitle>
               </DialogHeader>
 
               <div className="flex-1 space-y-2 overflow-y-auto p-2">
-                <div className="grid gap-2">
+                <div className="grid gap-2 sm:grid-cols-2">
                   {/* Customer Selection */}
                   <div className="grid">
                     <Label>
@@ -630,6 +632,8 @@ export function ServiceCloudCustomersPage({
                       onChange={(e) => setTicketSubject(e.target.value)}
                     />
                   </div>
+                  </div>
+                  <div className="grid">
 
                   {/* Description */}
                   <div className="grid">
@@ -643,7 +647,7 @@ export function ServiceCloudCustomersPage({
 
                   {/* Status / Priority / Category */}
                   <div className="grid gap-2 sm:grid-cols-3">
-                    <div className="grid gap-2">
+                    <div className="grid">
                       <Label>Status</Label>
                       <Select
                         value={ticketStatusId || String(openStatus?.id ?? '')}
@@ -750,12 +754,12 @@ export function ServiceCloudCustomersPage({
           <div className="flex max-h-[90vh] w-full min-w-0 max-w-full flex-col">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <Ticket className="h-5 w-5" />
+                {/* <Ticket className="h-5 w-5" /> */}
                 Tickets for {ticketsModalCustomer?.name}
               </DialogTitle>
             </DialogHeader>
 
-            <div className="w-full min-w-0 max-w-full flex-1 overflow-x-auto overflow-y-auto p-6">
+            <div className="w-full min-w-0 max-w-full flex-1 overflow-x-auto overflow-y-auto p-2">
               {isLoadingTickets ? (
                 <div className="text-muted-foreground flex items-center justify-center py-8 text-sm">
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

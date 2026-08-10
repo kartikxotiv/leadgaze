@@ -181,7 +181,7 @@ export function EmailAttachmentPicker({
     <div className="grid gap-2">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="text-sm font-medium">Attachments</p>
+          <p className="text-sm font-medium text-leadaze-dark dark:text-white">Attachments</p>
           <p className="text-muted-foreground text-xs">
             Up to 5 files, 10 MB each and 15 MB total
           </p>

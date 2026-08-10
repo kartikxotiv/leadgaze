@@ -158,7 +158,7 @@
     font-weight: 500 !important;
     line-height: 20px !important;
   }
-  .main-dialog div label~input{
+  .main-dialog div label+input, .main-dialog div label+button, .main-dialog div label+textarea, .main-dialog div label+select{
     margin-top: 4px !important;
   }
   .custom-sub-heading-dialog-form{
@@ -180,6 +180,9 @@
   }
   .dark .data-\[state\=active\]\:text-foreground[data-state="active"] {
     color: white !important;
+  }
+  .main-dialog div label{
+    display: inline-block;
   }
 
 }

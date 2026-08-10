@@ -88,7 +88,7 @@ export const CsvExportButton: React.FC<CsvExportButtonProps> = ({
               ) : (
                 <Download className="h-4 w-4 border-light-gray primary-text-medium text-leadgaze-dark dark:text-white" />
               )}
-              <span className="secondary-text-small-bold">Export</span>
+              <span className="secondary-text-small-bold text-leadgaze-dark dark:text-white">Export</span>
 
               {/* Selected-count badge — shown when rows are selected */}
               {selectedCount > 0 && !isExporting && (

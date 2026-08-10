@@ -268,13 +268,17 @@ export function ServiceCloudEmailToTicketAction({
                   }
                   className="grid gap-2 sm:grid-cols-2"
                 >
-                  <Label className="flex cursor-pointer items-center gap-2 rounded-md border p-3">
+                  <Label className="flex cursor-pointer items-center gap-2 rounded-md border p-2">
+                    <div className="flex gap-2 items-center">
                     <RadioGroupItem value="existing" />
                     <span>Link existing</span>
+                    </div>
                   </Label>
-                  <Label className="flex cursor-pointer items-center gap-2 rounded-md border p-3">
+                  <Label className="flex cursor-pointer items-center gap-2 rounded-md border p-2">
+                    <div className="flex gap-2 items-center">
                     <RadioGroupItem value="new" />
                     <span>Create new</span>
+                    </div>
                   </Label>
                 </RadioGroup>
               </div>
@@ -324,17 +328,23 @@ export function ServiceCloudEmailToTicketAction({
                   }
                   className="grid gap-2 sm:grid-cols-3"
                 >
-                  <Label className="flex cursor-pointer items-center gap-2 rounded-md border p-3">
+                  <Label className="flex cursor-pointer items-center gap-2 rounded-md border p-2">
+                    <div className="flex gap-2 items-center">
                     <RadioGroupItem value="none" />
                     <span>None</span>
+                    </div>
                   </Label>
-                  <Label className="flex cursor-pointer items-center gap-2 rounded-md border p-3">
+                  <Label className="flex cursor-pointer items-center gap-2 rounded-md border p-2">
+                    <div className="flex gap-2 items-center">
                     <RadioGroupItem value="existing" />
                     <span>Existing</span>
+                    </div>
                   </Label>
-                  <Label className="flex cursor-pointer items-center gap-2 rounded-md border p-3">
+                  <Label className="flex cursor-pointer items-center gap-2 rounded-md border p-2">
+                    <div className="flex gap-2 items-center">
                     <RadioGroupItem value="new" />
                     <span>Create new</span>
+                    </div>
                   </Label>
                 </RadioGroup>
               </div>

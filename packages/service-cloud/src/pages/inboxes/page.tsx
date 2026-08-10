@@ -42,6 +42,8 @@ export function ServiceCloudInboxesPage({ workspace }: { workspace: any }) {
           viewInbox: canManageInbox,
           sendEmails: canManageInbox,
         }}
+        pageTitle="Support Inboxes"
+        pageDescription="View and reply to support email conversations powered by Core Email."
       />
     </div>
   );
