@@ -452,7 +452,7 @@ export function WorkspaceGeneralSettings({ workspaceId }: WorkspaceGeneralSettin
           </div>
 
           <div className="border-t pt-2">
-            <h3 className="primary-text-big-regular text-leadgaze-dark tracking-tight dark:text-white">Invoice Details</h3>
+            <h3 className="primary-text-big-regular text-leadgaze-dark tracking-tight dark:text-white mb-2">Invoice Details</h3>
             <div className="space-y-2">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                 <div>
@@ -529,7 +529,7 @@ export function WorkspaceGeneralSettings({ workspaceId }: WorkspaceGeneralSettin
           </div>
 
           <div className="border-t pt-2">
-            <h3 className="primary-text-big-regular text-leadgaze-dark tracking-tight dark:text-white">Workspace Settings</h3>
+            <h3 className="primary-text-big-regular text-leadgaze-dark tracking-tight dark:text-white mb-2">Workspace Settings</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               <div>
                 <Label>

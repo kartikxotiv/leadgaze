@@ -512,7 +512,7 @@ export function ServiceCloudTicketDetailPage({
     updateMutation.mutate(payload);
 
   return (
-    <div className="mt-2 space-y-2">
+    <div className="space-y-2">
       <section className="overflow-hidden rounded-none border bg-[radial-gradient(circle_at_top_left,_rgba(14,165,233,0.18),_transparent_34%),linear-gradient(135deg,_#0f172a,_#164e63_52%,_#0f172a)] p-6 text-white shadow-xl">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-4xl space-y-5">
@@ -1827,7 +1827,7 @@ function EmptyState({
 
 function ServiceCloudTicketDetailSkeleton() {
   return (
-    <div className="mt-2 space-y-2">
+    <div className="space-y-2">
       {/* ── Hero banner skeleton ── */}
       <section className="overflow-hidden rounded-none border bg-[radial-gradient(circle_at_top_left,_rgba(14,165,233,0.18),_transparent_34%),linear-gradient(135deg,_#0f172a,_#164e63_52%,_#0f172a)] p-6 shadow-xl">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
