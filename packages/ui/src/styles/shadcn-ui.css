@@ -159,7 +159,7 @@
     line-height: 20px !important;
   }
   .main-dialog div label~input{
-    margin-top: 0 !important;
+    margin-top: 4px !important;
   }
   .custom-sub-heading-dialog-form{
     margin-bottom: 0px !important;

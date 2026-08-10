@@ -60,6 +60,7 @@ export function ServiceCloudSettingsPage({
       >
         <ServiceCloudResourcePage
           workspaceId={workspaceId}
+          pageHeaderTitle="Service Settings"
           resource="ticket-statuses"
           entityLabel="statuses"
           title="Ticket Statuses"
@@ -120,6 +121,7 @@ export function ServiceCloudSettingsPage({
       >
         <ServiceCloudResourcePage
           workspaceId={workspaceId}
+          pageHeaderTitle="Service Settings"
           resource="ticket-priorities"
           entityLabel="priorities"
           title="Ticket Priorities"
@@ -168,6 +170,7 @@ export function ServiceCloudSettingsPage({
       >
         <ServiceCloudResourcePage
           workspaceId={workspaceId}
+          pageHeaderTitle="Service Settings"
           resource="ticket-categories"
           entityLabel="categories"
           title="Ticket Categories"

@@ -45,6 +45,7 @@ const routesWithOwnHeader = [
   '/workspace-teams',
   '/roles',
   '/tickets',
+  '/settings',
 ];
 
 export default function ServiceCloudLayout({
