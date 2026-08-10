@@ -18,6 +18,7 @@ import { CardWidgetList, CardWidgetListItem } from '@kit/ui/card-widget-list';
 import { Skeleton } from '@kit/ui/skeleton';
 import { useLocalization } from '@kit/shared/localization';
 import { useColumnResize } from '@kit/ui/use-column-resize';
+import { cn } from '@kit/ui/utils';
 
 import { getServiceCloudDashboardService } from '../../services';
 import {
@@ -111,20 +112,7 @@ export function ServiceCloudReportsPage({
 
   return (
     <div className="space-y-4 mt-2">
-      <section className="overflow-hidden rounded-none border bg-[radial-gradient(circle_at_top_left,_rgba(20,184,166,0.18),_transparent_35%),linear-gradient(135deg,_#102a43,_#0f766e_55%,_#172554)] p-6 text-white shadow-xl">
-        <div className="max-w-3xl">
-          <Badge className="border-white/20 bg-white/15 text-white hover:bg-white/20">
-            Service Intelligence
-          </Badge>
-          <h1 className="mt-4 text-3xl font-semibold tracking-tight">
-            Support reports
-          </h1>
-          <p className="mt-2 text-sm leading-6 text-white/75">
-            Ticket volume, customer workload, assignment pressure, and time
-            investment across the service operation.
-          </p>
-        </div>
-      </section>
+
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {cards.map((card) => {
@@ -169,15 +157,26 @@ export function ServiceCloudReportsPage({
               {statusBreakdown.length === 0 ? (
                 <EmptyReport label="No ticket statuses found." />
               ) : (
-                statusBreakdown.map((status: any) => (
-                  <MetricBar
-                    key={status.id}
-                    label={status.name}
-                    description={`${status.lifecycle ?? 'workflow'} · ${formatHours(status.loggedSeconds ?? 0)} logged`}
-                    value={status.count}
-                    width={percent(status.count, statusMax)}
-                  />
-                ))
+                statusBreakdown.map((status: any) => {
+                  let barColor = 'bg-leadgaze-success';
+                  const nameLower = status.name.toLowerCase();
+                  if (nameLower === 'new') barColor = 'var(--color-ticket-status-new)';
+                  else if (nameLower === 'open') barColor = 'var(--color-ticket-status-open)';
+                  else if (nameLower === 'in progress') barColor = 'var(--color-ticket-status-in-progress)';
+                  else if (nameLower.includes('waiting')) barColor = 'var(--color-ticket-status-waiting)';
+                  else if (nameLower === 'resolved') barColor = 'var(--color-ticket-status-resolved)';
+
+                  return (
+                    <MetricBar
+                      key={status.id}
+                      label={status.name}
+                      description={`${formatHours(status.loggedSeconds ?? 0)} logged`}
+                      value={status.count}
+                      width={percent(status.count, statusMax)}
+                      barColor={barColor}
+                    />
+                  );
+                })
               )}
             </div>
           </CardWidgetContainer>
@@ -309,18 +308,37 @@ export function ServiceCloudReportsPage({
               {priorityBreakdown.length === 0 ? (
                 <EmptyReport label="No priority data." />
               ) : (
-                <CardWidgetList>
-                  {priorityBreakdown.map((priority: any) => (
-                    <CardWidgetListItem
-                      key={priority.id}
-                      title={priority.name}
-                      subtitle={`${priority.openCount} open`}
-                      badge={
-                        <Badge variant="secondary">{priority.count}</Badge>
-                      }
-                    />
-                  ))}
-                </CardWidgetList>
+                <div className="space-y-3">
+                  {priorityBreakdown.map((priority: any) => {
+                    const nameLower = priority.name.toLowerCase();
+                    const isUrgent = nameLower === 'urgent';
+                    const isCritical = nameLower === 'critical';
+                    
+                    const textColor = isUrgent || isCritical ? 'var(--color-ticket-priority-critical-text)' : undefined;
+                    const badgeBg = isUrgent ? 'var(--color-ticket-priority-urgent-bg)' : isCritical ? 'var(--color-ticket-priority-critical-bg)' : '#E5E7EB';
+                    const badgeColor = isUrgent ? 'var(--color-ticket-priority-critical-text)' : isCritical ? '#FFFFFF' : '#111827';
+                    
+                    const itemClass = cn(
+                      "flex items-center justify-between p-3 rounded-md border bg-white dark:bg-zinc-900 shadow-sm",
+                      isCritical ? "border-[var(--color-ticket-priority-critical-text)]" : "border-border"
+                    );
+
+                    return (
+                      <div key={priority.id} className={itemClass}>
+                        <div>
+                          <div className="font-semibold text-sm" style={{ color: textColor || 'inherit' }}>{priority.name}</div>
+                          <div className="text-xs mt-0.5 uppercase" style={{ color: textColor || 'var(--color-leadgaze-muted)' }}>{`${priority.openCount} OPEN`}</div>
+                        </div>
+                        <Badge 
+                          className="px-2.5 py-0.5 text-xs font-bold rounded shadow-none hover:opacity-100"
+                          style={{ backgroundColor: badgeBg, color: badgeColor, border: 'none' }}
+                        >
+                          {priority.count}
+                        </Badge>
+                      </div>
+                    );
+                  })}
+                </div>
               )}
             </div>
           </CardWidgetContainer>
@@ -400,25 +418,32 @@ function MetricBar({
   description,
   value,
   width,
+  barColor = 'bg-leadgaze-success',
 }: {
   label: string;
   description: string;
   value: number;
   width: string;
+  barColor?: string;
 }) {
+  const isCustomColor = barColor.startsWith('var(') || barColor.startsWith('#');
   return (
-    <div>
+    <div className="mb-5 last:mb-0">
       <div className="mb-2 flex items-center justify-between gap-4">
-        <div>
-          <div className="font-medium">{label}</div>
-          <div className="text-muted-foreground text-xs">{description}</div>
+        <div className="flex items-center gap-1.5 text-sm">
+          <span className="font-semibold text-leadgaze-dark dark:text-white">{label}</span>
+          <span className="text-muted-foreground text-xs">•</span>
+          <span className="text-muted-foreground text-xs">{description}</span>
         </div>
-        <div className="text-2xl font-semibold">{value}</div>
+        <div className="text-sm font-bold text-leadgaze-dark dark:text-white">{value}</div>
       </div>
-      <div className="bar-bg h-2 w-full overflow-hidden rounded-full">
+      <div className="bar-bg h-2 w-full overflow-hidden rounded-full bg-muted/40">
         <div
-          className="bg-leadgaze-success h-full rounded-full transition-all duration-500"
-          style={{ width }}
+          className={`h-full rounded-full transition-all duration-500 ${!isCustomColor ? barColor : ''}`}
+          style={{ 
+            width, 
+            ...(isCustomColor ? { backgroundColor: barColor } : {})
+          }}
         />
       </div>
     </div>
@@ -489,15 +514,6 @@ function EmptyReport({ label }: { label: string }) {
 function ServiceCloudReportsSkeleton() {
   return (
     <div className="space-y-4 mt-2">
-      {/* Hero banner skeleton */}
-      <section className="overflow-hidden rounded-none border bg-[radial-gradient(circle_at_top_left,_rgba(20,184,166,0.18),_transparent_35%),linear-gradient(135deg,_#102a43,_#0f766e_55%,_#172554)] p-6 shadow-xl">
-        <div className="max-w-3xl space-y-3">
-          <Skeleton className="h-5 w-36 rounded-full bg-white/20" />
-          <Skeleton className="h-9 w-56 bg-white/20" />
-          <Skeleton className="h-4 w-full max-w-lg bg-white/15" />
-        </div>
-      </section>
-
       {/* Stat cards skeleton */}
       <div className="grid gap-4 md:grid-cols-4">
         {[1, 2, 3, 4].map((i) => (
