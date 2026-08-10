@@ -111,7 +111,7 @@ export function ServiceCloudReportsPage({
   ];
 
   return (
-    <div className="space-y-4 mt-2">
+    <div className="space-y-2 mt-0">
 
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -122,9 +122,9 @@ export function ServiceCloudReportsPage({
               key={card.label}
               className="flex h-32 flex-col justify-between xl:h-28 2xl:h-32"
             >
-              <CardHeader className="flex flex-row items-start justify-between space-y-0 xl:p-3 xl:pb-0 2xl:p-5 2xl:pb-0">
+              <CardHeader className="flex flex-row items-start justify-between space-y-0 p-4 pb-2">
                 <div className="space-y-1">
-                  <CardTitle className="secondary-text-small text-leadgaze-muted dark:text-white">
+                  <CardTitle className="secondary-text-small-semibold text-leadgaze-dark dark:text-white">
                     {card.label}
                   </CardTitle>
                   <div className="primary-heading-number text-leadgaze-dark dark:text-zinc-100">
@@ -137,7 +137,7 @@ export function ServiceCloudReportsPage({
                   <Icon className="h-4 w-4 text-white" />
                 </div>
               </CardHeader>
-              <CardContent className="xl:p-3 xl:pt-2 2xl:p-5 2xl:pt-2">
+              <CardContent className="px-4">
                 <CardDescription className="secondary-text-small text-leadgaze-success">
                   {card.detail}
                 </CardDescription>
@@ -147,13 +147,14 @@ export function ServiceCloudReportsPage({
         })}
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-4 w-full">
-        <div className="space-y-4 w-full lg:w-[65%]">
+      <div className="flex flex-col lg:flex-row gap-2 w-full">
+        <div className="space-y-2 w-full lg:w-[65%]">
           <CardWidgetContainer
             title="Ticket Status Distribution"
             description="How many tickets are currently sitting in each status."
+            headerClassName="p-2 xl:p-2 2xl:p-2"
           >
-            <div className="space-y-4 px-6 py-4  max-h-[460px] overflow-auto">
+            <div className="space-y-2 px-2 py-2  max-h-[460px] overflow-auto">
               {statusBreakdown.length === 0 ? (
                 <EmptyReport label="No ticket statuses found." />
               ) : (
@@ -186,6 +187,7 @@ export function ServiceCloudReportsPage({
             description="Customers with active/open tickets and total support effort."
             hideHeaderBorder={true}
             hideBorderBottom={true}
+            headerClassName="p-2 xl:p-2 2xl:p-2"
           >
             <ReportTable
               tableKey="sc-report-customer-workload"
@@ -202,22 +204,14 @@ export function ServiceCloudReportsPage({
                 <div key="customer">
                   <Link
                     href="/home/services/customers"
-                    className="font-medium hover:underline "
+                    className="secondary-text-small-semibold hover:underline "
                   >
                     {customer.name}
                   </Link>
-                  <div className="text-muted-foreground text-xs">
+                  <div className="text-muted-foreground text-xs mt-0.5 !font-normal">
                     {[customer.email, customer.organization]
                       .filter(Boolean)
                       .join(' · ') || 'No contact context'}
-                  </div>
-                  <div className="bar-bg mt-2 h-1.5 overflow-hidden rounded-full">
-                    <div
-                      className="bg-leadgaze-success h-full rounded-full"
-                      style={{
-                        width: percent(customer.openTickets, customerMax),
-                      }}
-                    />
                   </div>
                 </div>,
                 customer.openTickets,
@@ -234,6 +228,7 @@ export function ServiceCloudReportsPage({
             description="Open tickets sorted by age so overdue work is visible."
             hideHeaderBorder={true}
             hideBorderBottom={true}
+            headerClassName="p-2 xl:p-2 2xl:p-2"
           >
             <ReportTable
               tableKey="sc-report-oldest-tickets"
@@ -243,7 +238,8 @@ export function ServiceCloudReportsPage({
                 <Link
                   key="ticket"
                   href={`/home/services/tickets/${ticket.id}`}
-                  className="font-medium hover:underline"
+                  className="secondary-text-small-semibold w-[300px] truncate inline-block hover:underline"
+                  style={{ color: 'var(--color-report-blue-text)' }}
                 >
                   #{ticket.ticketNumber} {ticket.subject}
                 </Link>,
@@ -266,6 +262,7 @@ export function ServiceCloudReportsPage({
             description="Where time is being spent, based on individual time entries."
             hideHeaderBorder={true}
             hideBorderBottom={true}
+            headerClassName="p-2 xl:p-2 2xl:p-2"
           >
             <ReportTable
               tableKey="sc-report-time-logs"
@@ -276,7 +273,7 @@ export function ServiceCloudReportsPage({
                   <Link
                     key="ticket"
                     href={`/home/services/tickets/${ticket.id}`}
-                    className="font-medium hover:underline"
+                    className="secondary-text-small-semibold w-[300px] truncate inline-block hover:underline"
                   >
                     #{ticket.ticketNumber} {ticket.subject}
                   </Link>
@@ -298,13 +295,13 @@ export function ServiceCloudReportsPage({
           </CardWidgetContainer>
         </div>
 
-        <div className="space-y-4 w-full lg:w-[35%]">
+        <div className="space-y-2 w-full lg:w-[35%]">
           <CardWidgetContainer
             title="Priority Mix"
-            description="Open pressure by priority."
-            hideHeaderBorder={true}
+            description="Open pressure by priority."            
+            headerClassName="p-2 xl:p-2 2xl:p-2"
           >
-            <div className="px-6 py-4 overflow-auto max-h-[380px]">
+            <div className="px-2 py-2 overflow-auto max-h-[380px]">
               {priorityBreakdown.length === 0 ? (
                 <EmptyReport label="No priority data." />
               ) : (
@@ -314,23 +311,24 @@ export function ServiceCloudReportsPage({
                     const isUrgent = nameLower === 'urgent';
                     const isCritical = nameLower === 'critical';
                     
-                    const textColor = isUrgent || isCritical ? 'var(--color-ticket-priority-critical-text)' : undefined;
+                    const textColor = isCritical ? 'var(--color-ticket-priority-critical-text)' : undefined;
+                    const subTextColor = isUrgent || isCritical ? 'var(--color-ticket-priority-critical-text)' : undefined;
                     const badgeBg = isUrgent ? 'var(--color-ticket-priority-urgent-bg)' : isCritical ? 'var(--color-ticket-priority-critical-bg)' : '#E5E7EB';
                     const badgeColor = isUrgent ? 'var(--color-ticket-priority-critical-text)' : isCritical ? '#FFFFFF' : '#111827';
                     
                     const itemClass = cn(
-                      "flex items-center justify-between p-3 rounded-md border bg-white dark:bg-zinc-900 shadow-sm",
-                      isCritical ? "border-[var(--color-ticket-priority-critical-text)]" : "border-border"
+                      "flex items-center justify-between p-2 border bg-white dark:bg-zinc-900",
+                      isCritical ? "border-[#FADAD6]" : "border-border"
                     );
 
                     return (
                       <div key={priority.id} className={itemClass}>
                         <div>
-                          <div className="font-semibold text-sm" style={{ color: textColor || 'inherit' }}>{priority.name}</div>
-                          <div className="text-xs mt-0.5 uppercase" style={{ color: textColor || 'var(--color-leadgaze-muted)' }}>{`${priority.openCount} OPEN`}</div>
+                          <div className="secondary-text-small-semibold" style={{ color: textColor || 'inherit' }}>{priority.name}</div>
+                          <div className="text-[10px] mt-1 uppercase" style={{ color: subTextColor || 'var(--color-leadgaze-muted)' }}>{`${priority.openCount} OPEN`}</div>
                         </div>
                         <Badge 
-                          className="px-2.5 py-0.5 text-xs font-bold rounded shadow-none hover:opacity-100"
+                          className="px-2 py-1 !secondary-text-small-semibold rounded-none hover:opacity-100"
                           style={{ backgroundColor: badgeBg, color: badgeColor, border: 'none' }}
                         >
                           {priority.count}
@@ -347,6 +345,7 @@ export function ServiceCloudReportsPage({
             title="Assignee Workload"
             description="Ticket ownership and actual time logged by agents."
             hideHeaderBorder={true}
+            headerClassName="p-2 xl:p-2 2xl:p-2"
           >
             <ReportTable
               tableKey="sc-report-assignee-workload"
@@ -355,7 +354,13 @@ export function ServiceCloudReportsPage({
               rows={assigneeWorkload
                 .slice(0, 10)
                 .map((assignee: any) => [
-                  assignee.name,
+                  assignee.name?.toLowerCase() === 'unassigned' ? (
+                    <span>{assignee.name}</span>
+                  ) : (
+                    <span style={{ color: 'var(--color-report-blue-text)' }} className="font-medium">
+                      {assignee.name}
+                    </span>
+                  ),
                   assignee.openTickets,
                   assignee.totalTickets,
                   formatHours(
@@ -368,42 +373,50 @@ export function ServiceCloudReportsPage({
 
           <CardWidgetContainer
             title="Ticket Time Investment"
-            description="Tickets consuming the most logged support time."
-            hideHeaderBorder={true}
+            description="Tickets consuming the most logged support time."            
+            headerClassName="p-2 xl:p-2 2xl:p-2"
           >
-            <div className="space-y-4 px-6 py-4 overflow-auto max-h-[320px]">
+            <div className="overflow-auto max-h-[320px]">
               {ticketTimeBreakdown.length === 0 ? (
                 <EmptyReport label="No logged ticket time yet." />
               ) : (
-                ticketTimeBreakdown.map((ticket: any) => (
-                  <div key={ticket.id} className="rounded-xl border p-4">
+                ticketTimeBreakdown.map((ticket: any) => {
+                  const pctRaw = timeMax > 0 ? (Number(ticket.loggedSeconds || 0) / timeMax) * 100 : 0;
+                  let barColor = 'var(--color-report-blue-text)';
+                  if (pctRaw <= 15) barColor = 'var(--color-ticket-status-in-progress)';
+                  else if (pctRaw <= 40) barColor = 'var(--color-ticket-status-open)';
+
+                  return (
+                  <div key={ticket.id} className="p-2">
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div className="min-w-0">
                         <Link
                           href={`/home/services/tickets/${ticket.id}`}
-                          className="font-medium hover:underline"
+                          className="secondary-text-small-semibold w-[300px] truncate inline-block hover:underline"
+                          style={{ color: 'var(--color-report-blue-text)' }}
                         >
                           #{ticket.ticketNumber} {ticket.subject}
                         </Link>
-                        <div className="text-muted-foreground mt-1 text-xs">
+                        <div className="text-muted-foreground mt-0 text-xs">
                           {ticket.customer} · {ticket.status} ·{' '}
                           {ticket.assignee}
                         </div>
                       </div>
-                      <Badge variant="outline">
+                      <Badge variant="outline" className="rounded-none border-0">
                         {formatHours(ticket.loggedSeconds)}
                       </Badge>
                     </div>
-                    <div className="bar-bg mt-3 h-2 overflow-hidden rounded-full">
+                    <div className="bar-bg mt-2 h-2 overflow-hidden rounded-full">
                       <div
-                        className="bg-leadgaze-success h-full rounded-full"
+                        className="h-full rounded-full transition-all duration-500"
                         style={{
                           width: percent(ticket.loggedSeconds, timeMax),
+                          backgroundColor: barColor
                         }}
                       />
                     </div>
                   </div>
-                ))
+                )})
               )}
             </div>
           </CardWidgetContainer>
@@ -428,16 +441,16 @@ function MetricBar({
 }) {
   const isCustomColor = barColor.startsWith('var(') || barColor.startsWith('#');
   return (
-    <div className="mb-5 last:mb-0">
+    <div>
       <div className="mb-2 flex items-center justify-between gap-4">
         <div className="flex items-center gap-1.5 text-sm">
-          <span className="font-semibold text-leadgaze-dark dark:text-white">{label}</span>
+          <span className="secondary-text-small-semibold text-leadgaze-dark dark:text-white">{label}</span>
           <span className="text-muted-foreground text-xs">•</span>
           <span className="text-muted-foreground text-xs">{description}</span>
         </div>
-        <div className="text-sm font-bold text-leadgaze-dark dark:text-white">{value}</div>
+        <div className="secondary-text-small-semibold font-bold text-leadgaze-dark dark:text-white">{value}</div>
       </div>
-      <div className="bar-bg h-2 w-full overflow-hidden rounded-full bg-muted/40">
+      <div className="bar-bg h-2 w-full overflow-hidden rounded-full bg-[#EDEEF0]">
         <div
           className={`h-full rounded-full transition-all duration-500 ${!isCustomColor ? barColor : ''}`}
           style={{ 
@@ -469,7 +482,7 @@ function ReportTable({
         <TableHeader className="text-left text-xs uppercase">
           <TableRow>
             {headers.map((header) => (
-              <TableHead key={header} className="relative p-3 font-medium" {...getHeaderProps(header)}>
+              <TableHead key={header} className="relative p-2 secondary-text-small-semibold" {...getHeaderProps(header)}>
                 {header}
                 <span className="col-resize-handle" {...getResizeHandleProps(header)} />
               </TableHead>
@@ -490,7 +503,7 @@ function ReportTable({
             rows.map((row, index) => (
               <TableRow key={index} className="border-b last:border-b-0">
                 {row.map((cell, cellIndex) => (
-                  <TableCell key={cellIndex} className="p-3 align-top">
+                  <TableCell key={cellIndex} className="p-2 align-top secondary-text-small-semibold">
                     {cell}
                   </TableCell>
                 ))}
@@ -505,7 +518,7 @@ function ReportTable({
 
 function EmptyReport({ label }: { label: string }) {
   return (
-    <div className="text-muted-foreground rounded-xl border border-dashed p-6 text-center text-sm">
+    <div className="text-muted-foreground rounded-xl border border-dashed p-2 text-center text-sm">
       {label}
     </div>
   );
@@ -569,7 +582,7 @@ function ServiceCloudReportsSkeleton() {
             </CardHeader>
             <div className="overflow-x-auto">
               {/* Table header */}
-              <div className="bg-muted/40 grid grid-cols-6 gap-3 border-b px-3 py-2">
+              <div className="bg-[#EDEEF0] grid grid-cols-6 gap-3 border-b px-3 py-2">
                 {[
                   'Customer',
                   'Open',
@@ -607,7 +620,7 @@ function ServiceCloudReportsSkeleton() {
               <Skeleton className="mt-1 h-3 w-56" />
             </CardHeader>
             <div className="overflow-x-auto">
-              <div className="bg-muted/40 grid grid-cols-5 gap-3 border-b px-3 py-2">
+              <div className="bg-[#EDEEF0] grid grid-cols-5 gap-3 border-b px-3 py-2">
                 {['Ticket', 'Customer', 'Owner', 'Age', 'Due'].map((h) => (
                   <Skeleton key={h} className="h-3 w-full max-w-[48px]" />
                 ))}
@@ -636,7 +649,7 @@ function ServiceCloudReportsSkeleton() {
               <Skeleton className="mt-1 h-3 w-56" />
             </CardHeader>
             <div className="overflow-auto max-h-[350px]">
-              <div className="bg-muted/40 grid grid-cols-5 gap-3 border-b px-3 py-2">
+              <div className="bg-[#EDEEF0] grid grid-cols-5 gap-3 border-b px-3 py-2">
                 {['Ticket', 'Customer', 'Entries', 'Logged', 'Latest'].map(
                   (h) => (
                     <Skeleton key={h} className="h-3 w-full max-w-[48px]" />
@@ -689,7 +702,7 @@ function ServiceCloudReportsSkeleton() {
               <Skeleton className="mt-1 h-3 w-56" />
             </CardHeader>
             <div className="overflow-x-auto">
-              <div className="bg-muted/40 grid grid-cols-4 gap-3 border-b px-3 py-2">
+              <div className="bg-[#EDEEF0] grid grid-cols-4 gap-3 border-b px-3 py-2">
                 {['Agent', 'Open', 'Total', 'Logged'].map((h) => (
                   <Skeleton key={h} className="h-3 w-full max-w-[48px]" />
                 ))}

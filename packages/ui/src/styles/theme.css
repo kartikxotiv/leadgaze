@@ -259,4 +259,6 @@
   --color-ticket-priority-urgent-bg: #FFDAD6;
   --color-ticket-priority-critical-bg: #BA1A1A;
   --color-ticket-priority-critical-text: #BA1A1A;
+  --color-report-blue-text: #003D98;
+  --color-card-widget-container-header-bg-gray: #c3c6d6;
 }

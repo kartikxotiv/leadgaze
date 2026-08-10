@@ -39,7 +39,6 @@
 }
 
 
-
 @utility primary-text-big-regular {
   font-family: var(--font-sans) !important;
   font-size: 16px !important;
@@ -78,6 +77,12 @@
   font-size: 12px !important;
   font-weight: 500 !important;
   line-height: 20px !important;
+}
+@utility secondary-text-small-semibold {
+  font-family: var(--font-sans) !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  line-height: 16px !important;
 }
 
 @utility card-container {
