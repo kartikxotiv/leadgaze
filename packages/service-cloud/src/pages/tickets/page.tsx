@@ -851,10 +851,10 @@ export function ServiceCloudTicketsPage({
               <DialogTitle>New Ticket</DialogTitle>
             </DialogHeader>
 
-            <div className="flex-1 space-y-2 overflow-y-auto p-6 pb-8">
-              <div className="grid gap-4">
+            <div className="flex-1 space-y-2 overflow-y-auto p-2">
+              <div className="grid gap-2">
                 {(!canEditField || canEditField('subject')) && (
-                  <div className="grid gap-2">
+                  <div className="grid">
                     <Label>
                       Subject <span className="text-destructive">*</span>
                     </Label>
@@ -866,7 +866,7 @@ export function ServiceCloudTicketsPage({
                 )}
 
                 {(!canEditField || canEditField('description')) && (
-                  <div className="grid gap-2">
+                  <div className="grid">
                     <Label>Description</Label>
                     <Textarea
                       value={ticketDescription}
@@ -876,9 +876,9 @@ export function ServiceCloudTicketsPage({
                   </div>
                 )}
 
-                <div className="grid gap-4 sm:grid-cols-3">
+                <div className="grid gap-2 sm:grid-cols-3">
                   {(!canEditField || canEditField('status')) && (
-                    <div className="grid gap-2">
+                    <div className="grid">
                       <Label>
                         Status <span className="text-destructive">*</span>
                       </Label>
@@ -908,7 +908,7 @@ export function ServiceCloudTicketsPage({
                     </div>
                   )}
                   {(!canEditField || canEditField('priority')) && (
-                    <div className="grid gap-2">
+                    <div className="grid">
                       <Label>Priority</Label>
                       <Select
                         value={ticketPriorityId}
@@ -936,7 +936,7 @@ export function ServiceCloudTicketsPage({
                     </div>
                   )}
                   {(!canEditField || canEditField('category')) && (
-                    <div className="grid gap-2">
+                    <div className="grid">
                       <Label>Category</Label>
                       <Select
                         value={ticketCategoryId}
@@ -959,7 +959,7 @@ export function ServiceCloudTicketsPage({
 
                 {/* Customer Section */}
                 {(!canEditField || canEditField('customer')) && (
-                  <div className="grid gap-2">
+                  <div className="grid">
                     <Label>
                       Customer <span className="text-destructive">*</span>
                     </Label>
@@ -1005,8 +1005,8 @@ export function ServiceCloudTicketsPage({
                   </Select>
                 ) : (!canEditField || canEditField('customer')) &&
                   customerMode === 'new' ? (
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <div className="grid gap-2">
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <div className="grid">
                       <Label>
                         Name <span className="text-destructive">*</span>
                       </Label>
@@ -1015,7 +1015,7 @@ export function ServiceCloudTicketsPage({
                         onChange={(e) => setNewCustomerName(e.target.value)}
                       />
                     </div>
-                    <div className="grid gap-2">
+                    <div className="grid">
                       <Label>
                         Email <span className="text-destructive">*</span>
                       </Label>
@@ -1029,7 +1029,7 @@ export function ServiceCloudTicketsPage({
 
                 {/* Organization Section */}
                 {(!canEditField || canEditField('organization')) && (
-                  <div className="grid gap-2">
+                  <div className="grid">
                     <Label>Organization</Label>
                     <RadioGroup
                       value={organizationMode}
@@ -1075,7 +1075,7 @@ export function ServiceCloudTicketsPage({
                   </Select>
                 ) : (!canEditField || canEditField('organization')) &&
                   organizationMode === 'new' ? (
-                  <div className="grid gap-2">
+                  <div className="grid">
                     <Label>
                       Organization Name{' '}
                       <span className="text-destructive">*</span>

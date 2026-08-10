@@ -561,7 +561,7 @@ export function ServiceCloudResourcePage({
     <>
       {pageHeaderTitle && (
         <div className="flex items-center justify-between pb-0">
-          <PageHeader title={pageHeaderTitle} className="w-full">
+          <PageHeader title={pageHeaderTitle} className={`w-full ${pageHeaderTitle === 'Service Settings' ? 'mb-2' : ''}`}>
             {canCreate && (
               <Button
                 onClick={openCreate}

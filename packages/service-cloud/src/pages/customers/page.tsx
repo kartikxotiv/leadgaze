@@ -586,10 +586,10 @@ export function ServiceCloudCustomersPage({
                 </DialogTitle>
               </DialogHeader>
 
-              <div className="flex-1 space-y-2 overflow-y-auto p-6 pb-8">
-                <div className="grid gap-4">
+              <div className="flex-1 space-y-2 overflow-y-auto p-2">
+                <div className="grid gap-2">
                   {/* Customer Selection */}
-                  <div className="grid gap-2">
+                  <div className="grid">
                     <Label>
                       Customer <span className="text-destructive">*</span>
                     </Label>
@@ -621,7 +621,7 @@ export function ServiceCloudCustomersPage({
                   </div>
 
                   {/* Subject */}
-                  <div className="grid gap-2">
+                  <div className="grid">
                     <Label>
                       Subject <span className="text-destructive">*</span>
                     </Label>
@@ -632,7 +632,7 @@ export function ServiceCloudCustomersPage({
                   </div>
 
                   {/* Description */}
-                  <div className="grid gap-2">
+                  <div className="grid">
                     <Label>Description</Label>
                     <Textarea
                       value={ticketDescription}
@@ -642,7 +642,7 @@ export function ServiceCloudCustomersPage({
                   </div>
 
                   {/* Status / Priority / Category */}
-                  <div className="grid gap-4 sm:grid-cols-3">
+                  <div className="grid gap-2 sm:grid-cols-3">
                     <div className="grid gap-2">
                       <Label>Status</Label>
                       <Select
@@ -669,7 +669,7 @@ export function ServiceCloudCustomersPage({
                         </SelectContent>
                       </Select>
                     </div>
-                    <div className="grid gap-2">
+                    <div className="grid">
                       <Label>Priority</Label>
                       <Select
                         value={ticketPriorityId}
@@ -695,7 +695,7 @@ export function ServiceCloudCustomersPage({
                         </SelectContent>
                       </Select>
                     </div>
-                    <div className="grid gap-2">
+                    <div className="grid">
                       <Label>Category</Label>
                       <Select
                         value={ticketCategoryId}

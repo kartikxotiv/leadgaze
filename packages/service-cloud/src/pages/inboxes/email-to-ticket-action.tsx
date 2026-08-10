@@ -227,8 +227,8 @@ export function ServiceCloudEmailToTicketAction({
             <DialogTitle>Convert Email to Ticket</DialogTitle>
           </DialogHeader>
 
-          <div className="flex-1 space-y-2 overflow-y-auto p-6 pb-8">
-            <div className="grid gap-4">
+          <div className="flex-1 space-y-2 overflow-y-auto p-2">
+            <div className="grid gap-2">
               {suggestedCustomer ? (
                 <div className="rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900">
                   Suggested customer found:{' '}
@@ -242,7 +242,7 @@ export function ServiceCloudEmailToTicketAction({
                 </div>
               ) : null}
 
-              <div className="grid gap-2">
+              <div className="grid">
                 <Label>Subject</Label>
                 <Input
                   value={subject}
@@ -250,7 +250,7 @@ export function ServiceCloudEmailToTicketAction({
                 />
               </div>
 
-              <div className="grid gap-2">
+              <div className="grid">
                 <Label>Description</Label>
                 <Textarea
                   value={description}
@@ -259,7 +259,7 @@ export function ServiceCloudEmailToTicketAction({
                 />
               </div>
 
-              <div className="grid gap-2">
+              <div className="grid">
                 <Label>Customer</Label>
                 <RadioGroup
                   value={customerMode}
@@ -297,15 +297,15 @@ export function ServiceCloudEmailToTicketAction({
                   </SelectContent>
                 </Select>
               ) : (
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="grid gap-2">
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <div className="grid">
                     <Label>Name</Label>
                     <Input
                       value={customerName}
                       onChange={(event) => setCustomerName(event.target.value)}
                     />
                   </div>
-                  <div className="grid gap-2">
+                  <div className="grid">
                     <Label>Email</Label>
                     <Input
                       value={customerEmail}
@@ -315,7 +315,7 @@ export function ServiceCloudEmailToTicketAction({
                 </div>
               )}
 
-              <div className="grid gap-2">
+              <div className="grid">
                 <Label>Organization</Label>
                 <RadioGroup
                   value={organizationMode}
@@ -359,7 +359,7 @@ export function ServiceCloudEmailToTicketAction({
                   </SelectContent>
                 </Select>
               ) : organizationMode === 'new' ? (
-                <div className="grid gap-2">
+                <div className="grid">
                   <Label>Organization Name</Label>
                   <Input
                     value={organizationName}
