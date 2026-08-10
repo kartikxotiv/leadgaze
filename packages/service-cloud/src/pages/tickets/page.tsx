@@ -32,6 +32,7 @@ import {
 import { Textarea } from '@kit/ui/textarea';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@kit/ui/tooltip';
 import { useDateRangeFilter } from '@kit/ui/use-date-range-filter';
+import { cn } from '@kit/ui/utils';
 
 import {
   type ServiceCloudRecord,
@@ -571,6 +572,27 @@ export function ServiceCloudTicketsPage({
     createTicketMutation.mutate();
   };
 
+  const queryParamsForCounts = { ...queryParams };
+  delete queryParamsForCounts.statusIds;
+  delete queryParamsForCounts.assignedToMe;
+
+  const { data: allTickets = [] } = useQuery({
+    queryKey: ['service-cloud', 'tickets', workspaceId, queryParamsForCounts],
+    queryFn: () =>
+      getServiceCloudResourceService('tickets', workspaceId, queryParamsForCounts),
+    enabled: Boolean(workspaceId),
+  });
+
+  const getStatusCount = (statusId: string) => {
+    return allTickets.filter((t: any) => t.status_id === statusId).length;
+  };
+
+  const getAssignedToMeCount = () => {
+    return allTickets.filter((t: any) =>
+      t.assignees?.some((a: any) => a.account_id === currentUserId || a.user_id === currentUserId)
+    ).length;
+  };
+
   if (isLoading)
     return (
       <div className="text-muted-foreground p-6 text-sm">
@@ -582,21 +604,57 @@ export function ServiceCloudTicketsPage({
   const tabsSlot = (
     <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide shrink-0">
       <button
-        onClick={() => setSelectedStatusIds([])}
+        onClick={() => {
+          setSelectedStatusIds([]);
+          setAssignedToMeOnly(false);
+        }}
         className={`px-3 py-1 text-sm font-medium rounded-t-md border-b-2 whitespace-nowrap flex items-center gap-2 ${
-          selectedStatusIds.length === 0
+          selectedStatusIds.length === 0 && !assignedToMeOnly
             ? 'border-leadgaze-primary text-leadgaze-primary'
             : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
         }`}
       >
-        All tickets
+        <span className="flex items-center gap-1">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+          All Tickets
+        </span>
+        <span className={cn(
+          "ml-1 rounded-full px-2 py-0.5 text-xs border",
+          selectedStatusIds.length === 0 && !assignedToMeOnly ? "border-blue-200 bg-blue-50 text-leadgaze-primary" : "border-gray-200 bg-gray-50 text-gray-600"
+        )}>
+          {allTickets.length}
+        </span>
       </button>
+      
+      <button
+        onClick={() => {
+          setAssignedToMeOnly(true);
+          setSelectedStatusIds([]);
+        }}
+        className={`px-3 py-1 text-sm font-medium rounded-t-md border-b-2 whitespace-nowrap flex items-center gap-2 ${
+          assignedToMeOnly
+            ? 'border-leadgaze-primary text-leadgaze-primary'
+            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+        }`}
+      >
+        Assigned to me
+        <span className={cn(
+          "ml-1 rounded-full px-2 py-0.5 text-xs border",
+          assignedToMeOnly ? "border-blue-200 bg-blue-50 text-leadgaze-primary" : "border-gray-200 bg-gray-50 text-gray-600"
+        )}>
+          {getAssignedToMeCount()}
+        </span>
+      </button>
+
       {statuses.map((status: any) => {
-        const isSelected = selectedStatusIds.includes(status.id);
+        const isSelected = selectedStatusIds.includes(status.id) && !assignedToMeOnly;
         return (
           <button
             key={status.id}
-            onClick={() => setSelectedStatusIds([status.id])}
+            onClick={() => {
+              setSelectedStatusIds([status.id]);
+              setAssignedToMeOnly(false);
+            }}
             className={`px-3 py-1 text-sm font-medium rounded-t-md border-b-2 whitespace-nowrap flex items-center gap-2 ${
               isSelected
                 ? 'border-leadgaze-primary text-leadgaze-primary'
@@ -604,6 +662,12 @@ export function ServiceCloudTicketsPage({
             }`}
           >
             {status.name}
+            <span className={cn(
+              "ml-1 rounded-full px-2 py-0.5 text-xs border",
+              isSelected ? "border-blue-200 bg-blue-50 text-leadgaze-primary" : "border-gray-200 bg-gray-50 text-gray-600"
+            )}>
+              {getStatusCount(status.id)}
+            </span>
           </button>
         );
       })}
@@ -679,25 +743,6 @@ export function ServiceCloudTicketsPage({
         toolbar={
           <div className="flex items-center gap-2">
             <ViewToggle view={viewMode} onChange={handleViewModeChange} />
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  type="button"
-                  variant={assignedToMeOnly ? 'default' : 'outline'}
-                  onClick={() => setAssignedToMeOnly((current) => !current)}
-                  className="shrink-0 gap-1.5 px-2"
-                >
-                  {assignedToMeOnly ? (
-                    <Check className="h-4 w-4" />
-                  ) : (
-                    <User className="h-4 w-4" />
-                  )}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">
-                <span>Assigned to me</span>
-              </TooltipContent>
-            </Tooltip>
           </div>
         }
         actions={[
