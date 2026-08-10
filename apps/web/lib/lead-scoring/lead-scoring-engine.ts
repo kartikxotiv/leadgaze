@@ -32,7 +32,33 @@ export interface ScoringResult {
   };
 }
 
+function getWorthliftScoreOverride(
+  customFields: Record<string, any> | undefined,
+): number | null {
+  if (customFields?.lead_score_source !== 'worthlift') return null;
+
+  const score = customFields.lead_score_override;
+  if (typeof score !== 'number' || !Number.isFinite(score)) return null;
+
+  return Math.max(0, Math.min(Math.round(score), 100));
+}
+
 export const calculateLeadScore = (data: LeadScoringData): ScoringResult => {
+  const worthliftScore = getWorthliftScoreOverride(data.custom_fields);
+
+  if (worthliftScore !== null) {
+    return {
+      totalScore: worthliftScore,
+      fitScore: 0,
+      engagementScore: 0,
+      breakdown: {
+        fit: {},
+        engagement: {},
+        adjustments: { 'Worthlift Audit Score': worthliftScore },
+      },
+    };
+  }
+
   let fitScore = 0;
   let engagementScore = 0;
   const breakdown = {
