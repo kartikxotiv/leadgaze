@@ -318,6 +318,7 @@ export async function ingestLeadToCrm(
   input: IngestLeadInput,
 ): Promise<IngestionResult> {
   const { workspace_id, connector_id, connector_name, payload, default_owner_id } = input;
+  const worthliftScore = resolveWorthliftScore(payload);
 
   // Check for duplicate before doing any work
   if (payload.email) {
@@ -335,13 +336,17 @@ export async function ingestLeadToCrm(
   const fullName = (payload.name || '').trim();
   const nameParts = fullName.split(/\s+/);
   const firstName = payload.first_name || nameParts[0] || 'Website';
-  const lastName = payload.last_name || nameParts.slice(1).join(' ') || 'Lead';
+  const parsedLastName = nameParts.slice(1).join(' ');
+  const lastName =
+    payload.last_name ||
+    parsedLastName ||
+    (worthliftScore === null ? 'Lead' : null);
+  const displayName = [firstName, lastName].filter(Boolean).join(' ');
   const phoneVal = payload.phone || payload.phone_number || payload.mobile_number;
   const companyVal = payload.company || payload.company_name;
   const companyWebsiteVal = payload.company_website;
   const jobTitleVal = payload.job_title;
   const notesVal = payload.message || payload.notes || payload.description;
-  const worthliftScore = resolveWorthliftScore(payload);
   const submittedCustomFields =
     payload.custom_fields &&
     typeof payload.custom_fields === 'object' &&
@@ -409,7 +414,7 @@ export async function ingestLeadToCrm(
   return {
     status: 'success',
     entity_id: newLead.id as string,
-    message: `Successfully generated new CRM Lead: ${firstName} ${lastName} (ID: ${newLead.id})`,
+    message: `Successfully generated new CRM Lead: ${displayName} (ID: ${newLead.id})`,
   };
 }
 
