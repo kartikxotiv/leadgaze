@@ -62,9 +62,10 @@ export function ManageTeamMembersDialog({
   const [memberToRemove, setMemberToRemove] = useState<string | null>(null);
 
   // Fetch all workspace members
+  // Fetch members for the Sales product used by workspace teams
   const { data: workspaceMembersData = [] } = useQuery({
-    queryKey: ['workspaceMembers', currentWorkspace?.id],
-    queryFn: () => getMembersService(currentWorkspace?.id || ''),
+    queryKey: ['workspaceMembers', currentWorkspace?.id, 'sales'],
+    queryFn: () => getMembersService(currentWorkspace?.id || '', 'sales'),
     enabled: !!currentWorkspace?.id && open,
   });
 
@@ -86,8 +87,12 @@ export function ManageTeamMembersDialog({
       .map((a: { user_id: string }) => a.user_id)
   );
 
-  const salesWorkspaceMembers = allWorkspaceMembers.filter(
-    (m: WorkspaceMember) => salesSeatUserIds.has(m.user_id)
+  const salesWorkspaceMembers = Array.from(
+    new Map(
+      allWorkspaceMembers
+        .filter((m: WorkspaceMember) => salesSeatUserIds.has(m.user_id))
+        .map((member: WorkspaceMember) => [member.user_id, member] as const),
+    ).values(),
   );
 
   // Fetch team members

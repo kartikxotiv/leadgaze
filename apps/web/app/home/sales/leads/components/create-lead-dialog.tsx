@@ -12,7 +12,6 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@kit/ui/dialog';
@@ -31,14 +30,15 @@ import { Textarea } from '@kit/ui/textarea';
 import { calculateLeadScore } from '~/lib/lead-scoring/lead-scoring-engine';
 import { useFieldPermissions } from '~/lib/hooks/use-field-permissions';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
-import { createLeadService, getLeadStatusesService } from '~/services/leads.service';
+import {
+  createLeadService,
+  getLeadStatusesService,
+} from '~/services/leads.service';
 
 import { LeadCustomFieldInputs } from '~/components/leads/lead-custom-field-inputs';
-import { LeadFormField } from '~/components/leads/lead-form-field';
 
-import { IndustrySelect } from '../../_components/industry-select';
-import { LeadSourceSelect } from '../../_components/lead-source-select';
-import { ManageableStatusSelect } from '../../_components/manageable-status-select';
+import { IndustrySelect } from '../../../_components/industry-select';
+import { LeadSourceSelect } from '../../../_components/lead-source-select';
 
 interface CreateLeadDialogProps {
   open: boolean;
@@ -122,21 +122,23 @@ export default function CreateLeadDialog({
   });
 
   // Fetch available statuses
-  const { data: statuses = [] } = useQuery({
+  const { data: statuses = [], isLoading: statusesLoading } = useQuery({
     queryKey: ['lead-statuses', workspace?.id],
     queryFn: () => {
       if (!workspace?.id) {
         return Promise.resolve([]);
       }
+
       return getLeadStatusesService({ workspaceId: workspace.id }).catch((error) => {
         console.error('❌ Error fetching statuses:', error);
+        toast.error('Failed to load statuses');
         return [];
       });
     },
     enabled: !!workspace,
   });
 
-  useEffect(() => {}, [workspace]);
+  useEffect(() => {}, [statuses, statusesLoading, workspace]);
 
   const handleInputChange = useCallback(
     (field: keyof FormDataState, value: string) => {
@@ -147,6 +149,12 @@ export default function CreateLeadDialog({
 
   // Reactive lead scoring
   useEffect(() => {
+    // Find selected status to get its key
+    const selectedStatus = statuses.find(
+      (s: any) => s.id === formData.status_id,
+    );
+
+    // Calculate lead score
     const { totalScore } = calculateLeadScore({
       first_name: formData.first_name,
       last_name: formData.last_name,
@@ -156,7 +164,7 @@ export default function CreateLeadDialog({
       location: formData.location,
       timezone: formData.timezone,
       job_title: formData.job_title,
-      status_key: undefined,
+      status_key: selectedStatus?.status_key,
       contacted_count: 0,
       custom_fields: {},
     });
@@ -174,6 +182,7 @@ export default function CreateLeadDialog({
     formData.timezone,
     formData.job_title,
     formData.status_id,
+    statuses,
   ]);
 
   const mutation = useMutation({
@@ -324,10 +333,10 @@ export default function CreateLeadDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="flex max-h-[90vh] flex-col p-0 overflow-hidden border-gray-200 bg-white sm:max-w-[800px] dark:border-slate-800 dark:bg-slate-950">
+      <DialogContent className="flex max-h-[90vh] flex-col p-0 overflow-hidden border-gray-200 bg-white p-0 sm:max-w-[800px] dark:border-slate-800 dark:bg-slate-950">
         <div className="flex max-h-[90vh] flex-col">
-          <DialogHeader>
-            <DialogTitle>
+          <DialogHeader className="border-b border-gray-200 bg-white p-6 pb-4 dark:border-slate-800 dark:bg-slate-950 border-b p-6 pb-4">
+            <DialogTitle className="pr-12">
               Add New Lead
             </DialogTitle>
             <DialogDescription>
@@ -338,16 +347,16 @@ export default function CreateLeadDialog({
 
           <form id="dialog-form"
             onSubmit={handleSubmit}
-            className="flex flex-col flex-1 overflow-y-auto p-2 gap-2"
+            className="flex-1 space-y-8 overflow-y-auto p-6 pb-8"
           >
             {/* Contact Information Section */}
-            <div className="space-y-2">
-              <h3 className="primary-heading text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">
+            <div className="space-y-4">
+              <h3 className="primary-heading text-leadgaze-dark dark:text-white">
                 Contact Information
-              </h3>              
+              </h3>
+              <Separator className="bg-gray-200 dark:bg-slate-800" />
 
-              <div className="grid grid-cols-2 gap-2">
-                <LeadFormField formKey="first_name" canEdit={canEdit}>
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label
                     htmlFor="first_name">
@@ -365,8 +374,6 @@ export default function CreateLeadDialog({
                     required
                   />
                 </div>
-                </LeadFormField>
-                <LeadFormField formKey="last_name" canEdit={canEdit}>
                 <div>
                   <Label
                     htmlFor="last_name">
@@ -383,11 +390,9 @@ export default function CreateLeadDialog({
                     className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
                   />
                 </div>
-                </LeadFormField>
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
-                <LeadFormField formKey="email" canEdit={canEdit}>
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label
                     htmlFor="email">
@@ -403,8 +408,6 @@ export default function CreateLeadDialog({
                     className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
                   />
                 </div>
-                </LeadFormField>
-                <LeadFormField formKey="alt_email" canEdit={canEdit}>
                 <div>
                   <Label
                     htmlFor="alt_email">
@@ -422,10 +425,9 @@ export default function CreateLeadDialog({
                     className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
                   />
                 </div>
-                </LeadFormField>
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label
                     htmlFor="phone_number">
@@ -462,12 +464,13 @@ export default function CreateLeadDialog({
             </div>
 
             {/* Company Information Section */}
-            <div className="space-y-2">
-              <h3 className="primary-heading text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">
+            <div className="space-y-4">
+              <h3 className="primary-heading text-leadgaze-dark dark:text-white">
                 Company Information
-              </h3>              
+              </h3>
+              <Separator className="bg-gray-200 dark:bg-slate-800" />
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label
                     htmlFor="company_name">
@@ -489,7 +492,7 @@ export default function CreateLeadDialog({
                     htmlFor="industry_id">
                     Industry (Optional)
                   </Label>
-                  <div>
+                  <div className="mt-2">
                     <IndustrySelect
                       value={formData.industry_id}
                       onValueChange={(value) =>
@@ -502,7 +505,7 @@ export default function CreateLeadDialog({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label
                     htmlFor="company_website">
@@ -537,7 +540,7 @@ export default function CreateLeadDialog({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label
                     htmlFor="company_size">
@@ -550,7 +553,7 @@ export default function CreateLeadDialog({
                     }
                     disabled={isLoading}
                   >
-                    <SelectTrigger className="border-gray-300 bg-white text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+                    <SelectTrigger className="mt-2 border-gray-300 bg-white text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white">
                       <SelectValue placeholder="Select company size" />
                     </SelectTrigger>
                     <SelectContent className="z-50 border-gray-300 bg-white dark:border-slate-700 dark:bg-slate-900">
@@ -580,7 +583,7 @@ export default function CreateLeadDialog({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label
                     htmlFor="linkedin_url">
@@ -601,12 +604,13 @@ export default function CreateLeadDialog({
             </div>
 
             {/* Professional Information Section */}
-            <div className="space-y-2">
-              <h3 className="primary-heading text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">
+            <div className="space-y-4">
+              <h3 className="primary-heading text-leadgaze-dark dark:text-white">
                 Professional Information
-              </h3>              
+              </h3>
+              <Separator className="bg-gray-200 dark:bg-slate-800" />
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label
                     htmlFor="job_title">
@@ -660,36 +664,49 @@ export default function CreateLeadDialog({
             </div>
 
             {/* Lead Information Section */}
-            <div className="space-y-2">
-              <h3 className="primary-heading text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">
+            <div className="space-y-4">
+              <h3 className="primary-heading text-leadgaze-dark dark:text-white">
                 Lead Information
-              </h3>              
+              </h3>
+              <Separator className="bg-gray-200 dark:bg-slate-800" />
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label
                     htmlFor="status_id">
                     Status <span className="text-red-500">*</span>
                   </Label>
-                  <div>
-                    <ManageableStatusSelect
-                      moduleKey="leads"
-                      workspaceId={workspace?.id ?? ''}
-                      value={formData.status_id}
-                      onValueChange={(value) =>
-                        handleInputChange('status_id', value)
-                      }
-                      disabled={isLoading}
-                      triggerClassName="border-gray-300 bg-white text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
-                    />
-                  </div>
+                  <Select
+                    value={formData.status_id}
+                    onValueChange={(value) =>
+                      handleInputChange('status_id', value)
+                    }
+                    disabled={isLoading}
+                  >
+                    <SelectTrigger className="mt-2 border-gray-300 bg-white text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+                      <SelectValue placeholder="Select a status" />
+                    </SelectTrigger>
+                    <SelectContent className="z-50 border-gray-300 bg-white dark:border-slate-700 dark:bg-slate-900">
+                      {statuses && statuses.length > 0 ? (
+                        statuses.map((status: any) => (
+                          <SelectItem key={status.id} value={status.id}>
+                            {status.status_name}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="placeholder" disabled>
+                          No statuses available
+                        </SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
                   <Label
                     htmlFor="source_id">
                     Lead Source (Optional)
                   </Label>
-                  <div>
+                  <div className="mt-2">
                     <LeadSourceSelect
                       value={formData.source_id}
                       onValueChange={(value) =>
@@ -720,11 +737,11 @@ export default function CreateLeadDialog({
             </div>
 
             {/* Additional Notes Section */}
-            <LeadFormField formKey="notes" canEdit={canEdit}>
-            <div className="space-y-2">
-              <h3 className="primary-heading text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">
+            <div className="space-y-4">
+              <h3 className="primary-heading text-leadgaze-dark dark:text-white">
                 Additional Information
-              </h3>              
+              </h3>
+              <Separator className="bg-gray-200 dark:bg-slate-800" />
 
               <div>
                 <Label
@@ -737,12 +754,11 @@ export default function CreateLeadDialog({
                   value={formData.notes}
                   onChange={(e) => handleInputChange('notes', e.target.value)}
                   disabled={isLoading}
-                  className="border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
+                  className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
                   rows={4}
                 />
               </div>
             </div>
-            </LeadFormField>
 
             <LeadCustomFieldInputs
               fields={editableCustomFields}
@@ -757,34 +773,38 @@ export default function CreateLeadDialog({
             {/* Form Actions (Hidden here, moved outside) */}
           </form>
 
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => handleOpenChange(false)}
-              disabled={isLoading}                
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              onClick={handleSubmit}
-              disabled={isLoading}
-              className="gap-2"
-            >
-              {isLoading ? (
-                <>
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                  Creating...
-                </>
-              ) : (
-                <>
-                  <Plus className="h-4 w-4" />
-                  Add Lead
-                </>
-              )}
-            </Button>
-          </DialogFooter>
+          {/* Form Actions - Pinned to bottom */}
+          <div className="border-t border-gray-200 bg-white p-2 dark:border-slate-800 dark:bg-slate-950">
+            <div className="flex justify-end gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => handleOpenChange(false)}
+                disabled={isLoading}
+                className="border-gray-300 text-gray-900 dark:border-slate-700 dark:text-white"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={handleSubmit}
+                disabled={isLoading || customFieldsLoading}
+                className="gap-2 mb-2"
+              >
+                {isLoading ? (
+                  <>
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    Creating...
+                  </>
+                ) : (
+                  <>
+                    <Plus className="h-4 w-4" />
+                    Create Lead
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
