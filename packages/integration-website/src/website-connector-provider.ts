@@ -67,6 +67,8 @@ export function normalizePayload(
     email: raw.email,
     phone: raw.phone || raw.phone_number || raw.mobile_number,
     company: raw.company || raw.company_name,
+    company_website: raw.company_website,
+    job_title: raw.job_title,
     message: raw.message || raw.description || raw.notes,
     utm_source: raw.utm_source,
     utm_medium: raw.utm_medium,
@@ -336,6 +338,8 @@ export async function ingestLeadToCrm(
   const lastName = payload.last_name || nameParts.slice(1).join(' ') || 'Lead';
   const phoneVal = payload.phone || payload.phone_number || payload.mobile_number;
   const companyVal = payload.company || payload.company_name;
+  const companyWebsiteVal = payload.company_website;
+  const jobTitleVal = payload.job_title;
   const notesVal = payload.message || payload.notes || payload.description;
   const worthliftScore = resolveWorthliftScore(payload);
   const submittedCustomFields =
@@ -384,6 +388,8 @@ export async function ingestLeadToCrm(
       email: payload.email || null,
       phone_number: phoneVal || null,
       company_name: companyVal || null,
+      company_website: companyWebsiteVal || null,
+      job_title: jobTitleVal || null,
       notes: notesVal || null,
       owner_id: default_owner_id || null,
       status_id: statusId,
