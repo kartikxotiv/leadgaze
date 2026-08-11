@@ -314,6 +314,9 @@ export default function RemindersPage() {
         entityId: '',
       });
       queryClient.invalidateQueries({ queryKey: ['reminders', workspace?.id] });
+      queryClient.invalidateQueries({
+        queryKey: ['dashboard-metrics', workspace?.id],
+      });
     },
     onError: () => toast.error('Failed to add reminder'),
   });
@@ -326,6 +329,9 @@ export default function RemindersPage() {
       setIsEditDialogOpen(false);
       setEditingReminder(null);
       queryClient.invalidateQueries({ queryKey: ['reminders', workspace?.id] });
+      queryClient.invalidateQueries({
+        queryKey: ['dashboard-metrics', workspace?.id],
+      });
     },
     onError: () => toast.error('Failed to update reminder'),
   });
@@ -335,6 +341,9 @@ export default function RemindersPage() {
     onSuccess: () => {
       toast.success('Reminder deleted');
       queryClient.invalidateQueries({ queryKey: ['reminders', workspace?.id] });
+      queryClient.invalidateQueries({
+        queryKey: ['dashboard-metrics', workspace?.id],
+      });
     },
     onError: () => toast.error('Failed to delete reminder'),
   });
@@ -413,6 +422,9 @@ export default function RemindersPage() {
       is_completed: !reminder.is_completed,
     }).then(() => {
       queryClient.invalidateQueries({ queryKey: ['reminders', workspace?.id] });
+      queryClient.invalidateQueries({
+        queryKey: ['dashboard-metrics', workspace?.id],
+      });
       toast.success(
         reminder.is_completed
           ? 'Reminder marked as active'

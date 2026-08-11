@@ -462,10 +462,26 @@ function UpcomingTasks({ tasks }: { tasks: DashboardTask[] }) {
   };
 
   const getTaskPriority = (task: DashboardTask) => {
-    const title = task.title.toLowerCase();
-    if (title.includes('urgent') || title.includes('follow')) return { label: 'high', bg: 'var(--color-status-danger-bg)', text: 'var(--color-status-danger-text)' };
-    if (title.includes('call') || title.includes('meeting')) return { label: 'medium', bg: 'var(--color-status-warning-bg)', text: 'var(--color-status-warning-text)' };
-    return { label: 'low', bg: 'var(--color-status-neutral-bg)', text: 'var(--color-status-neutral-text)' };
+    switch (task.priority?.toLowerCase()) {
+      case 'high':
+        return {
+          label: 'high',
+          bg: 'var(--color-status-danger-bg)',
+          text: 'var(--color-status-danger-text)',
+        };
+      case 'low':
+        return {
+          label: 'low',
+          bg: 'var(--color-status-neutral-bg)',
+          text: 'var(--color-status-neutral-text)',
+        };
+      default:
+        return {
+          label: 'medium',
+          bg: 'var(--color-status-warning-bg)',
+          text: 'var(--color-status-warning-text)',
+        };
+    }
   };
 
   const latestTasks = useMemo(() => tasks ?? [], [tasks]);
