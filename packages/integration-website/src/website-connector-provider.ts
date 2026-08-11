@@ -69,6 +69,8 @@ export function normalizePayload(
     company: raw.company || raw.company_name,
     company_website: raw.company_website,
     job_title: raw.job_title,
+    linkedin_url: raw.linkedin_url,
+    location: raw.location,
     message: raw.message || raw.description || raw.notes,
     utm_source: raw.utm_source,
     utm_medium: raw.utm_medium,
@@ -346,6 +348,8 @@ export async function ingestLeadToCrm(
   const companyVal = payload.company || payload.company_name;
   const companyWebsiteVal = payload.company_website;
   const jobTitleVal = payload.job_title;
+  const linkedInUrlVal = payload.linkedin_url;
+  const locationVal = payload.location;
   const notesVal = payload.message || payload.notes || payload.description;
   const submittedCustomFields =
     payload.custom_fields &&
@@ -395,6 +399,8 @@ export async function ingestLeadToCrm(
       company_name: companyVal || null,
       company_website: companyWebsiteVal || null,
       job_title: jobTitleVal || null,
+      linkedin_url: linkedInUrlVal || null,
+      location: locationVal || null,
       notes: notesVal || null,
       owner_id: default_owner_id || null,
       status_id: statusId,
