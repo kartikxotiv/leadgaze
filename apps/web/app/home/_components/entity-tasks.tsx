@@ -497,7 +497,7 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
           }
         }}
       >
-        <DialogContent className="sm:max-w-[400px]">
+        <DialogContent className="flex max-h-[90vh] flex-col p-0 overflow-hidden border-gray-200 sm:max-w-[400px] bg-white dark:border-slate-800 dark:bg-slate-950">
           <DialogHeader>
             <DialogTitle>Log Time for: {timeLogTask?.title}</DialogTitle>
             {(timeLogTask?.total_logged_minutes ?? 0) > 0 && (
@@ -506,12 +506,12 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
               </p>
             )}
             {isCompletingTask && (timeLogTask?.total_logged_minutes ?? 0) <= 0 && (
-              <p className="primary-text-regular text-red-500 mt-1">Please input time before closing this task</p>
+              <p className="primary-text-regular text-white mt-1">Please input time before closing this task</p>
             )}
           </DialogHeader>
-          <div className="space-y-2 py-4">
+          <div className="space-y-2 px-2">
             <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-2">
+              <div>
                 <Label>Hours</Label>
                 <Input
                   type="number"
@@ -521,7 +521,7 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
                   onChange={(e) => setTimeLogData({ ...timeLogData, hours: e.target.value })}
                 />
               </div>
-              <div className="space-y-2">
+              <div>
                 <Label>Minutes</Label>
                 <Input
                   type="number"
@@ -533,7 +533,7 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
                 />
               </div>
             </div>
-            <div className="space-y-2">
+            <div>
               <Label>Work Date</Label>
               <DateTimePicker
                 mode="date"
@@ -542,7 +542,7 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
                 onChange={(date) => setTimeLogData({ ...timeLogData, logged_at: date ? format(date, 'yyyy-MM-dd') : '' })}
               />
             </div>
-            <div className="space-y-2">
+            <div>
               <Label>Description</Label>
               <Textarea
                 placeholder="Describe what you worked on"

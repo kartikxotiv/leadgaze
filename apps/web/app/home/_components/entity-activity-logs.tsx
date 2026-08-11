@@ -170,13 +170,13 @@ export function EntityActivityLogs({ entityType, entityId }: EntityActivityLogsP
         </Button>
       }
     >
-      <div className="px-2 mb-2">
+      <div className="px-0 mb-2">
         {isLoading ? (
           <div className="flex justify-center py-4">
             <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
           </div>
         ) : logs.length > 0 ? (
-          <div className="max-h-[350px] overflow-y-auto divide-y divide-gray-100 rounded-lg border border-gray-200 bg-white dark:divide-gray-800/60 dark:border-gray-800 dark:bg-slate-950">
+          <div className="max-h-[350px] overflow-y-auto divide-y divide-gray-100 border border-gray-200 bg-white dark:divide-gray-800/60 dark:border-gray-800 dark:bg-slate-950">
             {logs.map((log: any) => {
               const formattedName = formatEntityName(log.entity_name);
 

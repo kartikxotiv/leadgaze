@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import React from 'react';
 
 import Link from 'next/link';
@@ -31,6 +31,9 @@ import {
   Edit2,
   Plus,
   Download,
+  CloudUpload,
+  UserPlus,
+  RefreshCw,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { DateTimePicker } from '@kit/ui/datetime-picker';
@@ -62,6 +65,10 @@ import {
 } from '@kit/ui/alert-dialog';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
+import { ColumnHeader } from '@kit/ui/column-header';
+import { TablePagination } from '@kit/ui/table-pagination';
+import { useTableSort } from '@kit/ui/use-table-sort';
+import { Checkbox } from '@kit/ui/checkbox';
 import { Calendar } from '@kit/ui/calendar';
 import {
   Card,
@@ -75,6 +82,7 @@ import CustomTableContainer from '@kit/ui/custom-table-container';
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@kit/ui/dialog';
@@ -111,6 +119,15 @@ import {
   logServiceCloudTicketTimeService,
   updateServiceCloudResourceService,
 } from '../../services';
+import {
+  getNotesService,
+  createNoteService,
+  updateNoteService,
+  deleteNoteService,
+  getDocumentsService,
+  uploadDocumentService,
+  deleteDocumentService,
+} from '@kit/core/services';
 import { LeadCustomFieldInputs } from '~/components/leads/lead-custom-field-inputs';
 import {
   SERVICE_CLOUD_FEATURE_KEYS,
@@ -238,6 +255,62 @@ function TicketCustomFieldsSection({
   );
 }
 
+function getActionBadge(action: string, color: string) {
+  switch (color) {
+    case 'emerald':
+      return (
+        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold tracking-wide bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800">
+          {action}
+        </span>
+      );
+    case 'blue':
+      return (
+        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold tracking-wide bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800">
+          {action}
+        </span>
+      );
+    case 'rose':
+      return (
+        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold tracking-wide bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800">
+          {action}
+        </span>
+      );
+    default:
+      return (
+        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold tracking-wide bg-gray-100 text-gray-700 border border-gray-200 dark:bg-gray-800 dark:text-gray-300">
+          {action}
+        </span>
+      );
+  }
+}
+
+function getActivityUIDetails(activity: any) {
+  switch (activity.event_type) {
+    case 'created':
+      return { icon: <Activity className="h-3.5 w-3.5 text-gray-500" />, module: 'Ticket', action: 'CREATED', color: 'emerald' };
+    case 'status_changed':
+      return { icon: <Activity className="h-3.5 w-3.5 text-blue-500" />, module: 'Status', action: 'UPDATED', color: 'blue' };
+    case 'priority_changed':
+      return { icon: <Flag className="h-3.5 w-3.5 text-orange-500" />, module: 'Priority', action: 'UPDATED', color: 'blue' };
+    case 'assigned':
+      return { icon: <UserPlus className="h-3.5 w-3.5 text-indigo-500" />, module: 'Assignment', action: 'UPDATED', color: 'blue' };
+    case 'email_sent':
+      return { icon: <Mail className="h-3.5 w-3.5 text-blue-500" />, module: 'Conversation', action: 'SENT', color: 'blue' };
+    case 'email_received':
+      return { icon: <Mail className="h-3.5 w-3.5 text-purple-500" />, module: 'Conversation', action: 'RECEIVED', color: 'blue' };
+    case 'time_logged':
+      return { icon: <Clock3 className="h-3.5 w-3.5 text-sky-500" />, module: 'Time Log', action: 'CREATED', color: 'emerald' };
+    case 'note_added':
+      return { icon: <FileText className="h-3.5 w-3.5 text-purple-500" />, module: 'Note', action: 'CREATED', color: 'emerald' };
+    case 'document_uploaded':
+      return { icon: <File className="h-3.5 w-3.5 text-gray-500" />, module: 'Document', action: 'UPLOADED', color: 'emerald' };
+    case 'deleted':
+      return { icon: <Trash2 className="h-3.5 w-3.5 text-red-500" />, module: 'Ticket', action: 'DELETED', color: 'rose' };
+    default:
+      return { icon: <Clock className="h-3.5 w-3.5 text-gray-400" />, module: 'Activity', action: String(activity.event_type || 'UPDATE').toUpperCase(), color: 'gray' };
+  }
+}
+
 function eventLabel(eventType?: string | null) {
   return String(eventType || 'activity')
     .split('_')
@@ -291,12 +364,20 @@ export function ServiceCloudTicketDetailPage({
     'ticket-properties',
     'sla-snapshot',
   ]);
+  const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
+  const [editingNote, setEditingNote] = useState<any>(null);
+  const [noteContent, setNoteContent] = useState('');
+  const [deletingNoteId, setDeletingNoteId] = useState<string | null>(null);
+
+  const [isDocumentModalOpen, setIsDocumentModalOpen] = useState(false);
+  const [documentForm, setDocumentForm] = useState({ name: '', file: null as File | null, file_url: '', category: '', description: '' });
+  const [deletingDocumentId, setDeletingDocumentId] = useState<string | null>(null);
 
   const { getHeaderProps, getResizeHandleProps } = useColumnResize(
     'sc-ticket-details-time-entries',
   );
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, refetch: refetchTicketDetail, isFetching: isFetchingTicketDetail } = useQuery({
     queryKey,
     queryFn: () => getServiceCloudTicketDetailService(workspaceId, ticketId),
     enabled: Boolean(workspaceId && ticketId),
@@ -307,6 +388,26 @@ export function ServiceCloudTicketDetailPage({
     queryFn: () => getCoreEmailAccountsService(workspaceId),
     enabled: Boolean(workspaceId && canManageInbox),
   });
+
+  const rawTimeEntries = data?.timeEntries ?? [];
+  const [timePage, setTimePage] = useState(1);
+  const [timePageSize, setTimePageSize] = useState(10);
+  
+  const {
+    sortColumn: timeSortColumn,
+    sortDirection: timeSortDirection,
+    toggleSort: timeToggleSort,
+    sortedData: sortedTimeEntries
+  } = useTableSort<any>('sc-time-entries', rawTimeEntries, {
+    defaultSortColumn: 'logged_date',
+    defaultSortDirection: 'desc'
+  });
+
+  const paginatedTimeEntries = useMemo(() => {
+    const startIndex = (timePage - 1) * timePageSize;
+    return sortedTimeEntries.slice(startIndex, startIndex + timePageSize);
+  }, [sortedTimeEntries, timePage, timePageSize]);
+
 
   const updateMutation = useMutation({
     mutationFn: (payload: Record<string, unknown>) =>
@@ -431,6 +532,120 @@ export function ServiceCloudTicketDetailPage({
     onError: (error: any) =>
       toast.error(error.message || 'Failed to update assignees'),
   });
+
+  const notesQueryKey = ['service-cloud', 'ticket-notes', workspaceId, ticketId];
+  const { data: notes = [], isLoading: notesLoading } = useQuery({
+    queryKey: notesQueryKey,
+    queryFn: () => getNotesService(workspaceId, 'service_cloud_ticket', ticketId),
+    enabled: Boolean(workspaceId && ticketId),
+  });
+
+  const createNoteMutation = useMutation({
+    mutationFn: (content: string) =>
+      createNoteService({
+        workspace_id: workspaceId,
+        entity_type: 'service_cloud_ticket',
+        entity_id: ticketId,
+        note: content,
+      }),
+    onSuccess: () => {
+      toast.success('Note added');
+      setIsNoteModalOpen(false);
+      setNoteContent('');
+      queryClient.invalidateQueries({ queryKey: notesQueryKey });
+    },
+    onError: () => toast.error('Failed to add note'),
+  });
+
+  const updateNoteMutation = useMutation({
+    mutationFn: (payload: { id: string; note: string }) =>
+      updateNoteService({ id: payload.id, workspace_id: workspaceId, note: payload.note }),
+    onSuccess: () => {
+      toast.success('Note updated');
+      setIsNoteModalOpen(false);
+      setEditingNote(null);
+      setNoteContent('');
+      queryClient.invalidateQueries({ queryKey: notesQueryKey });
+    },
+    onError: () => toast.error('Failed to update note'),
+  });
+
+  const deleteNoteMutation = useMutation({
+    mutationFn: (id: string) => deleteNoteService(workspaceId, id),
+    onSuccess: () => {
+      toast.success('Note deleted');
+      setDeletingNoteId(null);
+      queryClient.invalidateQueries({ queryKey: notesQueryKey });
+    },
+    onError: () => toast.error('Failed to delete note'),
+  });
+
+  const handleSaveNote = () => {
+    if (!noteContent.trim()) return;
+    if (editingNote) {
+      updateNoteMutation.mutate({ id: editingNote.id, note: noteContent });
+    } else {
+      createNoteMutation.mutate(noteContent);
+    }
+  };
+
+  const openEditNoteDialog = (note: any) => {
+    setEditingNote(note);
+    setNoteContent(note.note || note.content || '');
+    setIsNoteModalOpen(true);
+  };
+
+  const documentsQueryKey = ['service-cloud', 'ticket-documents', workspaceId, ticketId];
+  const { data: documents = [], isLoading: documentsLoading } = useQuery({
+    queryKey: documentsQueryKey,
+    queryFn: () => getDocumentsService(workspaceId, 'service_cloud_ticket', ticketId),
+    enabled: Boolean(workspaceId && ticketId),
+  });
+
+  const uploadDocumentMutation = useMutation({
+    mutationFn: (payload: FormData) => uploadDocumentService(payload),
+    onSuccess: () => {
+      toast.success('Document added');
+      setIsDocumentModalOpen(false);
+      setDocumentForm({ name: '', file: null, file_url: '', category: '', description: '' });
+      queryClient.invalidateQueries({ queryKey: documentsQueryKey });
+    },
+    onError: () => toast.error('Failed to add document'),
+  });
+
+  const deleteDocumentMutation = useMutation({
+    mutationFn: (id: string) => deleteDocumentService(workspaceId, id),
+    onSuccess: () => {
+      toast.success('Document deleted');
+      setDeletingDocumentId(null);
+      queryClient.invalidateQueries({ queryKey: documentsQueryKey });
+    },
+    onError: () => toast.error('Failed to delete document'),
+  });
+
+  const handleSaveDocument = () => {
+    const { name, category, description, file_url, file } = documentForm;
+    if (!name.trim()) {
+      toast.error('Document Name is required');
+      return;
+    }
+    if (!file && !file_url.trim()) {
+      toast.error('Either File or External URL is required');
+      return;
+    }
+
+    const payload = new FormData();
+    payload.set('workspace_id', workspaceId);
+    payload.set('entity_type', 'service_cloud_ticket');
+    payload.set('entity_id', ticketId);
+    payload.set('name', name);
+    if (category) payload.set('category', category);
+    if (description) payload.set('description', description);
+    if (file_url) payload.set('file_url', file_url);
+    if (file) payload.set('file', file);
+    
+    uploadDocumentMutation.mutate(payload);
+  };
 
   if (isLoading || permissionsLoading) {
     return <ServiceCloudTicketDetailSkeleton />;
@@ -664,13 +879,13 @@ export function ServiceCloudTicketDetailPage({
                           <p className="text-sm text-gray-500 mt-4">No Conversation activity yet</p>
                         </div>
                       ) : (
-                        <div className="scrollbar-thin h-[calc(100vh-420px)] min-h-[350px] space-y-2 overflow-y-auto pr-2">
+                        <div className="scrollbar-thin max-h-[350px] space-y-2 overflow-y-auto pr-2">
                           {emails.map((item: any) => {
                           const email = item.email;
                           return (
                             <article
                               key={item.id}
-                              className="overflow-hidden rounded-2xl border bg-white shadow-sm dark:bg-zinc-950"
+                              className="overflow-hidden border bg-white shadow-sm dark:bg-zinc-950"
                             >
                               <div className="border-b bg-slate-50 p-4 dark:bg-slate-900/60">
                                 <div className="flex flex-wrap items-start justify-between gap-3">
@@ -712,7 +927,7 @@ export function ServiceCloudTicketDetailPage({
                                 </div>
                               </div>
                               <div className="p-5">
-                                <div className="prose prose-sm dark:prose-invert max-w-none">
+                                <div className="prose prose-sm max-w-none dark:bg-white dark:text-leadgaze-dark dark:px-4">
                                   {email?.html_body || email?.body ? (
                                     <div
                                       dangerouslySetInnerHTML={{
@@ -738,121 +953,52 @@ export function ServiceCloudTicketDetailPage({
                 </TabsContent>
                 ) : null}
 
-                <TabsContent value="work" className="max-h-[500px] overflow-y-auto">
-                  <div className="grid gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
+                <TabsContent value="work" className="mt-0 flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col data-[state=active]:flex data-[state=active]:flex-1 data-[state=active]:flex-col data-[state=active]:min-h-0 gap-2">
+                  <div className="flex min-h-0 flex-1 flex-col w-full">
                     <CardWidgetContainer
-                      title="Log Time"
+                      title="Time loged"
+                      className="flex min-h-0 flex-1 flex-col"
+                      contentClassName="flex min-h-0 flex-1 flex-col p-0"
                       headerClassName="p-2 xl:p-2 2xl:p-2"
-                      icon={<Timer className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
-                    >
-                      <div className="space-y-2 px-6 pb-4">
-                        <Field label="Date">
-                          <DateTimePicker
-                            mode="date"
-                            placeholder="Pick a date"
-                            value={
-                              timeForm.logged_date
-                                ? new Date(
-                                  timeForm.logged_date + 'T00:00:00',
-                                )
-                                : undefined
-                            }
-                            onChange={(date) =>
-                              setTimeForm((prev) => ({
-                                ...prev,
-                                logged_date: date
-                                  ? toLocalDateString(date)
-                                  : prev.logged_date,
-                              }))
-                            }
-                          />
-                        </Field>
-                        <div className="grid grid-cols-2 gap-3">
-                          <Field label="Hours">
-                            <Input
-                              type="number"
-                              min="0"
-                              value={timeForm.hours}
-                              onChange={(event) =>
-                                setTimeForm((prev) => ({
-                                  ...prev,
-                                  hours: event.target.value,
-                                }))
-                              }
-                            />
-                          </Field>
-                          <Field label="Minutes">
-                            <Input
-                              type="number"
-                              min="0"
-                              value={timeForm.minutes}
-                              onChange={(event) =>
-                                setTimeForm((prev) => ({
-                                  ...prev,
-                                  minutes: event.target.value,
-                                }))
-                              }
-                            />
-                          </Field>
-                        </div>
-                        <Field label="Activities">
-                          <Input
-                            value={timeForm.activities}
-                            onChange={(event) =>
-                              setTimeForm((prev) => ({
-                                ...prev,
-                                activities: event.target.value,
-                              }))
-                            }
-                            placeholder="What activities did you perform?"
-                          />
-                        </Field>
-                        <Field label="Description">
-                          <Textarea
-                            value={timeForm.description}
-                            onChange={(event) =>
-                              setTimeForm((prev) => ({
-                                ...prev,
-                                description: event.target.value,
-                              }))
-                            }
-                            placeholder="What did you work on?"
-                          />
-                        </Field>
-                        <Button
-                          className="w-full"
-                          disabled={!canLogTime || timeMutation.isPending}
-                          onClick={() => timeMutation.mutate()}
-                        >
-                          <Clock3 className="mr-2 h-4 w-4" />
-                          Log Time
-                        </Button>
-                      </div>
-                    </CardWidgetContainer>
-
-                    <CardWidgetContainer
-                      title="Time Entries"
-                      headerClassName="p-2 xl:p-2 2xl:p-2"
-                      icon={<Timer className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
+                      icon={<Clock3 className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
                       icon2={
-                        <span className="text-sm font-medium text-gray-500 mr-2">
-                          Total logged: {formatDuration(totalLoggedSeconds)}
-                        </span>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="gap-2 text-sm text-blue-500 hover:text-blue-600"
+                        >
+                          <Plus className="h-4 w-4" />
+                          Add Time
+                        </Button>
                       }
                     >
-                      <div className="space-y-3 px-6 pb-4">
+                      <div className="flex flex-col min-h-0 flex-1">
                         {timeEntries.length === 0 ? (
                           <div className="flex flex-col items-center justify-center py-8 text-center">
                             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#F0F3FF]">
-                              <Timer className="h-6 w-6 text-blue-500" />
+                              <Clock3 className="h-6 w-6 text-blue-500" />
                             </div>
-                            <p className="mt-4 text-sm text-gray-500">No time logged</p>
+                            <p className="mt-4 text-sm text-gray-500">No Time loged yet</p>
                           </div>
                         ) : (
                           <PageBody className="sticky flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col overflow-hidden">
                             <div className="flex min-h-0 w-full min-w-0 max-w-full flex-1 gap-0">
-                              <CustomTableContainer>
-                                <div className="scrollbar-thin max-h-[295px] overflow-y-auto">
+                              <CustomTableContainer
+                                pagination={
+                                  <TablePagination
+                                    currentPage={timePage}
+                                    totalPages={Math.ceil(timeEntries.length / timePageSize)}
+                                    totalCount={timeEntries.length}
+                                    pageSize={timePageSize}
+                                    onPageChange={setTimePage}
+                                    onPageSizeChange={(val) => {
+                                      setTimePageSize(val);
+                                      setTimePage(1);
+                                    }}
+                                  />
+                                }
+                              >
+                                <div className="scrollbar-thin flex-1 overflow-y-auto">
                                   <Table>
                                     <TableHeader>
                                       <TableRow>
@@ -860,7 +1006,7 @@ export function ServiceCloudTicketDetailPage({
                                           className="relative w-[80px]"
                                           {...getHeaderProps('s_no')}
                                         >
-                                          S. No.
+                                          <ColumnHeader columnId="s_no" sortColumn={timeSortColumn} sortDirection={timeSortDirection} onSort={() => {}} label="S. No." sortable={false} />
                                           <span
                                             className="col-resize-handle"
                                             {...getResizeHandleProps('s_no')}
@@ -870,7 +1016,7 @@ export function ServiceCloudTicketDetailPage({
                                           className="relative max-w-[150px]"
                                           {...getHeaderProps('activities')}
                                         >
-                                          Activities
+                                          <ColumnHeader columnId="activities" sortColumn={timeSortColumn} sortDirection={timeSortDirection} onSort={timeToggleSort} label="Activities" />
                                           <span
                                             className="col-resize-handle"
                                             {...getResizeHandleProps(
@@ -882,7 +1028,7 @@ export function ServiceCloudTicketDetailPage({
                                           className="relative max-w-[200px]"
                                           {...getHeaderProps('description')}
                                         >
-                                          Description
+                                          <ColumnHeader columnId="description" sortColumn={timeSortColumn} sortDirection={timeSortDirection} onSort={timeToggleSort} label="Description" />
                                           <span
                                             className="col-resize-handle"
                                             {...getResizeHandleProps(
@@ -894,7 +1040,7 @@ export function ServiceCloudTicketDetailPage({
                                           className="relative w-[150px]"
                                           {...getHeaderProps('author')}
                                         >
-                                          Author
+                                          <ColumnHeader columnId="author" sortColumn={timeSortColumn} sortDirection={timeSortDirection} onSort={timeToggleSort} label="Author" />
                                           <span
                                             className="col-resize-handle"
                                             {...getResizeHandleProps('author')}
@@ -902,24 +1048,24 @@ export function ServiceCloudTicketDetailPage({
                                         </TableHead>
                                         <TableHead
                                           className="relative w-[180px]"
-                                          {...getHeaderProps('date_time')}
+                                          {...getHeaderProps('logged_date')}
                                         >
-                                          Date &amp; Time Log
+                                          <ColumnHeader columnId="logged_date" sortColumn={timeSortColumn} sortDirection={timeSortDirection} onSort={timeToggleSort} label="Date & Time Log" />
                                           <span
                                             className="col-resize-handle"
                                             {...getResizeHandleProps(
-                                              'date_time',
+                                              'logged_date',
                                             )}
                                           />
                                         </TableHead>
-                                        <TableHead className="w-[100px] text-center"></TableHead>
+                                        <TableHead className="w-[100px] text-center">Actions</TableHead>
                                       </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                      {timeEntries.map(
+                                      {paginatedTimeEntries.map(
                                         (entry: any, index: number) => (
                                           <TableRow key={entry.id}>
-                                            <TableCell>{index + 1}</TableCell>
+                                            <TableCell>{(timePage - 1) * timePageSize + index + 1}</TableCell>
                                             <TableCell
                                               className="max-w-[150px] truncate"
                                               title={entry.activities || ''}
@@ -953,14 +1099,7 @@ export function ServiceCloudTicketDetailPage({
                                                     entry.logged_date,
                                                   )}
                                                 </span>
-                                                <Badge
-                                                  variant="secondary"
-                                                  className="whitespace-nowrap"
-                                                >
-                                                  {formatDuration(
-                                                    entry.duration_seconds,
-                                                  )}
-                                                </Badge>
+                                                <span className="text-gray-400 whitespace-nowrap">({formatDuration(entry.duration_seconds)})</span>
                                               </div>
                                             </TableCell>
                                             <TableCell className="w-[100px] text-center">
@@ -1005,32 +1144,135 @@ export function ServiceCloudTicketDetailPage({
                   <CardWidgetContainer
                     title="Notes"
                     headerClassName="p-2 xl:p-2 2xl:p-2"
-                    icon={<FileText className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
+                    icon={<Clock className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
+                    icon2={
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="gap-2 text-sm text-blue-500 hover:text-blue-600"
+                        onClick={() => {
+                          setEditingNote(null);
+                          setNoteContent('');
+                          setIsNoteModalOpen(true);
+                        }}
+                      >
+                        <Plus className="h-4 w-4" />
+                        Add Note
+                      </Button>
+                    }
                   >
-                    <div className="px-6 pb-4">
-                      <CoreEntityPanel
-                        workspaceId={workspaceId}
-                        entityType="service_cloud_ticket"
-                        entityId={ticketId}
-                        capabilities={['notes']}
-                      />
+                    <div className="px-2 pb-4 pt-2">
+                      {notesLoading ? (
+                        <div className="flex justify-center py-4">
+                          <Skeleton className="h-8 w-8 rounded-full" />
+                        </div>
+                      ) : notes.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-8 text-center">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#F0F3FF] dark:bg-slate-900">
+                            <Clock className="h-6 w-6 text-gray-500" />
+                          </div>
+                          <p className="mt-4 text-sm font-medium text-gray-700 dark:text-gray-300">No Notes write yet</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          {notes.map((n: any) => (
+                            <div key={n.id} className="border border-gray-200 dark:border-slate-800 p-2 mb-2 flex justify-between items-start bg-white dark:bg-zinc-950">
+                              <div>
+                                <div className="primary-text-big-regular text-leadgaze-dark dark:text-white !font-normal">{n.note || n.content}</div>
+                                <div className="secondary-text-small-regular text-leadgaze-muted dark:text-white">
+                                  Created on {formatDateOnly(n.created_at)} | {new Date(n.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </div>
+                              </div>
+                              <div className="flex gap-1 shrink-0 ml-4">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                                  onClick={() => openEditNoteDialog(n)}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/50"
+                                  onClick={() => setDeletingNoteId(n.id)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </CardWidgetContainer>
                 </TabsContent>
 
                 <TabsContent value="documents" className="max-h-[500px] overflow-y-auto">
                   <CardWidgetContainer
-                    title="Documents"
+                    title="Document"
                     headerClassName="p-2 xl:p-2 2xl:p-2"
-                    icon={<Download className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
+                    icon={<FileText className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
+                    icon2={
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="gap-2 text-sm text-blue-500 hover:text-blue-600"
+                        onClick={() => {
+                          setDocumentForm({ name: '', file: null, file_url: '', category: '', description: '' });
+                          setIsDocumentModalOpen(true);
+                        }}
+                      >
+                        <Plus className="h-4 w-4" />
+                        Add Document
+                      </Button>
+                    }
                   >
-                    <div className="px-6 pb-4">
-                      <CoreEntityPanel
-                        workspaceId={workspaceId}
-                        entityType="service_cloud_ticket"
-                        entityId={ticketId}
-                        capabilities={['documents']}
-                      />
+                    <div className="px-2 pb-4 pt-2">
+                      {documentsLoading ? (
+                        <div className="flex justify-center py-4">
+                          <Skeleton className="h-8 w-8 rounded-full" />
+                        </div>
+                      ) : documents.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-8 text-center">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#F0F3FF] dark:bg-slate-900">
+                            <Mail className="h-6 w-6 text-gray-400" />
+                          </div>
+                          <p className="mt-4 text-sm font-medium text-gray-700 dark:text-gray-300">No Document added yet</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          {documents.map((d: any) => (
+                            <div key={d.id} className="border border-gray-200 dark:border-slate-800 p-2 mb-2 flex justify-between items-start bg-white dark:bg-zinc-950">
+                              <div>
+                                <div className="primary-text-big-regular text-leadgaze-dark dark:text-white !font-normal">
+                                  {d.file_url || d.file_path ? (
+                                    <a className="primary-text-big-regular underline-offset-4 hover:underline text-blue-600" href={d.file_url ?? d.file_path} target="_blank" rel="noreferrer">
+                                      {d.name}
+                                    </a>
+                                  ) : d.name}
+                                  {d.category && <Badge variant="outline" className="ml-2 font-normal text-xs">{d.category}</Badge>}
+                                </div>
+                                {d.description && <div className="secondary-text-small-regular text-leadgaze-muted dark:text-gray-400">{d.description}</div>}
+                                <div className="secondary-text-small-regular text-leadgaze-muted dark:text-white">
+                                  Added on {formatDateOnly(d.created_at)} | {new Date(d.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </div>
+                              </div>
+                              <div className="flex gap-1 shrink-0 ml-4">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/50"
+                                  onClick={() => setDeletingDocumentId(d.id)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </CardWidgetContainer>
                 </TabsContent>
@@ -1040,49 +1282,67 @@ export function ServiceCloudTicketDetailPage({
                     title="Ticket Activity"
                     headerClassName="p-2 xl:p-2 2xl:p-2"
                     icon={<Clock className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
+                    icon2={
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => refetchTicketDetail()}
+                        disabled={isFetchingTicketDetail}
+                        className="h-7 gap-1 px-2 text-xs text-blue-500 hover:text-blue-600"
+                        title="Refresh activity logs"
+                      >
+                        <RefreshCw className={cn('h-3.5 w-3.5', isFetchingTicketDetail && 'animate-spin')} />
+                        <span>Refresh</span>
+                      </Button>
+                    }
                   >
-                    <div className="scrollbar-thin max-h-[400px] min-h-[300px] space-y-3 overflow-y-auto px-6 pb-4 pr-2">
+                    <div className="px-0 mb-2">
                       {(data.activities ?? []).length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-8 text-center">
-                          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#F0F3FF]">
-                            <Clock className="h-6 w-6 text-blue-500" />
+                          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#F0F3FF] dark:bg-slate-900">
+                            <Clock className="h-6 w-6 text-gray-500" />
                           </div>
-                          <p className="mt-4 text-sm text-gray-500">No activity yet</p>
+                          <p className="mt-4 text-sm font-medium text-gray-700 dark:text-gray-300">No Activity yet</p>
                         </div>
                       ) : (
-                        data.activities.map((activity: any) => (
-                          <div
-                            key={activity.id}
-                            className="relative rounded-xl border bg-white p-4 shadow-sm dark:bg-zinc-950"
-                          >
-                            <div className="flex flex-wrap items-start justify-between gap-3">
-                              <div className="space-y-1">
-                                <div className="flex flex-wrap items-center gap-2">
-                                  <Badge variant="outline">
-                                    {eventLabel(activity.event_type)}
-                                  </Badge>
-                                  <span className="text-muted-foreground text-xs">
-                                    by {actorLabel(activity)}
-                                  </span>
-                                </div>
-                                <div className="font-medium">
-                                  {activity.summary ||
-                                    eventLabel(activity.event_type)}
-                                </div>
-                                {activity.from_value?.label ||
-                                  activity.to_value?.label ? (
-                                  <div className="text-muted-foreground text-xs">
-                                    {activity.from_value?.label ?? 'None'} -&gt;{' '}
-                                    {activity.to_value?.label ?? 'None'}
+                        <div className="max-h-[350px] overflow-y-auto divide-y divide-gray-100 border border-gray-200 bg-white dark:divide-gray-800/60 dark:border-gray-800 dark:bg-slate-950">
+                          {data.activities.map((activity: any) => {
+                            const details = getActivityUIDetails(activity);
+                            const name = activity.summary || eventLabel(activity.event_type);
+                            
+                            return (
+                              <div
+                                key={activity.id}
+                                className="flex flex-col justify-center gap-1.5 px-3 py-1.5 text-xs transition-colors hover:bg-slate-50/80 dark:hover:bg-slate-900/60"
+                              >
+                                <div className="flex items-center justify-between gap-1.5">
+                                  <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                                    <div className="shrink-0">{details.icon}</div>
+                                    <span className="font-semibold text-leadgaze-dark shrink-0 dark:text-white text-xs">
+                                      {details.module}
+                                    </span>
+                                    {(activity.from_value?.label || activity.to_value?.label) && (
+                                      <span className="text-muted-foreground text-xs shrink-0">
+                                        {activity.from_value?.label ?? 'None'} &rarr; {activity.to_value?.label ?? 'None'}
+                                      </span>
+                                    )}
+                                    {getActionBadge(details.action, details.color)}
+                                    {name && (
+                                      <span className="font-medium text-gray-800 truncate dark:text-gray-200 text-xs">
+                                        {name}
+                                      </span>
+                                    )}
                                   </div>
-                                ) : null}
+                                  <div className="flex items-center gap-2 shrink-0 text-xs text-gray-500 dark:text-gray-400">
+                                    <span>by {actorLabel(activity)}</span>
+                                    <span className="hidden sm:inline">•</span>
+                                    <span className="whitespace-nowrap">{formatDateOnly(activity.created_at)} | {new Date(activity.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                  </div>
+                                </div>
                               </div>
-                              <div className="text-muted-foreground text-right text-xs">
-                                {formatDateTime(activity.created_at)}
-                              </div>
-                            </div>
-                          </div>
-                        ))
+                            );
+                          })}
+                        </div>
                       )}
                     </div>
                   </CardWidgetContainer>
@@ -1586,6 +1846,207 @@ export function ServiceCloudTicketDetailPage({
               onClick={() => {
                 if (deletingLogId) {
                   deleteTimeMutation.mutate(deletingLogId);
+                }
+              }}
+            >
+              Yes, delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <Dialog
+        open={isNoteModalOpen}
+        onOpenChange={(open) => !open && setIsNoteModalOpen(false)}
+      >
+        <DialogContent className="sm:max-w-[500px] flex max-h-[90vh] flex-col p-0 overflow-hidden border-gray-200 bg-white dark:border-slate-800 dark:bg-slate-950">
+          
+            <DialogHeader>
+                        <DialogTitle>
+                          {editingNote ? 'Edit Note' : 'Add Note'}
+                        </DialogTitle>
+              </DialogHeader>          
+          <div className="p-2 pt-0">
+            <Label htmlFor="note_content" className="text-sm font-medium">Write Note</Label>
+            <Textarea
+              id="note_content"
+              placeholder="Write Note"
+              value={noteContent}
+              onChange={(e) => setNoteContent(e.target.value)}
+              className="min-h-[120px] resize-none border-gray-300 dark:border-slate-700"
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsNoteModalOpen(false)}
+              disabled={createNoteMutation.isPending || updateNoteMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              className="secondary-text-small-bold !text-white gap-1.5 px-2"
+              onClick={handleSaveNote}
+              disabled={createNoteMutation.isPending || updateNoteMutation.isPending || !noteContent.trim()}
+            >
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog
+        open={Boolean(deletingNoteId)}
+        onOpenChange={(open) => !open && setDeletingNoteId(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the note. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (deletingNoteId) {
+                  deleteNoteMutation.mutate(deletingNoteId);
+                }
+              }}
+            >
+              Yes, delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <Dialog
+        open={isDocumentModalOpen}
+        onOpenChange={(open) => !open && setIsDocumentModalOpen(false)}
+      >
+        <DialogContent className="sm:max-w-[600px] flex max-h-[90vh] flex-col p-0 overflow-hidden border-gray-200 bg-white dark:border-slate-800 dark:bg-slate-950">
+          <DialogHeader>
+            <DialogTitle>Add Document</DialogTitle>
+          </DialogHeader>          
+          <div className="p-2 pt-0 space-y-2 overflow-y-auto">
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <Label htmlFor="doc_name" className="text-sm font-medium text-gray-700 dark:text-gray-300">Document Name</Label>
+                <Input
+                  id="doc_name"
+                  placeholder="Document Name"
+                  value={documentForm.name}
+                  onChange={(e) => setDocumentForm(prev => ({ ...prev, name: e.target.value }))}
+                />
+              </div>
+              <div>
+                <Label htmlFor="doc_category" className="text-sm font-medium text-gray-700 dark:text-gray-300">Category</Label>
+                <Input
+                  id="doc_category"
+                  placeholder="Category"
+                  value={documentForm.category}
+                  onChange={(e) => setDocumentForm(prev => ({ ...prev, category: e.target.value }))}
+                />
+              </div>
+            </div>
+
+            <div className="relative rounded-md border border-dashed border-gray-300 dark:border-slate-700 p-6 flex flex-col items-center justify-center bg-gray-50/50 dark:bg-slate-900/50 text-center">
+              <input 
+                type="file" 
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" 
+                onChange={(e) => {
+                  const file = e.target.files?.[0] ?? null;
+                  setDocumentForm(prev => ({ 
+                    ...prev, 
+                    file, 
+                    name: prev.name || file?.name || '' 
+                  }));
+                }} 
+              />
+              <div className="flex h-10 w-10 items-center justify-center shadow-sm mb-3 rounded-full border border-gray-100 bg-white dark:bg-slate-800 dark:border-slate-700">
+                <CloudUpload className="h-5 w-5 text-gray-600 dark:text-gray-300" />
+              </div>
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Drag and drop files here
+              </p>
+              <p className="text-sm text-gray-500 mt-1">
+                or <span className="text-[#0052CC] cursor-pointer font-bold">Browse files</span>
+              </p>
+              {documentForm.file && (
+                <p className="text-xs text-green-600 mt-2 font-medium bg-green-50 dark:bg-green-950/30 px-2 py-1 rounded-md">{documentForm.file.name}</p>
+              )}
+            </div>
+
+            <div className="relative flex items-center">
+              <div className="flex-grow border-t border-gray-200 dark:border-slate-800"></div>
+              <span className="mx-4 flex-shrink-0 text-xs font-semibold uppercase text-gray-400">Or provide a link</span>
+              <div className="flex-grow border-t border-gray-200 dark:border-slate-800"></div>
+            </div>
+
+            <div>
+              <Label htmlFor="doc_url" className="text-sm font-medium text-gray-700 dark:text-gray-300">External URL</Label>
+              <Input
+                id="doc_url"
+                placeholder="https://"
+                value={documentForm.file_url}
+                onChange={(e) => setDocumentForm(prev => ({ ...prev, file_url: e.target.value }))}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="doc_desc" className="text-sm font-medium text-gray-700 dark:text-gray-300">Description</Label>
+              <Textarea
+                id="doc_desc"
+                placeholder="Write your message"
+                value={documentForm.description}
+                onChange={(e) => setDocumentForm(prev => ({ ...prev, description: e.target.value }))}
+                className="min-h-[80px] resize-none"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsDocumentModalOpen(false)}
+              disabled={uploadDocumentMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              className="secondary-text-small-bold !text-white gap-1.5 px-2"
+              onClick={handleSaveDocument}
+              disabled={uploadDocumentMutation.isPending || !documentForm.name.trim() || (!documentForm.file && !documentForm.file_url.trim())}
+            >
+              Add Document
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog
+        open={Boolean(deletingDocumentId)}
+        onOpenChange={(open) => !open && setDeletingDocumentId(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the document. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (deletingDocumentId) {
+                  deleteDocumentMutation.mutate(deletingDocumentId);
                 }
               }}
             >
