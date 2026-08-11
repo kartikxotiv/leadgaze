@@ -1,6 +1,5 @@
 'use client';
 
-import { PageBody, PageHeader } from '@kit/ui/page';
 
 import { CoreInboxTab } from './inbox-tab';
 import type { CoreEmailPageProps } from './types';
@@ -11,6 +10,8 @@ export function CoreEmailInboxPage({
   embedded = false,
   renderEmailActions,
   templateContext,
+  pageTitle,
+  pageDescription,
 }: CoreEmailPageProps) {
   const workspaceId = workspace?.id;
   const canViewInbox = permissions?.viewInbox ?? true;
@@ -26,6 +27,8 @@ export function CoreEmailInboxPage({
       canReply={canReply}
       renderEmailActions={renderEmailActions}
       templateContext={templateContext}
+      pageTitle={pageTitle}
+      pageDescription={pageDescription}
     />
   ) : (
     <div className="text-muted-foreground flex h-48 items-center justify-center rounded-lg border-2 border-dashed">
@@ -33,20 +36,9 @@ export function CoreEmailInboxPage({
     </div>
   );
 
-  if (embedded) {
-    return content;
-  }
-
   return (
-    <>
-      <PageHeader
-        className="bg-sidebar"
-        title="Inbox"
-        description="View inbound and outbound workspace email conversations."
-      />
-      <PageBody className="sticky flex min-w-0 flex-1 shrink-0 flex-col overflow-hidden pb-6 pt-6">
-        {content}
-      </PageBody>
-    </>
+    <div className="flex min-w-0 flex-1 shrink-0 flex-col overflow-hidden">
+      {content}
+    </div>
   );
 }

@@ -60,6 +60,7 @@ export function ServiceCloudSettingsPage({
       >
         <ServiceCloudResourcePage
           workspaceId={workspaceId}
+          pageHeaderTitle="Service Settings"
           resource="ticket-statuses"
           entityLabel="statuses"
           title="Ticket Statuses"
@@ -116,10 +117,11 @@ export function ServiceCloudSettingsPage({
       </TabsContent>
       <TabsContent
         value="priorities"
-        className="mt-0 flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col data-[state=active]:flex data-[state=active]:flex-1 data-[state=active]:flex-col data-[state=active]:min-h-0"
+        className="mt-0 flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col data-[state=active]:flex data-[state=active]:flex-1 data-[state=active]:flex-col data-[state=active]:min-h-0 gap-2"
       >
         <ServiceCloudResourcePage
           workspaceId={workspaceId}
+          pageHeaderTitle="Service Settings"
           resource="ticket-priorities"
           entityLabel="priorities"
           title="Ticket Priorities"
@@ -164,10 +166,11 @@ export function ServiceCloudSettingsPage({
       </TabsContent>
       <TabsContent
         value="categories"
-        className="mt-0 flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col data-[state=active]:flex data-[state=active]:flex-1 data-[state=active]:flex-col data-[state=active]:min-h-0"
+        className="mt-0 flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col data-[state=active]:flex data-[state=active]:flex-1 data-[state=active]:flex-col data-[state=active]:min-h-0 gap-2"
       >
         <ServiceCloudResourcePage
           workspaceId={workspaceId}
+          pageHeaderTitle="Service Settings"
           resource="ticket-categories"
           entityLabel="categories"
           title="Ticket Categories"

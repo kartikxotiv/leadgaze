@@ -255,10 +255,10 @@ export function CoreEmailReplyDialog({
             <DialogTitle>Reply to Email</DialogTitle>
           </DialogHeader>
 
-          <div className="flex-1 space-y-2 overflow-y-auto p-6 pb-8">
-            <div className="grid gap-4">
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="grid gap-2">
+          <div className="flex-1 space-y-2 overflow-y-auto p-2">
+            <div className="grid gap-2">
+              <div className="grid gap-2 sm:grid-cols-2">
+                <div className="grid">
                   <Label>Template</Label>
                   <Select value={templateId} onValueChange={applyTemplate}>
                     <SelectTrigger>
@@ -286,7 +286,7 @@ export function CoreEmailReplyDialog({
                   </Select>
                 </div>
 
-                <div className="grid gap-2">
+                <div className="grid">
                   <Label>Insert Variable</Label>
                   <Select value="" onValueChange={insertVariable}>
                     <SelectTrigger>
@@ -315,7 +315,7 @@ export function CoreEmailReplyDialog({
                 </div>
               </div>
 
-              <div className="grid gap-2">
+              <div className="grid">
                 <Label>From</Label>
                 <Select
                   value={emailAccountId}
@@ -354,7 +354,7 @@ export function CoreEmailReplyDialog({
                 Subject: {subject}
               </div>
 
-              <div className="grid gap-2">
+              <div className="grid">
                 <Label>Reply mode</Label>
                 <RadioGroup
                   value={replyMode}
@@ -363,18 +363,22 @@ export function CoreEmailReplyDialog({
                   }
                   className="grid gap-2 sm:grid-cols-2"
                 >
-                  <Label className="flex cursor-pointer items-center gap-2 rounded-md border p-3">
+                  <Label className="flex cursor-pointer items-center gap-2 rounded-md border p-2">
+                    <div className="flex gap-2 items-center">
                     <RadioGroupItem value="reply" />
                     <span>Reply to sender</span>
+                    </div>
                   </Label>
-                  <Label className="flex cursor-pointer items-center gap-2 rounded-md border p-3">
+                  <Label className="flex cursor-pointer items-center gap-2 rounded-md border p-2">
+                    <div className="flex gap-2 items-center">
                     <RadioGroupItem value="reply_all" />
                     <span>Reply all</span>
+                    </div>
                   </Label>
                 </RadioGroup>
               </div>
 
-              <div className="grid gap-2">
+              <div className="grid">
                 <Label>Message</Label>
                 <div className="overflow-hidden rounded-md border border-gray-200 dark:border-slate-800">
                   <div className="flex items-center gap-1 border-b bg-zinc-50 p-1 dark:bg-zinc-900/50">

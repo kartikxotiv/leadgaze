@@ -5,6 +5,7 @@ export interface DashboardTask {
   id: string;
   title: string;
   dueDate: string;
+  priority?: string;
   entityType: string;
   entityId: string;
   entityName: string | null;

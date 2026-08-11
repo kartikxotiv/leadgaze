@@ -412,7 +412,7 @@ export const ListToolBar: React.FC<ListToolBarProps> = ({
                 )}
                 aria-label="Open filters"
               >
-                <Filter className="h-4 w-4 border-light-gray primary-text-medium text-leadgaze-dark dark:text-white" /> <span className='secondary-text-small-bold'>Filters</span>
+                <Filter className="h-4 w-4 border-light-gray primary-text-medium text-leadgaze-dark dark:text-white" /> <span className='secondary-text-small-bold text-leadgaze-dark dark:text-white'>Filters</span>
                 {activeFilterCount > 0 && (
                   <span className="ml-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#4eacff] text-[10px] font-bold text-white">
                     {activeFilterCount}
@@ -669,7 +669,7 @@ export const ListToolBar: React.FC<ListToolBarProps> = ({
                     aria-label={action.label}
                   >
                     <Icon className={cn(`h-4 w-4`, iconKey === 'import' && 'border-light-gray secondary-text-small-bold text-leadgaze-dark dark:text-white rotate-180')} />
-                    {!isIconOnly && <span className="secondary-text-small-bold">{action.label}</span>}
+                    {!isIconOnly && <span className={`secondary-text-small-bold ${iconKey === 'import' ? 'text-leadgaze-dark dark:text-white' : ''}`}>{action.label}</span>}
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="bottom">

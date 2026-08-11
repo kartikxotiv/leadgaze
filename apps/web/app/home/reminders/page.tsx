@@ -344,7 +344,10 @@ export default function RemindersPage() {
         entity_type: 'lead',
         entityId: '',
       });
-      queryClient.invalidateQueries({ queryKey: ['reminders'] });
+      queryClient.invalidateQueries({ queryKey: ['reminders', workspace?.id] });
+      queryClient.invalidateQueries({
+        queryKey: ['dashboard-metrics', workspace?.id],
+      });
     },
     onError: () => toast.error('Failed to add reminder'),
   });
@@ -356,7 +359,10 @@ export default function RemindersPage() {
       toast.success('Reminder updated');
       setIsEditDialogOpen(false);
       setEditingReminder(null);
-      queryClient.invalidateQueries({ queryKey: ['reminders'] });
+      queryClient.invalidateQueries({ queryKey: ['reminders', workspace?.id] });
+      queryClient.invalidateQueries({
+        queryKey: ['dashboard-metrics', workspace?.id],
+      });
     },
     onError: () => toast.error('Failed to update reminder'),
   });
@@ -365,14 +371,10 @@ export default function RemindersPage() {
     mutationFn: (id: string) => deleteReminderService(id),
     onSuccess: () => {
       toast.success('Reminder deleted');
-      queryClient.invalidateQueries({ queryKey: ['reminders'] });
-      setIsDeleteDialogOpen(false);
-      setReminderToDelete(null);
-    },
-    onError: () => {
-      toast.error('Failed to delete reminder');
-      setIsDeleteDialogOpen(false);
-      setReminderToDelete(null);
+      queryClient.invalidateQueries({ queryKey: ['reminders', workspace?.id] });
+      queryClient.invalidateQueries({
+        queryKey: ['dashboard-metrics', workspace?.id],
+      });
     },
   });
 
@@ -445,6 +447,9 @@ export default function RemindersPage() {
       is_completed: !reminder.is_completed,
     }).then(() => {
       queryClient.invalidateQueries({ queryKey: ['reminders', workspace?.id] });
+      queryClient.invalidateQueries({
+        queryKey: ['dashboard-metrics', workspace?.id],
+      });
       toast.success(
         reminder.is_completed
           ? 'Reminder marked as active'

@@ -20,6 +20,19 @@ import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { Card, CardContent } from '@kit/ui/card';
 import { Input } from '@kit/ui/input';
+import { PageHeader } from '@kit/ui/page';
+import { ColumnHeader } from '@kit/ui/column-header';
+import CustomTableContainer from '@kit/ui/custom-table-container';
+import { TablePagination } from '@kit/ui/table-pagination';
+import { useTableSort } from '@kit/ui/use-table-sort';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@kit/ui/table';
 import {
   Select,
   SelectContent,
@@ -59,11 +72,15 @@ export function CoreInboxTab({
   canReply = true,
   renderEmailActions,
   templateContext = {},
+  pageTitle,
+  pageDescription,
 }: {
   workspaceId: string;
   canReply?: boolean;
   renderEmailActions?: (email: any) => ReactNode;
   templateContext?: Record<string, unknown>;
+  pageTitle?: string;
+  pageDescription?: string;
 }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState<'all' | 'inbound' | 'outbound'>('all');
@@ -73,8 +90,9 @@ export function CoreInboxTab({
   const [isReplyOpen, setIsReplyOpen] = useState(false);
   const [isComposeOpen, setIsComposeOpen] = useState(false);
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
   const deferredSearchTerm = useDeferredValue(searchTerm);
-  const limit = 25;
+  const limit = pageSize;
   const offset = (page - 1) * limit;
   const { formatDate } = useLocalization();
 
@@ -126,6 +144,12 @@ export function CoreInboxTab({
   const pageStart = totalCount === 0 ? 0 : offset + 1;
   const pageEnd = Math.min(offset + emails.length, totalCount);
 
+  const { sortColumn, sortDirection, toggleSort, sortedData } = useTableSort<any>(
+    'core-inbox-emails',
+    emails,
+    { mode: 'client' }
+  );
+
   const syncMutation = useMutation({
     mutationFn: () =>
       syncCoreEmailAccountsService({
@@ -149,8 +173,29 @@ export function CoreInboxTab({
   });
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex w-full min-w-0 max-w-full shrink-0 items-center justify-between border-top-bottom-gray">
+    <div className="flex flex-col gap-2 flex-1 min-h-0">
+      {pageTitle && (
+        <div className="flex items-center justify-between pb-0">
+          <PageHeader title={pageTitle} description={pageDescription} className="w-full">
+            {canReply && (
+              <Button
+                onClick={() => {
+                  if (sendableAccounts.length === 0) {
+                    toast.error('No sendable accounts available');
+                    return;
+                  }
+                  setIsComposeOpen(true);
+                }}
+                className="secondary-text-small-bold gap-1.5 px-2 bg-leadgaze-primary hover:bg-leadgaze-primary/90 text-white"
+              >
+                <MailPlus className="h-4 w-4" />
+                New Mail
+              </Button>
+            )}
+          </PageHeader>
+        </div>
+      )}
+      <div className={cn("flex w-full min-w-0 max-w-full shrink-0 items-center justify-between border-top-bottom-gray", !pageTitle && "border-top-bottom-gray")}>
         <div className="shrink-0 flex items-center pr-4 gap-3">
           <div className="flex items-center gap-2">
             {(['all', 'inbound', 'outbound'] as const).map((value) => (
@@ -191,24 +236,6 @@ export function CoreInboxTab({
             searchValue={searchTerm}
             onSearchChange={setSearchTerm}
             actions={[
-          ...(canReply
-            ? [
-                {
-                  key: 'compose',
-                  label: 'New Email',
-                  icon: MailPlus,
-                  onClick: () => {
-                    if (sendableAccounts.length === 0) {
-                      toast.error('No sendable accounts available');
-                      return;
-                    }
-                    setIsComposeOpen(true);
-                  },
-                  show: true,
-                  buttonVariant: 'default' as const,
-                },
-              ]
-            : []),
           {
             key: 'sync',
             label:
@@ -232,40 +259,9 @@ export function CoreInboxTab({
         </div>
       </div>
 
-      <Card className="border-none bg-transparent shadow-none">
-        <CardContent className="p-0">
-          {isLoading ? (
-            <div className="grid gap-3">
-              {[1, 2, 3, 4, 5, 6, 7].map((i) => (
-                <div
-                  key={i}
-                  className="flex flex-col gap-2 rounded-xl border border-gray-100 bg-white p-4 dark:border-gray-800 dark:bg-zinc-900"
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex min-w-0 items-center gap-3">
-                      {/* Direction icon circle */}
-                      <Skeleton className="h-8 w-8 rounded-full flex-shrink-0" />
-                      <div className="min-w-0 space-y-1.5">
-                        {/* Subject line */}
-                        <Skeleton className={`h-4 ${i % 3 === 0 ? 'w-56' : i % 2 === 0 ? 'w-72' : 'w-64'}`} />
-                        {/* From + timestamp */}
-                        <div className="flex items-center gap-2">
-                          <Skeleton className="h-3 w-32" />
-                          <Skeleton className="h-3 w-1 rounded-full" />
-                          <Skeleton className="h-3 w-24" />
-                        </div>
-                      </div>
-                    </div>
-                    {/* Direction badge */}
-                    <Skeleton className="h-5 w-16 rounded-full flex-shrink-0" />
-                  </div>
-                  {/* Snippet lines */}
-                  <Skeleton className={`h-3 ${i % 2 === 0 ? 'w-full' : 'w-11/12'}`} />
-                  {i % 3 !== 2 && <Skeleton className="h-3 w-4/5" />}
-                </div>
-              ))}
-            </div>
-          ) : emails.length === 0 ? (
+      <Card className="border-none bg-transparent shadow-none flex-1 flex flex-col min-h-0">
+        <CardContent className="p-0 flex-1 flex flex-col min-h-0">
+          {emails.length === 0 && !isLoading ? (
             <div className="flex h-80 flex-col items-center justify-center gap-4 rounded-xl border border-dashed text-center">
               <Inbox className="text-muted-foreground h-10 w-10" />
               <div>
@@ -276,102 +272,163 @@ export function CoreInboxTab({
               </div>
             </div>
           ) : (
-            <div className="flex h-[calc(100vh-320px)] min-h-[400px] flex-col gap-3 overflow-y-auto pr-2 scrollbar-thin">
-              {emails.map((email: any) => (
-                <button
-                  key={email.id}
-                  type="button"
-                  onClick={() => {
-                    setSelectedEmail(email);
-                    setIsDetailOpen(true);
-                  }}
-                  className="hover:border-primary/30 group flex-none cursor-pointer flex-col gap-2 rounded-xl border border-gray-100 bg-white p-4 text-left transition-all hover:shadow-md dark:border-gray-800 dark:bg-zinc-900"
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex min-w-0 items-center gap-3">
-                      <div
-                        className={cn(
-                          'rounded-full p-2',
-                          email.direction === 'inbound'
-                            ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
-                            : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
-                        )}
+            <CustomTableContainer
+              pagination={
+                !isLoading ? (
+                  <TablePagination
+                    currentPage={page}
+                    totalPages={totalPages}
+                    totalCount={totalCount}
+                    pageSize={pageSize}
+                    onPageChange={setPage}
+                    onPageSizeChange={(val) => {
+                      setPageSize(val);
+                      setPage(1);
+                    }}
+                    entityLabel="emails"
+                  />
+                ) : undefined
+              }
+            >
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <ColumnHeader
+                      label="Sender"
+                      columnId="from_email"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={toggleSort}
+                      sortable={true}
+                    />
+                    <ColumnHeader
+                      label="Subject & Preview"
+                      columnId="subject"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={toggleSort}
+                      sortable={true}
+                    />
+                    <ColumnHeader
+                      label="Status"
+                      columnId="direction"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={toggleSort}
+                      sortable={true}
+                    />
+                    <ColumnHeader
+                      label="Received"
+                      columnId="received_at"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={toggleSort}
+                      sortable={true}
+                    />
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {isLoading ? (
+                    [...Array(5)].map((_, i) => (
+                      <TableRow key={`skeleton-${i}`}>
+                        <TableCell className="min-w-[200px] py-3">
+                          <div className="flex items-center gap-3">
+                            <Skeleton className="h-9 w-9 rounded-full flex-shrink-0" />
+                            <div className="space-y-2">
+                              <Skeleton className="h-4 w-32" />
+                              <Skeleton className="h-3 w-24" />
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="max-w-[400px] py-3">
+                          <div className="space-y-2">
+                            <Skeleton className={`h-4 ${i % 3 === 0 ? 'w-3/4' : i % 2 === 0 ? 'w-full' : 'w-5/6'}`} />
+                            <Skeleton className={`h-3 ${i % 2 === 0 ? 'w-full' : 'w-4/5'}`} />
+                          </div>
+                        </TableCell>
+                        <TableCell className="py-3">
+                          <Skeleton className="h-5 w-16 rounded-full" />
+                        </TableCell>
+                        <TableCell className="py-3">
+                          <Skeleton className="h-4 w-24" />
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    sortedData.map((email: any) => (
+                      <TableRow
+                        key={email.id}
+                        className="cursor-pointer hover:bg-muted/50 transition-colors"
+                        onClick={() => {
+                          setSelectedEmail(email);
+                          setIsDetailOpen(true);
+                        }}
                       >
-                        {email.direction === 'inbound' ? (
-                          <Inbox className="h-4 w-4" />
-                        ) : (
-                          <Send className="h-4 w-4" />
-                        )}
-                      </div>
-                      <div className="min-w-0">
-                        <h4 className="truncate font-semibold">
-                          {email.subject || '(No Subject)'}
-                        </h4>
-                        <div className="text-muted-foreground flex flex-wrap items-center gap-2 text-xs">
-                          <span>
-                            {email.direction === 'inbound'
-                              ? `From: ${email.from_email}`
-                              : `To: ${recipientText(email)}`}
-                          </span>
-                          <span>•</span>
-                          <span>
-                            {formatDate(emailTimestamp(email))}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    <Badge
-                      variant="secondary"
-                      className="text-[10px] uppercase"
-                    >
-                      {email.direction}
-                    </Badge>
-                  </div>
-                  <p className="text-muted-foreground line-clamp-2 text-sm">
-                    {email.snippet ||
-                      email.text_body ||
-                      String(email.body || '').replace(/<[^>]+>/g, '')}
-                  </p>
-                </button>
-              ))}
-            </div>
+                        <TableCell className="font-medium min-w-[200px] py-2">
+                          <div className="flex items-center gap-3">
+                            <div
+                              className={cn(
+                                'rounded-full p-1.5 flex-shrink-0',
+                                email.direction === 'inbound'
+                                  ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
+                                  : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+                              )}
+                            >
+                              {email.direction === 'inbound' ? (
+                                <Inbox className="h-3 w-3" />
+                              ) : (
+                                <Send className="h-3 w-3" />
+                              )}
+                            </div>
+                            <div className="min-w-0">
+                              <div className="truncate primary-text-medium text-leadgaze-dark dark:text-white">
+                                {email.direction === 'inbound'
+                                  ? (email.from_name || email.from_email?.split('@')[0])
+                                  : (email.to_name || recipientText(email)?.split('@')[0])}
+                              </div>
+                              <div className="text-muted-foreground truncate text-xs dark:text-white">
+                                {email.direction === 'inbound'
+                                  ? email.from_email
+                                  : recipientText(email)}
+                              </div>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="max-w-[400px] py-2">
+                          <div className="line-clamp-2 text-sm text-wrap whitespace-normal break-words">
+                            <span className="primary-text-medium text-leadgaze-dark dark:text-white">
+                              {email.subject || '(No Subject)'}
+                            </span>
+                            <span className="text-muted-foreground">
+                              {' — '}{email.snippet || email.text_body || String(email.body || '').replace(/<[^>]+>/g, '')}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="py-2">
+                          <Badge
+                            className={cn(
+                              "text-[10px] capitalize border-transparent",
+                              email.direction === 'inbound' 
+                                ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300"
+                                : "bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-300"
+                            )}
+                            variant="outline"
+                          >
+                            {email.direction === 'inbound' ? 'InBound' : 'OutBound'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground whitespace-nowrap text-sm py-2">
+                          {formatDate(emailTimestamp(email))}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </CustomTableContainer>
           )}
         </CardContent>
       </Card>
-
-      {totalCount > 0 && (
-        <div className="flex flex-col gap-3 rounded-xl border bg-white px-4 py-3 text-sm shadow-sm sm:flex-row sm:items-center sm:justify-between dark:bg-zinc-900">
-          <div className="text-muted-foreground">
-            Showing {pageStart}-{pageEnd} of {totalCount} emails
-            {isFetching ? ' · refreshing...' : ''}
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={page <= 1 || isFetching}
-              onClick={() => setPage((current) => Math.max(1, current - 1))}
-            >
-              <ChevronLeft className="mr-1 h-4 w-4" />
-              Previous
-            </Button>
-            <span className="text-muted-foreground min-w-20 text-center text-xs">
-              Page {page} of {totalPages}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={page >= totalPages || isFetching}
-              onClick={() =>
-                setPage((current) => Math.min(totalPages, current + 1))
-              }
-            >
-              Next
-              <ChevronRight className="ml-1 h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      )}
 
       <CoreEmailDetailDialog
         open={isDetailOpen}

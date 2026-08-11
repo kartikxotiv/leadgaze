@@ -185,6 +185,7 @@ type ResourcePageProps = {
   exportColumns?: Array<{ key: string; label: string }>;
   actions?: React.ComponentProps<typeof ListToolBar>['actions'];
   tabsSlot?: React.ReactNode;
+  pageHeaderTitle?: string;
 };
 
 function getInitialForm(
@@ -239,6 +240,7 @@ export function ServiceCloudResourcePage({
   exportColumns,
   actions,
   tabsSlot,
+  pageHeaderTitle,
 }: ResourcePageProps) {
   const [internalSelectedIds, setInternalSelectedIds] = useState<Set<string>>(new Set());
   const [isExporting, setIsExporting] = useState(false);
@@ -557,17 +559,33 @@ export function ServiceCloudResourcePage({
 
   return (
     <>
+      {pageHeaderTitle && (
+        <div className="flex items-center justify-between pb-0">
+          <PageHeader title={pageHeaderTitle} className={`w-full`}>
+            {canCreate && (
+              <Button
+                onClick={openCreate}
+                className="secondary-text-small-bold gap-1.5 px-2 bg-leadgaze-primary hover:bg-leadgaze-primary/90 text-white"
+              >
+                <Plus className="h-4 w-4" />
+                {createLabel || 'New'}
+              </Button>
+            )}
+          </PageHeader>
+        </div>
+      )}
       <div
         className={cn(
-          'flex w-full min-w-0 max-w-full shrink-0 items-center justify-between border-top-bottom-gray'
+          'flex w-full min-w-0 max-w-full shrink-0 items-center justify-between border-top-bottom-gray',
+          !pageHeaderTitle && 'border-top-bottom-gray'
         )}
       >
         {tabsSlot ? (
-          <div className="shrink-0 flex items-center pr-4">
-            {tabsSlot}
-          </div>
+          <>
+            {typeof tabsSlot === 'function' ? tabsSlot(data) : tabsSlot}
+          </>
         ) : null}
-        <div className="p-[2px] flex flex-1 justify-end min-w-0">
+        
           <ListToolBar
             align="right"
             className="border-none bg-transparent p-0"
@@ -583,7 +601,7 @@ export function ServiceCloudResourcePage({
             exportSlot={exportSlotFinal}
             actions={
               actions ||
-              (canCreate
+              (canCreate && !pageHeaderTitle
                 ? [
                     {
                       key: 'create',
@@ -596,7 +614,7 @@ export function ServiceCloudResourcePage({
                 : [])
             }
           />
-        </div>
+        
       </div>
       <PageBody className="sticky flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col overflow-hidden">
         <div className="flex min-h-0 w-full min-w-0 max-w-full flex-1 gap-0">
@@ -836,8 +854,8 @@ export function ServiceCloudResourcePage({
                   {editing ? `Edit ${title}` : `New ${title}`}
                 </DialogTitle>
               </DialogHeader>
-              <div className="flex-1 space-y-2 overflow-y-auto p-6 pb-8">
-                <div className="grid gap-4">
+              <div className="flex-1 space-y-2 overflow-y-auto p-2">
+                <div className="grid gap-2 sm:grid-cols-2">
                   {fields
                     // Hide field if canViewField is provided AND returns false
                     .filter((field) => !canViewField || canViewField(field.key))
@@ -845,7 +863,7 @@ export function ServiceCloudResourcePage({
                       // Field is editable only if no canEditField guard, or it returns true
                       const isEditable = !canEditField || canEditField(field.key);
                       return (
-                        <div key={field.key} className="space-y-2">
+                        <div key={field.key}>
                           <Label className="flex items-center gap-1.5">
                             {field.label}
                             {!isEditable && (
@@ -977,6 +995,13 @@ export function ServiceCloudResourcePage({
                 </div>
               </div>
               <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => setOpen(false)}
+                  disabled={saving}
+                >
+                  Cancel
+                </Button>
                 <Button onClick={save} disabled={saving}>
                   {saving ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
