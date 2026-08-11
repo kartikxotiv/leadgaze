@@ -28,11 +28,14 @@ import { Separator } from '@kit/ui/separator';
 import { Textarea } from '@kit/ui/textarea';
 
 import { calculateLeadScore } from '~/lib/lead-scoring/lead-scoring-engine';
+import { useFieldPermissions } from '~/lib/hooks/use-field-permissions';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import {
   createLeadService,
   getLeadStatusesService,
 } from '~/services/leads.service';
+
+import { LeadCustomFieldInputs } from '~/components/leads/lead-custom-field-inputs';
 
 import { IndustrySelect } from '../../../_components/industry-select';
 import { LeadSourceSelect } from '../../../_components/lead-source-select';
@@ -81,8 +84,19 @@ export default function CreateLeadDialog({
   onSuccess,
 }: CreateLeadDialogProps) {
   const { currentWorkspace: workspace } = useRBAC();
+  const {
+    canEdit,
+    canView,
+    editableCustomFields,
+    isLoading: customFieldsLoading,
+  } = useFieldPermissions({
+    entityType: 'leads',
+    workspaceId: workspace?.id,
+    enabled: open && !!workspace?.id,
+  });
   const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(false);
+  const [customFields, setCustomFields] = useState<Record<string, unknown>>({});
   const [formData, setFormData] = useState<FormDataState>({
     first_name: '',
     last_name: '',
@@ -218,6 +232,7 @@ export default function CreateLeadDialog({
       notes: '',
       lead_score: 0,
     });
+    setCustomFields({});
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -230,6 +245,27 @@ export default function CreateLeadDialog({
 
     if (!formData.status_id) {
       toast.error('Status is required');
+      return;
+    }
+
+    if (customFieldsLoading) {
+      toast.error('Custom fields are still loading');
+      return;
+    }
+
+    const missingRequiredCustomField = editableCustomFields.find((field) => {
+      if (!field.is_required) return false;
+
+      const value = customFields[field.field_key];
+      return (
+        value == null ||
+        (typeof value === 'string' && value.trim() === '') ||
+        (Array.isArray(value) && value.length === 0)
+      );
+    });
+
+    if (missingRequiredCustomField) {
+      toast.error(`${missingRequiredCustomField.field_label} is required`);
       return;
     }
 
@@ -279,6 +315,7 @@ export default function CreateLeadDialog({
         trigger: formData.trigger,
         notes: formData.notes,
         lead_score: totalScore,
+        custom_fields: customFields,
       };
 
       await mutation.mutateAsync(payload);
@@ -723,6 +760,16 @@ export default function CreateLeadDialog({
               </div>
             </div>
 
+            <LeadCustomFieldInputs
+              fields={editableCustomFields}
+              values={customFields}
+              onChange={(key, value) =>
+                setCustomFields((prev) => ({ ...prev, [key]: value }))
+              }
+              canEdit={canEdit}
+              canView={canView}
+            />
+
             {/* Form Actions (Hidden here, moved outside) */}
           </form>
 
@@ -741,7 +788,7 @@ export default function CreateLeadDialog({
               <Button
                 type="button"
                 onClick={handleSubmit}
-                disabled={isLoading}
+                disabled={isLoading || customFieldsLoading}
                 className="gap-2 mb-2"
               >
                 {isLoading ? (

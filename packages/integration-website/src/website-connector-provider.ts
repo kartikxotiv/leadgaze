@@ -20,6 +20,31 @@ import type {
   WebsiteSubmitInput,
 } from './types';
 
+const WORTHLIFT_SCORE_SOURCE = 'worthlift';
+const LEAD_SCORE_SOURCE_FIELD = 'lead_score_source';
+const LEAD_SCORE_OVERRIDE_FIELD = 'lead_score_override';
+
+/**
+ * Resolves a Worthlift-provided score without allowing ordinary website
+ * submissions to replace LeadGaze's score.
+ */
+export function resolveWorthliftScore(
+  payload: WebsiteSubmitInput,
+): number | null {
+  if (payload.score_source !== WORTHLIFT_SCORE_SOURCE) return null;
+
+  if (
+    typeof payload.score !== 'number' ||
+    !Number.isFinite(payload.score) ||
+    payload.score < 0 ||
+    payload.score > 100
+  ) {
+    throw new Error('Worthlift score must be a number between 0 and 100.');
+  }
+
+  return Math.round(payload.score);
+}
+
 // ---------------------------------------------------------------------------
 // Payload Normalization
 // ---------------------------------------------------------------------------
@@ -42,6 +67,10 @@ export function normalizePayload(
     email: raw.email,
     phone: raw.phone || raw.phone_number || raw.mobile_number,
     company: raw.company || raw.company_name,
+    company_website: raw.company_website,
+    job_title: raw.job_title,
+    linkedin_url: raw.linkedin_url,
+    location: raw.location,
     message: raw.message || raw.description || raw.notes,
     utm_source: raw.utm_source,
     utm_medium: raw.utm_medium,
@@ -291,6 +320,7 @@ export async function ingestLeadToCrm(
   input: IngestLeadInput,
 ): Promise<IngestionResult> {
   const { workspace_id, connector_id, connector_name, payload, default_owner_id } = input;
+  const worthliftScore = resolveWorthliftScore(payload);
 
   // Check for duplicate before doing any work
   if (payload.email) {
@@ -308,10 +338,36 @@ export async function ingestLeadToCrm(
   const fullName = (payload.name || '').trim();
   const nameParts = fullName.split(/\s+/);
   const firstName = payload.first_name || nameParts[0] || 'Website';
-  const lastName = payload.last_name || nameParts.slice(1).join(' ') || 'Lead';
+  const parsedLastName = nameParts.slice(1).join(' ');
+  const lastName =
+    payload.last_name ||
+    parsedLastName ||
+    (worthliftScore === null ? 'Lead' : null);
+  const displayName = [firstName, lastName].filter(Boolean).join(' ');
   const phoneVal = payload.phone || payload.phone_number || payload.mobile_number;
   const companyVal = payload.company || payload.company_name;
+  const companyWebsiteVal = payload.company_website;
+  const jobTitleVal = payload.job_title;
+  const linkedInUrlVal = payload.linkedin_url;
+  const locationVal = payload.location;
   const notesVal = payload.message || payload.notes || payload.description;
+  const submittedCustomFields =
+    payload.custom_fields &&
+    typeof payload.custom_fields === 'object' &&
+    !Array.isArray(payload.custom_fields)
+      ? payload.custom_fields
+      : {};
+  const safeCustomFields = { ...submittedCustomFields };
+  delete safeCustomFields[LEAD_SCORE_SOURCE_FIELD];
+  delete safeCustomFields[LEAD_SCORE_OVERRIDE_FIELD];
+  const customFields =
+    worthliftScore === null
+      ? safeCustomFields
+      : {
+          ...safeCustomFields,
+          [LEAD_SCORE_SOURCE_FIELD]: WORTHLIFT_SCORE_SOURCE,
+          [LEAD_SCORE_OVERRIDE_FIELD]: worthliftScore,
+        };
 
   // Resolve prerequisite IDs in parallel where possible
   const [statusId, creatorId] = await Promise.all([
@@ -341,11 +397,17 @@ export async function ingestLeadToCrm(
       email: payload.email || null,
       phone_number: phoneVal || null,
       company_name: companyVal || null,
+      company_website: companyWebsiteVal || null,
+      job_title: jobTitleVal || null,
+      linkedin_url: linkedInUrlVal || null,
+      location: locationVal || null,
       notes: notesVal || null,
       owner_id: default_owner_id || null,
       status_id: statusId,
       created_by: creatorId,
       source_id: leadSourceId,
+      lead_score: worthliftScore ?? 0,
+      custom_fields: customFields,
     })
     .select()
     .single();
@@ -358,7 +420,7 @@ export async function ingestLeadToCrm(
   return {
     status: 'success',
     entity_id: newLead.id as string,
-    message: `Successfully generated new CRM Lead: ${firstName} ${lastName} (ID: ${newLead.id})`,
+    message: `Successfully generated new CRM Lead: ${displayName} (ID: ${newLead.id})`,
   };
 }
 

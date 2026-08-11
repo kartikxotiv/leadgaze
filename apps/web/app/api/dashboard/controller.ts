@@ -129,7 +129,43 @@ export const getDashboardMetrics = catchAsync(
     const reminders = (rpcData?.reminders ?? []) as any[];
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const meetings = (rpcData?.meetings ?? []) as any[];
-    const upcomingTasks = [...reminders, ...meetings]
+
+    // The dashboard RPC predates reminder priorities, so enrich its reminder
+    // rows with the current value from core.reminders.
+    const reminderIds = reminders
+      .map((reminder) => reminder.id)
+      .filter(Boolean);
+    let remindersWithPriority = reminders;
+
+    if (reminderIds.length > 0) {
+      const { data: reminderPriorities, error: reminderPriorityError } =
+        await adminClient
+          .schema('core')
+          .from('reminders')
+          .select('id, priority')
+          .in('id', reminderIds);
+
+      if (reminderPriorityError) {
+        console.error(
+          '[Dashboard] Reminder priority fetch error:',
+          reminderPriorityError,
+        );
+      } else {
+        const priorityByReminderId = new Map(
+          (reminderPriorities ?? []).map((reminder) => [
+            reminder.id,
+            reminder.priority,
+          ]),
+        );
+
+        remindersWithPriority = reminders.map((reminder) => ({
+          ...reminder,
+          priority: priorityByReminderId.get(reminder.id),
+        }));
+      }
+    }
+
+    const upcomingTasks = [...remindersWithPriority, ...meetings]
       .sort(
         (a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime(),
       )

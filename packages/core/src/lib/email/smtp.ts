@@ -12,6 +12,7 @@ export async function sendSMTP({
   html,
   text,
   headers,
+  attachments,
 }: {
   account: Record<string, any>;
   from: string;
@@ -22,6 +23,11 @@ export async function sendSMTP({
   html?: string;
   text?: string;
   headers?: Record<string, string>;
+  attachments?: Array<{
+    filename: string;
+    path: string;
+    contentType?: string;
+  }>;
 }) {
   const host = account.smtp_host ?? account.host;
   const port = account.smtp_port ?? account.port;
@@ -50,5 +56,6 @@ export async function sendSMTP({
     html,
     text,
     headers,
+    attachments,
   });
 }

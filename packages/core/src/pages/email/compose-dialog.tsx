@@ -31,6 +31,10 @@ import {
   getCoreEmailTemplatesService,
   getCoreEmailVariablesService,
 } from '../../services/email-templates.service';
+import {
+  EmailAttachmentPicker,
+  useEmailAttachments,
+} from './email-attachments';
 import { renderEmailContent, renderEmailTemplate } from './template-helpers';
 
 function splitEmails(value: string) {
@@ -74,6 +78,14 @@ export function CoreEmailComposeDialog({
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
   const [templateId, setTemplateId] = useState('');
+  const {
+    files: attachmentFiles,
+    addFiles: addAttachmentFiles,
+    removeFile: removeAttachmentFile,
+    clearFiles: clearAttachmentFiles,
+    uploadFiles: uploadAttachmentFiles,
+    removeUploadedFiles,
+  } = useEmailAttachments(workspaceId);
 
   const { data: templates = [] } = useQuery({
     queryKey: ['core-email-templates', workspaceId],
@@ -96,13 +108,27 @@ export function CoreEmailComposeDialog({
       setSubject('');
       setBody('');
       setTemplateId('');
+      clearAttachmentFiles();
     }
-  }, [open, sendableAccounts, initialTo]);
+  }, [clearAttachmentFiles, initialTo, open, sendableAccounts]);
 
   const mutation = useMutation({
-    mutationFn: sendCoreEmailService,
+    mutationFn: async (payload: Record<string, unknown>) => {
+      const uploadedAttachments = await uploadAttachmentFiles();
+
+      try {
+        return await sendCoreEmailService({
+          ...payload,
+          attachments: uploadedAttachments,
+        });
+      } catch (error) {
+        await removeUploadedFiles(uploadedAttachments);
+        throw error;
+      }
+    },
     onSuccess: async () => {
       toast.success('Email sent');
+      clearAttachmentFiles();
       await queryClient.invalidateQueries({
         queryKey: ['core-email-activity', workspaceId],
       });
@@ -262,6 +288,13 @@ export function CoreEmailComposeDialog({
                   placeholder="Write your email..."
                 />
               </div>
+
+              <EmailAttachmentPicker
+                files={attachmentFiles}
+                disabled={mutation.isPending}
+                onAddFiles={addAttachmentFiles}
+                onRemoveFile={removeAttachmentFile}
+              />
             </div>
           </div>
 

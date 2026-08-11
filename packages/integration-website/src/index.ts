@@ -33,6 +33,7 @@ export {
   resolveDefaultLeadStatusId,
   resolveCreatorId,
   resolveOrCreateLeadSource,
+  resolveWorthliftScore,
   ingestLeadToCrm,
   ingestTicket,
   processWebsiteSubmission,
