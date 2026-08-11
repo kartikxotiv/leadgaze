@@ -103,6 +103,10 @@ export interface NormalizedPayload {
   email?: string;
   phone?: string;
   company?: string;
+  company_website?: string;
+  job_title?: string;
+  linkedin_url?: string;
+  location?: string;
   message?: string;
   utm_source?: string;
   utm_medium?: string;
@@ -155,12 +159,20 @@ export interface WebsiteSubmitInput {
   mobile_number?: string;
   company?: string;
   company_name?: string;
+  company_website?: string;
+  job_title?: string;
+  linkedin_url?: string;
+  location?: string;
   message?: string;
   notes?: string;
   description?: string;
   utm_source?: string;
   utm_medium?: string;
   utm_campaign?: string;
+  /** Optional score supplied by an approved external scoring source. */
+  score?: number;
+  /** Identifies which system calculated `score`. */
+  score_source?: string;
   custom_fields?: Record<string, unknown>;
   [key: string]: unknown;
 }
