@@ -124,7 +124,6 @@ export function EntityCalls({ entityType, entityId }: EntityCallsProps) {
     return (
         <CardWidgetContainer
             title="Call Logs"
-            hideHeaderBorder={true}
             headerClassName="p-2 xl:p-2 2xl:p-2"
             icon={<Phone className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
             icon2={
@@ -187,9 +186,11 @@ export function EntityCalls({ entityType, entityId }: EntityCallsProps) {
                         ))}
                     </CardWidgetList>
                 ) : (
-                    <div className="py-8 text-center">
-                        <Phone className="mx-auto mb-2 h-8 w-8 text-gray-300" />
-                        <p className="text-sm text-gray-500">No call logs</p>
+                    <div className="flex flex-col items-center justify-center py-8 text-center">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#F0F3FF]">
+                        <Phone className="h-6 w-6 text-blue-500" />
+                      </div>
+                      <p className="mt-4 text-sm text-gray-500">No call logs</p>
                     </div>
                 )}
             </div>

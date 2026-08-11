@@ -154,7 +154,6 @@ export function EntityActivityLogs({ entityType, entityId }: EntityActivityLogsP
   return (
     <CardWidgetContainer
       title="Activity"
-      hideHeaderBorder={true}
       headerClassName="p-2 xl:p-2 2xl:p-2"
       icon={<Clock className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
       icon2={
@@ -213,8 +212,11 @@ export function EntityActivityLogs({ entityType, entityId }: EntityActivityLogsP
             })}
           </div>
         ) : (
-          <div className="py-4 text-center text-xs text-gray-500">
-            No activity logs recorded yet
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#F0F3FF]">
+              <Clock className="h-6 w-6 text-blue-500" />
+            </div>
+            <p className="mt-4 text-sm text-gray-500">No activity logs recorded yet</p>
           </div>
         )}
       </div>

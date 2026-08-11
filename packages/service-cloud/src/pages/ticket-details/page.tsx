@@ -28,6 +28,9 @@ import {
   Trash2,
   UserCheck,
   UserRound,
+  Edit2,
+  Plus,
+  Download,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { DateTimePicker } from '@kit/ui/datetime-picker';
@@ -45,6 +48,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@kit/ui/accordion';
+import { DetailHeader } from '@kit/ui/detail-header';
 import { DetailInfoList, DetailInfoRow } from '@kit/ui/detail-info-row';
 import {
   AlertDialog,
@@ -516,206 +520,152 @@ export function ServiceCloudTicketDetailPage({
     updateMutation.mutate(payload);
 
   return (
-    <div className="space-y-2">
-      <section className="overflow-hidden rounded-none border bg-[radial-gradient(circle_at_top_left,_rgba(14,165,233,0.18),_transparent_34%),linear-gradient(135deg,_#0f172a,_#164e63_52%,_#0f172a)] p-6 text-white shadow-xl">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-          <div className="max-w-4xl space-y-5">
-            <Button
-              asChild
-              variant="secondary"
-              size="sm"
-              className="w-fit bg-white/10 text-white hover:bg-white/20"
-            >
-              <Link href="/home/services/tickets">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to tickets
-              </Link>
-            </Button>
-
-            <div className="space-y-2">
-              <div className="flex flex-wrap items-center gap-2">
-                <Badge className="border-white/20 bg-white/15 text-white hover:bg-white/20">
-                  #{ticket.ticket_number}
-                </Badge>
-                <Badge
-                  className="flex items-center gap-1.5 font-medium"
-                  style={
-                    ticket.status?.color
-                      ? {
-                        backgroundColor: `${ticket.status.color}20`,
-                        borderColor: `${ticket.status.color}40`,
-                        color: ticket.status.color,
-                      }
-                      : undefined
-                  }
-                >
-                  {ticket.status?.color ? (
-                    <span
-                      className="h-2 w-2 shrink-0 animate-pulse rounded-full"
-                      style={{ backgroundColor: ticket.status.color }}
-                    />
-                  ) : null}
-                  {ticket.status?.name ?? 'Open'}
-                </Badge>
-                {ticket.priority?.name ? (
-                  <Badge
-                    className="flex items-center gap-1.5 font-medium"
-                    style={
-                      ticket.priority?.color
-                        ? {
-                          backgroundColor: `${ticket.priority.color}20`,
-                          borderColor: `${ticket.priority.color}40`,
-                          color: ticket.priority.color,
-                        }
-                        : undefined
-                    }
-                  >
-                    {ticket.priority?.color ? (
-                      <span
-                        className="h-2 w-2 shrink-0 rounded-full"
-                        style={{ backgroundColor: ticket.priority.color }}
-                      />
-                    ) : null}
-                    {ticket.priority.name}
-                  </Badge>
-                ) : null}
-                <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs text-white/75">
-                  Created by {ticket.created_by_account?.name || 'Unknown'} on{' '}
-                  {formatDate(ticket.created_at)}
-                </span>
-                {ticket.updated_by && (
-                  <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs text-white/75">
-                    Updated by {ticket.updated_by_account?.name || 'Unknown'} on{' '}
-                    {formatDate(ticket.updated_at)}
-                  </span>
-                )}
-                {ticket.priority?.resolution_due_minutes ? (
-                  <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs text-white/75">
-                    SLA: {ticket.priority.resolution_due_minutes} mins
-                  </span>
-                ) : null}
-              </div>
-              <div>
-                <h1 className="text-3xl font-semibold tracking-tight lg:text-4xl">
-                  {ticket.subject}
-                </h1>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid gap-3 rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur md:min-w-[360px]">
-            {(!canViewField || canViewField('customer')) && (
-              <Metric
-                label="Customer"
-                value={ticket.customer?.name ?? '-'}
-                muted
-              />
-            )}
-            {(!canViewField || canViewField('assigned_agent_id')) && (
-              <Metric
-                label="Primary owner"
-                value={optionLabel(assignedAgent)}
-                muted
-              />
-            )}
-            {(!canViewField || canViewField('due_at')) && (
-              <Metric label="Due date" value={formatDate(dueValue)} muted />
-            )}
-            <Metric
-              label="Logged"
-              value={formatDuration(totalLoggedSeconds)}
-              muted
-            />
-          </div>
-        </div>
-      </section>
-
-      <div className="flex w-full flex-col gap-4 lg:flex-row">
-        <div className="w-full space-y-2 lg:w-[65%]">
-          <CardWidgetContainer
-            title="Ticket Workspace"
-            description="Customer conversation, internal work, attachments, and service timeline."
-            icon={<Inbox className="h-5 w-5 text-cyan-600" />}
-            icon2={
-              <div className="flex flex-wrap gap-2">
-                {canManageInbox && latestThreadEmail ? (
+    <>
+      {/* Top Header */}
+      <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap sm:justify-between">
+        <div className="flex items-center gap-2">
                   <Button
-                    size="sm"
-                    onClick={() => setReplyEmail(latestThreadEmail)}
+                    variant="ghost"
+                    asChild
+                    className="w-6 h-6 border-leadgaze-border border p-0"
                   >
-                    <Mail className="mr-2 h-4 w-4" />
-                    Reply in thread
+                    <Link href="/home/services/tickets">
+                      <ArrowLeft className="h-3 w-3" />
+                    </Link>
                   </Button>
-                ) : null}
-                {canManageInbox && !latestThreadEmail ? (
-                  <Button size="sm" onClick={() => setIsComposeOpen(true)}>
-                    <Mail className="mr-2 h-4 w-4" />
-                    Send Email
-                  </Button>
-                ) : null}
-                <StatusPill label={ticket.source ?? 'manual'} />
-                {canManageInbox ? (
-                  <StatusPill label={`${emails.length} emails`} />
-                ) : null}
-                <StatusPill label={formatDuration(totalLoggedSeconds)} />
+                  <h1 className="primary-heading-extra text-leadgaze-dark dark:text-white">
+                    Ticket Detail
+                  </h1>
+        </div>        
+        
+        <div className="flex items-center gap-2">
+          <Button variant="outline" className="secondary-text-small-bold text-leadgaze-dark dark:text-white gap-1.5 px-2">
+            <span className="font-medium text-gray-700 dark:text-white">Logged:</span>
+            <span className="text-gray-500 dark:text-white">{formatDuration(totalLoggedSeconds)}</span>
+          </Button>
+          <Button variant="default" className="secondary-text-small-bold bg-leadgaze-primary hover:bg-leadgaze-primary text-white gap-1.5 px-2">
+            <Edit2 className="h-4 w-4" />
+                      <span className="hidden sm:inline">Add Time</span>
+          </Button>          
+        </div>
+      </div>
+
+      <div className="flex w-full flex-col gap-2 lg:min-h-0 lg:flex-1 lg:flex-row">
+        <div className="w-full space-y-4 lg:w-[65%] lg:overflow-y-auto">
+          {/* Left Column Header Info */}
+          <DetailHeader
+            title={ticket.subject}
+            subtitle={
+              <div className="flex flex-col">
+                <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-white">
+                  <span>
+                    Created by <span className="font-bold">{ticket.created_by_account?.name || 'Unknown'}</span> on {formatDate(ticket.created_at)} | {ticket.created_at && new Date(ticket.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                  </span>
+                </div>                
+                <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-1 dark:text-white">
+                  <span>
+                    Assigned to <span className="font-bold">{assignedAgent?.name || 'Unassigned'}</span> on {ticket.updated_at ? formatDate(ticket.updated_at) : formatDate(ticket.created_at)} | {ticket.updated_at ? new Date(ticket.updated_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : new Date(ticket.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                  </span>
+                </div>
               </div>
             }
-          >
-            <div className="px-6 py-4">
-              <Tabs
-                defaultValue={canManageInbox ? 'conversation' : 'work'}
-                className="space-y-5"
-              >
-                <TabsList className="mb-2 h-auto w-full justify-start gap-3 overflow-x-auto rounded-none border-b bg-transparent p-0 [-ms-overflow-style:none] [scrollbar-width:none] sm:gap-6 [&::-webkit-scrollbar]:hidden">
-                  {canManageInbox ? (
-                    <TabsTrigger
-                      value="conversation"
-                      className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
-                    >
-                      <Mail className="mr-2 h-4 w-4" />
-                      Conversation
-                    </TabsTrigger>
-                  ) : null}
-                  <TabsTrigger
-                    value="work"
-                    className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
-                  >
-                    <Clock3 className="mr-2 h-4 w-4" />
-                    Time Log
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="notes"
-                    className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
-                  >
-                    <FileText className="mr-2 h-4 w-4" />
-                    Notes
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="documents"
-                    className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
-                  >
-                    <Paperclip className="mr-2 h-4 w-4" />
-                    Documents
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="activity"
-                    className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
-                  >
-                    <Activity className="mr-2 h-4 w-4" />
-                    Activity
-                  </TabsTrigger>
-                </TabsList>
-
+            right={
+              <div className="mx-auto flex flex-col items-center gap-1 lg:mx-0">
+                <span className="text-[10px] font-medium text-leadgaze-dark dark:text-white uppercase tracking-wider">
+                  SLA
+                </span>
+                <div className="flex items-center justify-center rounded-full border-2 border-red-500 bg-white h-[42px] w-[42px]">
+                  <span className="text-[11px] sm:text-xs font-bold text-gray-900 text-center leading-tight">
+                    {ticket.priority?.resolution_due_minutes
+                      ? (() => {
+                          const mins = ticket.priority.resolution_due_minutes;
+                          const h = Math.floor(mins / 60);
+                          const m = mins % 60;
+                          if (h > 0 && m > 0) return `${h}h\n${m}m`;
+                          if (h > 0) return `${h}h`;
+                          return `${m}m`;
+                        })()
+                      : 'N/A'}
+                  </span>
+                </div>
+              </div>
+            }
+          />
+          
+          
+            <Tabs
+              defaultValue={canManageInbox ? 'conversation' : 'work'}
+              className="space-y-4 mb-2"
+            >
+              <TabsList className="mb-0 h-auto w-full justify-start gap-3 overflow-x-auto rounded-none border-b bg-transparent p-0 [-ms-overflow-style:none] [scrollbar-width:none] sm:gap-6 [&::-webkit-scrollbar]:hidden">
                 {canManageInbox ? (
-                  <TabsContent value="conversation" className="space-y-2">
-                    {emails.length === 0 ? (
-                      <EmptyState
-                        title="No emails linked yet"
-                        description="Emails converted into this ticket will appear here."
-                      />
-                    ) : (
-                      <div className="scrollbar-thin h-[calc(100vh-420px)] min-h-[350px] space-y-2 overflow-y-auto pr-2">
-                        {emails.map((item: any) => {
+                  <TabsTrigger
+                    value="conversation"
+                    className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
+                  >
+                    <Mail className="mr-2 h-4 w-4" />
+                    Conversation
+                  </TabsTrigger>
+                ) : null}
+                <TabsTrigger
+                  value="work"
+                  className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
+                >
+                  <Clock3 className="mr-2 h-4 w-4" />
+                  Time loged
+                </TabsTrigger>
+                <TabsTrigger
+                  value="notes"
+                  className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
+                >
+                  <FileText className="mr-2 h-4 w-4" />
+                  Notes
+                </TabsTrigger>
+                <TabsTrigger
+                  value="documents"
+                  className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
+                >
+                  <Paperclip className="mr-2 h-4 w-4" />
+                  Document
+                </TabsTrigger>
+                <TabsTrigger
+                  value="activity"
+                  className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
+                >
+                  <Clock className="mr-2 h-4 w-4" />
+                  Activity
+                </TabsTrigger>
+              </TabsList>
+
+              {canManageInbox ? (
+                <TabsContent value="conversation" className="max-h-[500px] overflow-y-auto mb-2">
+                  <CardWidgetContainer
+                    title="Conversation"
+                    headerClassName="p-2 xl:p-2 2xl:p-2"
+                    icon={<Mail className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
+                    icon2={
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="gap-2 text-sm text-blue-500 hover:text-blue-600"
+                        onClick={() => setIsComposeOpen(true)}
+                      >
+                        <Plus className="h-4 w-4" />
+                        Send Mail
+                      </Button>
+                    }
+                  >
+                    <div className="px-2">
+                      {emails.length === 0 ? (
+                        <div className="flex items-center justify-center py-8 text-center flex-col">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#F0F3FF]">
+                            <Mail className="mx-auto mb-2 h-6 w-6 text-blue-500 pt-1" />
+                            </div>                          
+                          <p className="text-sm text-gray-500 mt-4">No Conversation activity yet</p>
+                        </div>
+                      ) : (
+                        <div className="scrollbar-thin h-[calc(100vh-420px)] min-h-[350px] space-y-2 overflow-y-auto pr-2">
+                          {emails.map((item: any) => {
                           const email = item.email;
                           return (
                             <article
@@ -781,18 +731,19 @@ export function ServiceCloudTicketDetailPage({
                             </article>
                           );
                         })}
-                      </div>
-                    )}
-                  </TabsContent>
+                        </div>
+                      )}
+                    </div>
+                  </CardWidgetContainer>
+                </TabsContent>
                 ) : null}
 
-                <TabsContent value="work" className="space-y-2">
+                <TabsContent value="work" className="max-h-[500px] overflow-y-auto">
                   <div className="grid gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
                     <CardWidgetContainer
                       title="Log Time"
-                      description="Track work directly against this ticket."
-                      icon={<Timer className="h-4 w-4" />}
-                      hideHeaderBorder={true}
+                      headerClassName="p-2 xl:p-2 2xl:p-2"
+                      icon={<Timer className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
                     >
                       <div className="space-y-2 px-6 pb-4">
                         <Field label="Date">
@@ -881,16 +832,22 @@ export function ServiceCloudTicketDetailPage({
 
                     <CardWidgetContainer
                       title="Time Entries"
-                      description={`Total logged: ${formatDuration(totalLoggedSeconds)}`}
-                      hideHeaderBorder={true}
+                      headerClassName="p-2 xl:p-2 2xl:p-2"
+                      icon={<Timer className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
+                      icon2={
+                        <span className="text-sm font-medium text-gray-500 mr-2">
+                          Total logged: {formatDuration(totalLoggedSeconds)}
+                        </span>
+                      }
                     >
                       <div className="space-y-3 px-6 pb-4">
                         {timeEntries.length === 0 ? (
-                          <EmptyState
-                            title="No time logged"
-                            description="Add time entries as agents work this ticket."
-                            compact
-                          />
+                          <div className="flex flex-col items-center justify-center py-8 text-center">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#F0F3FF]">
+                              <Timer className="h-6 w-6 text-blue-500" />
+                            </div>
+                            <p className="mt-4 text-sm text-gray-500">No time logged</p>
+                          </div>
                         ) : (
                           <PageBody className="sticky flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col overflow-hidden">
                             <div className="flex min-h-0 w-full min-w-0 max-w-full flex-1 gap-0">
@@ -1044,12 +1001,11 @@ export function ServiceCloudTicketDetailPage({
                   </div>
                 </TabsContent>
 
-                <TabsContent value="notes">
+                <TabsContent value="notes" className="max-h-[500px] overflow-y-auto">
                   <CardWidgetContainer
                     title="Notes"
-                    description="Internal notes attached to this ticket."
-                    icon={<Paperclip className="h-4 w-4" />}
-                    hideHeaderBorder={true}
+                    headerClassName="p-2 xl:p-2 2xl:p-2"
+                    icon={<FileText className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
                   >
                     <div className="px-6 pb-4">
                       <CoreEntityPanel
@@ -1062,12 +1018,11 @@ export function ServiceCloudTicketDetailPage({
                   </CardWidgetContainer>
                 </TabsContent>
 
-                <TabsContent value="documents">
+                <TabsContent value="documents" className="max-h-[500px] overflow-y-auto">
                   <CardWidgetContainer
                     title="Documents"
-                    description="Attachments and files uploaded to this ticket."
-                    icon={<Paperclip className="h-4 w-4" />}
-                    hideHeaderBorder={true}
+                    headerClassName="p-2 xl:p-2 2xl:p-2"
+                    icon={<Download className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
                   >
                     <div className="px-6 pb-4">
                       <CoreEntityPanel
@@ -1080,19 +1035,20 @@ export function ServiceCloudTicketDetailPage({
                   </CardWidgetContainer>
                 </TabsContent>
 
-                <TabsContent value="activity">
+                <TabsContent value="activity" className="max-h-[500px] overflow-y-auto">
                   <CardWidgetContainer
                     title="Ticket Activity"
-                    description="Status, priority, assignment, email, and time-log history for this ticket."
-                    hideHeaderBorder={true}
+                    headerClassName="p-2 xl:p-2 2xl:p-2"
+                    icon={<Clock className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
                   >
                     <div className="scrollbar-thin max-h-[400px] min-h-[300px] space-y-3 overflow-y-auto px-6 pb-4 pr-2">
                       {(data.activities ?? []).length === 0 ? (
-                        <EmptyState
-                          title="No activity yet"
-                          description="Ticket changes will be captured here."
-                          compact
-                        />
+                        <div className="flex flex-col items-center justify-center py-8 text-center">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#F0F3FF]">
+                            <Clock className="h-6 w-6 text-blue-500" />
+                          </div>
+                          <p className="mt-4 text-sm text-gray-500">No activity yet</p>
+                        </div>
                       ) : (
                         data.activities.map((activity: any) => (
                           <div
@@ -1132,11 +1088,10 @@ export function ServiceCloudTicketDetailPage({
                   </CardWidgetContainer>
                 </TabsContent>
               </Tabs>
-            </div>
-          </CardWidgetContainer>
+          
         </div>
 
-        <div className="w-full space-y-2 lg:w-[35%] lg:overflow-y-auto">
+        <div className="w-full space-y-4 lg:w-[35%] lg:overflow-y-auto">
           <Accordion
             type="multiple"
             className="space-y-2"
@@ -1639,7 +1594,7 @@ export function ServiceCloudTicketDetailPage({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </>
   );
 }
 
@@ -1964,222 +1919,74 @@ function EmptyState({
 
 function ServiceCloudTicketDetailSkeleton() {
   return (
-    <div className="space-y-2">
-      {/* ── Hero banner skeleton ── */}
-      <section className="overflow-hidden rounded-none border bg-[radial-gradient(circle_at_top_left,_rgba(14,165,233,0.18),_transparent_34%),linear-gradient(135deg,_#0f172a,_#164e63_52%,_#0f172a)] p-6 shadow-xl">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-          <div className="max-w-4xl space-y-5">
-            {/* Back button */}
-            <Skeleton className="h-8 w-32 rounded-md bg-white/20" />
-            <div className="space-y-3">
-              {/* Badges row */}
-              <div className="flex flex-wrap items-center gap-2">
-                <Skeleton className="h-5 w-14 rounded-full bg-white/20" />
-                <Skeleton className="h-5 w-16 rounded-full bg-white/20" />
-                <Skeleton className="h-5 w-14 rounded-full bg-white/20" />
-                <Skeleton className="h-5 w-40 rounded-full bg-white/15" />
-              </div>
-              {/* Title + description */}
-              <div className="space-y-2">
-                <Skeleton className="h-9 w-3/4 bg-white/20" />
-                <Skeleton className="h-4 w-full bg-white/15" />
-                <Skeleton className="h-4 w-5/6 bg-white/15" />
-              </div>
-            </div>
-          </div>
-          {/* Metrics panel */}
-          <div className="grid gap-3 rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur md:min-w-[360px]">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="flex items-center justify-between gap-4">
-                <Skeleton className="h-4 w-24 bg-white/20" />
-                <Skeleton className="h-4 w-20 bg-white/20" />
-              </div>
-            ))}
-          </div>
+    <div className="flex flex-1 flex-col min-h-0 px-2 gap-2">
+      {/* Top Header */}
+      <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap sm:justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-6 w-6 border-leadgaze-border border" />
+          <Skeleton className="h-6 w-32" />
         </div>
-      </section>
-
-      {/* ── Body grid skeleton ── */}
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_390px]">
-        {/* Left — Ticket Workspace */}
-        <div className="space-y-2">
-          <Card>
-            {/* Card header */}
-            <CardHeader className="flex flex-row items-start justify-between gap-4 border-b">
-              <div className="space-y-1.5">
-                <Skeleton className="h-5 w-40" />
-                <Skeleton className="h-3 w-64" />
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <Skeleton className="h-8 w-32 rounded-md" />
-                <Skeleton className="h-7 w-20 rounded-full" />
-                <Skeleton className="h-7 w-20 rounded-full" />
-                <Skeleton className="h-7 w-16 rounded-full" />
-              </div>
-            </CardHeader>
-            <div className="space-y-5 px-6 py-4">
-              {/* Tab bar */}
-              <div className="flex w-fit gap-2 rounded-2xl bg-slate-100 p-1 dark:bg-slate-900">
-                {['Conversation', 'Work', 'Notes & Files', 'Activity'].map(
-                  (tab) => (
-                    <Skeleton key={tab} className="h-8 w-24 rounded-xl" />
-                  ),
-                )}
-              </div>
-              {/* Email cards */}
-              {[1, 2, 3].map((i) => (
-                <div
-                  key={i}
-                  className="overflow-hidden rounded-2xl border shadow-sm"
-                >
-                  {/* Email header */}
-                  <div className="border-b bg-slate-50 p-4 dark:bg-slate-900/60">
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div className="min-w-0 space-y-1.5">
-                        <Skeleton className="h-4 w-56" />
-                        <Skeleton className="h-3 w-40" />
-                      </div>
-                      <div className="flex flex-col items-end gap-2">
-                        <Skeleton className="h-5 w-16 rounded-full" />
-                        <Skeleton className="h-7 w-16 rounded-md" />
-                        <Skeleton className="h-3 w-28" />
-                      </div>
-                    </div>
-                  </div>
-                  {/* Email body */}
-                  <div className="space-y-2 p-5">
-                    <Skeleton className="h-3 w-full" />
-                    <Skeleton className="h-3 w-11/12" />
-                    <Skeleton className="h-3 w-4/5" />
-                    {i === 1 && <Skeleton className="h-3 w-3/4" />}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </Card>
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-8 w-24" />
+          <Skeleton className="h-8 w-24" />
         </div>
+      </div>
 
-        {/* Right — aside cards */}
-        <aside className="space-y-2">
-          {/* Ticket Properties */}
-          <Card>
-            <CardHeader>
-              <Skeleton className="h-5 w-36" />
-              <Skeleton className="mt-1 h-3 w-52" />
-            </CardHeader>
-            <div className="space-y-2 px-6 py-4">
-              {/* Select rows */}
-              {['Status', 'Priority', 'Category', 'Primary owner'].map(
-                (label) => (
-                  <div key={label} className="grid gap-2">
-                    <Skeleton className="h-3 w-20" />
-                    <div className="flex items-center gap-2">
-                      <Skeleton className="h-4 w-4 rounded" />
-                      <Skeleton className="h-9 flex-1 rounded-md" />
-                    </div>
-                  </div>
-                ),
-              )}
-              {/* Due date */}
-              <div className="grid gap-2">
-                <Skeleton className="h-3 w-16" />
-                <div className="flex items-center gap-2">
-                  <Skeleton className="h-4 w-4 rounded" />
-                  <Skeleton className="h-9 flex-1 rounded-md" />
-                </div>
+      <div className="flex w-full flex-col gap-2 lg:min-h-0 lg:flex-1 lg:flex-row">
+        <div className="w-full space-y-4 lg:w-[65%] lg:overflow-y-auto">
+          {/* DetailHeader Skeleton */}
+          <div className="border border-gray-200 bg-white p-5 shadow-sm">
+             <div className="flex flex-col gap-2">
+               <Skeleton className="h-6 w-1/3" />
+               <Skeleton className="h-4 w-1/4" />
+               <Skeleton className="h-4 w-1/4" />
+             </div>
+          </div>
+
+          <div className="w-full">
+            {/* Tabs List */}
+            <div className="mb-4 flex gap-6 border-b border-gray-200 pb-2">
+              <Skeleton className="h-5 w-24" />
+              <Skeleton className="h-5 w-24" />
+              <Skeleton className="h-5 w-20" />
+              <Skeleton className="h-5 w-24" />
+            </div>
+
+            {/* Content Card Skeleton */}
+            <div className="border border-gray-200 bg-white">
+              <div className="flex items-center justify-between border-b border-gray-200 p-4">
+                <Skeleton className="h-5 w-32" />
+                <Skeleton className="h-8 w-24" />
               </div>
-              <Skeleton className="h-px w-full" />
-              {/* Assignees section */}
-              <div className="space-y-3">
-                <div className="space-y-1">
-                  <Skeleton className="h-4 w-36" />
-                  <Skeleton className="h-3 w-52" />
-                </div>
+              <div className="p-4 space-y-4">
                 {[1, 2, 3].map((i) => (
-                  <div
-                    key={i}
-                    className="flex items-center justify-between gap-3 rounded-xl border p-3"
-                  >
-                    <div className="min-w-0 space-y-1">
-                      <Skeleton className="h-3.5 w-28" />
-                      <Skeleton className="h-3 w-36" />
+                  <div key={i} className="flex gap-4">
+                    <Skeleton className="h-10 w-10 rounded-full shrink-0" />
+                    <div className="space-y-2 flex-1">
+                      <Skeleton className="h-4 w-1/4" />
+                      <Skeleton className="h-4 w-3/4" />
+                      <Skeleton className="h-4 w-1/2" />
                     </div>
-                    <Skeleton className="h-8 w-14 rounded-md" />
                   </div>
                 ))}
               </div>
             </div>
-          </Card>
+          </div>
+        </div>
 
-          {/* SLA Snapshot */}
-          <Card>
-            <CardHeader>
-              <Skeleton className="h-5 w-28" />
-            </CardHeader>
-            <div className="space-y-3 px-6 py-4">
-              {[1, 2, 3].map((i) => (
-                <div
-                  key={i}
-                  className="flex items-center justify-between gap-4"
-                >
-                  <Skeleton className="h-4 w-24" />
-                  <Skeleton className="h-4 w-20" />
-                </div>
-              ))}
+        {/* Right side accordions */}
+        <div className="w-full space-y-4 lg:w-[35%] lg:overflow-y-auto">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="border border-gray-200 bg-white p-4">
+              <Skeleton className="h-5 w-32 mb-4" />
+              <div className="space-y-3">
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-3/4" />
+              </div>
             </div>
-          </Card>
-
-          {/* Customer Context */}
-          <Card>
-            <CardHeader>
-              <Skeleton className="h-5 w-36" />
-            </CardHeader>
-            <div className="space-y-3 px-6 py-4">
-              {['Name', 'Email', 'Phone'].map((field) => (
-                <div
-                  key={field}
-                  className="flex items-center justify-between gap-4"
-                >
-                  <Skeleton className="h-4 w-12" />
-                  <Skeleton className="h-4 w-32" />
-                </div>
-              ))}
-              <Skeleton className="h-px w-full" />
-              {['Company', 'Industry', 'Website'].map((field) => (
-                <div
-                  key={field}
-                  className="flex items-center justify-between gap-4"
-                >
-                  <Skeleton className="h-4 w-16" />
-                  <Skeleton className="h-4 w-28" />
-                </div>
-              ))}
-            </div>
-          </Card>
-
-          {/* Record Details */}
-          <Card>
-            <CardHeader>
-              <Skeleton className="h-5 w-32" />
-            </CardHeader>
-            <div className="space-y-3 px-6 py-4">
-              {[
-                'Source',
-                'Last response',
-                'Last customer reply',
-                'Updated',
-              ].map((field) => (
-                <div
-                  key={field}
-                  className="flex items-center justify-between gap-4"
-                >
-                  <Skeleton className="h-4 w-24" />
-                  <Skeleton className="h-4 w-32" />
-                </div>
-              ))}
-            </div>
-          </Card>
-        </aside>
+          ))}
+        </div>
       </div>
     </div>
   );

@@ -254,7 +254,6 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
   return (
     <CardWidgetContainer
       title="Tasks & Checklist"
-      hideHeaderBorder={true}
       headerClassName="p-2 xl:p-2 2xl:p-2"
       icon={<CheckSquare className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
       icon2={
@@ -477,9 +476,11 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
             ))}
           </CardWidgetList>
         ) : (
-          <div className="py-8 text-center">
-            <CheckSquare className="mx-auto mb-2 h-8 w-8 text-gray-300" />
-            <p className="text-sm text-gray-500">No tasks found</p>
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#F0F3FF]">
+              <CheckSquare className="h-6 w-6 text-blue-500" />
+            </div>
+            <p className="mt-4 text-sm text-gray-500">No tasks found</p>
           </div>
         )}
       </div>
