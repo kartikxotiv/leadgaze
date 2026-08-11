@@ -83,7 +83,12 @@ export default function CreateLeadDialog({
   onSuccess,
 }: CreateLeadDialogProps) {
   const { currentWorkspace: workspace } = useRBAC();
-  const { canEdit, canView, editableCustomFields } = useFieldPermissions({
+  const {
+    canEdit,
+    canView,
+    editableCustomFields,
+    isLoading: customFieldsLoading,
+  } = useFieldPermissions({
     entityType: 'leads',
     workspaceId: workspace?.id,
     enabled: open && !!workspace?.id,
@@ -230,6 +235,27 @@ export default function CreateLeadDialog({
 
     if (!formData.status_id) {
       toast.error('Status is required');
+      return;
+    }
+
+    if (customFieldsLoading) {
+      toast.error('Custom fields are still loading');
+      return;
+    }
+
+    const missingRequiredCustomField = editableCustomFields.find((field) => {
+      if (!field.is_required) return false;
+
+      const value = customFields[field.field_key];
+      return (
+        value == null ||
+        (typeof value === 'string' && value.trim() === '') ||
+        (Array.isArray(value) && value.length === 0)
+      );
+    });
+
+    if (missingRequiredCustomField) {
+      toast.error(`${missingRequiredCustomField.field_label} is required`);
       return;
     }
 
@@ -750,7 +776,7 @@ export default function CreateLeadDialog({
               <Button
                 type="button"
                 onClick={handleSubmit}
-                disabled={isLoading}
+                disabled={isLoading || customFieldsLoading}
                 className="gap-2"
               >
                 {isLoading ? (
