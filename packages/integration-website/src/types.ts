@@ -103,6 +103,8 @@ export interface NormalizedPayload {
   email?: string;
   phone?: string;
   company?: string;
+  company_website?: string;
+  job_title?: string;
   message?: string;
   utm_source?: string;
   utm_medium?: string;
@@ -155,6 +157,8 @@ export interface WebsiteSubmitInput {
   mobile_number?: string;
   company?: string;
   company_name?: string;
+  company_website?: string;
+  job_title?: string;
   message?: string;
   notes?: string;
   description?: string;
