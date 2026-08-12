@@ -187,6 +187,13 @@ const deleteOpportunityStageService = asyncHandlerClient(
   },
 );
 
+const reorderOpportunityStagesService = asyncHandlerClient(
+  async (payload: { workspaceId: string; orderedStatusIds: string[] }) => {
+    const response = await ApiClient.put('/opportunities/statuses/reorder', payload);
+    return response.data?.data;
+  },
+);
+
 const deleteOpportunityService = asyncHandlerClient(async (id: string) => {
   const response = await ApiClient.delete(`/opportunities/${id}`);
   return response.data?.data;
@@ -220,6 +227,7 @@ export {
   createOpportunityStageService,
   updateOpportunityStageService,
   deleteOpportunityStageService,
+  reorderOpportunityStagesService,
   deleteOpportunityService,
   importOpportunitiesService,
   getOpportunitiesMetaService,
