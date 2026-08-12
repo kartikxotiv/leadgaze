@@ -616,7 +616,8 @@ const getLeadStatuses = catchAsync(
       .select('id, status_name, status_key, color, icon, is_closed, is_active, is_system, is_default, sort_order')
       .eq('workspace_id', workspaceId)
       .eq('module_id', module.id)
-      .order('sort_order', { ascending: true });
+      .order('sort_order', { ascending: true })
+      .order('created_at', { ascending: true });
 
     if (!includeInactive) {
       query = query.eq('is_active', true);
