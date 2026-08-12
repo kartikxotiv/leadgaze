@@ -616,7 +616,8 @@ const getLeadStatuses = catchAsync(
       .select('id, status_name, status_key, color, icon, is_closed, is_active, is_system, is_default, sort_order')
       .eq('workspace_id', workspaceId)
       .eq('module_id', module.id)
-      .order('sort_order', { ascending: true });
+      .order('sort_order', { ascending: true })
+      .order('created_at', { ascending: true });
 
     if (!includeInactive) {
       query = query.eq('is_active', true);
@@ -1046,6 +1047,56 @@ const deleteLeadStatus = catchAsync(
   },
 );
 
+/**
+ * PUT /api/leads/statuses/reorder
+ * Bulk-update sort_order for lead statuses.
+ * Body: { workspaceId: string, orderedStatusIds: string[] }
+ */
+const reorderLeadStatuses = catchAsync(
+  async ({
+    request,
+  }: {
+    request: NextRequest;
+    params?: Record<string, string>;
+  }) => {
+    const supabase = getSupabaseServerClient();
+    const body = await request.json();
+    const { workspaceId, orderedStatusIds } = body;
+
+    if (!workspaceId || !Array.isArray(orderedStatusIds)) {
+      return NextResponse.json(
+        { message: 'workspaceId and orderedStatusIds array are required' },
+        { status: 400 },
+      );
+    }
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    }
+
+    const updatePromises = orderedStatusIds.map((statusId: string, index: number) =>
+      supabase
+        .from('entity_statuses')
+        .update({ sort_order: index, updated_by: user.id, updated_at: new Date().toISOString() })
+        .eq('id', statusId)
+        .eq('workspace_id', workspaceId),
+    );
+
+    const results = await Promise.all(updatePromises);
+    const errors = results.filter((r) => r.error);
+    if (errors.length > 0) {
+      console.error('Errors updating lead status order:', errors.map((e) => e.error));
+      throw new Error('Failed to update all lead status orderings');
+    }
+
+    return successDataResponse('Lead statuses reordered successfully', null);
+  },
+);
+
 export {
   getLeads,
   createLead,
@@ -1057,4 +1108,5 @@ export {
   createLeadStatus,
   updateLeadStatus,
   deleteLeadStatus,
+  reorderLeadStatuses,
 };

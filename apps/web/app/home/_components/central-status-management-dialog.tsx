@@ -1,9 +1,28 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
+import {
+  DndContext,
+  DragEndEvent,
+  KeyboardSensor,
+  MouseSensor,
+  TouchSensor,
+  closestCenter,
+  pointerWithin,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  arrayMove,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Edit2, Loader2, Plus, Settings, Eye, EyeOff } from 'lucide-react';
+import { Edit2, GripVertical, Loader2, Plus, Settings, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@kit/ui/button';
@@ -26,16 +45,19 @@ import {
   getAffectedAccountsForTypeService,
   getAccountTypesService,
   updateAccountTypeService,
+  reorderAccountTypesService,
 } from '~/services/accounts.service';
 import {
   getAffectedLeadsForStatusService,
   getLeadStatusesService,
   updateLeadStatusService,
+  reorderLeadStatusesService,
 } from '~/services/leads.service';
 import {
   getAffectedOpportunitiesForStageService,
   getOpportunityStatusesService,
   updateOpportunityStageService,
+  reorderOpportunityStagesService,
 } from '~/services/opportunities.service';
 
 import { DisableStatusConfirmationDialog } from './disable-status-confirmation-dialog';
@@ -68,6 +90,11 @@ export function CentralStatusManagementDialog({
   const [disableModalOpen, setDisableModalOpen] = useState(false);
   const [statusToDisable, setStatusToDisable] = useState<StatusItem | null>(null);
 
+  // Local ordered state for each tab (for optimistic DnD)
+  const [leadOrder, setLeadOrder] = useState<StatusItem[]>([]);
+  const [opportunityOrder, setOpportunityOrder] = useState<StatusItem[]>([]);
+  const [accountOrder, setAccountOrder] = useState<StatusItem[]>([]);
+
   // Fetch ALL statuses (including inactive) for the management dialog
   const { data: leadStatuses = [], refetch: refetchLeads } = useQuery<StatusItem[]>({
     queryKey: ['lead-statuses-mgmt', workspaceId],
@@ -90,16 +117,35 @@ export function CentralStatusManagementDialog({
     enabled: !!workspaceId && open,
   });
 
+  // Derive stable string keys so the effects only fire when data actually changes,
+  // not on every render when React Query returns a new array reference.
+  const leadStatusesKey = leadStatuses.map((s) => `${s.id}:${s.sort_order}:${s.is_active}`).join(',');
+  const opportunityStagesKey = opportunityStages.map((s) => `${s.id}:${s.sort_order}:${s.is_active}`).join(',');
+  const accountTypesKey = accountTypes.map((s) => `${s.id}:${s.sort_order}:${s.is_active}`).join(',');
+
+  // Sync fetched data into local ordered state (only when actual data changes)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { setLeadOrder(leadStatuses); }, [leadStatusesKey]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { setOpportunityOrder(opportunityStages); }, [opportunityStagesKey]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { setAccountOrder(accountTypes); }, [accountTypesKey]);
+
   const getActiveTabData = () => {
-    if (activeTab === 'leads') return leadStatuses;
-    if (activeTab === 'opportunities') return opportunityStages;
-    return accountTypes;
+    if (activeTab === 'leads') return leadOrder;
+    if (activeTab === 'opportunities') return opportunityOrder;
+    return accountOrder;
+  };
+
+  const setActiveTabData = (items: StatusItem[]) => {
+    if (activeTab === 'leads') setLeadOrder(items);
+    else if (activeTab === 'opportunities') setOpportunityOrder(items);
+    else setAccountOrder(items);
   };
 
   const refetchActiveTab = () => {
     if (activeTab === 'leads') {
       refetchLeads();
-      // Also invalidate the regular (non-mgmt) cache so dropdowns update
       queryClient.invalidateQueries({ queryKey: ['lead-statuses', workspaceId] });
     } else if (activeTab === 'opportunities') {
       refetchOpportunities();
@@ -124,7 +170,7 @@ export function CentralStatusManagementDialog({
     refetchActiveTab();
   };
 
-  // Simple enable/disable toggle (for when there are 0 affected records or enabling)
+  // Simple enable/disable toggle
   const toggleActiveMutation = useMutation({
     mutationFn: ({ id, is_active }: { id: string; is_active: boolean }) => {
       if (activeTab === 'leads') return updateLeadStatusService(id, { is_active });
@@ -146,6 +192,43 @@ export function CentralStatusManagementDialog({
     },
   });
 
+  // Reorder mutation
+  const reorderMutation = useMutation({
+    mutationFn: ({
+      tab,
+      orderedStatusIds,
+    }: {
+      tab: StatusModuleKey;
+      orderedStatusIds: string[];
+    }) => {
+      if (tab === 'leads')
+        return reorderLeadStatusesService({ workspaceId, orderedStatusIds }) as Promise<unknown>;
+      if (tab === 'opportunities')
+        return reorderOpportunityStagesService({ workspaceId, orderedStatusIds }) as Promise<unknown>;
+      return reorderAccountTypesService({ workspaceId, orderedStatusIds }) as Promise<unknown>;
+    },
+    onSuccess: (_data, variables) => {
+      // Invalidate both mgmt and standard status queries so both management dialog and dropdowns/kanban update immediately
+      if (variables.tab === 'leads') {
+        queryClient.invalidateQueries({ queryKey: ['lead-statuses-mgmt', workspaceId] });
+        queryClient.invalidateQueries({ queryKey: ['lead-statuses', workspaceId] });
+      } else if (variables.tab === 'opportunities') {
+        queryClient.invalidateQueries({ queryKey: ['opportunity-stages-mgmt', workspaceId] });
+        queryClient.invalidateQueries({ queryKey: ['opportunity-stages', workspaceId] });
+      } else {
+        queryClient.invalidateQueries({ queryKey: ['account-types-mgmt', workspaceId] });
+        queryClient.invalidateQueries({ queryKey: ['account-types', workspaceId] });
+      }
+    },
+    onError: () => {
+      toast.error('Failed to save order. Reverting...');
+      // Revert by re-syncing from server data
+      setLeadOrder(leadStatuses);
+      setOpportunityOrder(opportunityStages);
+      setAccountOrder(accountTypes);
+    },
+  });
+
   // Handle clicking the toggle icon
   const handleToggleActive = async (status: StatusItem) => {
     setPendingStatusId(status.id);
@@ -154,7 +237,7 @@ export function CentralStatusManagementDialog({
     if (!status.is_active) {
       toggleActiveMutation.mutate(
         { id: status.id, is_active: true },
-        { onSettled: () => setPendingStatusId(null) }
+        { onSettled: () => setPendingStatusId(null) },
       );
       return;
     }
@@ -190,7 +273,7 @@ export function CentralStatusManagementDialog({
         // No affected records — disable immediately
         toggleActiveMutation.mutate(
           { id: status.id, is_active: false },
-          { onSettled: () => setPendingStatusId(null) }
+          { onSettled: () => setPendingStatusId(null) },
         );
       } else {
         // Open the pre-disable confirmation modal
@@ -202,6 +285,33 @@ export function CentralStatusManagementDialog({
       toast.error('Failed to check affected records');
       setPendingStatusId(null);
     }
+  };
+
+  // DnD sensors
+  const sensors = useSensors(
+    useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const currentItems = getActiveTabData();
+    const oldIndex = currentItems.findIndex((s) => s.id === active.id);
+    const newIndex = currentItems.findIndex((s) => s.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const reordered = arrayMove(currentItems, oldIndex, newIndex);
+    // Optimistic update — immediate visual feedback
+    setActiveTabData(reordered);
+
+    // Persist to database
+    reorderMutation.mutate({
+      tab: activeTab,
+      orderedStatusIds: reordered.map((s) => s.id),
+    });
   };
 
   const addLabel =
@@ -240,38 +350,44 @@ export function CentralStatusManagementDialog({
 
               <Button size="sm" onClick={openCreate} className="gap-1 bg-[#0b57d0] text-white hover:bg-[#0b57d0]/90 dark:bg-[#0b57d0] dark:hover:bg-[#0b57d0]/90">
                 <Plus className="h-4 w-4" />
-                Add Status
+                Add {addLabel}
               </Button>
             </div>
 
             <div className="flex-1 overflow-y-auto">
               <TabsContent value="leads" className="m-0">
-                <StatusList
-                  statuses={leadStatuses}
+                <DndStatusList
+                  statuses={leadOrder}
                   onEdit={openEdit}
                   onToggleActive={handleToggleActive}
                   pendingStatusId={pendingStatusId}
                   entityLabel="Status"
+                  sensors={sensors}
+                  onDragEnd={handleDragEnd}
                 />
               </TabsContent>
 
               <TabsContent value="opportunities" className="m-0">
-                <StatusList
-                  statuses={opportunityStages}
+                <DndStatusList
+                  statuses={opportunityOrder}
                   onEdit={openEdit}
                   onToggleActive={handleToggleActive}
                   pendingStatusId={pendingStatusId}
                   entityLabel="Stage"
+                  sensors={sensors}
+                  onDragEnd={handleDragEnd}
                 />
               </TabsContent>
 
               <TabsContent value="accounts" className="m-0">
-                <StatusList
-                  statuses={accountTypes}
+                <DndStatusList
+                  statuses={accountOrder}
                   onEdit={openEdit}
                   onToggleActive={handleToggleActive}
                   pendingStatusId={pendingStatusId}
                   entityLabel="Type"
+                  sensors={sensors}
+                  onDragEnd={handleDragEnd}
                 />
               </TabsContent>
             </div>
@@ -305,21 +421,44 @@ export function CentralStatusManagementDialog({
   );
 }
 
-interface StatusListProps {
+// ---------------------------------------------------------------------------
+// DnD-aware status list
+// ---------------------------------------------------------------------------
+
+interface DndStatusListProps {
   statuses: StatusItem[];
   onEdit: (status: StatusItem) => void;
   onToggleActive: (status: StatusItem) => void;
   pendingStatusId: string | null;
   entityLabel: string;
+  sensors: ReturnType<typeof useSensors>;
+  onDragEnd: (event: DragEndEvent) => void;
 }
 
-function StatusList({
+// Lock dragging movement strictly to vertical axis
+const restrictToVerticalAxis = ({ transform }: { transform: { x: number; y: number; scaleX: number; scaleY: number } }) => ({
+  ...transform,
+  x: 0,
+});
+
+// Hybrid collision detection: pointerWithin first for pinpoint accuracy, falling back to closestCenter
+const customCollisionDetection = (args: Parameters<typeof pointerWithin>[0]) => {
+  const pointerCollisions = pointerWithin(args);
+  if (pointerCollisions.length > 0) {
+    return pointerCollisions;
+  }
+  return closestCenter(args);
+};
+
+function DndStatusList({
   statuses,
   onEdit,
   onToggleActive,
   pendingStatusId,
   entityLabel,
-}: StatusListProps) {
+  sensors,
+  onDragEnd,
+}: DndStatusListProps) {
   if (statuses.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground">
@@ -329,101 +468,195 @@ function StatusList({
   }
 
   return (
-    <div className="divide-y bg-background">
-      {statuses.map((status) => {
-        // Only default statuses cannot be toggled
-        const isToggleable = !status.is_default;
-        const isCurrentToggling = pendingStatusId === status.id;
-        const isAnyToggling = pendingStatusId !== null;
+    <DndContext
+      sensors={sensors}
+      collisionDetection={customCollisionDetection}
+      modifiers={[restrictToVerticalAxis]}
+      onDragEnd={onDragEnd}
+    >
+      <SortableContext items={statuses.map((s) => s.id)} strategy={verticalListSortingStrategy}>
+        <div className="divide-y bg-background">
+          {statuses.map((status) => (
+            <SortableStatusRow
+              key={status.id}
+              status={status}
+              onEdit={onEdit}
+              onToggleActive={onToggleActive}
+              pendingStatusId={pendingStatusId}
+            />
+          ))}
+        </div>
+      </SortableContext>
+    </DndContext>
+  );
+}
 
-        return (
+// ---------------------------------------------------------------------------
+// Sortable row wrapper — provides the drag transform/transition
+// ---------------------------------------------------------------------------
+
+interface SortableStatusRowProps {
+  status: StatusItem;
+  onEdit: (status: StatusItem) => void;
+  onToggleActive: (status: StatusItem) => void;
+  pendingStatusId: string | null;
+}
+
+function SortableStatusRow({
+  status,
+  onEdit,
+  onToggleActive,
+  pendingStatusId,
+}: SortableStatusRowProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: status.id,
+  });
+
+  // Zero out X so the row never drifts sideways — keeps hit detection accurate
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform ? { ...transform, x: 0 } : null),
+    transition,
+    opacity: isDragging ? 0.4 : 1,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style}>
+      <StatusRowDisplay
+        status={status}
+        onEdit={onEdit}
+        onToggleActive={onToggleActive}
+        pendingStatusId={pendingStatusId}
+        dragHandleProps={{ ...attributes, ...listeners }}
+      />
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Shared display row (used by both the sortable row and the drag overlay)
+// ---------------------------------------------------------------------------
+
+interface StatusRowDisplayProps {
+  status: StatusItem;
+  onEdit: (status: StatusItem) => void;
+  onToggleActive: (status: StatusItem) => void;
+  pendingStatusId: string | null;
+  isOverlay?: boolean;
+  dragHandleProps?: Record<string, unknown>;
+}
+
+function StatusRowDisplay({
+  status,
+  onEdit,
+  onToggleActive,
+  pendingStatusId,
+  isOverlay = false,
+  dragHandleProps,
+}: StatusRowDisplayProps) {
+  const isToggleable = !status.is_default;
+  const isCurrentToggling = pendingStatusId === status.id;
+  const isAnyToggling = pendingStatusId !== null;
+
+  return (
+    <div
+      {...dragHandleProps}
+      className={`flex items-center justify-between px-6 py-2.5 transition-colors group cursor-grab active:cursor-grabbing touch-none select-none ${
+        isOverlay
+          ? 'bg-background shadow-lg border rounded-md opacity-95'
+          : 'hover:bg-slate-50/50 dark:hover:bg-slate-900/10'
+      }`}
+    >
+      <div className="flex items-center flex-1 min-w-0">
+        <div className="mr-3 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors shrink-0">
+          <GripVertical className="h-4 w-4" />
+        </div>
+        <div className="flex items-center gap-3 w-[220px] shrink-0">
           <div
-            key={status.id}
-            className="flex items-center justify-between px-6 py-2 hover:bg-slate-50/50 dark:hover:bg-slate-900/10 transition-colors group"
-          >
-            <div className="flex items-center flex-1">
-              <div className="flex items-center gap-3 w-[240px] shrink-0">
-                <div
-                  className={`h-2.5 w-2.5 rounded-full shrink-0 ${!status.is_active ? 'opacity-40' : ''}`}
-                  style={{ backgroundColor: status.color }}
-                />
-                <p className={`text-sm primary-text-medium ${!status.is_active ? 'text-muted-foreground line-through' : ''}`}>
-                  {status.status_name}
-                </p>
-              </div>
-              <div className="flex items-center gap-2 flex-wrap">
-                {status.is_system && (
-                  <span className="text-[10px] font-semibold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 px-1.5 py-0.5 rounded uppercase tracking-wider">
-                    System
-                  </span>
-                )}
-                {status.is_default && (
-                  <span className="text-[10px] font-semibold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 px-1.5 py-0.5 rounded uppercase tracking-wider">
-                    Default
-                  </span>
-                )}
-                {status.is_closed && (
-                  <span className="text-[10px] font-semibold bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 px-1.5 py-0.5 rounded uppercase tracking-wider">
-                    Closed
-                  </span>
-                )}
-                {!status.is_active && (
-                  <span className="text-[10px] font-semibold bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400 px-1.5 py-0.5 rounded uppercase tracking-wider">
-                    Disabled
-                  </span>
-                )}
-              </div>
-            </div>
+            className={`h-2.5 w-2.5 rounded-full shrink-0 ${!status.is_active ? 'opacity-40' : ''}`}
+            style={{ backgroundColor: status.color }}
+          />
+          <p className={`text-sm primary-text-medium ${!status.is_active ? 'text-muted-foreground line-through' : ''}`}>
+            {status.status_name}
+          </p>
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          {status.is_system && (
+            <span className="text-[10px] font-semibold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 px-1.5 py-0.5 rounded uppercase tracking-wider">
+              System
+            </span>
+          )}
+          {status.is_default && (
+            <span className="text-[10px] font-semibold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 px-1.5 py-0.5 rounded uppercase tracking-wider">
+              Default
+            </span>
+          )}
+          {status.is_closed && (
+            <span className="text-[10px] font-semibold bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 px-1.5 py-0.5 rounded uppercase tracking-wider">
+              Closed
+            </span>
+          )}
+          {!status.is_active && (
+            <span className="text-[10px] font-semibold bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400 px-1.5 py-0.5 rounded uppercase tracking-wider">
+              Disabled
+            </span>
+          )}
+        </div>
+      </div>
 
-            <div className="flex items-center gap-1 shrink-0">
-              <TooltipProvider delayDuration={300}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => {
-                          if (isToggleable) {
-                            onToggleActive(status);
-                          }
-                        }}
-                        disabled={isAnyToggling || !isToggleable}
-                      >
-                        {isCurrentToggling ? (
-                          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                        ) : status.is_active ? (
-                          <Eye className={isToggleable ? "h-5 w-5 text-muted-foreground" : "h-5 w-5 text-muted-foreground opacity-50"} />
-                        ) : (
-                          <EyeOff className="h-5 w-5 text-muted-foreground" />
-                        )}
-                      </Button>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    {!isToggleable 
-                      ? 'Cannot disable default status'
-                      : status.is_active 
-                        ? 'Click to hide/disable' 
-                        : 'Click to show/enable'}
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+      <div
+        className="flex items-center gap-1 shrink-0"
+        onPointerDown={(e) => e.stopPropagation()}
+        onMouseDown={(e) => e.stopPropagation()}
+      >
+        <TooltipProvider delayDuration={300}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (isToggleable) {
+                      onToggleActive(status);
+                    }
+                  }}
+                  disabled={isAnyToggling || !isToggleable}
+                >
+                  {isCurrentToggling ? (
+                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  ) : status.is_active ? (
+                    <Eye className={isToggleable ? 'h-5 w-5 text-muted-foreground' : 'h-5 w-5 text-muted-foreground opacity-50'} />
+                  ) : (
+                    <EyeOff className="h-5 w-5 text-muted-foreground" />
+                  )}
+                </Button>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              {!isToggleable
+                ? 'Cannot disable default status'
+                : status.is_active
+                  ? 'Click to hide/disable'
+                  : 'Click to show/enable'}
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
 
-              {/* Edit button */}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                onClick={() => onEdit(status)}
-              >
-                <Edit2 className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        );
-      })}
+        {/* Edit button */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 text-muted-foreground hover:text-foreground"
+          onClick={(e) => {
+            e.stopPropagation();
+            onEdit(status);
+          }}
+        >
+          <Edit2 className="h-4 w-4" />
+        </Button>
+      </div>
     </div>
   );
 }
