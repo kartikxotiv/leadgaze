@@ -116,17 +116,17 @@ const MEETING_TYPES: {
   label: string;
   icon: React.ReactNode;
 }[] = [
-  {
-    value: 'scheduled',
-    label: 'Scheduled Meeting',
-    icon: <CalendarIcon className="h-4 w-4" />,
-  },
-  {
-    value: 'logged',
-    label: 'Log Past Meeting',
-    icon: <Clock className="h-4 w-4" />,
-  },
-];
+    {
+      value: 'scheduled',
+      label: 'Scheduled Meeting',
+      icon: <CalendarIcon className="h-4 w-4" />,
+    },
+    {
+      value: 'logged',
+      label: 'Log Past Meeting',
+      icon: <Clock className="h-4 w-4" />,
+    },
+  ];
 
 const PROVIDER_CARDS: {
   value: MeetingProvider;
@@ -134,41 +134,41 @@ const PROVIDER_CARDS: {
   icon: React.ReactNode;
   selectedBg: string;
 }[] = [
-  {
-    value: 'GOOGLE',
-    label: 'Google Meet',
-    icon: (
-      <Image
-        src={'/images/icons/google-meet.png'}
-        width={32}
-        height={32}
-        className="h-7 w-8"
-        alt="Google Meet"
-      />
-    ),
-    selectedBg: 'bg-blue-50/50',
-  },
-  {
-    value: 'ZOOM',
-    label: 'Zoom Meeting',
-    icon: (
-      <Image
-        src={'/images/icons/zoom.webp'}
-        width={32}
-        height={32}
-        className="h-8 w-8"
-        alt="Google Meet"
-      />
-    ),
-    selectedBg: 'bg-blue-50/50',
-  },
-  {
-    value: 'MANUAL',
-    label: 'Manual Link',
-    icon: <Link2 className="h-8 w-8 text-gray-400" />,
-    selectedBg: 'bg-gray-50',
-  },
-];
+    {
+      value: 'GOOGLE',
+      label: 'Google Meet',
+      icon: (
+        <Image
+          src={'/images/icons/google-meet.png'}
+          width={32}
+          height={32}
+          className="h-7 w-8"
+          alt="Google Meet"
+        />
+      ),
+      selectedBg: 'bg-blue-50/50',
+    },
+    {
+      value: 'ZOOM',
+      label: 'Zoom Meeting',
+      icon: (
+        <Image
+          src={'/images/icons/zoom.webp'}
+          width={32}
+          height={32}
+          className="h-8 w-8"
+          alt="Google Meet"
+        />
+      ),
+      selectedBg: 'bg-blue-50/50',
+    },
+    {
+      value: 'MANUAL',
+      label: 'Manual Link',
+      icon: <Link2 className="h-8 w-8 text-gray-400" />,
+      selectedBg: 'bg-gray-50',
+    },
+  ];
 
 const STATUS_CONFIG: Record<
   MeetingStatus,
@@ -405,11 +405,10 @@ function ProviderSelector({
             key={p.value}
             type="button"
             onClick={() => onChange(p.value)}
-            className={`relative flex flex-col items-center gap-2.5 rounded-xl border-2 p-4 transition-all ${
-              isSelected
-                ? `border-blue-500 ${p.selectedBg} shadow-sm`
-                : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm dark:border-gray-700 dark:bg-gray-900'
-            }`}
+            className={`relative flex flex-col items-center gap-2.5 rounded-xl border-2 p-4 transition-all ${isSelected
+              ? `border-blue-500 ${p.selectedBg} shadow-sm`
+              : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm dark:border-gray-700 dark:bg-gray-900'
+              }`}
           >
             {isSelected && (
               <div className="absolute top-2 right-2 flex h-5 w-5 items-center justify-center rounded-full bg-blue-500">
@@ -447,11 +446,10 @@ function MeetingTypeToggle({
           key={type.value}
           type="button"
           onClick={() => onChange(type.value)}
-          className={`flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-all ${
-            value === type.value
-              ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-sm dark:border-blue-400 dark:bg-blue-950 dark:text-blue-300'
-              : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400'
-          }`}
+          className={`flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-all ${value === type.value
+            ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-sm dark:border-blue-400 dark:bg-blue-950 dark:text-blue-300'
+            : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400'
+            }`}
         >
           {type.icon}
           {type.label}
@@ -800,9 +798,9 @@ export function CreateMeetingDialog({
         reminders:
           meetingType === 'scheduled'
             ? reminders.map((offset) => ({
-                offset_minutes: offset,
-                channel: 'EMAIL' as const,
-              }))
+              offset_minutes: offset,
+              channel: 'EMAIL' as const,
+            }))
             : undefined,
       });
     },
@@ -817,8 +815,8 @@ export function CreateMeetingDialog({
     onError: (error: any) => {
       toast.error(
         error?.response?.data?.message ||
-          error?.message ||
-          'Failed to create meeting',
+        error?.message ||
+        'Failed to create meeting',
       );
     },
   });
@@ -860,15 +858,15 @@ export function CreateMeetingDialog({
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="flex max-h-[90vh] flex-col p-0 overflow-hidden border-gray-200 bg-white sm:max-w-[800px] dark:border-slate-800 dark:bg-slate-950">
-          <DialogHeader>
-            <DialogTitle>
-              Schedule Meeting
-            </DialogTitle>
-            <DialogDescription>
-              Setup a new engagement with your lead
-            </DialogDescription>
-          </DialogHeader>
-        
+        <DialogHeader>
+          <DialogTitle>
+            Schedule Meeting
+          </DialogTitle>
+          <DialogDescription>
+            Setup a new engagement with your lead
+          </DialogDescription>
+        </DialogHeader>
+
 
         <div className="flex-1 overflow-y-auto space-y-2 px-2">
           {/* Meeting Type */}
@@ -904,7 +902,7 @@ export function CreateMeetingDialog({
                   <p className="text-sm">
                     No Google accounts.{' '}
                     <a
-                      href="/home/workspace-settings#meetings"
+                      href="/home/sales/workspace-settings?tab=integrations&view=meetings"
                       className="font-medium text-blue-600 hover:underline"
                     >
                       Manage Accounts
@@ -940,7 +938,7 @@ export function CreateMeetingDialog({
                   <p className="text-sm">
                     No Zoom accounts.{' '}
                     <a
-                      href="/home/workspace-settings#meetings"
+                      href="/home/sales/workspace-settings?tab=integrations&view=meetings"
                       className="font-medium text-blue-600 hover:underline"
                     >
                       Manage Accounts
@@ -975,7 +973,7 @@ export function CreateMeetingDialog({
             <Input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. Product Demo with Sales Team"              
+              placeholder="e.g. Product Demo with Sales Team"
             />
           </div>
 
@@ -1089,7 +1087,7 @@ export function CreateMeetingDialog({
                 <Input
                   value={meetingUrl}
                   onChange={(e) => setMeetingUrl(e.target.value)}
-                  placeholder="https://..."                  
+                  placeholder="https://..."
                 />
               </div>
             ) : (
@@ -1115,7 +1113,7 @@ export function CreateMeetingDialog({
               <Input
                 value={meetingUrl}
                 onChange={(e) => setMeetingUrl(e.target.value)}
-                placeholder="https://..."                
+                placeholder="https://..."
               />
             </div>
           )}
@@ -1128,7 +1126,7 @@ export function CreateMeetingDialog({
                 <Input
                   value={newEmail}
                   onChange={(e) => setNewEmail(e.target.value)}
-                  placeholder="email@example.com"                  
+                  placeholder="email@example.com"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       e.preventDefault();
@@ -1273,7 +1271,7 @@ export function CreateMeetingDialog({
               (meetingType === 'scheduled' &&
                 provider === 'GOOGLE' &&
                 googleAccounts.length === 0)
-            }            
+            }
           >
             {isBusy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {isCreatingGoogleMeeting
@@ -1434,8 +1432,8 @@ export function EditMeetingDialog({
       const utcScheduledEnd =
         scheduledStart && utcScheduledStart
           ? new Date(
-              new Date(utcScheduledStart).getTime() + duration * 60000,
-            ).toISOString()
+            new Date(utcScheduledStart).getTime() + duration * 60000,
+          ).toISOString()
           : undefined;
 
       return updateMeetingService({
@@ -1465,7 +1463,7 @@ export function EditMeetingDialog({
       if (result?.zoom_warning) {
         toast.warning(
           result.message ||
-            'Meeting updated locally, but Zoom sync failed. Please check your Zoom account.',
+          'Meeting updated locally, but Zoom sync failed. Please check your Zoom account.',
         );
       } else {
         toast.success('Meeting updated');
@@ -1510,7 +1508,7 @@ export function EditMeetingDialog({
             <Input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Meeting title"              
+              placeholder="Meeting title"
             />
           </div>
           <div className="space-y-2">
@@ -1536,10 +1534,10 @@ export function EditMeetingDialog({
                     style={
                       status === s
                         ? {
-                            color: cfg.color,
-                            borderColor: `${cfg.color}60`,
-                            backgroundColor: `${cfg.color}10`,
-                          }
+                          color: cfg.color,
+                          borderColor: `${cfg.color}60`,
+                          backgroundColor: `${cfg.color}10`,
+                        }
                         : undefined
                     }
                   >
@@ -1666,7 +1664,7 @@ export function EditMeetingDialog({
               <Input
                 value={newEmail}
                 onChange={(e) => setNewEmail(e.target.value)}
-                placeholder="email@example.com"                
+                placeholder="email@example.com"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     e.preventDefault();
@@ -1731,7 +1729,7 @@ export function EditMeetingDialog({
           </Button>
           <Button
             onClick={() => updateMutation.mutate()}
-            disabled={updateMutation.isPending}            
+            disabled={updateMutation.isPending}
           >
             {updateMutation.isPending && (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -1851,170 +1849,170 @@ export function MeetingDetailsDialog({
 
         <div className="flex-1 overflow-y-auto relative">
           <Tabs defaultValue="overview" className="px-2">
-          <div className="sticky top-0 z-10 bg-background py-1 mt-0">
-            <TabsList className="grid w-full grid-cols-3 h-9">
-              <TabsTrigger value="overview" className="py-1">Overview</TabsTrigger>
-              <TabsTrigger value="participants" className="py-1">Participants</TabsTrigger>
-              <TabsTrigger value="notes" className="py-1">Notes</TabsTrigger>
-            </TabsList>
-          </div>
+            <div className="sticky top-0 z-10 bg-background py-1 mt-0">
+              <TabsList className="grid w-full grid-cols-3 h-9">
+                <TabsTrigger value="overview" className="py-1">Overview</TabsTrigger>
+                <TabsTrigger value="participants" className="py-1">Participants</TabsTrigger>
+                <TabsTrigger value="notes" className="py-1">Notes</TabsTrigger>
+              </TabsList>
+            </div>
 
-          <TabsContent value="overview" className="space-y-2 pb-4 mt-0">
-            <div className="flex flex-wrap gap-2">
-              <Badge
-                variant="outline"
-                className="gap-1"
-                style={{
-                  color: statusCfg.color,
-                  borderColor: `${statusCfg.color}40`,
-                  backgroundColor: `${statusCfg.color}10`,
-                }}
-              >
-                {statusCfg.icon}
-                {statusCfg.label}
-              </Badge>
-              <Badge variant="outline" className={`gap-1 ${providerBadge.cls}`}>
-                {providerBadge.icon}
-                {providerBadge.label}
-              </Badge>
-              <Badge variant="outline">
-                {meeting.meeting_type === 'logged' ? 'Logged' : 'Scheduled'}
-              </Badge>
-            </div>
-            <div className="flex items-start gap-2 rounded-lg border p-2">
-              <CalendarIcon className="text-muted-foreground mt-0.5 h-5 w-5" />
-              <div>
-                <p className="primary-text-medium text-leadgaze-dark dark:text-white">
-                  {formatMeetingTime(
-                    meeting.meeting_type === 'logged'
-                      ? meeting.actual_start
-                      : meeting.scheduled_start,
-                    meeting.meeting_type === 'logged'
-                      ? meeting.actual_end
-                      : meeting.scheduled_end,
-                    meeting.timezone,
-                    userTz,
-                  )}
-                </p>
-                <p className="text-muted-foreground secondary-text-small">
-                  {meeting.timezone}
-                </p>
-              </div>
-            </div>
-            {meeting.description && (
-              <div className="space-y-1">
-                <Label className="primary-text-medium text-leadgaze-dark dark:text-white uppercase">
-                  Description
-                </Label>
-                <p className="text-sm text- leadgaze-dark dark:text-white">{meeting.description}</p>
-              </div>
-            )}
-            {meeting.location && (
-              <div className="flex items-start gap-2 rounded-lg border p-2">
-                <MapPin className="text-muted-foreground mt-0.5 h-5 w-5" />
-                <p className="text-sm">{meeting.location}</p>
-              </div>
-            )}
-            {meeting.meeting_url && (
-              <div className="flex items-start gap-2 rounded-lg border p-2">
-                <ExternalLink className="text-muted-foreground mt-0.5 h-5 w-5" />
-                <a
-                  href={meeting.meeting_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1 text-sm text-blue-600 hover:underline"
+            <TabsContent value="overview" className="space-y-2 pb-4 mt-0">
+              <div className="flex flex-wrap gap-2">
+                <Badge
+                  variant="outline"
+                  className="gap-1"
+                  style={{
+                    color: statusCfg.color,
+                    borderColor: `${statusCfg.color}40`,
+                    backgroundColor: `${statusCfg.color}10`,
+                  }}
                 >
-                  Join Meeting
-                </a>
+                  {statusCfg.icon}
+                  {statusCfg.label}
+                </Badge>
+                <Badge variant="outline" className={`gap-1 ${providerBadge.cls}`}>
+                  {providerBadge.icon}
+                  {providerBadge.label}
+                </Badge>
+                <Badge variant="outline">
+                  {meeting.meeting_type === 'logged' ? 'Logged' : 'Scheduled'}
+                </Badge>
               </div>
-            )}
-            {meeting.host && (
               <div className="flex items-start gap-2 rounded-lg border p-2">
-                <Users className="text-muted-foreground mt-0.5 h-5 w-5" />
+                <CalendarIcon className="text-muted-foreground mt-0.5 h-5 w-5" />
                 <div>
-                  <p className="primary-text-medium text-leadgaze-dark dark:text-white">Host</p>
+                  <p className="primary-text-medium text-leadgaze-dark dark:text-white">
+                    {formatMeetingTime(
+                      meeting.meeting_type === 'logged'
+                        ? meeting.actual_start
+                        : meeting.scheduled_start,
+                      meeting.meeting_type === 'logged'
+                        ? meeting.actual_end
+                        : meeting.scheduled_end,
+                      meeting.timezone,
+                      userTz,
+                    )}
+                  </p>
                   <p className="text-muted-foreground secondary-text-small">
-                    {meeting.host.name || meeting.host.email}
+                    {meeting.timezone}
                   </p>
                 </div>
               </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="participants" className="space-y-3 pb-6 mt-0">
-            {meeting.participants && meeting.participants.length > 0 ? (
-              <div className="space-y-2">
-                {meeting.participants.map((p) => (
-                  <div
-                    key={p.id}
-                    className="flex items-center justify-between rounded-lg border p-2"
+              {meeting.description && (
+                <div className="space-y-1">
+                  <Label className="primary-text-medium text-leadgaze-dark dark:text-white uppercase">
+                    Description
+                  </Label>
+                  <p className="text-sm text- leadgaze-dark dark:text-white">{meeting.description}</p>
+                </div>
+              )}
+              {meeting.location && (
+                <div className="flex items-start gap-2 rounded-lg border p-2">
+                  <MapPin className="text-muted-foreground mt-0.5 h-5 w-5" />
+                  <p className="text-sm">{meeting.location}</p>
+                </div>
+              )}
+              {meeting.meeting_url && (
+                <div className="flex items-start gap-2 rounded-lg border p-2">
+                  <ExternalLink className="text-muted-foreground mt-0.5 h-5 w-5" />
+                  <a
+                    href={meeting.meeting_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 text-sm text-blue-600 hover:underline"
                   >
-                    <div className="flex items-center gap-2">
-                      <Users className="text-muted-foreground h-4 w-4" />
-                      <span className="primary-text-medium text-leadgaze-dark">
-                        {p.display_name ||
-                          p.external_email ||
-                          p.internal_user?.name}
-                      </span>
-                      {p.is_host && (
-                        <Badge variant="outline" className="secondary-text-small">
-                          Host
-                        </Badge>
-                      )}
-                    </div>
-                    <Badge variant="outline" className="secondary-text-small">
-                      {p.response_status}
-                    </Badge>
+                    Join Meeting
+                  </a>
+                </div>
+              )}
+              {meeting.host && (
+                <div className="flex items-start gap-2 rounded-lg border p-2">
+                  <Users className="text-muted-foreground mt-0.5 h-5 w-5" />
+                  <div>
+                    <p className="primary-text-medium text-leadgaze-dark dark:text-white">Host</p>
+                    <p className="text-muted-foreground secondary-text-small">
+                      {meeting.host.name || meeting.host.email}
+                    </p>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-muted-foreground pt-4 text-center secondary-text-small">
-                No participants added
-              </p>
-            )}
-          </TabsContent>
+                </div>
+              )}
+            </TabsContent>
 
-          <TabsContent value="notes" className="space-y-2 pb-4 mt-0">
-            <div className="space-y-2">
-              <Label className="font-medium">Add Note</Label>
-              <Textarea
-                value={newNote}
-                onChange={(e) => setNewNote(e.target.value)}
-                placeholder="Write a note..."
-                rows={3}
-              />
-              <Button
-                size="sm"
-                onClick={() => addNoteMutation.mutate()}
-                disabled={!newNote.trim() || addNoteMutation.isPending}
-              >
-                {addNoteMutation.isPending && (
-                  <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-                )}
-                Add Note
-              </Button>
-            </div>
-            {notes.length > 0 ? (
+            <TabsContent value="participants" className="space-y-3 pb-6 mt-0">
+              {meeting.participants && meeting.participants.length > 0 ? (
+                <div className="space-y-2">
+                  {meeting.participants.map((p) => (
+                    <div
+                      key={p.id}
+                      className="flex items-center justify-between rounded-lg border p-2"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Users className="text-muted-foreground h-4 w-4" />
+                        <span className="primary-text-medium text-leadgaze-dark">
+                          {p.display_name ||
+                            p.external_email ||
+                            p.internal_user?.name}
+                        </span>
+                        {p.is_host && (
+                          <Badge variant="outline" className="secondary-text-small">
+                            Host
+                          </Badge>
+                        )}
+                      </div>
+                      <Badge variant="outline" className="secondary-text-small">
+                        {p.response_status}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-muted-foreground pt-4 text-center secondary-text-small">
+                  No participants added
+                </p>
+              )}
+            </TabsContent>
+
+            <TabsContent value="notes" className="space-y-2 pb-4 mt-0">
               <div className="space-y-2">
-                {notes.map((note: EntityRecord) => (
-                  <div key={note.id} className="rounded-lg border p-1">
-                    <p className="primary-text-medium text-leadgaze-dark dark:text-white whitespace-pre-wrap">
-                      {note.content}
-                    </p>
-                    <p className="text-muted-foreground mt-1 secondary-text-small">
-                      {new Date(note.created_at).toLocaleString()}
-                    </p>
-                  </div>
-                ))}
+                <Label className="font-medium">Add Note</Label>
+                <Textarea
+                  value={newNote}
+                  onChange={(e) => setNewNote(e.target.value)}
+                  placeholder="Write a note..."
+                  rows={3}
+                />
+                <Button
+                  size="sm"
+                  onClick={() => addNoteMutation.mutate()}
+                  disabled={!newNote.trim() || addNoteMutation.isPending}
+                >
+                  {addNoteMutation.isPending && (
+                    <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                  )}
+                  Add Note
+                </Button>
               </div>
-            ) : (
-              <p className="text-muted-foreground text-center text-sm">
-                No notes yet
-              </p>
-            )}
-          </TabsContent>
-        </Tabs>
+              {notes.length > 0 ? (
+                <div className="space-y-2">
+                  {notes.map((note: EntityRecord) => (
+                    <div key={note.id} className="rounded-lg border p-1">
+                      <p className="primary-text-medium text-leadgaze-dark dark:text-white whitespace-pre-wrap">
+                        {note.content}
+                      </p>
+                      <p className="text-muted-foreground mt-1 secondary-text-small">
+                        {new Date(note.created_at).toLocaleString()}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-muted-foreground text-center text-sm">
+                  No notes yet
+                </p>
+              )}
+            </TabsContent>
+          </Tabs>
         </div>
       </DialogContent>
     </Dialog>
@@ -2353,7 +2351,7 @@ export default function MeetingsPage() {
     <>
       <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden border-top-bottom-gray">
         <PageHeader
-          title={`Meetings`}          
+          title={`Meetings`}
         >
           <div className="p-[2px]">
             <ListToolBar
@@ -2363,141 +2361,141 @@ export default function MeetingsPage() {
               expandableSearch
               searchPlaceholder="Search"
               searchValue={searchTerm}
-          onSearchChange={setSearchTerm}
-          showFilter
-          filterGroups={[
-            {
-              key: 'status',
-              label: 'Status',
-              selectedValues: selectedStatuses,
-              selectedLabel:
-                selectedStatuses.length === 0
-                  ? 'All statuses'
-                  : `${selectedStatuses.length} selected`,
-              options: meetingStatuses.map((s) => ({
-                value: s.id,
-                label: s.status_name,
-                color: s.color,
-              })),
-              onSelectValues: setSelectedStatuses,
-            },
-            {
-              key: 'created_by',
-              label: 'Created By',
-              selectedValues: selectedCreatedByIds,
-              selectedLabel:
-                selectedCreatedByIds.length === 0
-                  ? 'All members'
-                  : selectedCreatedByIds.length === 1
-                    ? ((
-                        (Array.isArray(members) ? members : []).find(
-                          (m: any) => m?.user_id === selectedCreatedByIds[0],
-                        ) as any
-                      )?.user?.user_metadata?.full_name ?? '1 selected')
-                    : `${selectedCreatedByIds.length} selected`,
-              options: (Array.isArray(members) ? members : [])
-                .filter((m: any) => m?.user_id)
-                .reduce((acc: any[], m: any) => {
-                  if (!acc.some((x) => x.value === m.user_id)) {
-                    acc.push({
-                      value: m.user_id,
-                      label:
-                        m.user?.user_metadata?.full_name ||
-                        m.user?.email ||
-                        m.user_id,
-                    });
-                  }
-                  return acc;
-                }, []),
-              onSelectValues: setSelectedCreatedByIds,
-            },
-            {
-              key: 'timeframe',
-              label: 'Timeframe',
-              selectedValues: selectedTimeframe,
-              selectedLabel:
-                selectedTimeframe.length === 0
-                  ? 'All meetings'
-                  : selectedTimeframe.length === 1
-                    ? selectedTimeframe[0] === 'upcoming'
-                      ? 'Upcoming'
-                      : 'Past'
-                    : `${selectedTimeframe.length} selected`,
-              options: [
-                { value: 'upcoming', label: 'Upcoming' },
-                { value: 'past', label: 'Past' },
-              ],
-              onSelectValues: setSelectedTimeframe,
-            },
-            {
-              key: 'created_on',
-              label: 'Created On',
-              type: 'date',
-              dateValue: createdOnRange,
-              onDateChange: (val) => {
-                setCreatedOnRange(val);
-                setCurrentPage(1);
-              },
-            },
-            {
-              key: 'updated_on',
-              label: 'Updated On',
-              type: 'date',
-              dateValue: updatedOnRange,
-              onDateChange: (val) => {
-                setUpdatedOnRange(val);
-                setCurrentPage(1);
-              },
-            },
-          ]}
-          activeFilterCount={
-            selectedStatuses.length +
-            (selectedCreatedByIds.length > 0 ? 1 : 0) +
-            (selectedTimeframe.includes('upcoming') &&
-            selectedTimeframe.length === 1
-              ? 0
-              : selectedTimeframe.length) +
-            (createdOnRange ? 1 : 0) +
-            (updatedOnRange ? 1 : 0)
-          }
-          onClearFilters={() => {
-            setSelectedStatuses([]);
-            setSelectedCreatedByIds([]);
-            setSelectedTimeframe(['upcoming']);
-            clearCreatedOnRange();
-            clearUpdatedOnRange();
-          }}
-          actions={[
-            {
-              key: 'manage-accounts',
-              label: 'Manage Accounts',
-              icon: Settings,
-              onClick: () => {
-                window.location.href =
-                  '/home/sales/workspace-settings#meetings';
-              },
-              buttonVariant: 'outline' as const,
-            },
-            {
-              key: 'schedule-meeting',
-              label: 'Schedule Meeting',
-              icon: Plus,
-              onClick: () => {
-                setInitialMeetingType('scheduled');
-                setIsCreateDialogOpen(true);
-              },
-              buttonVariant: 'default' as const,
-            },
-          ]}
-          columnVisibilitySlot={
-            <ColumnVisibilitySelector
-              columns={columns}
-              visibility={visibility}
-              onToggle={toggleVisibility}
-              onReset={reset}
+              onSearchChange={setSearchTerm}
+              showFilter
+              filterGroups={[
+                {
+                  key: 'status',
+                  label: 'Status',
+                  selectedValues: selectedStatuses,
+                  selectedLabel:
+                    selectedStatuses.length === 0
+                      ? 'All statuses'
+                      : `${selectedStatuses.length} selected`,
+                  options: meetingStatuses.map((s) => ({
+                    value: s.id,
+                    label: s.status_name,
+                    color: s.color,
+                  })),
+                  onSelectValues: setSelectedStatuses,
+                },
+                {
+                  key: 'created_by',
+                  label: 'Created By',
+                  selectedValues: selectedCreatedByIds,
+                  selectedLabel:
+                    selectedCreatedByIds.length === 0
+                      ? 'All members'
+                      : selectedCreatedByIds.length === 1
+                        ? ((
+                          (Array.isArray(members) ? members : []).find(
+                            (m: any) => m?.user_id === selectedCreatedByIds[0],
+                          ) as any
+                        )?.user?.user_metadata?.full_name ?? '1 selected')
+                        : `${selectedCreatedByIds.length} selected`,
+                  options: (Array.isArray(members) ? members : [])
+                    .filter((m: any) => m?.user_id)
+                    .reduce((acc: any[], m: any) => {
+                      if (!acc.some((x) => x.value === m.user_id)) {
+                        acc.push({
+                          value: m.user_id,
+                          label:
+                            m.user?.user_metadata?.full_name ||
+                            m.user?.email ||
+                            m.user_id,
+                        });
+                      }
+                      return acc;
+                    }, []),
+                  onSelectValues: setSelectedCreatedByIds,
+                },
+                {
+                  key: 'timeframe',
+                  label: 'Timeframe',
+                  selectedValues: selectedTimeframe,
+                  selectedLabel:
+                    selectedTimeframe.length === 0
+                      ? 'All meetings'
+                      : selectedTimeframe.length === 1
+                        ? selectedTimeframe[0] === 'upcoming'
+                          ? 'Upcoming'
+                          : 'Past'
+                        : `${selectedTimeframe.length} selected`,
+                  options: [
+                    { value: 'upcoming', label: 'Upcoming' },
+                    { value: 'past', label: 'Past' },
+                  ],
+                  onSelectValues: setSelectedTimeframe,
+                },
+                {
+                  key: 'created_on',
+                  label: 'Created On',
+                  type: 'date',
+                  dateValue: createdOnRange,
+                  onDateChange: (val) => {
+                    setCreatedOnRange(val);
+                    setCurrentPage(1);
+                  },
+                },
+                {
+                  key: 'updated_on',
+                  label: 'Updated On',
+                  type: 'date',
+                  dateValue: updatedOnRange,
+                  onDateChange: (val) => {
+                    setUpdatedOnRange(val);
+                    setCurrentPage(1);
+                  },
+                },
+              ]}
+              activeFilterCount={
+                selectedStatuses.length +
+                (selectedCreatedByIds.length > 0 ? 1 : 0) +
+                (selectedTimeframe.includes('upcoming') &&
+                  selectedTimeframe.length === 1
+                  ? 0
+                  : selectedTimeframe.length) +
+                (createdOnRange ? 1 : 0) +
+                (updatedOnRange ? 1 : 0)
+              }
+              onClearFilters={() => {
+                setSelectedStatuses([]);
+                setSelectedCreatedByIds([]);
+                setSelectedTimeframe(['upcoming']);
+                clearCreatedOnRange();
+                clearUpdatedOnRange();
+              }}
+              actions={[
+                {
+                  key: 'manage-accounts',
+                  label: 'Manage Accounts',
+                  icon: Settings,
+                  onClick: () => {
+                    window.location.href =
+                      '/home/sales/workspace-settings?tab=integrations&view=meetings';
+                  },
+                  buttonVariant: 'outline' as const,
+                },
+                {
+                  key: 'schedule-meeting',
+                  label: 'Schedule Meeting',
+                  icon: Plus,
+                  onClick: () => {
+                    setInitialMeetingType('scheduled');
+                    setIsCreateDialogOpen(true);
+                  },
+                  buttonVariant: 'default' as const,
+                },
+              ]}
+              columnVisibilitySlot={
+                <ColumnVisibilitySelector
+                  columns={columns}
+                  visibility={visibility}
+                  onToggle={toggleVisibility}
+                  onReset={reset}
+                />
+              }
             />
-          }
-        />
           </div>
         </PageHeader>
       </div>
@@ -2802,7 +2800,7 @@ export default function MeetingsPage() {
                               >
                                 <Button
                                   variant="ghost"
-                                  size="icon"                                 
+                                  size="icon"
                                 >
                                   <MoreVertical className="h-4 w-4" />
                                 </Button>
@@ -2928,16 +2926,16 @@ export default function MeetingsPage() {
             }
           />
         )}
-      
-      <AddColumnModal
-        open={addColumnModalOpen}
-        onOpenChange={setAddColumnModalOpen}
-        columns={columns}
-        visibility={visibility}
-        onToggleColumn={toggleVisibility}
-        onResetColumns={reset}
-      />
-      <CustomDeleteDialog
+
+        <AddColumnModal
+          open={addColumnModalOpen}
+          onOpenChange={setAddColumnModalOpen}
+          columns={columns}
+          visibility={visibility}
+          onToggleColumn={toggleVisibility}
+          onResetColumns={reset}
+        />
+        <CustomDeleteDialog
           isOpen={isDeleteDialogOpen}
           onOpenChange={setIsDeleteDialogOpen}
           title="Delete Meeting"

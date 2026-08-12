@@ -208,12 +208,15 @@ export function CentralStatusManagementDialog({
       return reorderAccountTypesService({ workspaceId, orderedStatusIds }) as Promise<unknown>;
     },
     onSuccess: (_data, variables) => {
-      // Invalidate the non-mgmt queries so dropdowns update immediately
+      // Invalidate both mgmt and standard status queries so both management dialog and dropdowns/kanban update immediately
       if (variables.tab === 'leads') {
+        queryClient.invalidateQueries({ queryKey: ['lead-statuses-mgmt', workspaceId] });
         queryClient.invalidateQueries({ queryKey: ['lead-statuses', workspaceId] });
       } else if (variables.tab === 'opportunities') {
+        queryClient.invalidateQueries({ queryKey: ['opportunity-stages-mgmt', workspaceId] });
         queryClient.invalidateQueries({ queryKey: ['opportunity-stages', workspaceId] });
       } else {
+        queryClient.invalidateQueries({ queryKey: ['account-types-mgmt', workspaceId] });
         queryClient.invalidateQueries({ queryKey: ['account-types', workspaceId] });
       }
     },

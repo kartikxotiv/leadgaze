@@ -88,6 +88,40 @@ interface EntityActivityProps {
 
 // --- Reminders ---
 
+const getPriorityBadge = (priority: string) => {
+  switch (priority?.toLowerCase()) {
+    case 'high':
+      return (
+        <Badge
+          variant="outline"
+          className="border-red-200 bg-red-50 text-red-600"
+        >
+          High
+        </Badge>
+      );
+    case 'medium':
+      return (
+        <Badge
+          variant="outline"
+          className="border-amber-200 bg-amber-50 text-amber-600"
+        >
+          Medium
+        </Badge>
+      );
+    case 'low':
+      return (
+        <Badge
+          variant="outline"
+          className="border-emerald-200 bg-emerald-50 text-emerald-600"
+        >
+          Low
+        </Badge>
+      );
+    default:
+      return <Badge variant="secondary">{priority || 'Medium'}</Badge>;
+  }
+};
+
 export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
   const { currentWorkspace: workspace } = useRBAC();
   const { formatDate } = useLocalization();
@@ -96,7 +130,7 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
   const [reminderTab, setReminderTab] = useState<'active' | 'sent'>('active');
   const [formData, setFormData] = useState({
     title: '',
-    due_date: '',
+    description: '',
     due_date: '',
     priority: 'medium',
   });
@@ -134,6 +168,8 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
         entity_type: entityType,
         entity_id: entityId,
         title: formData.title,
+        description: formData.description,
+        priority: formData.priority,
         due_date: formData.due_date
           ? new Date(formData.due_date).toISOString()
           : undefined,
@@ -141,7 +177,7 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
     onSuccess: () => {
       toast.success('Reminder set');
       setIsOpen(false);
-      setFormData({ title: '', due_date: '', priority: 'medium' });
+      setFormData({ title: '', description: '', due_date: '', priority: 'medium' });
       queryClient.invalidateQueries({
         queryKey: ['reminders', entityType, entityId, workspace?.id],
       });
@@ -159,7 +195,7 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
       toast.success('Reminder updated');
       setIsOpen(false);
       setEditingReminder(null);
-      setFormData({ title: '', due_date: '', priority: 'medium' });
+      setFormData({ title: '', description: '', due_date: '', priority: 'medium' });
       queryClient.invalidateQueries({
         queryKey: ['reminders', entityType, entityId, workspace?.id],
       });
@@ -193,6 +229,8 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
   const handleSave = () => {
     const payload = {
       title: formData.title,
+      description: formData.description,
+      priority: formData.priority,
       due_date: formData.due_date
         ? new Date(formData.due_date).toISOString()
         : undefined,
@@ -208,6 +246,7 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
     setEditingReminder(reminder);
     setFormData({
       title: reminder.title,
+      description: reminder.description || '',
       due_date: reminder.due_date
         ? new Date(reminder.due_date).toISOString().slice(0, 16)
         : '',
@@ -247,7 +286,7 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
             setIsOpen(open);
             if (!open) {
               setEditingReminder(null);
-              setFormData({ title: '', due_date: '', priority: 'medium' });
+              setFormData({ title: '', description: '', due_date: '', priority: 'medium' });
             }
           }}
         >
@@ -275,6 +314,34 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
                 />
               </div>
               <div>
+                <Label>Description</Label>
+                <Input
+                  value={formData.description}
+                  onChange={(e) =>
+                    setFormData({ ...formData, description: e.target.value })
+                  }
+                  placeholder="Add more details..."
+                />
+              </div>
+              <div>
+                <Label>Priority</Label>
+                <Select
+                  value={formData.priority}
+                  onValueChange={(val) =>
+                    setFormData({ ...formData, priority: val })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select priority" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
                 <Label>Due Date</Label>
                 <DateTimePicker
                   showTime
@@ -299,6 +366,7 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
                 onClick={handleSave}
                 disabled={
                   !formData.title ||
+                  !formData.due_date ||
                   createMutation.isPending ||
                   updateMutation.isPending
                 }
@@ -366,27 +434,33 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
                     {reminder.title}
                   </span>
                 }
+                badge={getPriorityBadge(reminder.priority)}
                 metadata={
-                  <div className="flex flex-wrap gap-x-3 gap-y-1">
-                    {reminder.due_date && (
-                      <span className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                         Due: {formatDate(reminder.due_date)} {new Date(reminder.due_date).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}
-                      </span>
+                  <div className="flex flex-col gap-1">
+                    {reminder.description && (
+                      <p
+                        className="text-xs text-gray-500 max-w-[280px] truncate"
+                        title={reminder.description}
+                      >
+                        {reminder.description}
+                      </p>
                     )}
-                    <span>
-                      Created by {reminder.created_by_user?.name || 'Unknown'} on {formatDate(reminder.created_at)}
-                    </span>
-                    {/* {reminder.updated_by && reminder.updated_by_user && (
+                    <div className="flex flex-wrap gap-x-3 gap-y-1">
+                      {reminder.due_date && (
+                        <span className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                           Due: {formatDate(reminder.due_date)} {new Date(reminder.due_date).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}
+                        </span>
+                      )}
                       <span>
-                        Updated by {reminder.updated_by_user.name || 'Unknown'} on {formatDate(reminder.updated_at!)}
+                        Created by {reminder.created_by_user?.name || reminder.created_by_name || reminder.created_by_user?.email || 'Unknown'} on {formatDate(reminder.created_at)}
                       </span>
-                    )} */}
-                    {reminder.entity_type !== entityType && (
+                      {reminder.entity_type !== entityType && (
                         <span className="text-blue-600 dark:text-blue-400">
                           From {reminder.entity_type.charAt(0).toUpperCase() + reminder.entity_type.slice(1)}{reminder.entity_name ? `: ${reminder.entity_name}` : ''}
                         </span>
                       )}
+                    </div>
                   </div>
                 }
                 actions={
