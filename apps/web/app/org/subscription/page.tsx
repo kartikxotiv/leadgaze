@@ -601,7 +601,7 @@ export default function OrgSubscriptionPage({
   }
 
   return (
-    <div className="space-y-6 pb-8">
+    <div className="space-y-2">
       {/* Billing cycle toggle — only for trial/new users, not existing subscribers */}
       {!existingBillingCycle && canManageSubscription && (
         <div className="flex items-center gap-4">
@@ -651,36 +651,36 @@ export default function OrgSubscriptionPage({
       )}
 
       {/* Quick stats pills */}
-      <div className="flex gap-2 border-b border-slate-200 dark:border-zinc-800 pb-3">
-        <div className="px-3 border border-slate-200 dark:border-zinc-800 rounded-md text-sm font-medium text-foreground flex items-center gap-2 bg-white dark:bg-zinc-900 h-9 shadow-sm">
+      <div className="flex gap-2">
+        <button className="px-2 border border-slate-200 rounded-md primary-text-medium text-leadgaze-dark dark:text-white flex items-center gap-2 bg-white h-9">
           <div className="w-2 h-2 rounded-full bg-orange-500" />
           Active Modules ({seats.length})
-        </div>
-        <div className="px-3 border border-slate-200 dark:border-zinc-800 rounded-md text-sm font-medium text-foreground flex items-center gap-2 bg-white dark:bg-zinc-900 h-9 shadow-sm">
+        </button>
+        <button className="px-2 border border-slate-200 rounded-md primary-text-medium text-leadgaze-dark dark:text-white flex items-center gap-2 bg-white h-9">
           <div className="w-2 h-2 rounded-full bg-blue-500" />
           Total Seats ({totalSeats})
-        </div>
+        </button>
       </div>
 
       {/* Active Subscriptions — Table layout */}
       {seats.length > 0 && (
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between p-4 pb-3 border-b border-slate-100 dark:border-zinc-800">
-            <CardTitle className="text-lg font-semibold">Your Modules</CardTitle>
-            <Badge variant="secondary" className="uppercase font-bold text-xs tracking-wider">
+          <CardHeader className="flex flex-row items-center justify-between p-2 border-b border-slate-200 pb-1">
+            <CardTitle className="primary-text-big-regular text-leadgaze-dark dark:text-white mb-0">Your Modules</CardTitle>
+            <div className="secondary-text-small-bold text-leadgaze-dark dark:text-white">
               {seats.length} MODULE{seats.length !== 1 ? 'S' : ''}
               {isTrial && ' (Trial)'}
-            </Badge>
+            </div>
           </CardHeader>
           <CardContent className="p-0">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Module</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Seats</TableHead>
-                  <TableHead>Price / Seat</TableHead>
-                  <TableHead>Total</TableHead>
+                  <TableHead className="secondary-text-small-bold text-leadgaze-dark dark:text-white uppercase">Module</TableHead>
+                  <TableHead className="secondary-text-small-bold text-leadgaze-dark dark:text-white uppercase">Status</TableHead>
+                  <TableHead className="secondary-text-small-bold text-leadgaze-dark dark:text-white uppercase">Seats</TableHead>
+                  <TableHead className="secondary-text-small-bold text-leadgaze-dark dark:text-white uppercase">Price / Seat</TableHead>
+                  <TableHead className="secondary-text-small-bold text-leadgaze-dark dark:text-white uppercase">Total</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -919,8 +919,8 @@ export default function OrgSubscriptionPage({
 
       {/* Payment Method Section */}
       {/* <Card>
-        <CardHeader className="flex flex-row items-center justify-between p-4 border-b border-slate-100 dark:border-zinc-800">
-          <div>
+        <CardHeader className="flex flex-row items-center justify-between p-2 border-b border-slate-100 dark:border-zinc-800">
+          <div className="mb-0">
             <CardTitle className="text-lg font-semibold">Payment Method</CardTitle>
             <CardDescription className="text-xs text-muted-foreground mt-0.5">
               Payment for domains, emails, and other usage are made using the default card.
@@ -939,9 +939,9 @@ export default function OrgSubscriptionPage({
                   <div className="w-2.5 h-2.5 rounded-full bg-orange-400 opacity-90"></div>
                 </div>
               </div>
-              <span className="text-sm font-medium text-foreground">Master Card Credit .... 4575</span>
+              <span className="secondary-text-small-bold text-leadgaze-dark dark:text-white">Master Card Credit .... 4575</span>
             </div>
-            <div className="text-xs text-muted-foreground font-medium">
+            <div className="secondary-text-small-bold text-leadgaze-dark dark:text-white font-medium">
               Valid until 2/2032
             </div>
           </div>
@@ -951,7 +951,7 @@ export default function OrgSubscriptionPage({
       {/* Cancel Subscription Section (only for paid subscriptions) */}
       {canManageSubscription && isPaid && seats.length > 0 && (
         <Card className="border-destructive/20">
-          <CardContent className="flex flex-col md:flex-row items-center justify-between p-6">
+          <CardContent className="flex flex-col md:flex-row items-center justify-between py-4 px-2">
             <div className="flex items-start gap-3 mb-2">
               <div className="bg-destructive/10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full">
                 <AlertTriangle className="text-destructive h-4 w-4" />
@@ -1381,7 +1381,7 @@ function ActiveModuleRow({
         <div className="flex items-center gap-3">
           <div
             className={cn(
-              'flex h-9 w-9 items-center justify-center rounded-lg',
+              'flex w-8 h-8 items-center justify-center rounded-lg',
               style.iconBg,
               style.iconColor,
             )}
@@ -1389,10 +1389,10 @@ function ActiveModuleRow({
             {icon}
           </div>
           <div>
-            <p className="text-foreground text-sm font-semibold">
+            <p className="primary-text-medium text-leadgaze-dark dark:text-white">
               {product?.display_name ?? 'Module'}
             </p>
-            <p className="text-muted-foreground text-xs">
+            <p className="text-xs text-leadgaze-dark dark:text-white">
               {seat.seats_used}/{seat.seats_purchased} used
             </p>
           </div>
@@ -1409,6 +1409,7 @@ function ActiveModuleRow({
               : seat.status === 'active'
                 ? 'bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-400'
                 : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400',
+                'font-semibold text-xs px-2 py-0'
           )}
         >
           {statusLabel}
@@ -1428,7 +1429,7 @@ function ActiveModuleRow({
           >
             <Minus className="h-3 w-3" />
           </Button>
-          <span className="text-foreground w-6 text-center text-sm font-semibold">
+          <span className="text-sm font-semibold text-leadgaze-dark dark:text-white w-6 text-center">
             {displaySeats}
           </span>
           <Button
@@ -1451,13 +1452,13 @@ function ActiveModuleRow({
       <TableCell className="text-foreground text-sm whitespace-nowrap">
         {pricePerSeat ? (
           <>
-            <span className="font-semibold">{currencySymbol}{pricePerSeat}</span>
-            <span className="text-muted-foreground text-xs">
+            <span className="text-center text-sm font-semibold text-leadgaze-dark dark:text-white">{currencySymbol}{pricePerSeat}</span>
+            <span className="text-center text-sm font-semibold text-leadgaze-dark dark:text-white">
               /{billingCycle === 'yearly' ? 'yr' : 'mo'}
             </span>
           </>
         ) : (
-          <span className="text-muted-foreground text-xs">—</span>
+          <span className="text-center text-sm font-semibold text-leadgaze-dark dark:text-white">—</span>
         )}
       </TableCell>
 
@@ -1467,8 +1468,8 @@ function ActiveModuleRow({
           <div className="text-foreground text-sm whitespace-nowrap">
             {pricePerSeat ? (
               <>
-                <span className="font-semibold">{currencySymbol}{total}</span>
-                <span className="text-muted-foreground text-xs">
+                <span className="text-center text-sm font-semibold text-leadgaze-dark dark:text-white">{currencySymbol}{total}</span>
+                <span className="text-center text-sm font-semibold text-leadgaze-dark dark:text-white">
                   /{billingCycle === 'yearly' ? 'yr' : 'mo'}
                 </span>
               </>
@@ -1515,7 +1516,7 @@ function PricingBreakdownRow({
 
   return (
     <div className="bg-muted/30 border-t">
-      <div className="flex items-center justify-between px-5 py-2.5">
+      <div className="flex items-center justify-between px-2 py-1.5">
         <div className="flex items-center gap-2">
           <span
             className="text-sm font-semibold"
@@ -1523,7 +1524,7 @@ function PricingBreakdownRow({
           >
             {currencySymbol}{pricePerSeat}/seat/{period}
           </span>
-          <span className="text-muted-foreground text-xs">·</span>
+          <span className="text-muted-foreground text-xs text-[18px]">·</span>
           <span className="text-muted-foreground text-xs">
             {displaySeats} seat{displaySeats !== 1 ? 's' : ''} × {currencySymbol}{pricePerSeat}
           </span>
@@ -1545,7 +1546,7 @@ function PricingBreakdownRow({
       </div>
 
       {expanded && (
-        <div className="border-t px-5 pt-2 pb-3">
+        <div className="border-t px-0 pb-2">
           <SeatAssignmentsList
             workspaceId={workspaceId}
             productKey={seat.subscription_products?.product_key ?? ''}
@@ -1861,17 +1862,17 @@ function SeatAssignmentsList({
       {assignments.map((a) => (
         <div
           key={a.id}
-          className="hover:bg-muted/50 flex items-center justify-between rounded-lg px-2 py-2 transition-colors"
+          className="hover:bg-muted/50 flex items-center justify-between rounded-lg px-2 py-1 transition-colors"
         >
           <div className="flex items-center gap-3">
-            <div className="bg-primary/10 text-primary flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold">
+            <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 secondary-text-small-bold font-bold">
               {(a.accounts?.email?.charAt(0) ?? 'U').toUpperCase()}
             </div>
             <div>
-              <p className="text-foreground text-sm font-medium">
+              <p className="primary-text-medium text-leadgaze-dark dark:text-white">
                 {a.accounts?.name ?? 'User'}
               </p>
-              <p className="text-muted-foreground text-xs">
+              <p className="text-[10px] text-black-100 dark:text-white">
                 {a.accounts?.email}
               </p>
             </div>

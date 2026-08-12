@@ -473,6 +473,18 @@ export function ServiceCloudCustomersPage({
             ]}
             columns={[
               {
+                key: 'sno',
+                label: 'S. No.',
+                sortable: false,
+                width: 'w-12',
+                minWidth: 30,
+                className: 'text-muted-foreground w-12',
+                render: (_, index, pagination) => {
+                  if (index === undefined || !pagination) return '-';
+                  return (pagination.currentPage - 1) * pagination.pageSize + index + 1;
+                },
+              },
+              {
                 key: 'name',
                 label: getCustomerLabel('name', 'Name'),
                 render: (customer) => (
@@ -556,6 +568,18 @@ export function ServiceCloudCustomersPage({
               { key: 'phone', label: getOrganizationLabel('phone', 'Phone') },
             ]}
             columns={[
+              {
+                key: 'sno',
+                label: 'S. No.',
+                sortable: false,
+                width: 'w-12',
+                minWidth: 30,
+                className: 'text-muted-foreground w-12',
+                render: (_, index, pagination) => {
+                  if (index === undefined || !pagination) return '-';
+                  return (pagination.currentPage - 1) * pagination.pageSize + index + 1;
+                },
+              },
               { key: 'name', label: getOrganizationLabel('name', 'Name') },
               {
                 key: 'website',

@@ -39,6 +39,10 @@ export interface CardWidgetListItemProps
   actions?: React.ReactNode;
   /** How the hover actions are positioned and animated. Defaults to 'slide' */
   actionStyle?: 'fixed' | 'floating' | 'slide';
+
+  titleClassFormat?: React.ReactNode;
+
+  isBadgeVerticalCenter?: boolean;
 }
 
 export function CardWidgetListItem({
@@ -52,6 +56,8 @@ export function CardWidgetListItem({
   actions,
   actionStyle = 'fixed',
   className,
+  titleClassFormat,
+  isBadgeVerticalCenter = false,
   ...props
 }: CardWidgetListItemProps) {
   return (
@@ -71,15 +77,16 @@ export function CardWidgetListItem({
             {icon}
           </div>
         )}
-        <div className="flex min-w-0 flex-1 flex-col">
+        <div className={`flex min-w-0 flex-1 ${isBadgeVerticalCenter ? 'flex-row items-center': 'flex-col'}`}>
+          <div className="flex min-w-0 flex-1 flex-col">
           {(title || badge) && (
             <div className="flex items-center justify-between gap-2">
               {title && (
-                <div className="h-5 truncate primary-text-medium leading-5 text-leadgaze-dark dark:text-white">
+                <div className={cn("h-5 truncate primary-text-medium leading-5 text-leadgaze-dark dark:text-white", titleClassFormat)}>
                   {title}
                 </div>
               )}
-              {badge && <div className="flex-shrink-0">{badge}</div>}
+              {(badge && !isBadgeVerticalCenter)  && <div className="flex-shrink-0">{badge}</div>}
             </div>
           )}
           {subtitle && (
@@ -97,6 +104,8 @@ export function CardWidgetListItem({
               {metadata}
             </div>
           )}
+          </div>
+          {(badge && isBadgeVerticalCenter)  && <div className="flex-shrink-0">{badge}</div>}
         </div>
       </div>
       {actions && (
