@@ -799,3 +799,52 @@ export const deleteOpportunityStage = catchAsync(
   },
 );
 
+/**
+ * PUT /api/opportunities/statuses/reorder
+ * Bulk-update sort_order for opportunity stages.
+ * Body: { workspaceId: string, orderedStatusIds: string[] }
+ */
+export const reorderOpportunityStages = catchAsync(
+  async ({
+    request,
+  }: {
+    request: NextRequest;
+    params?: Record<string, string>;
+  }) => {
+    const supabase = getSupabaseServerClient();
+    const body = await request.json();
+    const { workspaceId, orderedStatusIds } = body;
+
+    if (!workspaceId || !Array.isArray(orderedStatusIds)) {
+      return NextResponse.json(
+        { message: 'workspaceId and orderedStatusIds array are required' },
+        { status: 400 },
+      );
+    }
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    }
+
+    const updatePromises = orderedStatusIds.map((statusId: string, index: number) =>
+      supabase
+        .from('entity_statuses')
+        .update({ sort_order: index, updated_by: user.id, updated_at: new Date().toISOString() })
+        .eq('id', statusId)
+        .eq('workspace_id', workspaceId),
+    );
+
+    const results = await Promise.all(updatePromises);
+    const errors = results.filter((r) => r.error);
+    if (errors.length > 0) {
+      console.error('Errors updating opportunity stage order:', errors.map((e) => e.error));
+      throw new Error('Failed to update all opportunity stage orderings');
+    }
+
+    return successDataResponse('Opportunity stages reordered successfully', null);
+  },
+);
