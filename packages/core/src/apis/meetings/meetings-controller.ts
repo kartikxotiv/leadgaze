@@ -649,6 +649,65 @@ export const createMeetingController = catchAsync(async ({ request }) => {
           participantRows.length,
           'participants',
         );
+
+        // Send email invitations to external invitees asynchronously in background (non-blocking)
+        const externalParticipants = participantRows.filter(
+          (p: { participant_type?: string; external_email?: string | null }) =>
+            p.participant_type === 'EXTERNAL' && p.external_email,
+        );
+
+        if (externalParticipants.length > 0) {
+          (async () => {
+            try {
+              // @ts-ignore - dynamic import resolved at runtime within web application context
+              const { NotificationService } = await import(
+                '~/lib/cron/notification-service'
+              );
+
+              const { data: hostAcc } = await (supabase as any)
+                .from('accounts')
+                .select('name, email')
+                .eq('id', user.id)
+                .single();
+
+              for (const extP of externalParticipants) {
+                if (extP.external_email) {
+                  NotificationService.sendMeetingInvitationEmail({
+                    to: extP.external_email,
+                    meetingTitle: meeting.title,
+                    meetingDescription: meeting.description || undefined,
+                    startTime:
+                      meeting.scheduled_start ||
+                      meeting.actual_start ||
+                      new Date().toISOString(),
+                    endTime:
+                      meeting.scheduled_end ||
+                      meeting.actual_end ||
+                      new Date().toISOString(),
+                    location: meeting.location || undefined,
+                    meetingLink: meeting.meeting_url || undefined,
+                    hostName: hostAcc?.name || undefined,
+                    hostEmail: hostAcc?.email || undefined,
+                    workspaceId,
+                    recipientTz: meeting.timezone || 'UTC',
+                  }).catch((err: unknown) => {
+                    console.error(
+                      '[createMeeting] Error sending invitation email to ' +
+                        extP.external_email +
+                        ':',
+                      err,
+                    );
+                  });
+                }
+              }
+            } catch (emailErr) {
+              console.error(
+                '[createMeeting] Failed to trigger invitation emails:',
+                emailErr,
+              );
+            }
+          })();
+        }
       }
     } else {
       console.log(
@@ -665,7 +724,7 @@ export const createMeetingController = catchAsync(async ({ request }) => {
           (r: { offset_minutes: number; channel?: string }) => {
             const scheduledAt = new Date(
               new Date(meetingStartTime).getTime() -
-                r.offset_minutes * 60 * 1000,
+              r.offset_minutes * 60 * 1000,
             );
             return {
               workspace_id: workspaceId,
@@ -1073,7 +1132,7 @@ export const updateMeetingController = catchAsync(async ({ request }) => {
           (r: { offset_minutes: number; channel?: string }) => {
             const scheduledAt = new Date(
               new Date(resolvedStart).getTime() -
-                r.offset_minutes * 60 * 1000,
+              r.offset_minutes * 60 * 1000,
             );
             return {
               workspace_id: workspaceId,
@@ -1109,7 +1168,7 @@ export const updateMeetingController = catchAsync(async ({ request }) => {
           for (const rem of existingReminders) {
             const scheduledAt = new Date(
               new Date(resolvedStart).getTime() -
-                rem.offset_minutes * 60 * 1000,
+              rem.offset_minutes * 60 * 1000,
             );
             await (supabase as any)
               .schema('core')
