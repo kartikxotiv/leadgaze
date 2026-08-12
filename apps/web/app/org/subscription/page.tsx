@@ -999,18 +999,19 @@ export default function OrgSubscriptionPage({
           }
         }}
       >
-        <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-md">
+        <DialogContent className="flex max-h-[90vh] flex-col p-0 overflow-hidden border-gray-200 bg-white sm:max-w-md dark:border-slate-800 dark:bg-slate-950">          
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Users className="text-primary h-5 w-5" />
+              <div className="flex items-center gap-2"><Users className="h-5 w-5 text-white" />
               {seatUpdateDialog.newSeats > seatUpdateDialog.currentSeats
                 ? 'Add Seat'
                 : 'Remove Seat'}{' '}
-              — {seatUpdateDialog.displayName}
+              — {seatUpdateDialog.displayName}</div>
             </DialogTitle>
-            <DialogDescription asChild>
-              <div className="space-y-3 pt-1">
-                <p>
+            </DialogHeader>
+            
+              <div className="flex flex-col flex-1 overflow-y-auto p-2 space-y-2 pt-0">
+                <p className="primary-text-regular text-leadgaze-dark dark:text-white">
                   {seatUpdateDialog.newSeats > seatUpdateDialog.currentSeats
                     ? `You are about to increase ${seatUpdateDialog.displayName} from ${seatUpdateDialog.currentSeats} to ${seatUpdateDialog.newSeats} seat${seatUpdateDialog.newSeats !== 1 ? 's' : ''}.`
                     : `You are about to decrease ${seatUpdateDialog.displayName} from ${seatUpdateDialog.currentSeats} to ${seatUpdateDialog.newSeats} seat${seatUpdateDialog.newSeats !== 1 ? 's' : ''}.`}
@@ -1019,7 +1020,7 @@ export default function OrgSubscriptionPage({
                   <div className="flex items-start gap-2">
                     <CreditCard className="text-primary mt-0.5 h-4 w-4 shrink-0" />
                     <div className="space-y-1">
-                      <p className="text-foreground text-sm font-medium">
+                      <p className="text-leadgaze-dark text-sm font-medium dark:text-white">
                         Prorated billing
                       </p>
                       <p className="text-muted-foreground text-xs">
@@ -1036,8 +1037,6 @@ export default function OrgSubscriptionPage({
                   </div>
                 </div>
               </div>
-            </DialogDescription>
-          </DialogHeader>
           <DialogFooter>
             <Button
               variant="outline"
@@ -1089,15 +1088,15 @@ export default function OrgSubscriptionPage({
           if (!open) setCancelDialogOpen(false);
         }}
       >
-        <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5" />
-              Cancel Subscription
+        <DialogContent className="flex max-h-[90vh] flex-col p-0 overflow-hidden border-gray-200 bg-white sm:max-w-md dark:border-slate-800 dark:bg-slate-950">
+          <DialogHeader className="bg-red-500">
+            <DialogTitle>
+              <div className="flex items-center gap-2"><AlertTriangle className="h-5 w-5" /> Cancel Subscription</div>
             </DialogTitle>
-            <DialogDescription asChild>
-              <div className="space-y-3 pt-1">
-                <p>
+            </DialogHeader>
+            
+              <div className="flex flex-col flex-1 overflow-y-auto p-2 space-y-2 pt-0">
+                <p className="primary-text-regular text-leadgaze-dark dark:text-white">
                   Are you sure you want to cancel your subscription? All{' '}
                   <strong>
                     {seats.length} active module
@@ -1128,8 +1127,8 @@ export default function OrgSubscriptionPage({
                   regain access.
                 </p>
               </div>
-            </DialogDescription>
-          </DialogHeader>
+            
+          
           <DialogFooter>
             <Button
               variant="outline"
@@ -1533,7 +1532,7 @@ function PricingBreakdownRow({
           type="button"
           variant="ghost"
           size="sm"
-          className="h-auto gap-1 px-2 py-1 text-xs"
+          className="h-auto gap-1 px-2 py-1 text-xs dark:text-white"
           onClick={() => setExpanded(!expanded)}
         >
           View members

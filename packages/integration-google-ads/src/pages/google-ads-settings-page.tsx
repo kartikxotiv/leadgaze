@@ -39,6 +39,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from '@kit/ui/dialog';
 import { Switch } from '@kit/ui/switch';
 import { Label } from '@kit/ui/label';
@@ -873,12 +874,10 @@ Google Key: (leave empty)`}
       <Dialog open={showDisconnectDialog} onOpenChange={setShowDisconnectDialog}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Disconnect Google Ads Account</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to disconnect <span className="font-semibold text-foreground">{accountToDisconnect?.email}</span>?
-            </DialogDescription>
+            <DialogTitle>Disconnect Google Ads Account</DialogTitle>            
           </DialogHeader>
-          <div className="space-y-2 py-2">
+          <div className="space-y-2 px-2">
+            <p className="primary-text-regular text-leadgaze-dark dark:text-white">Are you sure you want to disconnect <span className="font-semibold">{accountToDisconnect?.email}</span>?</p>
             <div className="flex items-start gap-3 rounded-md bg-destructive/10 border border-destructive/20 p-3">
               <AlertTriangle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
               <div className="text-sm text-destructive space-y-1">
@@ -890,29 +889,29 @@ Google Key: (leave empty)`}
                 </ul>
               </div>
             </div>
-            <div className="flex gap-2 justify-end">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setShowDisconnectDialog(false);
-                  setAccountToDisconnect(null);
-                }}
-                disabled={isMutating}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={handleDisconnect}
-                disabled={isMutating}
-              >
-                {isMutating ? (
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                ) : null}
-                Disconnect
-              </Button>
-            </div>
           </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowDisconnectDialog(false);
+                setAccountToDisconnect(null);
+              }}
+              disabled={isMutating}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDisconnect}
+              disabled={isMutating}
+            >
+              {isMutating ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : null}
+              Disconnect
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>

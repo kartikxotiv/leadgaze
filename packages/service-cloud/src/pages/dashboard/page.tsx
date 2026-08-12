@@ -100,7 +100,7 @@ export function ServiceCloudDashboardPage({
       value: data?.totalTickets ?? 0,
       icon: Ticket,
       detail: 'All active service tickets',
-      iconBg: 'bg-primary dark:bg-primary',
+      iconBg: 'bg-primary dark:bg-leadgaze-primary',
       link: '/home/services/tickets',
     },
     {
@@ -254,7 +254,7 @@ export function ServiceCloudDashboardPage({
                         title={`#${ticket.ticket_number} ${ticket.subject}`}
                         subtitle={`${ticket.source} · ${formatDate(ticket.created_at)}`}
                         badge={
-                          <Badge variant="outline" className="text-[11px] font-normal bg-[#E7E8EA] rounded-none">
+                          <Badge variant="outline" className="text-[11px] font-normal bg-[#E7E8EA] rounded-none dark:text-leadgaze-dark">
                             {ticket.email_count ?? 0} emails
                           </Badge>
                         }
@@ -338,7 +338,7 @@ export function ServiceCloudDashboardPage({
                           customer.organization ||
                           'No contact context'
                         }
-                        badge={<Badge className="bg-(--color-ticket-status-open) rounded-none text-[11px]">{customer.openTickets} open</Badge>}
+                        badge={<Badge className="bg-(--color-ticket-status-open) rounded-none text-[11px] dark:text-white">{customer.openTickets} open</Badge>}
                         metadata={
                           <span>
                             {customer.totalTickets} total ·{' '}
