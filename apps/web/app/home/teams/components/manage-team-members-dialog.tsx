@@ -12,6 +12,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@kit/ui/dialog';
@@ -182,14 +183,14 @@ export function ManageTeamMembersDialog({
             </div>
 
             <div className="pb-1">
-            <Button
-              onClick={handleAddMember}
-              disabled={!selectedUserId || addMemberMutation.isPending}
-              className="bg-leadgaze-primary hover:bg-leadgaze-primary text-white secondary-text-small-bold gap-1.5 px-2"
-            >
-              <UserPlus className="h-4 w-4" />
-              Add to Team
-            </Button>
+              <Button
+                onClick={handleAddMember}
+                disabled={!selectedUserId || addMemberMutation.isPending}
+                className="bg-leadgaze-primary hover:bg-leadgaze-primary text-white secondary-text-small-bold gap-1.5 px-2"
+              >
+                <UserPlus className="h-4 w-4" />
+                Add to Team
+              </Button>
             </div>
           </div>
 
@@ -222,7 +223,7 @@ export function ManageTeamMembersDialog({
                     const wsMember = salesWorkspaceMembers.find(
                       (wm) => wm.user_id === member.user_id
                     );
-                    
+
                     return (
                       <TableRow key={member.id}>
                         <TableCell className="font-medium">
@@ -258,6 +259,24 @@ export function ManageTeamMembersDialog({
             </Table>
           </div>
         </div>
+        <DialogFooter className="flex justify-end gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            onClick={() => {
+              toast.success('Team member changes saved');
+              onOpenChange(false);
+            }}
+          >
+            Save Changes
+          </Button>
+        </DialogFooter>
       </DialogContent>
       <CustomDeleteDialog
         isOpen={isRemoveMemberDialogOpen}

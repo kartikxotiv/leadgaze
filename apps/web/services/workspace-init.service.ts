@@ -7,6 +7,7 @@ export interface WorkspaceRole {
   workspace_id: string;
   role_key: string;
   role_name: string;
+  color?: string | null;
   hierarchy_level: number;
   product_key?: string | null;
   is_system: boolean;
