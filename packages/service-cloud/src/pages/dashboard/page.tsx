@@ -238,7 +238,7 @@ export function ServiceCloudDashboardPage({
               {(data?.recentTickets ?? []).length === 0 ? (
                 <EmptyState label="No tickets yet." />
               ) : (
-                <CardWidgetList className='gap-0 mb-1'>
+                <CardWidgetList className="gap-0 mb-1">
                   {data.recentTickets.map((ticket: any) => (
                     <Link
                       key={ticket.id}
@@ -254,10 +254,12 @@ export function ServiceCloudDashboardPage({
                         title={`#${ticket.ticket_number} ${ticket.subject}`}
                         subtitle={`${ticket.source} · ${formatDate(ticket.created_at)}`}
                         badge={
-                          <Badge variant="outline">
+                          <Badge variant="outline" className="text-[11px] font-normal bg-[#E7E8EA] rounded-none">
                             {ticket.email_count ?? 0} emails
                           </Badge>
                         }
+                        className="gap-0 border-l-0 border-r-0 border-t-0 rounded-none"
+                        isBadgeVerticalCenter={true}
                       />
                     </Link>
                   ))}
@@ -336,7 +338,7 @@ export function ServiceCloudDashboardPage({
                           customer.organization ||
                           'No contact context'
                         }
-                        badge={<Badge className="bg-(--color-ticket-status-open) rounded-none">{customer.openTickets} open</Badge>}
+                        badge={<Badge className="bg-(--color-ticket-status-open) rounded-none text-[11px]">{customer.openTickets} open</Badge>}
                         metadata={
                           <span>
                             {customer.totalTickets} total ·{' '}
@@ -344,6 +346,7 @@ export function ServiceCloudDashboardPage({
                           </span>
                         }
                         className="gap-0 border-l-0 border-r-0 border-t-0 rounded-none"
+                        isBadgeVerticalCenter={true}
                       />
                     </Link>
                   ))}
@@ -372,6 +375,7 @@ export function ServiceCloudDashboardPage({
                         title={`#${ticket.ticketNumber} ${ticket.subject}`}
                         subtitle={`${ticket.customer} · ${ticket.assignee}`}
                         className="gap-0 border-l-0 border-r-0 border-t-0 rounded-none"
+                        titleClassFormat="secondary-text-small-semibold !font-bold"
                         badge={
                           <span className={cn('text-[11px] font-normal', ticket.daysOpen >= 25 && 'text-(--color-ticket-priority-critical-text) font-bold')}>
                             {ticket.daysOpen}d open
