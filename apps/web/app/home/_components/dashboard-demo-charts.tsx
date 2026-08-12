@@ -98,41 +98,9 @@ export default function DashboardDemo({
     enabled: !!workspaceId,
   });
 
-  // Fetch workspace currencies
-  const { data: currenciesData } = useQuery({
-    queryKey: ['workspace-currencies', workspaceId],
-    queryFn: async () => {
-      if (!workspaceId) return [];
-      const { data, error } = await supabase
-        .schema('core')
-        .from('workspace_currencies')
-        .select('id, currency_code, is_default')
-        .eq('workspace_id', workspaceId)
-        .eq('is_active', true)
-        .order('is_default', { ascending: false });
-      if (error) return [];
-      return data;
-    },
-    enabled: !!workspaceId,
-  });
-
-  // Fetch exchange rates
-  const { data: exchangeRates = [] } = useQuery({
-    queryKey: ['exchange-rates'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .schema('core')
-        .from('currency_exchange_rates')
-        .select('*')
-        .eq('base_currency', 'USD');
-      if (error) return [];
-      return data;
-    },
-    staleTime: 24 * 60 * 60 * 1000,
-  });
-
-  // Convert pipeline value from USD to workspace currency
-  const workspaceCurrency = currenciesData?.find((c) => c.is_default)?.currency_code || 'USD';
+  // OPTIMIZED: Use workspace initialization data instead of separate DB queries
+  const workspaceCurrency = currentWorkspace?.localization?.default_currency || 'USD';
+  const exchangeRates = currentWorkspace?.localization?.exchange_rates || [];
   const pipelineValueUsd = metrics?.opportunities?.totalAmount ?? 0;
   const rate = findLatestRateToUsd(exchangeRates as ExchangeRateRecord[], workspaceCurrency)?.exchange_rate || 1;
   const pipelineValue = convertFromUSD(pipelineValueUsd, rate);
@@ -297,7 +265,7 @@ export default function DashboardDemo({
       {/* section 2 */}
 
       {/* <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4 xl:gap-3 2xl:grid-cols-4 2xl:gap-4"> */}
-        {/* <Button
+      {/* <Button
           variant="outline"
           className="h-13 flex-col gap-2 rounded-xl border-slate-100 bg-white hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800"
           onClick={() => setIsCreateLeadOpen(true)}
@@ -310,7 +278,7 @@ export default function DashboardDemo({
           </div>
         </Button>         */}
 
-        {/* <Button
+      {/* <Button
           variant="outline"
           className="h-13 flex-col gap-2 rounded-xl border-slate-100 bg-white hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800"
           onClick={() => setIsCreateContactOpen(true)}
@@ -323,7 +291,7 @@ export default function DashboardDemo({
           </div>
         </Button> */}
 
-        {/* <Button
+      {/* <Button
           variant="outline"
           className="h-13 flex-col gap-2 rounded-xl border-slate-100 bg-white hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800"
           onClick={() => setIsCreateAccountOpen(true)}
@@ -336,7 +304,7 @@ export default function DashboardDemo({
           </div>
         </Button> */}
 
-        {/* <Button
+      {/* <Button
           variant="outline"
           className="h-13 flex-col gap-2 rounded-xl border-slate-100 bg-white hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800"
           onClick={() => setIsCreateOpportunityOpen(true)}
@@ -387,7 +355,7 @@ export default function DashboardDemo({
             <UpcomingTasks tasks={metrics.upcomingTasks} />
           </div>
         </CardWidgetContainer>
-        
+
       </div>
     </div>
   );
@@ -462,60 +430,75 @@ function UpcomingTasks({ tasks }: { tasks: DashboardTask[] }) {
   };
 
   const getTaskPriority = (task: DashboardTask) => {
-    const title = task.title.toLowerCase();
-    if (title.includes('urgent') || title.includes('follow')) return { label: 'high', bg: 'var(--color-status-danger-bg)', text: 'var(--color-status-danger-text)' };
-    if (title.includes('call') || title.includes('meeting')) return { label: 'medium', bg: 'var(--color-status-warning-bg)', text: 'var(--color-status-warning-text)' };
-    return { label: 'low', bg: 'var(--color-status-neutral-bg)', text: 'var(--color-status-neutral-text)' };
+    switch (task.priority?.toLowerCase()) {
+      case 'high':
+        return {
+          label: 'high',
+          bg: 'var(--color-status-danger-bg)',
+          text: 'var(--color-status-danger-text)',
+        };
+      case 'low':
+        return {
+          label: 'low',
+          bg: 'var(--color-status-neutral-bg)',
+          text: 'var(--color-status-neutral-text)',
+        };
+      default:
+        return {
+          label: 'medium',
+          bg: 'var(--color-status-warning-bg)',
+          text: 'var(--color-status-warning-text)',
+        };
+    }
   };
 
-  // Limit to latest 3 tasks
-  const latestTasks = useMemo(() => tasks.slice(0, 3), [tasks]);
+  const latestTasks = useMemo(() => tasks ?? [], [tasks]);
 
   return (
-    <div className="max-h-[400px] overflow-y-auto xl:max-h-[430px] 2xl:max-h-[440px] overflow-auto">
+    <div className="">
       {latestTasks.length === 0 ? (
-            <div className="flex h-40 flex-col items-center justify-center text-slate-400">
-              <FileText className="mb-2 h-8 w-8 opacity-20" />
-              <p className="text-sm">No upcoming tasks</p>
-            </div>
-          ) : (
-            <div className="divide-y dark:divide-zinc-800">
-              {latestTasks.map((task) => {
-                const relativeDate = formatDueDateShort(task.dueDate);
-                const priority = getTaskPriority(task);
-                return (
-                  <div
-                    key={task.id}
-                    className="flex items-center justify-between px-6 py-2 transition-colors hover:bg-slate-50/30 dark:hover:bg-zinc-800/30 border-b border-gray-300 last:border-0 xl:px-4 2xl:px-6"
-                  >
-                    <div className="flex items-start gap-4">
+        <div className="flex h-40 flex-col items-center justify-center text-slate-400">
+          <FileText className="mb-2 h-8 w-8 opacity-20" />
+          <p className="text-sm">No upcoming tasks</p>
+        </div>
+      ) : (
+        <div className="divide-y dark:divide-zinc-800 max-h-[300px] overflow-y-auto xl:max-h-[300px] 2xl:max-h-[300px] overflow-auto">
+          {latestTasks.map((task) => {
+            const relativeDate = formatDueDateShort(task.dueDate);
+            const priority = getTaskPriority(task);
+            return (
+              <div
+                key={task.id}
+                className="flex items-center justify-between px-6 py-2 transition-colors hover:bg-slate-50/30 dark:hover:bg-zinc-800/30 border-b border-gray-300 last:border-0 xl:px-4 2xl:px-6"
+              >
+                <div className="flex items-start gap-4">
 
-                      <div className="flex flex-col gap-0.5">
-                        <span className="primary-text-medium text-leadgaze-dark dark:text-zinc-200">
-                          {task.title}
-                          {task.entityName && (
-                            <span className="font-normal text-leadgaze-muted dark:text-white">
-                              {' '}
-                              - {task.entityName}
-                            </span>
-                          )}
+                  <div className="flex flex-col gap-0.5">
+                    <span className="primary-text-medium text-leadgaze-dark dark:text-zinc-200">
+                      {task.title}
+                      {task.entityName && (
+                        <span className="font-normal text-leadgaze-muted dark:text-white">
+                          {' '}
+                          - {task.entityName}
                         </span>
-                        <span className="secondary-text-small text-leadgaze-muted dark:text-white">
-                          {relativeDate}
-                        </span>
-                      </div>
-                    </div>
-                    <div
-                      className="px-2 py-0.5 rounded-md text-xs font-medium uppercase tracking-wider"
-                      style={{ backgroundColor: priority.bg, color: priority.text }}
-                    >
-                      {priority.label}
-                    </div>
+                      )}
+                    </span>
+                    <span className="secondary-text-small text-leadgaze-muted dark:text-white">
+                      {relativeDate}
+                    </span>
                   </div>
-                );
-              })}
-            </div>
-          )}
+                </div>
+                <div
+                  className="px-2 py-0.5 rounded-md text-xs font-medium uppercase tracking-wider"
+                  style={{ backgroundColor: priority.bg, color: priority.text }}
+                >
+                  {priority.label}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

@@ -54,8 +54,17 @@ import { Card, CardContent, CardHeader } from '@kit/ui/card';
 import { CardWidgetContainer } from '@kit/ui/card-widget-container';
 import { DetailHeader } from '@kit/ui/detail-header';
 import { DetailInfoList, DetailInfoRow } from '@kit/ui/detail-info-row';
+import { InlineEditableValue } from '@kit/ui/inline-editable-value';
+import { Input } from '@kit/ui/input';
 import { PageBody } from '@kit/ui/page';
 import { Popover, PopoverContent, PopoverTrigger } from '@kit/ui/popover';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@kit/ui/select';
 import { Skeleton } from '@kit/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@kit/ui/tabs';
 import {
@@ -97,6 +106,7 @@ import { EntityCalls } from '../../_components/entity-calls';
 import { EntityEmails } from '../../_components/entity-emails';
 import { EntityNotes } from '../../_components/entity-notes';
 import { EntityTasks } from '../../_components/entity-tasks';
+import { EntityActivityLogs } from '../../_components/entity-activity-logs';
 import { ManageableStatusSelect } from '../../_components/manageable-status-select';
 import { AssignUserModal } from '../../leads/components/assign-user-modal';
 import { LogCallDialog } from '../../leads/components/log-call-dialog';
@@ -182,8 +192,13 @@ export default function OpportunityDetailsPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isLogCallDialogOpen, setIsLogCallDialogOpen] = useState(false);
   const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
-  const [openAccordion, setOpenAccordion] = useState<string>('');
+  const [openAccordions, setOpenAccordions] = useState<string[]>(['details', 'additional', 'assignees']);
   const [isManageStagesOpen, setIsManageStagesOpen] = useState(false);
+  const [isEditingAmount, setIsEditingAmount] = useState(false);
+  const [isEditingCloseDate, setIsEditingCloseDate] = useState(false);
+  const [isEditingProbability, setIsEditingProbability] = useState(false);
+  const [isEditingPriority, setIsEditingPriority] = useState(false);
+  const [isEditingType, setIsEditingType] = useState(false);
 
   const {
     data: opportunity,
@@ -195,6 +210,59 @@ export default function OpportunityDetailsPage() {
     queryFn: () => getOpportunityByIdService(id),
     enabled: !!id,
   });
+
+  const opportunityUpdateMutation = useMutation({
+    mutationFn: async (params: {
+      field: string;
+      value: any;
+    }) => {
+      if (!opportunity) {
+        throw new Error('Opportunity is not available for updates');
+      }
+
+      const payload = {
+        opportunity_name: opportunity.opportunity_name,
+        amount: opportunity.amount,
+        currency: opportunity.currency,
+        probability: opportunity.probability,
+        expected_close_date: opportunity.expected_close_date,
+        priority: opportunity.priority,
+        opportunity_type: opportunity.opportunity_type,
+        lead_source: opportunity.lead_source,
+        description: opportunity.description,
+        competitor: opportunity.competitor,
+        is_closed: opportunity.is_closed,
+        is_won: opportunity.is_won,
+        close_reason: opportunity.close_reason,
+        stage_id: opportunity.stage_id,
+        owner_id: opportunity.owner_id,
+        custom_fields: opportunity.custom_fields,
+      };
+
+      payload[params.field as keyof typeof payload] = params.value;
+
+      return updateOpportunityService(id, payload);
+    },
+    onSuccess: async () => {
+      toast.success('Opportunity updated successfully');
+      await refetch();
+    },
+    onError: (error: unknown) => {
+      const message =
+        error instanceof Error ? error.message : 'Failed to update opportunity';
+      toast.error(message);
+    },
+  });
+
+  const commitOpportunityField = async (
+    field: string,
+    value: any,
+  ) => {
+    await opportunityUpdateMutation.mutateAsync({
+      field,
+      value: typeof value === 'string' ? value.trim() || null : value,
+    });
+  };
 
   useEffect(() => {
     if (opportunity) {
@@ -241,22 +309,7 @@ export default function OpportunityDetailsPage() {
   });
 
   // Fetch exchange rates for currency conversion
-  const { data: exchangeRates = [] } = useQuery({
-    queryKey: ['exchange-rates'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .schema('core')
-        .from('currency_exchange_rates')
-        .select('*')
-        .eq('base_currency', 'USD');
-      if (error) {
-        console.error('Failed to fetch exchange rates:', error);
-        return [];
-      }
-      return data;
-    },
-    staleTime: 24 * 60 * 60 * 1000,
-  });
+  const exchangeRates = currentWorkspace?.localization?.exchange_rates || [];
 
   const customFieldsToShow = useMemo(() => {
     if (!opportunity) return [];
@@ -423,24 +476,20 @@ export default function OpportunityDetailsPage() {
 
   return (
     <ModuleGuard module="opportunities">
-      <div className="flex flex-wrap items-start gap-2 pb-2 pt-4 sm:flex-nowrap sm:items-center sm:justify-between">
+      <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap sm:justify-between">
         <div className="flex items-center gap-2">
           <Button
             variant="ghost"
-            size="sm"
             asChild
-            className="border-leadgaze-border border p-0"
+            className="w-6 h-6 border-leadgaze-border border p-0"
           >
             <Link href="/home/sales/opportunities">
-              <ArrowLeft className="ml-2 mr-2 h-4 w-4" />
+              <ArrowLeft className="h-3 w-3" />
             </Link>
           </Button>
-          <div className="flex flex-col">
-            <h1 className="text-lg font-semibold">Opportunity details</h1>
-            <p className="text-leadgaze-muted text-sm">
-              View and edit opportunity information
-            </p>
-          </div>
+          <h1 className="primary-heading-extra text-leadgaze-dark dark:text-white">
+            Opportunity Details
+          </h1>
         </div>
         <div className="flex items-center gap-2">
           {canEdit && (
@@ -449,9 +498,8 @@ export default function OpportunityDetailsPage() {
                 <TooltipTrigger asChild>
                   <Button
                     variant="outline"
-                    size="sm"
                     onClick={() => setIsLogCallDialogOpen(true)}
-                    className="gap-2"
+                    className="secondary-text-small-bold text-leadgaze-dark dark:text-white gap-1.5 px-2"
                     title="Log a call"
                   >
                     <Phone className="h-4 w-4" />
@@ -469,8 +517,7 @@ export default function OpportunityDetailsPage() {
                 <TooltipTrigger asChild>
                   <Button
                     variant="outline"
-                    size="sm"
-                    className={`gap-2 ${opportunityEmailRecipients.length === 0 ? 'opacity-50' : ''}`}
+                    className={`secondary-text-small-bold text-leadgaze-dark dark:text-white gap-1.5 px-2 ${opportunityEmailRecipients.length === 0 ? 'opacity-50' : ''}`}                    
                     disabled={opportunityEmailRecipients.length === 0}
                     onClick={() =>
                       opportunityEmailRecipients.length > 0 &&
@@ -503,9 +550,8 @@ export default function OpportunityDetailsPage() {
                     <PopoverTrigger asChild>
                       <Button
                         variant="outline"
-                        size="sm"
                         disabled={!canChangeStage}
-                        className="gap-2"
+                        className="secondary-text-small-bold text-leadgaze-dark dark:text-white gap-1.5 px-2"
                       >
                         <Workflow className="h-4 w-4" />
                         <span className="hidden lg:inline">Update Stage</span>
@@ -588,8 +634,8 @@ export default function OpportunityDetailsPage() {
                 <TooltipTrigger asChild>
                   <Button
                     variant="outline"
-                    size="sm"
-                    className="border-green-600 text-green-600 hover:bg-green-50"
+                    className="secondary-text-small-bold border-green-600 text-green-600 hover:bg-green-50 h-7 gap-1.5 px-2"
+                                        
                     disabled={!canCloseWon}
                     onClick={async () => {
                       const wonStage = stages.find(
@@ -612,7 +658,7 @@ export default function OpportunityDetailsPage() {
                       }
                     }}
                   >
-                    <CheckCircle className="h-4 w-4 lg:mr-2" />
+                    <CheckCircle className="h-4 w-4" />
                     <span className="hidden lg:inline">Close as Won</span>
                   </Button>
                 </TooltipTrigger>
@@ -627,8 +673,7 @@ export default function OpportunityDetailsPage() {
                 <TooltipTrigger asChild>
                   <Button
                     variant="outline"
-                    size="sm"
-                    className="border-red-600 text-red-600 hover:bg-red-50"
+                    className="secondary-text-small-bold border-red-600 text-red-600 hover:bg-red-50 h-7 gap-1.5 px-2"
                     disabled={!canCloseLost}
                     onClick={async () => {
                       const lostStage = stages.find(
@@ -651,7 +696,7 @@ export default function OpportunityDetailsPage() {
                       }
                     }}
                   >
-                    <Flag className="h-4 w-4 lg:mr-2" />
+                    <Flag className="h-4 w-4" />
                     <span className="hidden lg:inline">Close as Lost</span>
                   </Button>
                 </TooltipTrigger>
@@ -666,9 +711,8 @@ export default function OpportunityDetailsPage() {
                 <TooltipTrigger asChild>
                   <Button
                     variant="default"
-                    size="sm"
                     onClick={() => setIsEditDialogOpen(true)}
-                    className="gap-2"
+                    className="secondary-text-small-bold bg-leadgaze-primary hover:bg-leadgaze-primary text-white gap-1.5 px-2"
                   >
                     <Edit2 className="h-4 w-4" />
                     <span className="hidden lg:inline">Edit Profile</span>
@@ -690,13 +734,13 @@ export default function OpportunityDetailsPage() {
           entityName={opportunity.opportunity_name}
           onSuccess={() => router.push('/home/sales/opportunities')}
         />
-        <div className="flex w-full flex-col gap-4 lg:min-h-0 lg:flex-1 lg:flex-row">
+        <div className="flex w-full flex-col gap-2 lg:min-h-0 lg:flex-1 lg:flex-row">
           {/* Main Content */}
           <div className="w-full space-y-4 lg:w-[65%] lg:overflow-y-auto">
             <DetailHeader
               avatar={
-                <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-gradient-to-br from-blue-400 to-blue-600 text-white">
-                  <FileText className="h-8 w-8 text-white" />
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-leadgaze-primary text-base font-semibold text-white">
+                  <FileText className="h-6 w-6 text-white" />
                 </div>
               }
               title={opportunity.opportunity_name}
@@ -764,9 +808,9 @@ export default function OpportunityDetailsPage() {
             {/* Tabs Section */}
             <Tabs
               defaultValue={canManageEmail ? 'email' : 'notes'}
-              className="space-y-4"
+              className="space-y-4 mb-2"
             >
-              <TabsList className="mb-2 h-auto w-full justify-start gap-3 overflow-x-auto rounded-none border-b bg-transparent p-0 [-ms-overflow-style:none] [scrollbar-width:none] sm:gap-6 [&::-webkit-scrollbar]:hidden">
+              <TabsList className="mb-0 h-auto w-full justify-start gap-3 overflow-x-auto rounded-none border-b bg-transparent p-0 [-ms-overflow-style:none] [scrollbar-width:none] sm:gap-6 [&::-webkit-scrollbar]:hidden">
                 {canManageEmail && (
                   <TabsTrigger
                     value="email"
@@ -884,56 +928,20 @@ export default function OpportunityDetailsPage() {
               </TabsContent>
 
               <TabsContent value="activity">
-                <CardWidgetContainer
-                  title="Activity"
-                  hideHeaderBorder={true}
-                  icon={
-                    <Clock className="text-leadgaze-dark h-5 w-5 dark:text-white" />
-                  }
-                >
-                  <CardContent className="px-6 py-3">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3 dark:bg-slate-900">
-                        <div className="h-2 w-2 rounded-full bg-green-500" />
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm font-medium text-gray-900 dark:text-white">
-                            Opportunity Created
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            {formatDate(opportunity.created_at)}
-                          </p>
-                        </div>
-                      </div>
-                      {opportunity.updated_at &&
-                        opportunity.updated_at !== opportunity.created_at && (
-                          <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3 dark:bg-slate-900">
-                            <div className="h-2 w-2 rounded-full bg-blue-500" />
-                            <div className="min-w-0 flex-1">
-                              <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                Opportunity Updated
-                              </p>
-                              <p className="text-xs text-gray-500">
-                                {formatDate(opportunity.updated_at)}
-                              </p>
-                            </div>
-                          </div>
-                        )}
-                    </div>
-                  </CardContent>
-                </CardWidgetContainer>
+                <EntityActivityLogs entityType="opportunity" entityId={id} />
               </TabsContent>
             </Tabs>
 
             {/* Danger Zone */}
             {rbacCanAccess('opportunities', 'delete') && (
               <Card className="border-destructive/50 hidden border-solid lg:block">
-                <CardContent>
-                  <div className="mt-6 flex flex-col items-center justify-between md:flex-row">
-                    <div className="mb-2 space-y-1">
-                      <p className="font-medium dark:text-white">
+                <CardContent className="p-2">
+                  <div className="flex flex-col items-center justify-between md:flex-row">
+                    <div className="mb-0 space-y-1">
+                      <p className="primary-text-medium dark:text-white">
                         Delete Opportunity
                       </p>
-                      <p className="text-muted-foreground text-sm">
+                      <p className="text-muted-foreground secondary-text-small">
                         Once you delete an opportunity, there is no going back.
                         Please be certain.
                       </p>
@@ -948,6 +956,7 @@ export default function OpportunityDetailsPage() {
                                 !rbacCanAccess('opportunities', 'delete')
                               }
                               onClick={() => setDeleteDialogOpen(true)}
+                              className="secondary-text-small-bold"
                             >
                               <Trash2 className="mr-2 h-4 w-4" />
                               Delete Opportunity
@@ -971,189 +980,407 @@ export default function OpportunityDetailsPage() {
           <div className="w-full space-y-4 lg:w-[35%] lg:overflow-y-auto">
             {/* Accordion Sections */}
             <Accordion
-              type="single"
-              collapsible
+              type="multiple"
               className="space-y-2"
-              value={openAccordion}
-              onValueChange={setOpenAccordion}
+              value={openAccordions}
+              onValueChange={setOpenAccordions}
             >
               {/* Opportunity Details */}
               <AccordionItem
                 value="details"
-                className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
+                className="overflow-hidden border bg-white dark:bg-zinc-900"
               >
-                <AccordionTrigger className="px-4 py-3 hover:no-underline">
-                  <span className="primary-heading text-leadgaze-dark flex items-center gap-2 dark:text-white">
+                <AccordionTrigger className="px-2 pb-2 border-b border-b-accordion hover:no-underline py-3">
+                  <span className="primary-text-big-regular text-leadgaze-dark flex items-center gap-2 dark:text-white">
+
                     <Wallet className="text-leadgaze-dark h-5 w-5 dark:text-white" />
                     Details
                   </span>
                 </AccordionTrigger>
-                <AccordionContent className="px-4 pb-4">
+                <AccordionContent className="px-2 pb-2">
                   <DetailInfoList>
                     {canView('amount') && (
-                      <DetailInfoRow
-                        icon={<Wallet className="h-5 w-5" />}
-                        label="Amount"
-                        value={(() => {
-                          // Get workspace default currency
-                          const workspaceCurrency =
-                            currenciesData?.find((c) => c.is_default)
-                              ?.currency_code || 'USD';
-
-                          // If opportunity has base_amount_usd, use that with workspace currency
-                          if (
-                            opportunity.base_amount_usd !== null &&
-                            opportunity.base_amount_usd !== undefined
-                          ) {
-                            const rate =
-                              findLatestRateToUsd(
-                                exchangeRates as ExchangeRateRecord[],
-                                workspaceCurrency,
-                              )?.exchange_rate || 1;
-                            const convertedAmount = convertFromUSD(
-                              opportunity.base_amount_usd,
-                              rate,
-                            );
-                            return formatWorkspaceCurrency(
-                              convertedAmount,
-                              workspaceCurrency,
-                            );
-                          }
-
-                          // Fallback: use original amount with original currency (for backwards compatibility)
-                          if (
-                            opportunity.amount_original !== null &&
-                            opportunity.amount_original !== undefined
-                          ) {
-                            const currency =
-                              opportunity.currency_original ||
-                              opportunity.currency ||
-                              'USD';
-                            return formatWorkspaceCurrency(
-                              opportunity.amount_original,
-                              currency,
-                            );
-                          }
-
-                          // Last resort: use stored amount
-                          return formatWorkspaceCurrency(
-                            opportunity.amount || 0,
-                            opportunity.currency || 'USD',
-                          );
-                        })()}
-                      />
-                    )}
-                    {canView('amount') &&
-                      opportunity.amount_original &&
-                      opportunity.amount_original !==
-                        (opportunity.base_amount_usd || 0) && (
-                        <DetailInfoRow
-                          icon={<Wallet className="h-5 w-5" />}
-                          label="Original Amount"
-                          value={formatWorkspaceCurrency(
-                            opportunity.amount_original,
-                            opportunity.currency_original || 'USD',
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <Wallet className="text-muted-foreground h-5 w-5 shrink-0" />
+                          <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
+                            Amount
+                          </span>
+                        </div>
+                        <div className="min-w-0 flex-1 text-right">
+                          {isEditingAmount ? (
+                            <Input
+                              type="number"
+                              step="0.01"
+                              className="ml-auto w-[220px] text-right"
+                              defaultValue={opportunity.amount || ''}
+                              disabled={!canEdit}
+                              onBlur={async (e) => {
+                                const val = e.target.value.trim() ? parseFloat(e.target.value) : null;
+                                await commitOpportunityField('amount', val);
+                                setIsEditingAmount(false);
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.currentTarget.blur();
+                                } else if (e.key === 'Escape') {
+                                  setIsEditingAmount(false);
+                                }
+                              }}
+                              autoFocus
+                            />
+                          ) : (
+                            <button
+                              type="button"
+                              disabled={!canEdit}
+                              onClick={() => setIsEditingAmount(true)}
+                              className={cn(
+                                'group inline-flex w-full items-center justify-end rounded-[4px] text-right outline-none transition-colors h-[35px]',
+                                {
+                                  'cursor-text': canEdit,
+                                  'hover:bg-accent/20': canEdit,
+                                },
+                              )}
+                            >
+                              <span className="block w-full rounded-[4px] px-0 py-0 text-right primary-text-regular text-leadgaze-dark dark:text-white">
+                                {(() => {
+                                  const workspaceCurrency =
+                                    currenciesData?.find((c) => c.is_default)
+                                      ?.currency_code || 'USD';
+                                  if (
+                                    opportunity.base_amount_usd !== null &&
+                                    opportunity.base_amount_usd !== undefined
+                                  ) {
+                                    const rate =
+                                      findLatestRateToUsd(
+                                        exchangeRates as ExchangeRateRecord[],
+                                        workspaceCurrency,
+                                      )?.exchange_rate || 1;
+                                    const convertedAmount = convertFromUSD(
+                                      opportunity.base_amount_usd,
+                                      rate,
+                                    );
+                                    return formatWorkspaceCurrency(
+                                      convertedAmount,
+                                      workspaceCurrency,
+                                    );
+                                  }
+                                  if (
+                                    opportunity.amount_original !== null &&
+                                    opportunity.amount_original !== undefined
+                                  ) {
+                                    const currency =
+                                      opportunity.currency_original ||
+                                      opportunity.currency ||
+                                      'USD';
+                                    return formatWorkspaceCurrency(
+                                      opportunity.amount_original,
+                                      currency,
+                                    );
+                                  }
+                                  return formatWorkspaceCurrency(
+                                    opportunity.amount || 0,
+                                    opportunity.currency || 'USD',
+                                  );
+                                })()}
+                              </span>
+                            </button>
                           )}
-                        />
-                      )}
-                    {canView('amount') && opportunity.exchange_rate_to_usd && (
-                      <>
-                        <DetailInfoRow
-                          icon={<Wallet className="h-5 w-5" />}
-                          label="Exchange Rate"
-                          value={`1 USD = ${opportunity.exchange_rate_to_usd} ${opportunity.currency_original || 'USD'}`}
-                        />
-                        <DetailInfoRow
-                          icon={<Calendar className="h-5 w-5" />}
-                          label="Rate Date"
-                          value={
-                            opportunity.exchange_rate_date
-                              ? formatDate(opportunity.exchange_rate_date)
-                              : '-'
-                          }
-                        />
-                        {opportunity.exchange_rate_source && (
-                          <DetailInfoRow
-                            icon={<Tag className="h-5 w-5" />}
-                            label="Rate Source"
-                            value={opportunity.exchange_rate_source}
-                          />
-                        )}
-                      </>
+                        </div>
+                      </div>
                     )}
-                    {canView('amount') && (
-                      <DetailInfoRow
-                        icon={<Target className="h-5 w-5" />}
-                        label="Revenue"
-                        value={(() => {
-                          const workspaceCurrency =
-                            currenciesData?.find((c) => c.is_default)
-                              ?.currency_code || 'USD';
-                          const expectedRevenue =
-                            opportunity.expected_revenue || 0;
-                          const probability = opportunity.probability || 0;
-                          const calculatedRevenue =
-                            (expectedRevenue * probability) / 100;
-                          return formatWorkspaceCurrency(
-                            calculatedRevenue,
-                            workspaceCurrency,
-                          );
-                        })()}
-                      />
-                    )}
+
                     {canView('expected_close_date') && (
-                      <DetailInfoRow
-                        icon={<Calendar className="h-5 w-5" />}
-                        label="Close Date"
-                        value={
-                          opportunity.expected_close_date
-                            ? formatDate(opportunity.expected_close_date)
-                            : '-'
-                        }
-                      />
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="text-muted-foreground h-5 w-5 shrink-0" />
+                          <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
+                            Close Date
+                          </span>
+                        </div>
+                        <div className="min-w-0 flex-1 text-right">
+                          {isEditingCloseDate ? (
+                            <Input
+                              type="date"
+                              className="ml-auto w-[220px] text-right"
+                              defaultValue={opportunity.expected_close_date ? new Date(opportunity.expected_close_date).toISOString().split('T')[0] : ''}
+                              disabled={!canEdit}
+                              onBlur={async (e) => {
+                                await commitOpportunityField('expected_close_date', e.target.value || null);
+                                setIsEditingCloseDate(false);
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.currentTarget.blur();
+                                } else if (e.key === 'Escape') {
+                                  setIsEditingCloseDate(false);
+                                }
+                              }}
+                              autoFocus
+                            />
+                          ) : (
+                            <button
+                              type="button"
+                              disabled={!canEdit}
+                              onClick={() => setIsEditingCloseDate(true)}
+                              className={cn(
+                                'group inline-flex w-full items-center justify-end rounded-[4px] text-right outline-none transition-colors h-[35px]',
+                                {
+                                  'cursor-text': canEdit,
+                                  'hover:bg-accent/20': canEdit,
+                                },
+                              )}
+                            >
+                              <span className="block w-full rounded-[4px] px-0 py-0 text-right primary-text-regular text-leadgaze-dark dark:text-white">
+                                {opportunity.expected_close_date
+                                  ? formatDate(opportunity.expected_close_date)
+                                  : '-'}
+                              </span>
+                            </button>
+                          )}
+                        </div>
+                      </div>
                     )}
+
                     {canView('probability') && (
-                      <DetailInfoRow
-                        icon={<CheckCircle className="h-5 w-5" />}
-                        label="Probability"
-                        value={`${opportunity.probability}%`}
-                      />
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <CheckCircle className="text-muted-foreground h-5 w-5 shrink-0" />
+                          <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
+                            Probability
+                          </span>
+                        </div>
+                        <div className="min-w-0 flex-1 text-right">
+                          {isEditingProbability ? (
+                            <Input
+                              type="number"
+                              min="0"
+                              max="100"
+                              className="ml-auto w-[220px] text-right"
+                              defaultValue={opportunity.probability ?? ''}
+                              disabled={!canEdit}
+                              onBlur={async (e) => {
+                                const val = e.target.value.trim() ? parseInt(e.target.value) : null;
+                                await commitOpportunityField('probability', val);
+                                setIsEditingProbability(false);
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.currentTarget.blur();
+                                } else if (e.key === 'Escape') {
+                                  setIsEditingProbability(false);
+                                }
+                              }}
+                              autoFocus
+                            />
+                          ) : (
+                            <button
+                              type="button"
+                              disabled={!canEdit}
+                              onClick={() => setIsEditingProbability(true)}
+                              className={cn(
+                                'group inline-flex w-full items-center justify-end rounded-[4px] text-right outline-none transition-colors h-[35px]',
+                                {
+                                  'cursor-text': canEdit,
+                                  'hover:bg-accent/20': canEdit,
+                                },
+                              )}
+                            >
+                              <span className="block w-full rounded-[4px] px-0 py-0 text-right primary-text-regular text-leadgaze-dark dark:text-white">
+                                {opportunity.probability !== null && opportunity.probability !== undefined
+                                  ? `${opportunity.probability}%`
+                                  : '-'}
+                              </span>
+                            </button>
+                          )}
+                        </div>
+                      </div>
                     )}
+
                     {canView('priority') && (
-                      <DetailInfoRow
-                        icon={<Flag className="h-5 w-5" />}
-                        label="Priority"
-                        value={
-                          opportunity.priority
-                            ? opportunity.priority.charAt(0).toUpperCase() +
-                              opportunity.priority.slice(1)
-                            : '-'
-                        }
-                      />
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <Flag className="text-muted-foreground h-5 w-5 shrink-0" />
+                          <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
+                            Priority
+                          </span>
+                        </div>
+                        <div className="min-w-0 flex-1 text-right">
+                          {isEditingPriority ? (
+                            <div className="ml-auto w-[220px]">
+                              <Select
+                                value={opportunity.priority || ''}
+                                onValueChange={async (value) => {
+                                  await commitOpportunityField('priority', value || null);
+                                  setIsEditingPriority(false);
+                                }}
+                                open={isEditingPriority}
+                                onOpenChange={(open) => {
+                                  if (!open) setIsEditingPriority(false);
+                                }}
+                                disabled={!canEdit}
+                              >
+                                <SelectTrigger className="text-right justify-end">
+                                  <SelectValue placeholder="Select priority" />
+                                </SelectTrigger>
+                                <SelectContent align="end">
+                                  <SelectItem value="High">High</SelectItem>
+                                  <SelectItem value="Medium">Medium</SelectItem>
+                                  <SelectItem value="Low">Low</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              disabled={!canEdit}
+                              onClick={() => setIsEditingPriority(true)}
+                              className={cn(
+                                'group inline-flex w-full items-center justify-end rounded-[4px] text-right outline-none transition-colors h-[35px]',
+                                {
+                                  'cursor-text': canEdit,
+                                  'text-muted-foreground': !opportunity.priority,
+                                  'hover:bg-accent/20': canEdit,
+                                },
+                              )}
+                            >
+                              <span className="block w-full rounded-[4px] px-0 py-0 text-right primary-text-regular text-leadgaze-dark dark:text-white">
+                                {opportunity.priority
+                                  ? opportunity.priority.charAt(0).toUpperCase() + opportunity.priority.slice(1)
+                                  : '-'}
+                              </span>
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {canView('opportunity_type') && (
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <Tag className="text-muted-foreground h-5 w-5 shrink-0" />
+                          <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
+                            Type
+                          </span>
+                        </div>
+                        <div className="min-w-0 flex-1 text-right">
+                          {isEditingType ? (
+                            <div className="ml-auto w-[220px]">
+                              <Select
+                                value={opportunity.opportunity_type || ''}
+                                onValueChange={async (value) => {
+                                  await commitOpportunityField('opportunity_type', value || null);
+                                  setIsEditingType(false);
+                                }}
+                                open={isEditingType}
+                                onOpenChange={(open) => {
+                                  if (!open) setIsEditingType(false);
+                                }}
+                                disabled={!canEdit}
+                              >
+                                <SelectTrigger className="text-right justify-end">
+                                  <SelectValue placeholder="Select type" />
+                                </SelectTrigger>
+                                <SelectContent align="end">
+                                  <SelectItem value="New Business">New Business</SelectItem>
+                                  <SelectItem value="Existing Business">Existing Business</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              disabled={!canEdit}
+                              onClick={() => setIsEditingType(true)}
+                              className={cn(
+                                'group inline-flex w-full items-center justify-end rounded-[4px] text-right outline-none transition-colors h-[35px]',
+                                {
+                                  'cursor-text': canEdit,
+                                  'text-muted-foreground': !opportunity.opportunity_type,
+                                  'hover:bg-accent/20': canEdit,
+                                },
+                              )}
+                            >
+                              <span className="block w-full rounded-[4px] px-0 py-0 text-right primary-text-regular text-leadgaze-dark dark:text-white">
+                                {opportunity.opportunity_type || '-'}
+                              </span>
+                            </button>
+                          )}
+                        </div>
+                      </div>
                     )}
 
                     {canView('lead_source') && (
-                      <DetailInfoRow
-                        icon={<Tag className="h-5 w-5" />}
-                        label="Lead Source"
-                        value={opportunity.lead_source || '-'}
-                      />
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <Tag className="text-muted-foreground h-5 w-5 shrink-0" />
+                          <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
+                            Lead Source
+                          </span>
+                        </div>
+                        <div className="min-w-0 flex-1 text-right">
+                          <InlineEditableValue
+                            value={opportunity.lead_source || ''}
+                            disabled={!canEdit}
+                            placeholder="-"
+                            className="justify-end"
+                            displayClassName="primary-text-regular text-leadgaze-dark dark:text-white"
+                            inputClassName="text-right"
+                            onCommit={async (nextValue) => {
+                              await commitOpportunityField('lead_source', nextValue);
+                            }}
+                          />
+                        </div>
+                      </div>
                     )}
 
                     {canView('description') && (
-                      <DetailInfoRow
-                        icon={<FileText className="h-5 w-5" />}
-                        label="Description"
-                        value={opportunity.description || '-'}
-                      />
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <FileText className="text-muted-foreground h-5 w-5 shrink-0" />
+                          <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
+                            Description
+                          </span>
+                        </div>
+                        <div className="min-w-0 flex-1 text-right">
+                          <InlineEditableValue
+                            value={opportunity.description || ''}
+                            disabled={!canEdit}
+                            placeholder="-"
+                            className="justify-end"
+                            displayClassName="primary-text-regular text-leadgaze-dark dark:text-white"
+                            inputClassName="text-right"
+                            multiline
+                            onCommit={async (nextValue) => {
+                              await commitOpportunityField('description', nextValue);
+                            }}
+                          />
+                        </div>
+                      </div>
                     )}
 
                     {canView('competitor') && (
-                      <DetailInfoRow
-                        icon={<Target className="h-5 w-5" />}
-                        label="Competitor"
-                        value={opportunity.competitor || '-'}
-                      />
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <Target className="text-muted-foreground h-5 w-5 shrink-0" />
+                          <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
+                            Competitor
+                          </span>
+                        </div>
+                        <div className="min-w-0 flex-1 text-right">
+                          <InlineEditableValue
+                            value={opportunity.competitor || ''}
+                            disabled={!canEdit}
+                            placeholder="-"
+                            className="justify-end"
+                            displayClassName="primary-text-regular text-leadgaze-dark dark:text-white"
+                            inputClassName="text-right"
+                            onCommit={async (nextValue) => {
+                              await commitOpportunityField('competitor', nextValue);
+                            }}
+                          />
+                        </div>
+                      </div>
                     )}
                   </DetailInfoList>
                 </AccordionContent>
@@ -1163,15 +1390,15 @@ export default function OpportunityDetailsPage() {
               {customFieldsToShow.length > 0 && (
                 <AccordionItem
                   value="additional"
-                  className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
+                  className="overflow-hidden border bg-white dark:bg-zinc-900"
                 >
-                  <AccordionTrigger className="px-4 py-3 hover:no-underline">
-                    <span className="primary-heading text-leadgaze-dark flex items-center gap-2">
+                  <AccordionTrigger className="px-2 pb-2 border-b border-b-accordion hover:no-underline py-3">
+                    <span className="primary-text-big-regular text-leadgaze-dark flex items-center gap-2 dark:text-white">
                       <FileText className="text-leadgaze-dark h-4 w-4 dark:text-white" />
                       Additional Data
                     </span>
                   </AccordionTrigger>
-                  <AccordionContent className="px-4 pb-4">
+                  <AccordionContent className="px-2 pb-2">
                     <DetailInfoList>
                       {customFieldsToShow.map((field) => {
                         const val = (
@@ -1200,20 +1427,19 @@ export default function OpportunityDetailsPage() {
               {currentWorkspace?.id && (
                 <AccordionItem
                   value="assignees"
-                  className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
+                  className="overflow-hidden border bg-white dark:bg-zinc-900"
                 >
                   <AccordionTrigger
                     hideChevron
-                    className="px-4 py-3 hover:no-underline"
+                    className="px-2 pb-2 border-b border-b-accordion hover:no-underline py-2"
                   >
                     <div className="flex w-full justify-between">
-                      <span className="primary-heading text-leadgaze-dark flex items-center gap-2">
+                      <span className="primary-text-big-regular text-leadgaze-dark flex items-center gap-2 dark:text-white">
                         <Users className="text-leadgaze-dark h-5 w-5 dark:text-white" />
                         Assigned Members
                       </span>
                       <Button
-                        size="sm"
-                        className="ml-2 mr-3 shrink-0 gap-2"
+                        className="bg-leadgaze-primary hover:bg-leadgaze-primary text-white secondary-text-small-bold gap-1.5 px-2 mr-2"
                         onPointerDown={(e) => e.stopPropagation()}
                         onClick={(e) => {
                           e.stopPropagation();
@@ -1227,11 +1453,11 @@ export default function OpportunityDetailsPage() {
                     <ChevronDown
                       className={cn(
                         'text-muted-foreground h-4 w-4 shrink-0 transition-transform duration-200',
-                        openAccordion === 'assignees' && 'rotate-180',
+                        openAccordions.includes('assignees') && 'rotate-180',
                       )}
                     />
                   </AccordionTrigger>
-                  <AccordionContent className="px-4 pb-4">
+                  <AccordionContent className="px-0 pb-2">
                     <OpportunityAssignees
                       opportunityId={id}
                       workspaceId={currentWorkspace.id}
@@ -1244,15 +1470,16 @@ export default function OpportunityDetailsPage() {
               {/* System Info */}
               <AccordionItem
                 value="system"
-                className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
+                className="overflow-hidden border bg-white dark:bg-zinc-900"
               >
-                <AccordionTrigger className="px-4 py-3 hover:no-underline">
-                  <span className="primary-heading text-leadgaze-dark flex items-center gap-2 dark:text-white">
+                <AccordionTrigger className="px-2 pb-2 border-b border-b-accordion hover:no-underline py-3">
+                  <span className="primary-text-big-regular text-leadgaze-dark flex items-center gap-2 dark:text-white">
+
                     <Clock className="text-leadgaze-dark h-5 w-5 dark:text-white" />
                     System Info
                   </span>
                 </AccordionTrigger>
-                <AccordionContent className="px-4 pb-4">
+                <AccordionContent className="px-2 pb-2">
                   <DetailInfoList>
                     <DetailInfoRow
                       icon={<User className="h-5 w-5" />}
@@ -1296,13 +1523,13 @@ export default function OpportunityDetailsPage() {
           <div className="w-full lg:hidden">
             {rbacCanAccess('opportunities', 'delete') && (
               <Card className="border-destructive/50 border-solid">
-                <CardContent>
-                  <div className="mt-6 flex flex-col items-center justify-between md:flex-row">
-                    <div className="mb-2 space-y-1">
-                      <p className="font-medium dark:text-white">
+                <CardContent className="p-2">
+                  <div className="flex flex-col items-center justify-between md:flex-row">
+                    <div className="mb-0 space-y-1">
+                      <p className="primary-text-medium dark:text-white">
                         Delete Opportunity
                       </p>
-                      <p className="text-muted-foreground text-sm">
+                      <p className="text-muted-foreground secondary-text-small">
                         Once you delete an opportunity, there is no going back.
                         Please be certain.
                       </p>
@@ -1317,6 +1544,7 @@ export default function OpportunityDetailsPage() {
                                 !rbacCanAccess('opportunities', 'delete')
                               }
                               onClick={() => setDeleteDialogOpen(true)}
+                              className="secondary-text-small-bold"
                             >
                               <Trash2 className="mr-2 h-4 w-4" />
                               Delete Opportunity

@@ -78,11 +78,11 @@ export function VariableDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[90vh] flex-col p-0 max-w-md">
-        <DialogHeader className="border-b p-6 pb-4">
+        <DialogHeader>
           <DialogTitle>{variable ? 'Edit Variable' : 'Create New Variable'}</DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 space-y-4 px-6 py-4">
+        <div className="flex-1 space-y-2 px-6 py-4">
           <div className="space-y-2">
             <Label htmlFor="key">Variable Key</Label>
             <div className="relative">
@@ -113,7 +113,7 @@ export function VariableDialog({
         </div>
 
         
-      <DialogFooter className="border-t p-2 mt-auto">
+      <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSaving}>
             Cancel
           </Button>

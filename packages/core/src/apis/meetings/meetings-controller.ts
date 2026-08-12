@@ -109,6 +109,10 @@ export const getMeetingsController = catchAsync(async ({ request }) => {
   const statuses = url.searchParams.get('statuses');
   const timeframe = url.searchParams.get('timeframe');
   const searchTerm = url.searchParams.get('searchTerm');
+  const pageParam = url.searchParams.get('page');
+  const limitParam = url.searchParams.get('limit');
+  const page = pageParam ? parseInt(pageParam, 10) : null;
+  const limit = limitParam ? parseInt(limitParam, 10) : null;
 
   if (!workspaceId) {
     return NextResponse.json(
@@ -331,33 +335,27 @@ export const getMeetingsController = catchAsync(async ({ request }) => {
     // Get relations and participants for each meeting
     let meetings = Array.isArray(data) ? data : [data];
 
-    // Filter out old meetings (more than 1 day past end time)
-    const now = new Date();
-    const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-
-    meetings = meetings.filter((meeting) => {
-      const endTime = new Date(meeting.actual_end || meeting.scheduled_end || meeting.end_time);
-      // Show if end time is in the future OR within last 1 day
-      return endTime >= oneDayAgo;
-    });
-
+    // Apply timeframe filtering if provided
     if (timeframe) {
       const timeframeList = timeframe.split(',').map((t) => t.trim()).filter(Boolean);
-      if (timeframeList.length > 0 && timeframeList.length < 2) {
+      if (timeframeList.length > 0) {
         const checkTime = new Date();
         meetings = meetings.filter((meeting) => {
-          const start = meeting.scheduled_start || meeting.actual_start || meeting.start_time;
-          if (!start) return timeframeList.includes('upcoming');
-          const meetingDate = new Date(start);
-          const isUpcoming =
-            meetingDate >= checkTime &&
-            meeting.status !== 'completed' &&
-            meeting.status !== 'cancelled';
+          const rawStart = meeting.scheduled_start || meeting.actual_start || meeting.start_time || meeting.start_date || meeting.created_at;
+          if (!rawStart) return true;
+          const meetingDate = new Date(rawStart);
+          const isUpcoming = meetingDate >= checkTime || ['scheduled', 'upcoming'].includes(meeting.status);
           if (timeframeList.includes('upcoming')) return isUpcoming;
           if (timeframeList.includes('past')) return !isUpcoming;
           return true;
         });
       }
+    }
+
+    const totalMeetingsCount = meetings.length;
+    if (page && limit && limit > 0) {
+      const offset = (page - 1) * limit;
+      meetings = meetings.slice(offset, offset + limit);
     }
 
     const meetingIdsToFetch = meetings.map((m: { id: string }) => m.id);
@@ -441,10 +439,36 @@ export const getMeetingsController = catchAsync(async ({ request }) => {
         })
       );
 
+      const resultData = Array.isArray(data) ? enrichedMeetings : (enrichedMeetings[0] ?? null);
+
+      if (pageParam || limitParam) {
+        return NextResponse.json({
+          success: true,
+          data: resultData,
+          count: totalMeetingsCount,
+          total: totalMeetingsCount,
+          page: page ?? 1,
+          limit: limit ?? totalMeetingsCount,
+          has_more: page && limit ? (page * limit) < totalMeetingsCount : false,
+        });
+      }
+
       return successDataResponse(
         'Meetings retrieved',
-        Array.isArray(data) ? enrichedMeetings : (enrichedMeetings[0] ?? null),
+        resultData,
       );
+    }
+
+    if (pageParam || limitParam) {
+      return NextResponse.json({
+        success: true,
+        data: [],
+        count: totalMeetingsCount,
+        total: totalMeetingsCount,
+        page: page ?? 1,
+        limit: limit ?? totalMeetingsCount,
+        has_more: false,
+      });
     }
 
     return successDataResponse('Meetings retrieved', data);

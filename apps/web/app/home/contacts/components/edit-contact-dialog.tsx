@@ -196,22 +196,22 @@ export function EditContactDialog({
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-[700px]">
-        <DialogHeader className="border-b p-6 pb-4">
+        <DialogHeader>
           <DialogTitle>Edit Contact</DialogTitle>
           <DialogDescription>
-            Update the information for this contact.
+            Update the information for this contact
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form id="dialog-form" onSubmit={form.handleSubmit(onSubmit)} className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+          <form id="dialog-form" onSubmit={form.handleSubmit(onSubmit)} className="flex-1 overflow-y-auto px-2 space-y-2">
             <Tabs defaultValue="basic" className="w-full h-full flex flex-col">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="basic">Basic Info</TabsTrigger>
-                <TabsTrigger value="additional">Additional Details</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-2 h-9">
+                <TabsTrigger value="basic" className="py-1">Basic Info</TabsTrigger>
+                <TabsTrigger value="additional" className='py-1'>Additional Details</TabsTrigger>
               </TabsList>
               
-              <TabsContent value="basic" className="space-y-4 py-4 flex-1 overflow-y-auto pr-2">
-                <div className="grid grid-cols-2 gap-4">
+              <TabsContent value="basic" className="space-y-2 flex-1 overflow-y-auto">
+                <div className="grid grid-cols-2 gap-2">
                   <FieldGuard fieldKey="first_name" canEdit={canEdit}>
                     <FormField
                       control={form.control}
@@ -243,7 +243,7 @@ export function EditContactDialog({
                   </FieldGuard>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-2">
                   <FieldGuard fieldKey="email" canEdit={canEdit}>
                     <FormField
                       control={form.control}
@@ -274,7 +274,7 @@ export function EditContactDialog({
                   </FieldGuard>
                 </div>
 
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-3 gap-2">
                   <FieldGuard fieldKey="phone" canEdit={canEdit}>
                     <FormField
                       control={form.control}
@@ -319,7 +319,7 @@ export function EditContactDialog({
                   </FieldGuard>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-2">
                   <FieldGuard fieldKey="job_title" canEdit={canEdit}>
                     <FormField
                       control={form.control}
@@ -366,8 +366,8 @@ export function EditContactDialog({
                 </FieldGuard>
               </TabsContent>
 
-              <TabsContent value="additional" className="space-y-4 py-4 flex-1 overflow-y-auto pr-2">
-                <div className="grid grid-cols-2 gap-4">
+              <TabsContent value="additional" className="space-y-2 py-4 flex-1 overflow-y-auto pr-2">
+                <div className="grid grid-cols-2 gap-2">
                   <FieldGuard fieldKey="location" canEdit={canEdit}>
                     <FormField
                       control={form.control}
@@ -398,7 +398,7 @@ export function EditContactDialog({
                   </FieldGuard>
                 </div>
                 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-2">
                   <FieldGuard fieldKey="language" canEdit={canEdit}>
                     <FormField
                       control={form.control}
@@ -439,7 +439,7 @@ export function EditContactDialog({
                   </FieldGuard>
                 </div>
 
-                <div className="flex space-x-6 border-t pt-4">
+                <div className="flex space-x-6 border-t pt-2">
                   <FieldGuard fieldKey="do_not_call" canEdit={canEdit}>
                     <FormField
                       control={form.control}
@@ -476,7 +476,7 @@ export function EditContactDialog({
                   </FieldGuard>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 border-t pt-4">
+                <div className="grid grid-cols-2 gap-2 border-t pt-2">
                   <FieldGuard fieldKey="linkedin" canEdit={canEdit}>
                     <FormField
                       control={form.control}
@@ -510,7 +510,7 @@ export function EditContactDialog({
               </TabsContent>
             </Tabs>
 
-            <div className="border-t pt-4">
+            <div className="border-t pt-1">
               <LeadCustomFieldInputs
                 fields={visibleCustomFields}
                 values={customFields}
@@ -523,17 +523,16 @@ export function EditContactDialog({
             </div>
           </form>
         </Form>
-        <DialogFooter className="border-t p-2 mt-auto">
+        <DialogFooter>
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => onOpenChange(false)}
-                disabled={updateMutation.isPending}
-                className='mb-2'
+                disabled={updateMutation.isPending}                
               >
                 Cancel
               </Button>
-              <Button type="submit" form="dialog-form" disabled={updateMutation.isPending} className='mb-2'>
+              <Button type="submit" form="dialog-form" disabled={updateMutation.isPending}>
                 {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
               </Button>
             </DialogFooter>

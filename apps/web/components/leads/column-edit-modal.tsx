@@ -414,7 +414,7 @@ export function ColumnEditModal({
           )}
         </div>
 
-        <DialogFooter className="flex justify-between">
+        <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>

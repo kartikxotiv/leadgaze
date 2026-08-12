@@ -60,6 +60,7 @@
     --sidebar-ring: var(--color-blue-500);
     --card-border: #B0B0B0;
     --popover-foreground-custome: var(--custom-popover-foreground);
+    --table-custom-border: #E1E1E1;
   }
 
   .dark {
@@ -107,9 +108,81 @@
     --sidebar-ring: var(--color-blue-500);
     --card-border: #262626;
     --popover-foreground-custome: var(--color-white);
+    --table-custom-border: #262626;
   }
 
   .dark input::-webkit-calendar-picker-indicator {
     filter: invert(1);
   }
+}
+
+/* ─── Column Resize Handle ─────────────────────────────────────────────────── */
+.col-resize-handle {
+  position: absolute;
+  right: 0;
+  top: 0;
+  height: 100%;
+  width: 5px;
+  cursor: col-resize;
+  background: transparent;
+  transition: background-color 0.15s ease;
+  z-index: 2;
+  touch-action: none;
+  user-select: none;
+}
+
+.col-resize-handle:hover {
+  background-color: color-mix(in srgb, var(--primary) 35%, transparent);
+}
+
+.col-resize-handle:active {
+  background-color: color-mix(in srgb, var(--primary) 65%, transparent);
+}
+
+@layer utilities {
+  .dialog-footer button{
+    font-family: var(--font-sans) !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+    line-height: 20px !important;
+    padding-inline: calc(var(--spacing) * 2) !important;
+    gap: calc(var(--spacing) * 1.5) !important;  
+  }
+  .dialog-footer button:not(.text-primary-foreground, .text-destructive-foreground){
+    color: #475569;    
+  }
+
+  .main-dialog div label{
+    font-family: var(--font-sans) !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+    line-height: 20px !important;
+  }
+  .main-dialog div label+input, .main-dialog div label+button, .main-dialog div label+textarea, .main-dialog div label+select{
+    margin-top: 2px !important;
+  }
+  .custom-sub-heading-dialog-form{
+    margin-bottom: 0px !important;
+  }
+  .selectFileDetails {
+    font-size: 12px !important;
+    line-height: 16px !important;
+  }
+  .selectFileDetails::file-selector-button {
+    font-size: 14px !important;
+    padding-top:2px;
+  }
+  .border-b-accordion {
+    border-color: #f1f5f9;
+  }
+  .data-\[state\=active\]\:text-foreground[data-state="active"] {
+    color: var(--custom-popover-foreground) !important;
+  }
+  .dark .data-\[state\=active\]\:text-foreground[data-state="active"] {
+    color: white !important;
+  }
+  .main-dialog div label{
+    display: inline-block;
+  }
+
 }

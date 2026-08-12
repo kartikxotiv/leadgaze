@@ -240,7 +240,7 @@ export function WhatsAppSettingsPage({
           title={<div className="flex items-center gap-3"><Button variant="ghost" size="icon" className="h-8 w-8" disabled><ArrowLeft className="h-4 w-4" /></Button><Skeleton className="h-8 w-52" /></div>}
           description="Connect your WhatsApp Business number to Leadgaze."
         />
-        <PageBody className="py-4 space-y-4">
+        <PageBody className="py-4 space-y-2">
           <Skeleton className="h-48 w-full" />
           <Skeleton className="h-64 w-full" />
         </PageBody>
@@ -252,7 +252,7 @@ export function WhatsAppSettingsPage({
     <>
       <PageHeader
         title={
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-0">
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onNavigateBack}>
               <ArrowLeft className="h-4 w-4" />
             </Button>
@@ -262,15 +262,15 @@ export function WhatsAppSettingsPage({
         description="Connect your WhatsApp Business number to manage conversations and capture leads."
       />
 
-      <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden py-4 pb-6 h-[calc(100vh-120px)]">
-        <div className="grid gap-6 lg:grid-cols-4 h-full min-h-0 flex-1 overflow-hidden">
+      <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden p-0 pt-2 h-[calc(100vh-120px)]">
+        <div className="grid gap-2 lg:grid-cols-4 h-full min-h-0 flex-1 overflow-hidden">
 
           {/* ---- LEFT SIDEBAR ---- */}
-          <div className="space-y-6 lg:col-span-1 overflow-y-auto h-full pr-1 shrink-0">
+          <div className="space-y-2 lg:col-span-1 overflow-y-auto h-full pr-1 shrink-0">
             <Card className="border shadow-sm">
-              <CardHeader className="border-b pb-3">
+              <CardHeader className="border-b p-2">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-sm font-semibold">Connected Numbers</CardTitle>
+                  <CardTitle className="text-sm font-semibold text-leadgaze-dark dark:text-white">Connected Numbers</CardTitle>
                   {isConnected && (
                     <Badge variant="default" className="text-[10px] px-1.5 py-0 bg-emerald-600">
                       Active
@@ -278,7 +278,7 @@ export function WhatsAppSettingsPage({
                   )}
                 </div>
               </CardHeader>
-              <CardContent className="space-y-4 pt-4">
+              <CardContent className="space-y-2 p-2">
                 {accounts.length === 0 ? (
                   <div className="space-y-2">
                     <p className="text-xs text-muted-foreground">
@@ -302,10 +302,10 @@ export function WhatsAppSettingsPage({
                 ) : (
                   <div className="space-y-2">
                     {accounts.map((acc) => (
-                      <div key={acc.id} className="flex items-center justify-between p-2 rounded-md border text-xs bg-primary/5 border-primary">
+                      <div key={acc.id} className="flex items-center justify-between p-2 rounded-md border text-xs bg-primary/5 border-primary h-[36px]">
                         <div className="flex flex-col flex-1 pr-2 overflow-hidden">
                           <span className="truncate font-medium">{acc.display_name}</span>
-                          <span className="truncate text-[10px] text-muted-foreground font-mono">
+                          <span className="truncate text-[10px] text-muted-foreground dark:text-white">
                             {acc.metadata?.phone_number}
                           </span>
                         </div>
@@ -322,9 +322,8 @@ export function WhatsAppSettingsPage({
                   </div>
                 )}
                 <Button
-                  size="sm"
                   variant={isConnected ? 'outline' : 'default'}
-                  className="w-full gap-1.5 text-xs"
+                  className="w-full secondary-text-small-bold text-leadgaze-dark dark:text-white gap-1.5 px-2"
                   onClick={handleConnect}
                   disabled={isMutating}
                 >
@@ -336,21 +335,21 @@ export function WhatsAppSettingsPage({
 
             {isConnected && (
               <Card className="border shadow-sm">
-                <CardHeader className="border-b pb-3">
-                  <CardTitle className="text-sm font-semibold">Overview</CardTitle>
+                <CardHeader className="border-b p-2">
+                  <CardTitle className="text-sm font-semibold text-leadgaze-dark dark:text-white">Overview</CardTitle>
                 </CardHeader>
-                <CardContent className="pt-4 space-y-3">
+                <CardContent className="p-2 space-y-2">
                   {[
                     { icon: <Users className="h-3.5 w-3.5" />, label: 'Numbers', value: accounts.length },
                     { icon: <MessageSquare className="h-3.5 w-3.5" />, label: 'Templates', value: templates.length },
                     { icon: <BarChart3 className="h-3.5 w-3.5" />, label: 'Saved Replies', value: savedReplies.length },
                   ].map((stat) => (
                     <div key={stat.label} className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 text-muted-foreground">
+                      <div className="flex items-center gap-2 text-leadgaze-dark dark:text-white">
                         {stat.icon}
-                        <span className="text-xs">{stat.label}</span>
+                        <span className="primary-text-medium text-leadgaze-dark dark:text-white">{stat.label}</span>
                       </div>
-                      <span className="text-xs font-semibold">{stat.value}</span>
+                      <span className="text-xs font-semibold dark:text-white">{stat.value}</span>
                     </div>
                   ))}
                 </CardContent>
@@ -360,7 +359,7 @@ export function WhatsAppSettingsPage({
 
           {/* ---- MAIN TABS ---- */}
           <Tabs defaultValue="overview" className="lg:col-span-3 h-full min-h-0 flex flex-col overflow-hidden">
-            <TabsList className="w-max bg-muted/40 p-1 rounded-lg shrink-0 mb-6">
+            <TabsList className="w-max bg-muted/40 p-1 rounded-lg shrink-0 mb-0">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="inbox" disabled={!isConnected}>Shared Inbox</TabsTrigger>
               <TabsTrigger value="lead-settings" disabled={!isConnected}>Lead Settings</TabsTrigger>
@@ -380,7 +379,7 @@ export function WhatsAppSettingsPage({
                       </svg>
                     </div>
                     <div>
-                      <h3 className="font-semibold text-base">Connect WhatsApp Business</h3>
+                      <h3 className="font-semibold text-base custom-sub-heading-dialog-form">Connect WhatsApp Business</h3>
                       <p className="text-sm text-muted-foreground mt-1 max-w-sm">
                         Connect your WhatsApp Business number to receive and send messages directly from Leadgaze.
                       </p>
@@ -398,7 +397,7 @@ export function WhatsAppSettingsPage({
                       <CheckCircle2 className="h-8 w-8" />
                     </div>
                     <div className="space-y-1">
-                      <h3 className="font-semibold text-base">Meta Connection Active</h3>
+                      <h3 className="font-semibold text-base custom-sub-heading-dialog-form">Meta Connection Active</h3>
                       <p className="text-xs text-muted-foreground max-w-md">
                         Your Meta OAuth authorization was successful. However, 0 phone numbers were automatically retrieved for your WhatsApp Business Account.
                       </p>
@@ -420,21 +419,21 @@ export function WhatsAppSettingsPage({
               ) : (
                 <>
                   {accounts.map((acc) => (
-                    <Card key={acc.id} className="border shadow-sm">
-                      <CardHeader className="border-b pb-3 flex flex-row items-center justify-between">
-                        <div className="space-y-1">
-                          <CardTitle className="text-sm font-semibold">{acc.display_name}</CardTitle>
-                          <CardDescription className="text-xs font-mono">
+                    <Card key={acc.id} className="border shadow-sm mb-2">
+                      <CardHeader className="border-b p-2 flex flex-row items-center justify-between">
+                        <div className="space-y-1 mb-0">
+                          <CardTitle className="text-sm font-semibold text-leadgaze-dark dark:text-white">{acc.display_name}</CardTitle>
+                          <CardDescription className="text-xs">
                             {acc.metadata?.phone_number} · WABA: {acc.metadata?.waba_id}
                           </CardDescription>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Badge variant="default" className="gap-1 text-xs">
+                          <Badge variant="default" className="gap-1 text-xs py-1">
                             <CheckCircle2 className="h-3 w-3" />
                             Connected
                           </Badge>
                           <Button
-                            variant="outline" size="sm" className="gap-1.5 text-xs"
+                            variant="outline" className="secondary-text-small-bold text-leadgaze-dark dark:text-white gap-1.5 px-2"
                             onClick={() => handleSyncTemplates(acc.id)}
                             disabled={isSyncingTemplates}
                           >
@@ -443,23 +442,23 @@ export function WhatsAppSettingsPage({
                           </Button>
                         </div>
                       </CardHeader>
-                      <CardContent className="pt-4">
-                        <div className="grid grid-cols-2 gap-4 text-xs">
+                      <CardContent className="p-2">
+                        <div className="grid grid-cols-2 gap-2 text-xs">
                           <div>
                             <p className="text-muted-foreground">Quality Rating</p>
-                            <p className="font-medium capitalize">{acc.metadata?.quality_rating ?? '—'}</p>
+                            <p className="font-medium capitalize dark:text-white">{acc.metadata?.quality_rating ?? '—'}</p>
                           </div>
                           <div>
                             <p className="text-muted-foreground">API Status</p>
-                            <p className="font-medium">{acc.metadata?.status ?? '—'}</p>
+                            <p className="font-medium dark:text-white">{acc.metadata?.status ?? '—'}</p>
                           </div>
                           <div>
                             <p className="text-muted-foreground">Lead Mode</p>
-                            <p className="font-medium capitalize">{settings?.lead_creation_mode ?? 'hybrid'}</p>
+                            <p className="font-medium capitalize dark:text-white">{settings?.lead_creation_mode ?? 'hybrid'}</p>
                           </div>
                           <div>
                             <p className="text-muted-foreground">Templates Synced</p>
-                            <p className="font-medium">{templates.length}</p>
+                            <p className="font-medium dark:text-white">{templates.length}</p>
                           </div>
                         </div>
                       </CardContent>
@@ -482,17 +481,17 @@ export function WhatsAppSettingsPage({
                   onConvertToLead={onConvertToLead}
                 />
               ) : (
-                <Card className="border shadow-sm p-6 text-center text-xs text-muted-foreground">
+                <Card className="p-4 text-xs text-muted-foreground">
                   Inbox services not provided.
                 </Card>
               )}
             </TabsContent>
 
             {/* LEAD SETTINGS */}
-            <TabsContent value="lead-settings" className="flex-1 overflow-y-auto min-h-0 space-y-4">
+            <TabsContent value="lead-settings" className="flex-1 overflow-y-auto min-h-0 space-y-2">
               <Card className="border shadow-sm">
-                <CardHeader className="border-b pb-3">
-                  <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <CardHeader className="border-b p-2">
+                  <CardTitle className="text-sm font-semibold flex items-center gap-2 text-leadgaze-dark dark:text-white mb-0">
                     <Settings2 className="h-4 w-4" />
                     Lead Creation Rules
                   </CardTitle>
@@ -500,10 +499,10 @@ export function WhatsAppSettingsPage({
                     Control how incoming WhatsApp messages create CRM leads.
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="pt-6 space-y-6">
+                <CardContent className="p-2 space-y-2">
                   {/* Mode selector */}
                   <div className="space-y-2">
-                    <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Lead Creation Mode</Label>
+                    <Label className="text-xs font-semibold uppercase text-leadgaze-dark dark:text-white">Lead Creation Mode</Label>
                     <div className="grid grid-cols-3 gap-3">
                       {(['automatic', 'manual', 'hybrid'] as LeadCreationMode[]).map((mode) => (
                         <button
@@ -514,8 +513,8 @@ export function WhatsAppSettingsPage({
                             : 'border-border hover:border-muted-foreground/40'
                             }`}
                         >
-                          <p className="text-xs font-semibold capitalize">{mode}</p>
-                          <p className="text-[10px] text-muted-foreground mt-0.5">
+                          <p className="text-xs font-semibold capitalize dark:text-white">{mode}</p>
+                          <p className="text-[10px] text-muted-foreground mt-0.5 dark:text-white">
                             {mode === 'automatic' && 'Always create a lead for new contacts'}
                             {mode === 'manual' && 'Agent manually converts conversations'}
                             {mode === 'hybrid' && 'Create lead if keywords/threshold match'}
@@ -529,7 +528,7 @@ export function WhatsAppSettingsPage({
                   {leadMode === 'hybrid' && (
                     <>
                       <div className="space-y-2">
-                        <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Trigger Keywords</Label>
+                        <Label className="text-xs font-semibold uppercase text-leadgaze-dark dark:text-white">Trigger Keywords</Label>
                         <p className="text-xs text-muted-foreground">Lead is created if the customer&apos;s message contains any of these words.</p>
                         <div className="flex flex-wrap gap-1.5 p-3 rounded-lg border bg-muted/20 min-h-[56px]">
                           {keywords.map((kw) => (
@@ -557,7 +556,7 @@ export function WhatsAppSettingsPage({
                       </div>
 
                       <div className="space-y-2">
-                        <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Message Count Threshold</Label>
+                        <Label className="text-xs font-semibold uppercase text-leadgaze-dark dark:text-white">Message Count Threshold</Label>
                         <p className="text-xs text-muted-foreground">Also create a lead after this many messages (even without keywords).</p>
                         <Input
                           type="number"
@@ -571,7 +570,7 @@ export function WhatsAppSettingsPage({
                     </>
                   )}
 
-                  <Button onClick={handleSaveSettings} disabled={isSavingSettings} className="gap-2 text-xs">
+                  <Button onClick={handleSaveSettings} disabled={isSavingSettings} className="secondary-text-small-bold text-white gap-1.5 px-2">
                     {isSavingSettings ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle2 className="h-3 w-3" />}
                     Save Settings
                   </Button>
@@ -581,9 +580,9 @@ export function WhatsAppSettingsPage({
 
             {/* SETUP GUIDE */}
             <TabsContent value="setup" className="flex-1 overflow-y-auto min-h-0">
-              <Card className="border shadow-sm p-6 space-y-8">
+              <Card className="border shadow-sm p-2 space-y-2">
                 <div>
-                  <h3 className="text-base font-bold mb-1">WhatsApp Integration & Usage Guide</h3>
+                  <h3 className="text-base font-bold text-leadgaze-dark dark:text-white	custom-sub-heading-dialog-form">WhatsApp Integration & Usage Guide</h3>
                   <p className="text-sm text-muted-foreground">How to connect your WhatsApp Business number, manage customer chats, and capture leads automatically.</p>
                 </div>
 
@@ -610,7 +609,7 @@ export function WhatsAppSettingsPage({
                   },
                 ].map((step) => (
                   <div key={step.n} className="border-l-2 border-emerald-500 pl-4 space-y-1.5">
-                    <h4 className="text-sm font-semibold">{step.n}. {step.title}</h4>
+                    <h4 className="text-sm font-semibold text-leadgaze-dark dark:text-white">{step.n}. {step.title}</h4>
                     {step.body && <p className="text-xs text-muted-foreground whitespace-pre-line">{step.body}</p>}
                   </div>
                 ))}

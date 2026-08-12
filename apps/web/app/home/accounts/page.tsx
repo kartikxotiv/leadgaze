@@ -5,7 +5,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { FileDown, FileUp, Plus } from 'lucide-react';
+import { Download, FileDown, FileUp, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { useUser } from '@kit/supabase/hooks/use-user';
@@ -54,6 +54,7 @@ import {
 } from '~/lib/hooks/use-leads-column-preferences';
 import { usePackageMembers } from '~/lib/hooks/use-package-members';
 import { useTeamMembers } from '~/lib/hooks/use-team-members';
+import { usePreloadStrategies, usePreloadHoverHandlers } from '~/lib/hooks/use-preload-strategies';
 import { useLocalization } from '~/lib/localization/localization-provider';
 import { ModuleGuard } from '~/lib/rbac/module-guard';
 import { useModuleRoles, useRBAC } from '~/lib/rbac/rbac-provider';
@@ -126,6 +127,8 @@ export default function AccountsPage() {
   const queryClient = useQueryClient();
   const { currentWorkspace: workspace, canAccess } = useRBAC();
   const { formatDate } = useLocalization();
+  const { preloadAccountDetail } = usePreloadStrategies();
+  const { handleMouseEnter, handleMouseLeave } = usePreloadHoverHandlers();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCreatedByIds, setSelectedCreatedByIds] = useState<string[]>(
     [],
@@ -787,18 +790,17 @@ export default function AccountsPage() {
 
   return (
     <ModuleGuard module="accounts">
-      <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden">
+      <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden border-top-bottom-gray">
         <PageHeader
-          title={`Accounts (${totalCount})`}
-          description="Manage your client accounts and organizations"
-        />
-      </div>
-
-      {/* Full-width search / filter / actions toolbar */}
-      <div className="w-full max-w-full min-w-0 shrink-0 border-b pt-2 pb-2">
-        <ListToolBar
-          showSearch
-          searchPlaceholder="Search by account name..."
+          title={`Accounts`}          
+        >
+          <div className="p-[2px]">
+            <ListToolBar
+              align="right"
+              className="border-none bg-transparent p-0"
+              showSearch
+              expandableSearch
+          searchPlaceholder="Search"
           searchValue={searchTerm}
           onSearchChange={setSearchTerm}
           showFilter
@@ -863,7 +865,7 @@ export default function AccountsPage() {
             {
               key: 'import',
               label: 'Import',
-              icon: FileUp,
+              icon: Download,
               onClick: () => setIsImportDialogOpen(true),
               show: canAccess('accounts', 'import'),
               buttonVariant: 'outline',
@@ -892,10 +894,11 @@ export default function AccountsPage() {
               columns={columns}
               visibility={visibility}
               onToggle={toggleVisibility}
-              onReset={reset}
             />
           }
         />
+          </div>
+        </PageHeader>
       </div>
 
       <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden">
@@ -1001,19 +1004,19 @@ export default function AccountsPage() {
                   })}
 
                   {canAddColumn ? (
-                    <TableHead className="sticky-right-header bg-background z-10 w-12 px-1 text-center">
+                    <TableHead className="sticky-right-header z-10 w-12 px-1 text-center">
                       <Button
-                        variant="outline"
+                        type="button"
                         size="icon"
-                        className="mx-auto flex h-8 w-8 items-center justify-center border-dashed"
+                        className="mx-auto flex h-5 w-5 items-center justify-center rounded-full bg-leadgaze-primary text-white hover:bg-leadgaze-primary/90 border-0 p-0 shadow-xs"
                         onClick={() => setAddColumnModalOpen(true)}
                         title="Add Column"
                       >
-                        <Plus className="h-4 w-4" />
+                        <Plus className="h-3.5 w-3.5 stroke-[2.5]" />
                       </Button>
                     </TableHead>
                   ) : (
-                    <TableHead className="sticky-right-header bg-background z-10 w-12" />
+                    <TableHead className="sticky-right-header z-10 w-12" />
                   )}
                 </TableRow>
               </TableHeader>
@@ -1066,6 +1069,12 @@ export default function AccountsPage() {
                       onClick={() =>
                         router.push(`/home/sales/accounts/${account.id}`)
                       }
+                      onMouseEnter={() =>
+                        handleMouseEnter(() =>
+                          preloadAccountDetail(workspace?.id || '', account)
+                        )
+                      }
+                      onMouseLeave={handleMouseLeave}
                     >
                       {/* Checkbox */}
                       <TableCell
@@ -1194,7 +1203,7 @@ export default function AccountsPage() {
                           </TableCell>
                         ) : null,
                       )}
-                      <TableCell className="bg-card group sticky right-0 px-4 text-right">
+                      <TableCell className="group sticky right-0 px-4 text-right">
                         <div className="flex items-center justify-end gap-2">
                           <EntityActionsDropdown
                             id={account.id}
@@ -1268,6 +1277,10 @@ export default function AccountsPage() {
           teamMembers={teamMembersForModal}
           isAdmin={canAddColumn}
           isSubmitting={createField.isPending}
+          columns={columns}
+          visibility={visibility}
+          onToggleColumn={toggleVisibility}
+          onResetColumns={reset}
           onSubmit={async (payload) => {
             await createField.mutateAsync({
               ...payload,

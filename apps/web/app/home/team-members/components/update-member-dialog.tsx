@@ -102,14 +102,14 @@ export function UpdateMemberDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-[450px]">
-        <DialogHeader className="border-b p-6 pb-4">
+        <DialogHeader>
           <DialogTitle>Update Member</DialogTitle>
           <DialogDescription>
             Update the role and settings for this team member
           </DialogDescription>
         </DialogHeader>
 
-        <form id="dialog-form" onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+        <form id="dialog-form" onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-2 space-y-2">
           <div className="space-y-2">
             <CustomInputForView
                                 label="Email"
@@ -152,7 +152,7 @@ export function UpdateMemberDialog({
             </Select>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 pb-2">
             <Checkbox
               id="primary_contact"
               checked={formData.is_primary_contact}
@@ -171,7 +171,7 @@ export function UpdateMemberDialog({
 
           
         </form>
-      <DialogFooter className="border-t p-2 mt-auto">
+      <DialogFooter>
             <Button
               type="button"
               variant="outline"

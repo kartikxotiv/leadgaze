@@ -13,6 +13,10 @@ import {
   getVisibleFields,
 } from '~/lib/field-permission';
 import { coreDb } from '~/lib/field-permission/core-client';
+import { getLeadsMetaService } from '~/services/leads.service';
+import { getContactsMetaService } from '~/services/contacts.service';
+import { getAccountsMetaService } from '~/services/accounts.service';
+import { getOpportunitiesMetaService } from '~/services/opportunities.service';
 
 export type AccessType =
   | 'public'
@@ -70,7 +74,10 @@ interface UseDynamicColumnsOptions {
   userId?: string;
   productKey?: string;
   enabled?: boolean;
+  staleTime?: number;
 }
+
+const META_SUPPORTED_ENTITIES = ['leads', 'contacts', 'accounts', 'opportunities'];
 
 export function useDynamicColumns({
   entityType,
@@ -78,14 +85,32 @@ export function useDynamicColumns({
   userId,
   productKey = 'sales',
   enabled = true,
+  staleTime = 5 * 60 * 1000,
 }: UseDynamicColumnsOptions) {
   const supabase = getSupabaseBrowserClient<Database>();
   const queryClient = useQueryClient();
 
-  // Fetch all entity fields
+  const isMetaSupported = META_SUPPORTED_ENTITIES.includes(entityType);
+
+  // Pre-fetch Entity Meta for sales entities (leads, contacts, accounts, opportunities)
+  const { data: entityMeta, isLoading: entityMetaLoading } = useQuery({
+    queryKey: [`${entityType}-meta`, workspaceId, userId, productKey],
+    queryFn: () => {
+      const params = { workspaceId: workspaceId!, userId: userId!, productKey };
+      if (entityType === 'leads') return getLeadsMetaService(params);
+      if (entityType === 'contacts') return getContactsMetaService(params);
+      if (entityType === 'accounts') return getAccountsMetaService(params);
+      if (entityType === 'opportunities') return getOpportunitiesMetaService(params);
+      return null;
+    },
+    enabled: enabled && isMetaSupported && !!workspaceId && !!userId,
+    staleTime,
+  });
+
+  // Fetch all entity fields from Supabase (fallback for entities not supported by meta API)
   const {
-    data: fields = [],
-    isLoading: fieldsLoading,
+    data: supabaseFields = [],
+    isLoading: supabaseFieldsLoading,
     refetch: refetchFields,
   } = useQuery({
     queryKey: ['entity-fields', workspaceId, entityType, productKey],
@@ -131,11 +156,15 @@ export function useDynamicColumns({
         access_members: (Array.isArray(field.access_rule) ? field.access_rule[0]?.members : field.access_rule?.members) || [],
       })) as unknown as EntityField[];
     },
-    enabled: enabled && !!workspaceId,
+    enabled: enabled && !!workspaceId && !isMetaSupported,
+    staleTime,
   });
 
-  // Fetch user column preferences
-  const { data: preferences, isLoading: preferencesLoading } = useQuery({
+  const fields = isMetaSupported ? ((entityMeta?.fields as unknown as EntityField[]) || []) : supabaseFields;
+  const fieldsLoading = isMetaSupported ? entityMetaLoading : supabaseFieldsLoading;
+
+  // Fetch user column preferences from Supabase (fallback for entities not supported by meta API)
+  const { data: supabasePreferences, isLoading: supabasePreferencesLoading } = useQuery({
     queryKey: ['user-column-preferences', workspaceId, userId, entityType],
     queryFn: async () => {
       if (!workspaceId || !userId) return null;
@@ -158,8 +187,14 @@ export function useDynamicColumns({
 
       return (data?.preferences as unknown as ColumnPreference) ?? null;
     },
-    enabled: enabled && !!workspaceId && !!userId,
+    enabled: enabled && !!workspaceId && !!userId && !isMetaSupported,
+    staleTime,
   });
+
+  const preferences = isMetaSupported
+    ? ((entityMeta?.preferences?.preferences as unknown as ColumnPreference) ?? null)
+    : supabasePreferences;
+  const preferencesLoading = isMetaSupported ? entityMetaLoading : supabasePreferencesLoading;
 
   // Update column preferences mutation
   const updatePreferences = useMutation({

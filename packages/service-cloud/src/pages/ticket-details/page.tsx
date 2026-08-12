@@ -10,6 +10,9 @@ import {
   Activity,
   ArrowLeft,
   Building2,
+  Globe,
+  Factory,
+  Phone,
   CalendarDays,
   Clock,
   Clock3,
@@ -42,6 +45,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@kit/ui/accordion';
+import { DetailInfoList, DetailInfoRow } from '@kit/ui/detail-info-row';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -190,16 +194,17 @@ function TicketCustomFieldsSection({
   return (
     <AccordionItem
       value="custom-fields"
-      className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
+      className="overflow-hidden border bg-white dark:bg-zinc-900"
     >
-      <AccordionTrigger className="px-4 py-3 hover:no-underline">
-        <span className="primary-heading text-leadgaze-dark flex items-center gap-2 dark:text-white">
+      <AccordionTrigger className="px-2 pb-2 border-b border-b-accordion hover:no-underline py-3">
+        <span className="primary-text-big-regular text-leadgaze-dark flex items-center gap-2 dark:text-white">
+
           <Settings className="text-leadgaze-dark h-5 w-5 dark:text-white" />
           Additional Data
         </span>
       </AccordionTrigger>
-      <AccordionContent className="px-4 pb-4">
-        <div className="space-y-4 pt-2">
+      <AccordionContent className="px-2 pb-2">
+        
           <LeadCustomFieldInputs
             fields={fields}
             values={values}
@@ -223,8 +228,7 @@ function TicketCustomFieldsSection({
                 Save Changes
               </Button>
             </div>
-          )}
-        </div>
+          )}        
       </AccordionContent>
     </AccordionItem>
   );
@@ -279,9 +283,10 @@ export function ServiceCloudTicketDetailPage({
   });
   const [replyEmail, setReplyEmail] = useState<any | null>(null);
   const [isComposeOpen, setIsComposeOpen] = useState(false);
-  const [openAccordion, setOpenAccordion] = useState<string | undefined>(
+  const [openAccordions, setOpenAccordions] = useState<string[]>([
     'ticket-properties',
-  );
+    'sla-snapshot',
+  ]);
 
   const { getHeaderProps, getResizeHandleProps } = useColumnResize(
     'sc-ticket-details-time-entries',
@@ -511,7 +516,7 @@ export function ServiceCloudTicketDetailPage({
     updateMutation.mutate(payload);
 
   return (
-    <div className="mt-2 space-y-4">
+    <div className="space-y-2">
       <section className="overflow-hidden rounded-none border bg-[radial-gradient(circle_at_top_left,_rgba(14,165,233,0.18),_transparent_34%),linear-gradient(135deg,_#0f172a,_#164e63_52%,_#0f172a)] p-6 text-white shadow-xl">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-4xl space-y-5">
@@ -626,7 +631,7 @@ export function ServiceCloudTicketDetailPage({
       </section>
 
       <div className="flex w-full flex-col gap-4 lg:flex-row">
-        <div className="w-full space-y-4 lg:w-[65%]">
+        <div className="w-full space-y-2 lg:w-[65%]">
           <CardWidgetContainer
             title="Ticket Workspace"
             description="Customer conversation, internal work, attachments, and service timeline."
@@ -702,14 +707,14 @@ export function ServiceCloudTicketDetailPage({
                 </TabsList>
 
                 {canManageInbox ? (
-                  <TabsContent value="conversation" className="space-y-4">
+                  <TabsContent value="conversation" className="space-y-2">
                     {emails.length === 0 ? (
                       <EmptyState
                         title="No emails linked yet"
                         description="Emails converted into this ticket will appear here."
                       />
                     ) : (
-                      <div className="scrollbar-thin h-[calc(100vh-420px)] min-h-[350px] space-y-4 overflow-y-auto pr-2">
+                      <div className="scrollbar-thin h-[calc(100vh-420px)] min-h-[350px] space-y-2 overflow-y-auto pr-2">
                         {emails.map((item: any) => {
                           const email = item.email;
                           return (
@@ -781,7 +786,7 @@ export function ServiceCloudTicketDetailPage({
                   </TabsContent>
                 ) : null}
 
-                <TabsContent value="work" className="space-y-4">
+                <TabsContent value="work" className="space-y-2">
                   <div className="grid gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
                     <CardWidgetContainer
                       title="Log Time"
@@ -789,7 +794,7 @@ export function ServiceCloudTicketDetailPage({
                       icon={<Timer className="h-4 w-4" />}
                       hideHeaderBorder={true}
                     >
-                      <div className="space-y-4 px-6 pb-4">
+                      <div className="space-y-2 px-6 pb-4">
                         <Field label="Date">
                           <DateTimePicker
                             mode="date"
@@ -1131,34 +1136,28 @@ export function ServiceCloudTicketDetailPage({
           </CardWidgetContainer>
         </div>
 
-        <div className="w-full space-y-4 lg:w-[35%] lg:overflow-y-auto">
+        <div className="w-full space-y-2 lg:w-[35%] lg:overflow-y-auto">
           <Accordion
-            type="single"
-            collapsible
+            type="multiple"
             className="space-y-2"
-            value={openAccordion}
-            onValueChange={setOpenAccordion}
+            value={openAccordions}
+            onValueChange={setOpenAccordions}
           >
             <AccordionItem
               value="ticket-properties"
-              className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
+              className="overflow-hidden border bg-white dark:bg-zinc-900"
             >
-              <AccordionTrigger className="px-4 py-3 hover:no-underline">
-                <div className="flex flex-col items-start gap-1">
-                  <span className="primary-heading text-leadgaze-dark flex items-center gap-2 dark:text-white">
-                    <Settings className="text-leadgaze-dark h-5 w-5 dark:text-white" />
-                    Ticket Properties
-                  </span>
-                  <span className="text-muted-foreground text-xs font-normal">
-                    Operational fields agents update while working the case.
-                  </span>
-                </div>
+              <AccordionTrigger className="px-2 pb-2 border-b border-b-accordion hover:no-underline py-3">
+                <span className="primary-text-big-regular text-leadgaze-dark flex items-center gap-2 dark:text-white">
+                  <Settings className="text-leadgaze-dark h-5 w-5 dark:text-white" />
+                  Ticket Properties
+                </span>
               </AccordionTrigger>
-              <AccordionContent className="px-4 pb-4">
-                <div className="space-y-4 pt-2">
+              <AccordionContent className="px-2 pb-2">
+                <DetailInfoList>
                   {(!canViewField || canViewField('status_id')) && (
                     <EditableSelect
-                      icon={<Flag className="h-4 w-4" />}
+                      icon={<Flag className="h-5 w-5" />}
                       label="Status"
                       value={ticket.status_id}
                       options={statuses}
@@ -1172,7 +1171,7 @@ export function ServiceCloudTicketDetailPage({
                   )}
                   {(!canViewField || canViewField('priority_id')) && (
                     <EditableSelect
-                      icon={<Flag className="h-4 w-4" />}
+                      icon={<Flag className="h-5 w-5" />}
                       label="Priority"
                       value={ticket.priority_id}
                       options={priorities}
@@ -1187,7 +1186,7 @@ export function ServiceCloudTicketDetailPage({
                   )}
                   {(!canViewField || canViewField('category_id')) && (
                     <EditableSelect
-                      icon={<Tag className="h-4 w-4" />}
+                      icon={<Tag className="h-5 w-5" />}
                       label="Category"
                       value={ticket.category_id}
                       options={categories}
@@ -1201,7 +1200,7 @@ export function ServiceCloudTicketDetailPage({
                   )}
                   {(!canViewField || canViewField('assigned_agent_id')) && (
                     <EditableSelect
-                      icon={<UserCheck className="h-4 w-4" />}
+                      icon={<UserCheck className="h-5 w-5" />}
                       label="Primary owner"
                       value={ticket.assigned_agent_id}
                       options={members}
@@ -1216,12 +1215,15 @@ export function ServiceCloudTicketDetailPage({
                     />
                   )}
                   {(!canViewField || canViewField('due_at')) && (
-                    <Field label="Due date">
+                    <div className="flex items-center justify-between gap-2 h-[35px]">
                       <div className="flex items-center gap-2">
-                        <CalendarDays className="text-muted-foreground h-4 w-4" />
-                        <DateTimePicker
-                          mode="date"
-                          placeholder="Select date"
+                        <CalendarDays className="text-muted-foreground h-5 w-5 shrink-0" />
+                        <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
+                          Due date
+                        </span>
+                      </div>
+                      <div className="min-w-0 flex-1 text-right">
+                        <EditableDate
                           value={dueValue ? new Date(dueValue) : undefined}
                           disabled={
                             isUpdating ||
@@ -1234,184 +1236,216 @@ export function ServiceCloudTicketDetailPage({
                           }
                         />
                       </div>
-                    </Field>
+                    </div>
                   )}
-                  {(!canViewField || canViewField('assignees')) && (
-                    <>
-                      <Separator />
-                      <TicketAssignees
-                        members={members}
-                        assignees={assignees}
-                        disabled={
-                          assigneeMutation.isPending ||
-                          (canEditField ? !canEditField('assignees') : false)
-                        }
-                        onToggle={(member, assignee) =>
-                          assigneeMutation.mutate({
-                            accountId: member.id,
-                            assigneeId: assignee?.id,
-                            action: assignee ? 'remove' : 'add',
-                          })
-                        }
-                      />
-                    </>
-                  )}
-                </div>
+                </DetailInfoList>
+                {(!canViewField || canViewField('assignees')) && (
+                  <div className="pt-0">
+                    <Separator className="mb-2" />
+                    <TicketAssignees
+                      members={members}
+                      assignees={assignees}
+                      disabled={
+                        assigneeMutation.isPending ||
+                        (canEditField ? !canEditField('assignees') : false)
+                      }
+                      onToggle={(member, assignee) =>
+                        assigneeMutation.mutate({
+                          accountId: member.id,
+                          assigneeId: assignee?.id,
+                          action: assignee ? 'remove' : 'add',
+                        })
+                      }
+                    />
+                  </div>
+                )}
               </AccordionContent>
             </AccordionItem>
 
             <AccordionItem
               value="sla-snapshot"
-              className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
-              style={
-                ticket.priority?.color
-                  ? {
-                    backgroundColor: `${ticket.priority.color}15`,
-                    borderColor: `${ticket.priority.color}50`,
-                  }
-                  : undefined
-              }
+              className="overflow-hidden border bg-white dark:bg-zinc-900"
             >
-              <AccordionTrigger className="px-4 py-3 hover:no-underline">
-                <div className="flex w-full items-center justify-between gap-4 pr-4">
-                  <span className="primary-heading text-leadgaze-dark flex items-center gap-2 dark:text-white">
-                    <Timer className="text-leadgaze-dark h-5 w-5 dark:text-white" />
-                    SLA Snapshot
-                  </span>
-                  {ticket.priority?.name ? (
-                    <div className="text-muted-foreground flex items-center gap-2 text-sm">
-                      <span>Priority:</span>
-                      <Badge
-                        className="flex items-center gap-1.5 font-medium"
-                        style={
-                          ticket.priority?.color
-                            ? {
-                              backgroundColor: `${ticket.priority.color}20`,
-                              borderColor: `${ticket.priority.color}40`,
-                              color: ticket.priority.color,
-                            }
-                            : undefined
-                        }
-                      >
-                        {ticket.priority?.color ? (
-                          <span
-                            className="h-2 w-2 shrink-0 rounded-full"
-                            style={{ backgroundColor: ticket.priority.color }}
-                          />
-                        ) : null}
-                        {ticket.priority.name}
-                      </Badge>
-                    </div>
-                  ) : null}
-                </div>
+              <AccordionTrigger className="px-2 pb-2 border-b border-b-accordion hover:no-underline py-3">
+                <span className="primary-text-big-regular text-leadgaze-dark flex items-center gap-2 dark:text-white">
+                  <Timer className="text-leadgaze-dark h-5 w-5 dark:text-white" />
+                  SLA Snapshot
+                </span>
               </AccordionTrigger>
-              <AccordionContent className="px-4 pb-4">
-                <div className="space-y-3 pt-2 text-sm">
+              <AccordionContent className="px-2 pb-2">
+                <DetailInfoList>
                   {(!canViewField || canViewField('priority_id')) && (
-                    <Metric
-                      label="Priority"
-                      value={ticket.priority?.name ?? 'Not set'}
-                    />
+                    <div className="flex items-center justify-between gap-2 h-[35px]">
+                      <div className="flex items-center gap-2">
+                        <Flag className="text-muted-foreground h-5 w-5 shrink-0" />
+                        <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">Priority</span>
+                      </div>
+                      <div className="min-w-0 flex-1 text-right">
+                        <span className="primary-text-regular text-leadgaze-dark dark:text-white">{ticket.priority?.name ?? 'Not set'}</span>
+                      </div>
+                    </div>
                   )}
                   {(!canViewField || canViewField('due_at')) && (
                     <>
-                      <Metric
-                        label="Response due"
-                        value={formatDateTime(responseDueAt)}
-                      />
-                      <Metric
-                        label="Resolution due"
-                        value={formatDateOnly(dueValue)}
-                      />
+                      <div className="flex items-center justify-between gap-2 h-[35px]">
+                        <div className="flex items-center gap-2">
+                          <Timer className="text-muted-foreground h-5 w-5 shrink-0" />
+                          <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">Response due</span>
+                        </div>
+                        <div className="min-w-0 flex-1 text-right">
+                          <span className="primary-text-regular text-leadgaze-dark dark:text-white">{responseDueAt ? formatDateTime(responseDueAt) : '-'}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between gap-2 h-[35px] border-b border-b-accordion">
+                        <div className="flex items-center gap-2">
+                          <CalendarDays className="text-muted-foreground h-5 w-5 shrink-0" />
+                          <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">Resolution due</span>
+                        </div>
+                        <div className="min-w-0 flex-1 text-right">
+                          <span className="primary-text-regular text-leadgaze-dark dark:text-white">{dueValue ? formatDateOnly(dueValue) : '-'}</span>
+                        </div>
+                      </div>
                     </>
                   )}
-                </div>
+                </DetailInfoList>
               </AccordionContent>
             </AccordionItem>
 
             <AccordionItem
               value="customer-details"
-              className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
+              className="overflow-hidden border bg-white dark:bg-zinc-900"
             >
-              <AccordionTrigger className="px-4 py-3 hover:no-underline">
-                <span className="primary-heading text-leadgaze-dark flex items-center gap-2 dark:text-white">
+              <AccordionTrigger className="px-2 pb-2 border-b border-b-accordion hover:no-underline py-3">
+                <span className="primary-text-big-regular text-leadgaze-dark flex items-center gap-2 dark:text-white">
                   <UserRound className="text-leadgaze-dark h-5 w-5 dark:text-white" />
                   Customer Details
                 </span>
               </AccordionTrigger>
-              <AccordionContent className="px-4 pb-4">
-                <div className="space-y-3 pt-2 text-sm">
+              <AccordionContent className="px-2 pb-2">
+                <DetailInfoList>
                   {(!canViewField || canViewField('customer')) && (
                     <>
-                      <Metric
-                        label="Name"
-                        value={ticket.customer?.name ?? '-'}
-                      />
-                      <Metric
-                        label="Email"
-                        value={ticket.customer?.email ?? '-'}
-                      />
-                      <Metric
-                        label="Phone"
-                        value={ticket.customer?.phone ?? '-'}
-                      />
+                      <div className="flex items-center justify-between gap-2 h-[35px]">
+                        <div className="flex items-center gap-2">
+                          <UserRound className="text-muted-foreground h-5 w-5 shrink-0" />
+                          <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">Name</span>
+                        </div>
+                        <div className="min-w-0 flex-1 text-right">
+                          <span className="primary-text-regular text-leadgaze-dark dark:text-white">{ticket.customer?.name ?? '-'}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between gap-2 h-[35px]">
+                        <div className="flex items-center gap-2">
+                          <Mail className="text-muted-foreground h-5 w-5 shrink-0" />
+                          <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">Email</span>
+                        </div>
+                        <div className="min-w-0 flex-1 text-right">
+                          <span className="text-sm text-blue-600 dark:text-blue-400 font-medium truncate block">{ticket.customer?.email ?? '-'}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between gap-2 h-[35px]">
+                        <div className="flex items-center gap-2">
+                          <Phone className="text-muted-foreground h-5 w-5 shrink-0" />
+                          <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">Phone</span>
+                        </div>
+                        <div className="min-w-0 flex-1 text-right">
+                          <span className="primary-text-regular text-leadgaze-dark dark:text-white">{ticket.customer?.phone ?? '-'}</span>
+                        </div>
+                      </div>
                     </>
                   )}
                   {(!canViewField || canViewField('organization')) && (
                     <>
-                      <Separator />
-                      <Metric
-                        label="Company"
-                        value={ticket.organization?.name ?? '-'}
-                      />
-                      <Metric
-                        label="Industry"
-                        value={ticket.organization?.industry ?? '-'}
-                      />
-                      <Metric
-                        label="Website"
-                        value={ticket.organization?.website ?? '-'}
-                      />
+                      <div className="flex items-center justify-between gap-2 h-[35px]">
+                        <div className="flex items-center gap-2">
+                          <Building2 className="text-muted-foreground h-5 w-5 shrink-0" />
+                          <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">Company</span>
+                        </div>
+                        <div className="min-w-0 flex-1 text-right">
+                          <span className="primary-text-regular text-leadgaze-dark dark:text-white">{ticket.organization?.name ?? '-'}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between gap-2 h-[35px]">
+                        <div className="flex items-center gap-2">
+                          <Factory className="text-muted-foreground h-5 w-5 shrink-0" />
+                          <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">Industry</span>
+                        </div>
+                        <div className="min-w-0 flex-1 text-right">
+                          <span className="primary-text-regular text-leadgaze-dark dark:text-white">{ticket.organization?.industry ?? '-'}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between gap-2 h-[35px] border-b border-b-accordion">
+                        <div className="flex items-center gap-2">
+                          <Globe className="text-muted-foreground h-5 w-5 shrink-0" />
+                          <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">Website</span>
+                        </div>
+                        <div className="min-w-0 flex-1 text-right">
+                          <span className="text-sm text-blue-600 dark:text-blue-400 font-medium truncate block">{ticket.organization?.website ?? '-'}</span>
+                        </div>
+                      </div>
                     </>
                   )}
-                </div>
+                </DetailInfoList>
               </AccordionContent>
             </AccordionItem>
 
             <AccordionItem
               value="record-details"
-              className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
+              className="overflow-hidden border bg-white dark:bg-zinc-900"
             >
-              <AccordionTrigger className="px-4 py-3 hover:no-underline">
-                <span className="primary-heading text-leadgaze-dark flex items-center gap-2 dark:text-white">
+              <AccordionTrigger className="px-2 pb-2 border-b border-b-accordion hover:no-underline py-3">
+                <span className="primary-text-big-regular text-leadgaze-dark flex items-center gap-2 dark:text-white">
                   <Building2 className="text-leadgaze-dark h-5 w-5 dark:text-white" />
                   Record Details
                 </span>
               </AccordionTrigger>
-              <AccordionContent className="px-4 pb-4">
-                <div className="space-y-3 pt-2 text-sm">
-                  <Metric label="Source" value={ticket.source ?? '-'} />
-                  <Metric
-                    label="Last response"
-                    value={
-                      ticket.last_agent_response_at
-                        ? formatDateTime(ticket.last_agent_response_at)
-                        : 'No response yet'
-                    }
-                  />
-                  <Metric
-                    label="Last customer reply"
-                    value={
-                      ticket.last_customer_response_at
-                        ? formatDateTime(ticket.last_customer_response_at)
-                        : 'Customer has not responded yet'
-                    }
-                  />
-                  <Metric
-                    label="Updated"
-                    value={formatDateTime(ticket.updated_at)}
-                  />
-                </div>
+              <AccordionContent className="px-2 pb-2">
+                <DetailInfoList>
+                  <div className="flex items-center justify-between gap-2 h-[35px]">
+                    <div className="flex items-center gap-2">
+                      <Inbox className="text-muted-foreground h-5 w-5 shrink-0" />
+                      <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">Source</span>
+                    </div>
+                    <div className="min-w-0 flex-1 text-right">
+                      <span className="primary-text-regular text-leadgaze-dark dark:text-white">{ticket.source ?? '-'}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between gap-2 h-[35px]">
+                    <div className="flex items-center gap-2">
+                      <Clock3 className="text-muted-foreground h-5 w-5 shrink-0" />
+                      <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">Last response</span>
+                    </div>
+                    <div className="min-w-0 flex-1 text-right">
+                      <span className="primary-text-regular text-leadgaze-dark dark:text-white">
+                        {ticket.last_agent_response_at
+                          ? formatDateTime(ticket.last_agent_response_at)
+                          : 'No response yet'}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between gap-2 h-[35px]">
+                    <div className="flex items-center gap-2">
+                      <Clock className="text-muted-foreground h-5 w-5 shrink-0" />
+                      <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">Last reply</span>
+                    </div>
+                    <div className="min-w-0 flex-1 text-right">
+                      <span className="primary-text-regular text-leadgaze-dark dark:text-white">
+                        {ticket.last_customer_response_at
+                          ? formatDateTime(ticket.last_customer_response_at)
+                          : 'Customer has not responded yet'}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between gap-2 h-[35px] border-b border-b-accordion">
+                    <div className="flex items-center gap-2">
+                      <Timer className="text-muted-foreground h-5 w-5 shrink-0" />
+                      <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">Updated</span>
+                    </div>
+                    <div className="min-w-0 flex-1 text-right">
+                      <span className="primary-text-regular text-leadgaze-dark dark:text-white">{formatDateTime(ticket.updated_at)}</span>
+                    </div>
+                  </div>
+                </DetailInfoList>
               </AccordionContent>
             </AccordionItem>
 
@@ -1476,7 +1510,7 @@ export function ServiceCloudTicketDetailPage({
           <DialogHeader>
             <DialogTitle>Edit Time Entry</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-2">
             <Field label="Date">
               <Popover>
                 <PopoverTrigger asChild>
@@ -1641,71 +1675,179 @@ function EditableSelect({
   disabled?: boolean;
   allowNone?: boolean;
   onChange: (value: string | null) => void;
-  /** All available options (including restricted ones) for looking up current value */
   allOptions?: LookupOption[];
 }) {
-  // Use allOptions for lookup if provided, otherwise use options
+  const [isEditing, setIsEditing] = useState(false);
   const allOptsForLookup = allOptions || options;
   const selectedOption = allOptsForLookup.find((opt) => opt.id === value);
-  const selectedColor = selectedOption?.color;
 
   return (
-    <Field label={label}>
+    <div className="flex items-center justify-between gap-2 h-[35px]">
       <div className="flex items-center gap-2">
         <span
-          style={selectedColor ? { color: selectedColor } : undefined}
+          style={selectedOption?.color ? { color: selectedOption.color } : undefined}
           className={cn(
-            'text-muted-foreground shrink-0',
-            selectedColor && 'transition-colors',
+            'text-muted-foreground shrink-0 flex h-5 w-5 items-center justify-center',
+            selectedOption?.color && 'transition-colors',
           )}
         >
           {icon}
         </span>
-        <Select
-          value={value ?? 'none'}
-          disabled={disabled || (!allowNone && options.length === 0)}
-          onValueChange={(nextValue) =>
-            onChange(nextValue === 'none' ? null : nextValue)
-          }
-        >
-          <SelectTrigger className="w-full">
-            <div className="flex items-center gap-2">
-              {selectedOption?.color ? (
-                <span
-                  className="h-2.5 w-2.5 shrink-0 rounded-full border border-black/10 dark:border-white/10"
-                  style={{ backgroundColor: selectedOption.color }}
-                />
-              ) : null}
-              <span className="truncate">
-                {selectedOption
-                  ? optionLabel(selectedOption)
-                  : `Select ${label.toLowerCase()}`}
-              </span>
-            </div>
-          </SelectTrigger>
-          <SelectContent>
-            {allowNone ? (
-              <SelectItem value="none">
-                <span>Unassigned</span>
-              </SelectItem>
-            ) : null}
-            {options.map((option) => (
-              <SelectItem key={option.id} value={option.id}>
-                <div className="flex items-center gap-2">
-                  {option.color ? (
-                    <span
-                      className="h-2 w-2 shrink-0 rounded-full border border-black/10 dark:border-white/10"
-                      style={{ backgroundColor: option.color }}
-                    />
-                  ) : null}
-                  <span>{optionLabel(option)}</span>
-                </div>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
+          {label}
+        </span>
       </div>
-    </Field>
+
+      <div className="min-w-0 flex-1 text-right">
+        {isEditing ? (
+          <Select
+            value={value ?? 'none'}
+            onValueChange={(nextValue) => {
+              onChange(nextValue === 'none' ? null : nextValue);
+              setIsEditing(false);
+            }}
+            open={isEditing}
+            onOpenChange={(open) => {
+              if (!open) setIsEditing(false);
+            }}
+            disabled={disabled || (!allowNone && options.length === 0)}
+          >
+            <SelectTrigger className="ml-auto w-[220px] justify-end text-right">
+              <div className="flex items-center gap-2 justify-end">
+                {selectedOption?.color ? (
+                  <span
+                    className="h-2.5 w-2.5 shrink-0 rounded-full border border-black/10 dark:border-white/10"
+                    style={{ backgroundColor: selectedOption.color }}
+                  />
+                ) : null}
+                <span className="truncate">
+                  {selectedOption
+                    ? optionLabel(selectedOption)
+                    : `Select ${label.toLowerCase()}`}
+                </span>
+              </div>
+            </SelectTrigger>
+            <SelectContent align="end">
+              {allowNone ? (
+                <SelectItem value="none">
+                  <span>Unassigned</span>
+                </SelectItem>
+              ) : null}
+              {options.map((option) => (
+                <SelectItem key={option.id} value={option.id}>
+                  <div className="flex items-center gap-2">
+                    {option.color ? (
+                      <span
+                        className="h-2 w-2 shrink-0 rounded-full border border-black/10 dark:border-white/10"
+                        style={{ backgroundColor: option.color }}
+                      />
+                    ) : null}
+                    <span>{optionLabel(option)}</span>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : (
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={() => setIsEditing(true)}
+            className={cn(
+              'group inline-flex w-full min-h-[34px] py-1 px-2 items-center justify-end rounded-[4px] text-right outline-none transition-colors',
+              {
+                'cursor-text': !disabled,
+                'text-muted-foreground': !value,
+                'hover:bg-accent/20': !disabled,
+              },
+            )}
+          >
+            <div className="flex w-full items-center justify-end gap-2 text-right">
+              {selectedOption ? (
+                selectedOption.color ? (
+                  <Badge
+                    className="font-medium shadow-none px-2 py-0.5 border-transparent hover:opacity-90"
+                    style={{
+                      backgroundColor: selectedOption.color,
+                      color: '#ffffff',
+                    }}
+                  >
+                    {optionLabel(selectedOption)}
+                  </Badge>
+                ) : (
+                  <span className="block truncate text-sm text-gray-900 dark:text-white transition-colors group-hover:text-foreground">
+                    {optionLabel(selectedOption)}
+                  </span>
+                )
+              ) : (
+                <span className="block truncate text-sm text-gray-900 dark:text-white transition-colors group-hover:text-foreground">
+                  -
+                </span>
+              )}
+            </div>
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function EditableDate({
+  value,
+  disabled,
+  onChange,
+}: {
+  value: Date | undefined;
+  disabled?: boolean;
+  onChange: (date: Date | undefined) => void;
+}) {
+  const [isEditing, setIsEditing] = useState(false);
+
+  return (
+    <div className="flex w-full items-center justify-end">
+      {isEditing ? (
+        <Popover open={isEditing} onOpenChange={setIsEditing}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              className="w-[220px] justify-start text-left font-normal"
+            >
+              <CalendarDays className="mr-2 h-4 w-4" />
+              {value ? format(value, 'PP') : 'Pick a date'}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="end">
+            <Calendar
+              mode="single"
+              selected={value}
+              onSelect={(date) => {
+                onChange(date);
+                setIsEditing(false);
+              }}
+              initialFocus
+            />
+          </PopoverContent>
+        </Popover>
+      ) : (
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => setIsEditing(true)}
+          className={cn(
+            'group inline-flex w-full min-h-[34px] py-1 px-2 items-center justify-end rounded-[4px] text-right outline-none transition-colors',
+            {
+              'cursor-text': !disabled,
+              'text-muted-foreground': !value,
+              'hover:bg-accent/20': !disabled,
+            },
+          )}
+        >
+          <span className="block truncate text-sm text-gray-900 dark:text-white transition-colors group-hover:text-foreground">
+            {value ? format(value, 'PP') : '-'}
+          </span>
+        </button>
+      )}
+    </div>
   );
 }
 
@@ -1723,8 +1865,8 @@ function TicketAssignees({
   return (
     <div className="space-y-2">
       <div>
-        <div className="text-sm font-medium">Additional assignees</div>
-        <p className="text-muted-foreground text-xs">
+        <div className="primary-text-medium text-leadgaze-dark dark:text-white">Additional assignees</div>
+        <p className="text-muted-foreground text-xs pt-1">
           Add multiple agents when this ticket needs shared ownership.
         </p>
       </div>
@@ -1743,10 +1885,10 @@ function TicketAssignees({
             return (
               <div
                 key={member.id}
-                className="flex items-center justify-between gap-3 rounded-xl border p-3"
+                className="flex items-center justify-between gap-2 border p-2"
               >
                 <div className="min-w-0">
-                  <div className="truncate text-sm font-medium">
+                  <div className="truncate text-sm font-medium text-leadgaze-dark dark:text-white">
                     {optionLabel(member)}
                   </div>
                   {member.email ? (
@@ -1757,9 +1899,9 @@ function TicketAssignees({
                 </div>
                 <Button
                   variant={selected ? 'secondary' : 'outline'}
-                  size="sm"
                   disabled={disabled}
                   onClick={() => onToggle(member, assignee)}
+                  className="secondary-text-small-bold text-leadgaze-dark dark:text-white gap-1.5 px-2"
                 >
                   {selected ? 'Remove' : 'Add'}
                 </Button>
@@ -1822,7 +1964,7 @@ function EmptyState({
 
 function ServiceCloudTicketDetailSkeleton() {
   return (
-    <div className="mt-2 space-y-4">
+    <div className="space-y-2">
       {/* ── Hero banner skeleton ── */}
       <section className="overflow-hidden rounded-none border bg-[radial-gradient(circle_at_top_left,_rgba(14,165,233,0.18),_transparent_34%),linear-gradient(135deg,_#0f172a,_#164e63_52%,_#0f172a)] p-6 shadow-xl">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
@@ -1860,7 +2002,7 @@ function ServiceCloudTicketDetailSkeleton() {
       {/* ── Body grid skeleton ── */}
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_390px]">
         {/* Left — Ticket Workspace */}
-        <div className="space-y-4">
+        <div className="space-y-2">
           <Card>
             {/* Card header */}
             <CardHeader className="flex flex-row items-start justify-between gap-4 border-b">
@@ -1918,14 +2060,14 @@ function ServiceCloudTicketDetailSkeleton() {
         </div>
 
         {/* Right — aside cards */}
-        <aside className="space-y-4">
+        <aside className="space-y-2">
           {/* Ticket Properties */}
           <Card>
             <CardHeader>
               <Skeleton className="h-5 w-36" />
               <Skeleton className="mt-1 h-3 w-52" />
             </CardHeader>
-            <div className="space-y-4 px-6 py-4">
+            <div className="space-y-2 px-6 py-4">
               {/* Select rows */}
               {['Status', 'Priority', 'Category', 'Primary owner'].map(
                 (label) => (

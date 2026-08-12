@@ -12,8 +12,9 @@ import {
 import {
   buildOpportunityCurrencyFields,
 } from '@kit/shared/currency';
-// Direct columns: sorted at DB level
-const OPPORTUNITY_DIRECT_SORT_COLUMNS: Record<string, string> = {
+
+// Column mapping for direct SQL sorting
+const OPPORTUNITY_SORT_COLUMNS: Record<string, string> = {
   opportunity_name:     'opportunity_name',
   amount:               'amount',
   currency:             'currency',
@@ -26,31 +27,16 @@ const OPPORTUNITY_DIRECT_SORT_COLUMNS: Record<string, string> = {
   is_closed:            'is_closed',
   is_won:               'is_won',
   created_at:           'created_at',
-};
-
-// Relational columns: sorted in Node.js after fetch.
-// Supabase's foreignTable in .order() only sorts nested children, NOT parent rows.
-const OPPORTUNITY_RELATIONAL_SORT_COLUMNS: Record<string, string> = {
-  'account.account_name':        'account.account_name',
-  'stage.status_name':           'stage.status_name',
-  'owner.name':                  'owner.name',
-  'created_by_account.name':     'created_by_account.name',
-  'updated_by_account.name':     'updated_by_account.name',
-};
-
-const getNestedValue = (obj: Record<string, unknown>, path: string): string => {
-  const value = path.split('.').reduce<unknown>((acc, key) => {
-    if (acc && typeof acc === 'object') return (acc as Record<string, unknown>)[key];
-    return undefined;
-  }, obj);
-  return typeof value === 'string' ? value.toLowerCase() : '';
+  'account.account_name':    'account_name',
+  'stage.status_name':       'stage_name',
+  'owner.name':              'owner_name',
+  'created_by_account.name': 'created_by_account_name',
+  'updated_by_account.name': 'updated_by_account_name',
 };
 
 /**
  * GET /api/opportunities
- * Fetch all opportunities for a workspace
- * Optimized: uses resolve_workspace_access RPC (1 DB call) instead of 5-8 sequential auth/hierarchy queries.
- * Account-search pre-query results are cached and reused for breakdown. Main + breakdown run in Promise.all.
+ * Fetch opportunities for a workspace with direct SQL sorting via vw_crm_opportunities_list
  */
 export const getOpportunities = catchAsync(
   async ({
@@ -74,6 +60,7 @@ export const getOpportunities = catchAsync(
     const createdAtTo = url.searchParams.get('createdAtTo') || '';
     const updatedAtFrom = url.searchParams.get('updatedAtFrom') || '';
     const updatedAtTo = url.searchParams.get('updatedAtTo') || '';
+    const createdByIds = url.searchParams.get('createdByIds') || '';
 
     if (!workspaceId) {
       return NextResponse.json(
@@ -92,8 +79,6 @@ export const getOpportunities = catchAsync(
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
-    // Single RPC call replaces: workspace owner check, membership check,
-    // and 3-5 queries inside getHierarchyVisibleUserIds
     /* eslint-disable @typescript-eslint/no-explicit-any */
     const { data: accessResult, error: accessError } = await (
       adminClient as any
@@ -103,11 +88,13 @@ export const getOpportunities = catchAsync(
       p_user_email: user.email || null,
       p_require_shared_team: false,
     });
-    /* eslint-enable @typescript-eslint/no-explicit-any */
 
-    if (accessError) {
+    if (accessError || !accessResult) {
       console.error('Workspace access resolution error:', accessError);
-      throw accessError;
+      return NextResponse.json(
+        { message: 'Failed to verify workspace access' },
+        { status: 500 },
+      );
     }
 
     const {
@@ -125,196 +112,48 @@ export const getOpportunities = catchAsync(
     }
 
     const visibleUserIds: string[] | null = rpcVisibleUserIds ?? null;
-    let assignedOpportunityIds: string[] = [];
 
-    if (
-      !isOwner &&
-      hierarchyType === 'restricted' &&
-      visibleUserIds &&
-      visibleUserIds.length > 0
-    ) {
-      // Fetch assigned opportunities for this user (only active assignments)
-      const { data: assignments } = await adminClient
+    let assignedOpportunityIds: string[] = [];
+    if (!isOwner && hierarchyType === 'restricted' && visibleUserIds && visibleUserIds.length > 0) {
+      const { data: assignments } = await (adminClient as any)
         .from('opportunity_assignees')
         .select('opportunity_id')
         .eq('workspace_id', workspaceId)
         .eq('assigned_to_user_id', user.id)
         .eq('assignment_status', 'active');
 
-      assignedOpportunityIds = assignments?.map((a) => a.opportunity_id) || [];
+      assignedOpportunityIds = assignments?.map((a: any) => a.opportunity_id) || [];
     }
 
-    // Pre-compute account-search matched IDs once (was running twice: for main + breakdown)
-    let matchedAccountIds: string[] = [];
-    if (searchTerm) {
-      const { data: matchedAccounts } = await adminClient
-        .from('crm_accounts')
-        .select('id')
-        .eq('workspace_id', workspaceId)
-        .ilike('account_name', `%${searchTerm}%`);
-      matchedAccountIds = matchedAccounts?.map((a) => a.id) || [];
-    }
+    const { OpportunitiesService } = await import('@kit/sales');
+    const opportunitiesService = new OpportunitiesService(adminClient as any);
 
-    // Helper to build the common search filter string
-    const buildSearchOrFilter = () => {
-      let orFilter = `opportunity_name.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`;
-      if (matchedAccountIds.length > 0) {
-        orFilter += `,account_id.in.(${matchedAccountIds.join(',')})`;
-      }
-      return orFilter;
-    };
-
-    // Helper to apply hierarchy + assignee filter to a query
-    /* eslint-disable @typescript-eslint/no-explicit-any */
-    const applyAccessFilter = (q: any) => {
-      if (!isOwner && visibleUserIds && visibleUserIds.length > 0) {
-        const assignedIdsFilter =
-          assignedOpportunityIds.length > 0
-            ? `,id.in.(${assignedOpportunityIds.join(',')})`
-            : '';
-        q = q.or(
-          `owner_id.in.(${visibleUserIds.join(',')}),created_by.in.(${visibleUserIds.join(',')})${assignedIdsFilter}`,
-        );
-      }
-      return q;
-    };
-    /* eslint-enable @typescript-eslint/no-explicit-any */
-
-    // Build main query
-    let mainQuery = applyAccessFilter(
-      adminClient
-        .from('crm_opportunities')
-        .select(
-          `
-            *,
-            stage:entity_statuses(id, status_name, status_key, color, icon),
-            account:crm_accounts(id, account_name),
-            owner:accounts!crm_opportunities_owner_id_fkey(id, email, name),
-            created_by_account:accounts!crm_opportunities_created_by_fkey(id, email, name),
-            updated_by_account:accounts!crm_opportunities_updated_by_fkey(id, email, name)
-          `,
-          { count: 'exact' },
-        )
-        .eq('workspace_id', workspaceId)
-        .eq('is_deleted', false),
-    );
-
-    if (createdAtFrom) mainQuery = mainQuery.gte('created_at', (createdAtFrom.includes('T') ? createdAtFrom : `${createdAtFrom}T00:00:00.000Z`));
-    if (createdAtTo) mainQuery = mainQuery.lte('created_at', (createdAtTo.includes('T') ? createdAtTo : `${createdAtTo}T23:59:59.999Z`));
-    if (updatedAtFrom) mainQuery = mainQuery.gte('updated_at', (updatedAtFrom.includes('T') ? updatedAtFrom : `${updatedAtFrom}T00:00:00.000Z`));
-    if (updatedAtTo) mainQuery = mainQuery.lte('updated_at', (updatedAtTo.includes('T') ? updatedAtTo : `${updatedAtTo}T23:59:59.999Z`));
-
-    if (accountId) {
-      mainQuery = mainQuery.eq('account_id', accountId);
-    }
-
-    if (stageId && stageId !== 'all') {
-      mainQuery = mainQuery.eq('stage_id', stageId);
-    }
-
-    if (searchTerm) {
-      mainQuery = mainQuery.or(buildSearchOrFilter());
-    }
-
-    // Pagination
-    const from = (page - 1) * limit;
-    const to = from + limit - 1;
-
-    // Build breakdown query (no stage filter, no pagination)
-    let breakdownQuery = applyAccessFilter(
-      adminClient
-        .from('crm_opportunities')
-        .select('stage_id, amount')
-        .eq('workspace_id', workspaceId)
-        .eq('is_deleted', false),
-    );
-
-    if (accountId) {
-      breakdownQuery = breakdownQuery.eq('account_id', accountId);
-    }
-
-    if (searchTerm) {
-      breakdownQuery = breakdownQuery.or(buildSearchOrFilter());
-    }
-
-    // Run main + breakdown queries in parallel
-    const isRelationalSort = !!OPPORTUNITY_RELATIONAL_SORT_COLUMNS[sortColumn];
-    const isDirectSort = !!OPPORTUNITY_DIRECT_SORT_COLUMNS[sortColumn];
-
-    let finalMainQuery;
-    if (isDirectSort) {
-      finalMainQuery = mainQuery
-        .order(OPPORTUNITY_DIRECT_SORT_COLUMNS[sortColumn]!, {
-          ascending: sortDirection === 'asc',
-          nullsFirst: false,
-        })
-        .range(from, to);
-    } else if (isRelationalSort) {
-      // Fetch all rows so we can sort in Node.js, then slice
-      finalMainQuery = mainQuery.order('created_at', { ascending: false });
-    } else {
-      finalMainQuery = mainQuery.order('created_at', { ascending: false }).range(from, to);
-    }
-
-    const [mainResult, breakdownResult] = await Promise.all([
-      finalMainQuery,
-      breakdownQuery,
-    ]);
-
-    const { data: opportunitiesRaw, error, count } = mainResult;
-    if (error) {
-      console.error('Get opportunities error:', error);
-      throw error;
-    }
-
-    const { data: breakdownData, error: breakdownError } = breakdownResult;
-    if (breakdownError) {
-      console.error('Get stage breakdown error:', breakdownError);
-      throw breakdownError;
-    }
-
-    /* eslint-disable @typescript-eslint/no-explicit-any */
-    let sortedOpportunities: any[] = opportunitiesRaw || [];
-    if (isRelationalSort && OPPORTUNITY_RELATIONAL_SORT_COLUMNS[sortColumn]) {
-      const accessor = OPPORTUNITY_RELATIONAL_SORT_COLUMNS[sortColumn]!;
-      const ascending = sortDirection === 'asc';
-      sortedOpportunities = [...sortedOpportunities].sort((a, b) => {
-        const aVal = getNestedValue(a, accessor);
-        const bVal = getNestedValue(b, accessor);
-        if (aVal < bVal) return ascending ? -1 : 1;
-        if (aVal > bVal) return ascending ? 1 : -1;
-        return 0;
+    const { data: sortedOpportunities, count, totalAmount, stageBreakdown } =
+      await opportunitiesService.getOpportunitiesList({
+        workspaceId,
+        accountId: accountId || undefined,
+        page,
+        limit,
+        searchTerm,
+        stageId: stageId || undefined,
+        sortColumn,
+        sortDirection,
+        createdAtFrom,
+        createdAtTo,
+        updatedAtFrom,
+        updatedAtTo,
+        createdByIds,
+        isOwner,
+        visibleUserIds: visibleUserIds || undefined,
+        assignedOpportunityIds,
       });
-      sortedOpportunities = sortedOpportunities.slice(from, to + 1);
-    }
-    /* eslint-enable @typescript-eslint/no-explicit-any */
-
-    const stageBreakdownMap: Record<
-      string,
-      { total_amount: number; count: number }
-    > = {};
-    (breakdownData || []).forEach(
-      (opp: { stage_id: string; amount: number | null }) => {
-        const sid = opp.stage_id;
-        if (!stageBreakdownMap[sid]) {
-          stageBreakdownMap[sid] = { total_amount: 0, count: 0 };
-        }
-        stageBreakdownMap[sid].total_amount += opp.amount || 0;
-        stageBreakdownMap[sid].count += 1;
-      },
-    );
-
-    const totalAmount = Object.values(stageBreakdownMap).reduce(
-      (sum, s) => sum + s.total_amount,
-      0,
-    );
 
     return NextResponse.json({
       message: 'Opportunities retrieved successfully',
       data: sortedOpportunities,
       count: count || 0,
       totalAmount,
-      stageBreakdown: stageBreakdownMap,
+      stageBreakdown,
     });
   },
 );

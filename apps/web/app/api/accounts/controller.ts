@@ -9,8 +9,8 @@ import {
   successDataResponse,
 } from '../../../utils/response-handler';
 
-// Direct columns: sorted at DB level
-const ACCOUNT_DIRECT_SORT_COLUMNS: Record<string, string> = {
+// Column mapping for direct SQL sorting
+const ACCOUNT_SORT_COLUMNS: Record<string, string> = {
   account_name:         'account_name',
   website:              'website',
   phone_number:         'phone_number',
@@ -21,29 +21,15 @@ const ACCOUNT_DIRECT_SORT_COLUMNS: Record<string, string> = {
   billing_postal_code:  'billing_postal_code',
   billing_country:      'billing_country',
   created_at:           'created_at',
-};
-
-// Relational columns: sorted in Node.js after fetch.
-// Supabase's foreignTable in .order() only sorts nested children, NOT parent rows.
-const ACCOUNT_RELATIONAL_SORT_COLUMNS: Record<string, string> = {
-  'industry.industry_name':      'industry.industry_name',
-  'owner.name':                  'owner.name',
-  'created_by_account.name':     'created_by_account.name',
-  'updated_by_account.name':     'updated_by_account.name',
-};
-
-const getNestedValue = (obj: Record<string, unknown>, path: string): string => {
-  const value = path.split('.').reduce<unknown>((acc, key) => {
-    if (acc && typeof acc === 'object') return (acc as Record<string, unknown>)[key];
-    return undefined;
-  }, obj);
-  return typeof value === 'string' ? value.toLowerCase() : '';
+  'industry.industry_name':      'industry_name',
+  'owner.name':                  'owner_name',
+  'created_by_account.name':     'created_by_account_name',
+  'updated_by_account.name':     'updated_by_account_name',
 };
 
 /**
  * GET /api/accounts
- * Fetch all accounts for a workspace
- * Optimized: uses resolve_workspace_access RPC (1 DB call) instead of 5-8 sequential auth/hierarchy queries.
+ * Fetch all accounts for a workspace using optimized database view vw_crm_accounts_list
  */
 export const getAccounts = catchAsync(
   async ({
@@ -84,8 +70,6 @@ export const getAccounts = catchAsync(
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
-    // Single RPC call replaces: workspace owner check, membership check,
-    // and 3-5 queries inside getHierarchyVisibleUserIds
     /* eslint-disable @typescript-eslint/no-explicit-any */
     const { data: accessResult, error: accessError } = await (
       adminClient as any
@@ -95,11 +79,13 @@ export const getAccounts = catchAsync(
       p_user_email: user.email || null,
       p_require_shared_team: true,
     });
-    /* eslint-enable @typescript-eslint/no-explicit-any */
 
-    if (accessError) {
+    if (accessError || !accessResult) {
       console.error('Workspace access resolution error:', accessError);
-      throw accessError;
+      return NextResponse.json(
+        { message: 'Failed to verify workspace access' },
+        { status: 500 },
+      );
     }
 
     const {
@@ -118,113 +104,37 @@ export const getAccounts = catchAsync(
 
     const visibleUserIds: string[] | null = rpcVisibleUserIds ?? null;
 
-    // Build the query
-    let query = adminClient
-      .from('crm_accounts')
-      .select(
-        `
-          *,
-          status:entity_statuses!crm_accounts_status_id_fkey(id, status_name, status_key, color, icon),
-          owner:accounts!crm_accounts_owner_id_fkey(id, email, name),
-          created_by_account:accounts!crm_accounts_created_by_fkey(id, email, name),
-          updated_by_account:accounts!crm_accounts_updated_by_fkey(id, email, name),
-          industry:crm_industries(id, industry_name),
-          account_type_relation:entity_statuses!entity_statuses_account_type_fkey(id, status_name, status_key, color, icon)
-        `,
-        { count: 'exact' },
-      )
-      .eq('workspace_id', workspaceId)
-      .eq('is_deleted', false);
-
-    if (createdAtFrom) query = query.gte('created_at', (createdAtFrom.includes('T') ? createdAtFrom : `${createdAtFrom}T00:00:00.000Z`));
-    if (createdAtTo) query = query.lte('created_at', (createdAtTo.includes('T') ? createdAtTo : `${createdAtTo}T23:59:59.999Z`));
-    if (updatedAtFrom) query = query.gte('updated_at', (updatedAtFrom.includes('T') ? updatedAtFrom : `${updatedAtFrom}T00:00:00.000Z`));
-    if (updatedAtTo) query = query.lte('updated_at', (updatedAtTo.includes('T') ? updatedAtTo : `${updatedAtTo}T23:59:59.999Z`));
-
-    if (createdByIds && createdByIds !== 'all') {
-      const ids = createdByIds.split(',').map((id) => id.trim()).filter(Boolean);
-      if (ids.length === 1) {
-        query = query.eq('created_by', ids[0]);
-      } else if (ids.length > 1) {
-        query = query.in('created_by', ids);
-      }
-    }
-
-    // Apply hierarchy-based visibility filtering
-    if (
-      !isOwner &&
-      hierarchyType === 'restricted' &&
-      visibleUserIds &&
-      visibleUserIds.length > 0
-    ) {
-      // Fetch assigned accounts for this user (only active assignments)
-      const { data: assignments } = await adminClient
+    let assignedAccountIds: string[] = [];
+    if (!isOwner && hierarchyType === 'restricted' && visibleUserIds && visibleUserIds.length > 0) {
+      const { data: assignments } = await (adminClient as any)
         .from('account_assignees')
         .select('account_id')
         .eq('workspace_id', workspaceId)
         .eq('assigned_to_user_id', user.id)
         .eq('assignment_status', 'active');
 
-      const assignedIds = assignments?.map((a) => a.account_id) || [];
-      const assignedIdsFilter =
-        assignedIds.length > 0 ? `,id.in.(${assignedIds.join(',')})` : '';
-
-      query = query.or(
-        `owner_id.in.(${visibleUserIds.join(',')}),created_by.in.(${visibleUserIds.join(',')})${assignedIdsFilter}`,
-      );
+      assignedAccountIds = assignments?.map((a: any) => a.account_id) || [];
     }
 
-    // Search term
-    if (searchTerm) {
-      query = query.or(
-        `account_name.ilike.%${searchTerm}%,phone_number.ilike.%${searchTerm}%`,
-      );
-    }
+    const { AccountsService } = await import('@kit/sales');
+    const accountsService = new AccountsService(adminClient as any);
 
-    // Pagination
-    const from = (page - 1) * limit;
-    const to = from + limit - 1;
-
-    const isRelationalSort = !!ACCOUNT_RELATIONAL_SORT_COLUMNS[sortColumn];
-    const isDirectSort = !!ACCOUNT_DIRECT_SORT_COLUMNS[sortColumn];
-
-    let finalQuery;
-    if (isDirectSort) {
-      finalQuery = query
-        .order(ACCOUNT_DIRECT_SORT_COLUMNS[sortColumn]!, {
-          ascending: sortDirection === 'asc',
-          nullsFirst: false,
-        })
-        .range(from, to);
-    } else if (isRelationalSort) {
-      // Fetch all rows so we can sort in Node.js, then slice
-      finalQuery = query.order('created_at', { ascending: false });
-    } else {
-      finalQuery = query.order('created_at', { ascending: false }).range(from, to);
-    }
-
-    const { data: accountsRaw, error, count } = await finalQuery;
-
-    if (error) {
-      console.error('Get accounts error:', error);
-      throw error;
-    }
-
-    /* eslint-disable @typescript-eslint/no-explicit-any */
-    let sortedAccounts: any[] = accountsRaw || [];
-    if (isRelationalSort && ACCOUNT_RELATIONAL_SORT_COLUMNS[sortColumn]) {
-      const accessor = ACCOUNT_RELATIONAL_SORT_COLUMNS[sortColumn]!;
-      const ascending = sortDirection === 'asc';
-      sortedAccounts = [...sortedAccounts].sort((a, b) => {
-        const aVal = getNestedValue(a, accessor);
-        const bVal = getNestedValue(b, accessor);
-        if (aVal < bVal) return ascending ? -1 : 1;
-        if (aVal > bVal) return ascending ? 1 : -1;
-        return 0;
-      });
-      sortedAccounts = sortedAccounts.slice(from, to + 1);
-    }
-    /* eslint-enable @typescript-eslint/no-explicit-any */
+    const { data: sortedAccounts, count } = await accountsService.getAccountsList({
+      workspaceId,
+      page,
+      limit,
+      searchTerm,
+      sortColumn,
+      sortDirection,
+      createdAtFrom,
+      createdAtTo,
+      updatedAtFrom,
+      updatedAtTo,
+      createdByIds,
+      isOwner,
+      visibleUserIds: visibleUserIds || undefined,
+      assignedAccountIds,
+    });
 
     return NextResponse.json({
       message: 'Accounts retrieved successfully',

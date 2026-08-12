@@ -6,7 +6,11 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Clock, FileText, Loader2, Mail, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { CoreEmailComposeDialog, CoreEmailDetailDialog } from '@kit/core/pages';
+import {
+  CoreEmailComposeDialog,
+  CoreEmailDetailDialog,
+  CoreEmailReplyDialog,
+} from '@kit/core/pages';
 import {
   deleteCoreEmailActivityService,
   getCoreEmailAccountsService,
@@ -51,6 +55,7 @@ export function EntityEmails({
   const [composeRecipientEmail, setComposeRecipientEmail] = useState('');
   const [selectedEmail, setSelectedEmail] = useState<any>(null); // eslint-disable-line @typescript-eslint/no-explicit-any
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [isReplyOpen, setIsReplyOpen] = useState(false);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -93,9 +98,9 @@ export function EntityEmails({
       <CardWidgetContainer
         title="Emails"
         hideHeaderBorder={true}
-        icon={<Mail className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
+        icon={<Mail className="text-leadgaze-dark h-5 w-5 dark:text-white" />}        
       >
-        <div className="px-6 py-3">
+        <div className="px-2">
           <div className="flex justify-center py-4">
             <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
           </div>
@@ -129,6 +134,7 @@ export function EntityEmails({
       <CardWidgetContainer
         title="Emails"
         hideHeaderBorder={true}
+        headerClassName="p-2 xl:p-2 2xl:p-2"
         icon={<Mail className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
         icon2={
           <Button
@@ -145,14 +151,14 @@ export function EntityEmails({
           </Button>
         }
       >
-        <div className="px-6 py-3">
+        <div className="px-2">
           {combinedItems.length === 0 ? (
             <div className="py-8 text-center">
               <Mail className="mx-auto mb-2 h-8 w-8 text-gray-300" />
               <p className="text-sm text-gray-500">No email activity yet</p>
             </div>
           ) : (
-            <div className="max-h-[280px] overflow-y-auto pr-1">
+            <div className="max-h-[280px] overflow-y-auto mb-2">
               <CardWidgetList>
                 {combinedItems.map(
                   (
@@ -227,7 +233,7 @@ export function EntityEmails({
                           </Badge>
                           {item.direction !== 'inbound' &&
                             item.status !== 'sent' && (
-                              <span className="ml-1 text-[10px] italic text-blue-500 opacity-0 transition-opacity group-hover:opacity-100">
+                              <span className="ml-1 text-[10px] text-blue-500 italic opacity-0 transition-opacity group-hover:opacity-100">
                                 • Click to Edit
                               </span>
                             )}
@@ -239,12 +245,12 @@ export function EntityEmails({
                             setSelectedEmail(item);
                             setIsDetailOpen(true);
                           }}
-                          className="line-clamp-2 text-xs text-gray-600 dark:text-gray-400"
+                          className="line-clamp-2 text-leadgaze-dark dark:text-white"
                           dangerouslySetInnerHTML={{ __html: item.html_body }}
                         />
                       }
                       metadata={
-                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] text-gray-400">
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] text-leadgaze-dark dark:text-white">
                           <div className="flex items-center gap-1">
                             <Clock className="h-3 w-3" />
                             <span>
@@ -273,8 +279,7 @@ export function EntityEmails({
                           )}
                           {item.status === 'scheduled' && item.scheduled_at && (
                             <span className="font-semibold text-blue-600">
-                              Due:{' '}
-                              {formatDate(item.scheduled_at)}
+                              Due: {formatDate(item.scheduled_at)}
                             </span>
                           )}
                         </div>
@@ -308,10 +313,31 @@ export function EntityEmails({
         onReply={(email) => {
           setSelectedEmail(email);
           setIsDetailOpen(false);
-          setComposeRecipientEmail(
-            email.direction === 'inbound' ? email.from_email : email.to_emails,
-          );
-          setIsComposeOpen(true);
+          setIsReplyOpen(true);
+        }}
+      />
+
+      <CoreEmailReplyDialog
+        open={isReplyOpen}
+        onOpenChange={(open) => {
+          setIsReplyOpen(open);
+          if (!open) {
+            queryClient.invalidateQueries({
+              queryKey: [
+                'core-entity-emails',
+                workspace?.id,
+                entityType,
+                entityId,
+              ],
+            });
+          }
+        }}
+        workspaceId={workspace?.id || ''}
+        accounts={coreEmailAccounts}
+        email={selectedEmail}
+        templateContext={{
+          entity_name: entityName,
+          entity_email: entityEmail,
         }}
       />
 

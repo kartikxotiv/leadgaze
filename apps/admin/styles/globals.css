@@ -19,7 +19,26 @@
 
 /* content sources — includes all shared @kit/* packages + local admin files */
 @source "../../../packages/*/src/**/*.{ts,tsx}";
+@source "../../../packages/features/*/src/**/*.{ts,tsx}";
+@source "../../../packages/billing/*/src/**/*.{ts,tsx}";
+@source "../../../packages/plugins/*/src/**/*.{ts,tsx}";
+@source "../../../packages/cms/*/src/**/*.{ts,tsx}";
 @source "../{app,components,config,lib}/**/*.{ts,tsx}";
+
+/* Auth pages input style overrides for dark mode compatibility */
+.auth-card
+  input:not([type='checkbox']):not([type='radio']):not([data-input-otp]) {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
+.auth-card
+  input:not([type='checkbox']):not([type='radio']):not(
+    [data-input-otp]
+  )::placeholder {
+  color: #94a3b8 !important;
+}
 
 /* variants */
 @variant dark (&:where(.dark, .dark *));

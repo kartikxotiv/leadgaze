@@ -21,6 +21,7 @@ import { CardWidgetList, CardWidgetListItem } from '@kit/ui/card-widget-list';
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -30,6 +31,14 @@ import { Label } from '@kit/ui/label';
 import { Textarea } from '@kit/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@kit/ui/tabs';
 import { Badge } from '@kit/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@kit/ui/select';
+import { CustomDeleteDialog } from '@kit/ui/custom-delete-dialog';
 
 import { useLocalization } from '~/lib/localization/localization-provider';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
@@ -80,6 +89,10 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
   // View logs states
   const [viewLogsTask, setViewLogsTask] = useState<Task | null>(null);
   const [isViewLogsOpen, setIsViewLogsOpen] = useState(false);
+
+  // Delete dialog states
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
 
   // Queries
   const { data: tasks = [], isLoading } = useQuery<Task[]>({
@@ -138,9 +151,15 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
     mutationFn: deleteTaskService,
     onSuccess: () => {
       toast.success('Task deleted successfully');
+      setIsDeleteDialogOpen(false);
+      setTaskToDelete(null);
       invalidateTasks();
     },
-    onError: () => toast.error('Failed to delete task'),
+    onError: () => {
+      toast.error('Failed to delete task');
+      setIsDeleteDialogOpen(false);
+      setTaskToDelete(null);
+    },
   });
 
   const toggleMutation = useMutation({
@@ -236,6 +255,7 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
     <CardWidgetContainer
       title="Tasks & Checklist"
       hideHeaderBorder={true}
+      headerClassName="p-2 xl:p-2 2xl:p-2"
       icon={<CheckSquare className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
       icon2={
         <div className="flex items-center gap-2">
@@ -267,12 +287,12 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
               </Button>
             </DialogTrigger>
             <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-[450px]">
-              <DialogHeader className="border-b p-6 pb-4">
+              <DialogHeader>
                 <DialogTitle>
                   {editingTask ? 'Edit Task' : 'Add Task'}
                 </DialogTitle>
               </DialogHeader>
-              <div className="flex-1 space-y-4 px-6 py-4 overflow-y-auto">
+              <div className="flex-1 space-y-2 px-2 overflow-y-auto">
                 <div className="space-y-2">
                   <Label>Title</Label>
                   <Input
@@ -298,24 +318,36 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
                     onChange={(date) => setFormData({ ...formData, due_date: date ? format(date, 'yyyy-MM-dd') : '' })}
                   />
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-2 pb-1">
                   <Label>Priority</Label>
-                  <select
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  <Select
                     value={formData.priority}
-                    onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, priority: value })
+                    }
                   >
-                    <option value="low">Low</option>
-                    <option value="medium">Medium</option>
-                    <option value="high">High</option>
-                  </select>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select priority" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="low">Low</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="high">High</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
-              <div className="border-t p-6 pt-4">
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => setIsOpen(false)}
+                  disabled={createMutation.isPending || updateMutation.isPending}
+                >
+                  Cancel
+                </Button>
                 <Button
                   onClick={handleSave}
                   disabled={!formData.title || createMutation.isPending || updateMutation.isPending}
-                  className="w-full"
                 >
                   {createMutation.isPending || updateMutation.isPending
                     ? 'Saving...'
@@ -323,13 +355,13 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
                       ? 'Save Changes'
                       : 'Create Task'}
                 </Button>
-              </div>
+              </DialogFooter>
             </DialogContent>
           </Dialog>
         </div>
       }
     >
-      <div className="px-6 py-3">
+      <div className="px-2 mb-2">
         {isLoading ? (
           <div className="flex justify-center py-4">
             <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
@@ -339,6 +371,7 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
             {tasks.map((task) => (
               <CardWidgetListItem
                 key={task.id}
+                className="gap-2"
                 icon={
                   toggleMutation.isPending && toggleMutation.variables?.id === task.id ? (
                     <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
@@ -357,12 +390,12 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
                   <div className="flex items-center gap-2">
                     <span
                       className={`text-sm font-medium ${
-                        task.is_completed ? 'line-through text-gray-400' : 'text-gray-900 dark:text-gray-100'
+                        task.is_completed ? 'line-through text-leadgaze-dark dark:text-white' : 'text-leadgaze-dark dark:text-white'
                       }`}
                     >
                       {task.title}
                     </span>
-                    <Badge variant={task.priority === 'high' ? 'destructive' : task.priority === 'medium' ? 'default' : 'secondary'} className="text-[10px] py-0 px-1.5 uppercase font-semibold">
+                    <Badge variant={task.priority === 'high' ? 'destructive' : task.priority === 'medium' ? 'default' : 'secondary'} className="text-[10px] py-0 px-1.5 uppercase font-semibold rounded-[4px] h-[20px]">
                       {task.priority}
                     </Badge>
                   </div>
@@ -431,9 +464,8 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
                       size="icon"
                       variant="ghost"
                       onClick={() => {
-                        if (confirm('Are you sure you want to delete this task?')) {
-                          deleteMutation.mutate(task.id);
-                        }
+                        setTaskToDelete(task.id);
+                        setIsDeleteDialogOpen(true);
                       }}
                       className="h-7 w-7 text-gray-400 hover:text-red-500"
                     >
@@ -476,8 +508,8 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
               <p className="primary-text-regular text-red-500 mt-1">Please input time before closing this task</p>
             )}
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2 py-4">
+            <div className="grid grid-cols-2 gap-2">
               <div className="space-y-2">
                 <Label>Hours</Label>
                 <Input
@@ -518,7 +550,7 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
               />
             </div>
           </div>
-          <div className="flex justify-end gap-3">
+          <DialogFooter>
             <Button variant="ghost" onClick={() => setIsTimeLogOpen(false)}>Cancel</Button>
             {isCompletingTask && (
               <Button
@@ -538,7 +570,7 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
             >
               {timeLogMutation.isPending ? 'Saving...' : 'Submit Log'}
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -553,7 +585,7 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
         }}
       >
         <DialogContent className="sm:max-w-[500px] max-h-[80vh] flex flex-col p-6">
-          <DialogHeader className="mb-4">
+          <DialogHeader>
             <DialogTitle>Time Logs: {viewLogsTask?.title}</DialogTitle>
           </DialogHeader>
           <div className="flex-1 overflow-y-auto space-y-3 pr-2">
@@ -594,11 +626,24 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
               <p className="text-sm text-gray-500 text-center py-6">No time logged yet.</p>
             )}
           </div>
-          <div className="mt-4 flex justify-end">
-            <Button onClick={() => setIsViewLogsOpen(false)}>Close</Button>
-          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsViewLogsOpen(false)}>Close</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <CustomDeleteDialog
+        isOpen={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        title="Delete Task"
+        description="Are you sure you want to delete this task? This action cannot be undone."
+        onConfirm={() => {
+          if (taskToDelete) {
+            deleteMutation.mutate(taskToDelete);
+          }
+        }}
+        isDeleting={deleteMutation.isPending}
+      />
     </CardWidgetContainer>
   );
 }

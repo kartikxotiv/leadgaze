@@ -393,14 +393,14 @@ export function WebsiteConnectorDetailPage({
         />
 
         <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden py-4 pb-6 h-[calc(100vh-120px)]">
-          <div className="grid gap-6 lg:grid-cols-4 h-full min-h-0 flex-1 overflow-hidden">
+          <div className="grid gap-2 lg:grid-cols-4 h-full min-h-0 flex-1 overflow-hidden">
             {/* Sidebar */}
-            <div className="space-y-6 lg:col-span-1 overflow-y-auto h-full pr-1 shrink-0">
+            <div className="space-y-2 lg:col-span-1 overflow-y-auto h-full pr-1 shrink-0">
               <Card>
                 <CardHeader className="border-b pb-3">
                   <CardTitle className="text-sm font-semibold">Config &amp; Routing</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4 pt-4">
+                <CardContent className="space-y-2 pt-4">
                   <Skeleton className="h-4 w-full" />
                   <Skeleton className="h-4 w-5/6" />
                   <Skeleton className="h-4 w-2/3" />
@@ -410,7 +410,7 @@ export function WebsiteConnectorDetailPage({
                 <CardHeader className="border-b pb-3">
                   <CardTitle className="text-sm font-semibold">Integration Stats</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4 pt-4">
+                <CardContent className="space-y-2 pt-4">
                   <Skeleton className="h-4 w-full" />
                   <Skeleton className="h-4 w-full" />
                   <Skeleton className="h-4 w-full" />
@@ -489,17 +489,17 @@ export function WebsiteConnectorDetailPage({
         description="Configure embeddable forms and secure API endpoints to receive website leads."
       />
 
-      <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden py-4 pb-6 h-[calc(100vh-120px)]">
-        <div className="grid gap-6 lg:grid-cols-4 h-full min-h-0 flex-1 overflow-hidden">
+      <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden py-4 p-2 h-[calc(100vh-120px)]">
+        <div className="grid gap-2 lg:grid-cols-4 h-full min-h-0 flex-1 overflow-hidden">
           {/* ----------------------------------------------------------------
               Sidebar
           ---------------------------------------------------------------- */}
-          <div className="space-y-6 lg:col-span-1 overflow-y-auto h-full pr-1 shrink-0">
+          <div className="space-y-2 lg:col-span-1 overflow-y-auto h-full pr-1 shrink-0">
             <Card className="glassmorphic">
-              <CardHeader className="border-b pb-3">
-                <CardTitle className="text-sm font-semibold">Config &amp; Routing</CardTitle>
+              <CardHeader className="border-b p-2">
+                <CardTitle className="text-sm font-semibold text-leadgaze-dark dark:text-white">Config &amp; Routing</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4 pt-4">
+              <CardContent className="space-y-2 p-2">
                 <div className="flex items-center justify-between">
                   <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                     Status
@@ -537,10 +537,10 @@ export function WebsiteConnectorDetailPage({
             </Card>
 
             <Card>
-              <CardHeader className="border-b pb-3">
-                <CardTitle className="text-sm font-semibold">Integration Stats</CardTitle>
+              <CardHeader className="border-b p-2">
+                <CardTitle className="text-sm font-semibold text-leadgaze-dark dark:text-white">Integration Stats</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4 pt-4 text-sm">
+              <CardContent className="space-y-2 p-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Total Ingested:</span>
                   <span className="font-bold">{logs.length}</span>
@@ -566,7 +566,7 @@ export function WebsiteConnectorDetailPage({
           ---------------------------------------------------------------- */}
           <div className="lg:col-span-3 h-full min-h-0 flex flex-col overflow-hidden">
             <Tabs defaultValue="dashboard" className="h-full flex flex-col min-h-0 overflow-hidden space-y-6">
-              <TabsList className="grid w-full grid-cols-5 bg-muted/40 p-1 shrink-0">
+              <TabsList className="grid w-full grid-cols-5 bg-muted/40 p-1 shrink-0 mb-0">
                 <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
                 <TabsTrigger value="form-builder">Form Builder</TabsTrigger>
                 <TabsTrigger value="api-credentials">API Credentials</TabsTrigger>
@@ -576,20 +576,20 @@ export function WebsiteConnectorDetailPage({
 
               {/* ---- DASHBOARD ---- */}
               <TabsContent value="dashboard" className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-6">
-                <div className="grid gap-4 md:grid-cols-3">
+                <div className="grid gap-2 md:grid-cols-3 mb-2">
                   <Card>
-                    <CardHeader className="pb-2">
+                    <CardHeader className="p-2">
                       <CardDescription className="text-xs font-semibold uppercase tracking-wider">
                         Submissions Volume
                       </CardDescription>
                       <CardTitle className="text-3xl">{logs.length}</CardTitle>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="px-2">
                       <p className="text-xs text-muted-foreground">Cumulative submissions processed</p>
                     </CardContent>
                   </Card>
                   <Card>
-                    <CardHeader className="pb-2">
+                    <CardHeader className="p-2">
                       <CardDescription className="text-xs font-semibold uppercase tracking-wider">
                         Today's Load
                       </CardDescription>
@@ -607,12 +607,12 @@ export function WebsiteConnectorDetailPage({
                         }
                       </CardTitle>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="px-2">
                       <p className="text-xs text-muted-foreground">Inquiries submitted in the last 24h</p>
                     </CardContent>
                   </Card>
                   <Card className="border-red-500/20 bg-red-50/10 dark:bg-red-950/10">
-                    <CardHeader className="pb-2">
+                    <CardHeader className="p-2">
                       <CardDescription className="text-xs font-semibold uppercase tracking-wider text-red-500">
                         Failed Submissions
                       </CardDescription>
@@ -620,22 +620,22 @@ export function WebsiteConnectorDetailPage({
                         {logs.filter((l) => l.status === 'error').length}
                       </CardTitle>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="px-2">
                       <p className="text-xs text-muted-foreground">Failed payloads awaiting retry</p>
                     </CardContent>
                   </Card>
                 </div>
 
                 <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-base">
+                  <CardHeader className="p-2 space-y-0">
+                    <CardTitle className="flex items-center gap-2 text-sm font-semibold text-leadgaze-dark dark:text-white">
                       <Database className="h-4 w-4 text-primary" /> Recent Submissions Ingestion Flow
                     </CardTitle>
                     <CardDescription>
                       Visualizing recent ingestion activities for this connector.
                     </CardDescription>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="p-2 space-y-1 pt-0">
                     {logs.length === 0 ? (
                       <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-8">
                         <Terminal className="mb-2 h-8 w-8 text-muted-foreground" />
@@ -647,11 +647,11 @@ export function WebsiteConnectorDetailPage({
                         </p>
                       </div>
                     ) : (
-                      <div className="space-y-4">
+                      <div className="space-y-2">
                         {logs.slice(0, 5).map((log) => (
                           <div
                             key={log.id}
-                            className="flex items-center justify-between rounded-lg border p-3 transition-colors hover:bg-accent/10"
+                            className="flex items-center justify-between rounded-lg border p-2 transition-colors hover:bg-accent/10"
                           >
                             <div className="flex items-center gap-3">
                               <Badge
@@ -695,15 +695,15 @@ export function WebsiteConnectorDetailPage({
               <TabsContent value="form-builder" className="flex-1 min-h-0 h-full">
                 <div className="grid gap-6 md:grid-cols-2 h-full min-h-0 items-stretch">
                   <Card className="flex flex-col h-full min-h-0">
-                    <CardHeader className="shrink-0">
-                      <CardTitle className="text-base">Configure Embedded Form</CardTitle>
+                    <CardHeader className="shrink-0 p-2 space-y-0">
+                      <CardTitle className="text-sm font-semibold text-leadgaze-dark dark:text-white">Configure Embedded Form</CardTitle>
                       <CardDescription>
                         Configure visible inputs, rename fields, and map payload parameters.
                       </CardDescription>
                     </CardHeader>
-                    <CardContent className="flex-1 overflow-y-auto space-y-6">
+                    <CardContent className="flex-1 overflow-y-auto space-y-2 p-2">
                       {/* Fields */}
-                      <div className="space-y-4">
+                      <div className="space-y-2">
                         <div className="flex items-center justify-between">
                           <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                             Form Fields
@@ -711,8 +711,7 @@ export function WebsiteConnectorDetailPage({
                           <Button
                             type="button"
                             variant="outline"
-                            size="sm"
-                            className="h-8 gap-1.5"
+                            className="secondary-text-small-bold text-leadgaze-dark dark:text-white gap-1.5 px-2"
                             onClick={() => {
                               setBuilderFields([
                                 ...builderFields,
@@ -826,7 +825,7 @@ export function WebsiteConnectorDetailPage({
                       </div>
 
                       {/* Header & Styling */}
-                      <div className="space-y-4 border-t pt-4">
+                      <div className="space-y-2 border-t pt-2">
                         <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                           Form Header &amp; Styling
                         </Label>
@@ -878,7 +877,7 @@ export function WebsiteConnectorDetailPage({
                       </div>
 
                       {/* Submit Actions */}
-                      <div className="space-y-4 border-t pt-4">
+                      <div className="space-y-2 border-t pt-2">
                         <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                           Submit Actions
                         </Label>
@@ -905,10 +904,10 @@ export function WebsiteConnectorDetailPage({
                         </div>
                       </div>
                     </CardContent>
-                    <DialogFooter className="border-t bg-muted/20 p-4 shrink-0">
+                    <DialogFooter>
                       <Button
                         onClick={handleSaveFormBuilder}
-                        className="w-full gap-2"
+                        className="gap-2"
                         disabled={isSavingForm}
                       >
                         <Save className="h-4 w-4" />
@@ -919,16 +918,16 @@ export function WebsiteConnectorDetailPage({
 
                   {/* Live Preview */}
                   <Card className="flex flex-col h-full min-h-0 border border-primary/10">
-                    <CardHeader className="border-b bg-primary/5 pb-3 shrink-0">
-                      <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+                    <CardHeader className="border-b bg-primary/5 p-2 shrink-0">
+                      <CardTitle className="flex items-center gap-2 text-sm font-semibold text-leadgaze-dark dark:text-white">
                         <Eye className="h-4 w-4 text-primary" /> Live Form Widget Preview
                       </CardTitle>
                     </CardHeader>
-                    <CardContent className="flex flex-1 items-center justify-center bg-accent/5 p-6 min-h-0">
-                      <div className="w-full max-w-sm rounded-xl border bg-card shadow-sm flex flex-col h-full max-h-[380px] overflow-hidden">
+                    <CardContent className="flex flex-1 items-center justify-center bg-accent/5 p-2 min-h-0">
+                      <div className="w-full rounded-xl border bg-card shadow-sm flex flex-col h-full max-h-[540px] overflow-hidden mx-2">
                         {/* Title details */}
                         <div className="p-5 pb-2 space-y-1 shrink-0">
-                          <h4 className="text-base font-bold">
+                          <h4 className="text-base font-bold dark:text-white">
                             {builderSettings.heading || connector.name}
                           </h4>
                           <p className="text-xs text-muted-foreground">
@@ -1006,24 +1005,24 @@ export function WebsiteConnectorDetailPage({
               {/* ---- API CREDENTIALS ---- */}
               <TabsContent value="api-credentials" className="space-y-6">
                 <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base">Ingestion Credentials</CardTitle>
+                  <CardHeader className="mb-0 p-2">
+                    <CardTitle className="text-sm font-semibold text-leadgaze-dark dark:text-white mb-0">Ingestion Credentials</CardTitle>
                     <CardDescription>
                       Secure API credentials used for direct programmatical leads or ticket submission.
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-6">
-                    <div className="grid gap-4 md:grid-cols-2">
+                  <CardContent className="space-y-6 p-2">
+                    <div className="grid gap-2 md:grid-cols-2 mb-2">
                       <div className="space-y-2">
                         <Label>Public Key</Label>
-                        <div className="flex items-center gap-2 rounded border bg-muted/20 p-2.5 font-mono text-sm">
-                          <span className="flex-1 truncate">
+                        <div className="flex items-center gap-2 rounded border bg-muted/20 p-2.5 font-mono text-sm h-[36px]">
+                          <span className="flex-1 truncate dark:text-white">
                             {apiKeys[0]?.public_key || 'Generate a key...'}
                           </span>
                           <Button
                             size="icon"
                             variant="ghost"
-                            className="h-7 w-7"
+                            className="h-7 w-7 dark:text-white"
                             onClick={() => copyToClipboard(apiKeys[0]?.public_key || '', 'pub')}
                           >
                             {copiedKey === 'pub' ? (
@@ -1037,18 +1036,18 @@ export function WebsiteConnectorDetailPage({
 
                       <div className="space-y-2">
                         <Label>Secret API Key</Label>
-                        <div className="flex items-center gap-2 rounded border bg-muted/20 p-2.5 font-mono text-sm">
-                          <span className="flex-1 truncate">
+                        <div className="flex items-center gap-2 rounded border bg-muted/20 p-2.5 font-mono text-sm h-[36px]">
+                          <span className="flex-1 truncate dark:text-white">
                             {apiKeys[0]?.masked_secret_key || 'Generate a key...'}
                           </span>
                         </div>
                       </div>
                     </div>
 
-                    <div className="flex justify-end pt-2">
+                    <div className="flex justify-end pt-2 mb-2">
                       <Button
-                        size="sm"
                         variant="outline"
+                        className="secondary-text-small-bold text-leadgaze-dark dark:text-white gap-1.5 px-2"
                         onClick={() => {
                           if (confirm('Rotating credentials will immediately revoke the current key. Any apps using the old key will break. Proceed?')) {
                             handleRotateKey();
@@ -1059,9 +1058,9 @@ export function WebsiteConnectorDetailPage({
                       </Button>
                     </div>
 
-                    <div className="space-y-3 border-t pt-6">
+                    <div className="space-y-3 border-t pt-2">
                       <h4 className="flex items-center gap-2 text-sm font-semibold">
-                        <Terminal className="h-4 w-4 text-primary" /> Integration Developers Snippet (cURL)
+                        <Terminal className="h-4 w-4 text-primary dark:text-white" /> <span className="text-leadgaze-dark dark:text-white">Integration Developers Snippet (cURL)</span>
                       </h4>
                       <pre className="overflow-x-auto rounded-lg bg-zinc-950 p-4 font-mono text-xs text-zinc-100">
                         {`curl -X POST ${siteUrl}/api/v1/connectors/website/submit \\
@@ -1086,8 +1085,8 @@ export function WebsiteConnectorDetailPage({
               {/* ---- SANDBOX ---- */}
               <TabsContent value="sandbox" className="space-y-6">
                 <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-base">
+                  <CardHeader className="mb-2 p-2">
+                    <CardTitle className="flex items-center gap-2 text-sm font-semibold text-leadgaze-dark dark:text-white">
                       <ShieldCheck className="h-4 w-4 text-primary" /> Endpoint Sandbox Tester
                     </CardTitle>
                     <CardDescription>
@@ -1095,9 +1094,9 @@ export function WebsiteConnectorDetailPage({
                       status, and log configurations.
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-6">
+                  <CardContent className="space-y-6 p-2">
                     <div className="grid gap-6 md:grid-cols-2">
-                      <div className="space-y-4">
+                      <div className="space-y-2">
                         <Label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                           Sandbox Raw Ingestion Body
                         </Label>
@@ -1153,7 +1152,7 @@ export function WebsiteConnectorDetailPage({
                         </div>
                       </div>
 
-                      <div className="space-y-4">
+                      <div className="space-y-2">
                         <Label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                           Attribution &amp; Custom Metadata
                         </Label>
@@ -1200,7 +1199,7 @@ export function WebsiteConnectorDetailPage({
                           />
                         </div>
 
-                        <div className="mt-4 flex items-center justify-between border-t pt-6">
+                        <div className="mt-4 flex items-center justify-between border-t pt-2">
                           <p className="max-w-[200px] text-xs text-muted-foreground">
                             Simulated leads are normalized and bypass IP restrictions.
                           </p>
@@ -1208,6 +1207,7 @@ export function WebsiteConnectorDetailPage({
                             onClick={handleTestSandboxSubmit}
                             className="gap-2"
                             disabled={isRunningSandbox}
+                            className="bg-leadgaze-primary hover:bg-leadgaze-primary text-white secondary-text-small-bold gap-1.5 px-2"
                           >
                             <Play className="h-3.5 w-3.5 fill-current" />
                             {isRunningSandbox ? 'Simulating...' : 'Submit Payload'}
@@ -1222,8 +1222,8 @@ export function WebsiteConnectorDetailPage({
               {/* ---- LOGS ---- */}
               <TabsContent value="logs" className="space-y-6">
                 <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base">Submissions Logs</CardTitle>
+                  <CardHeader className="mb-0 p-2">
+                    <CardTitle className="text-sm font-semibold text-leadgaze-dark dark:text-white">Submissions Logs</CardTitle>
                     <CardDescription>
                       Real-time audit log of all events processed by this connector.
                     </CardDescription>
@@ -1319,7 +1319,7 @@ export function WebsiteConnectorDetailPage({
               </DialogDescription>
             </DialogHeader>
             {selectedLog && (
-              <div className="max-h-[450px] space-y-4 overflow-y-auto py-2 font-mono text-xs">
+              <div className="max-h-[450px] space-y-2 overflow-y-auto py-2 font-mono text-xs">
                 <div className="space-y-1">
                   <span className="block font-bold text-muted-foreground">Event ID:</span>
                   <span className="block select-all rounded bg-muted px-2 py-1">
@@ -1364,7 +1364,7 @@ export function WebsiteConnectorDetailPage({
                 Copy this key and save it in a secure password manager. For security reasons, <strong>this key will not be shown again</strong>.
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-4 py-2">
+            <div className="space-y-2 py-2">
               <div className="flex items-center gap-2 rounded border bg-muted/20 p-2.5 font-mono text-sm">
                 <span className="flex-1 truncate">{generatedSecretKey}</span>
                 <Button

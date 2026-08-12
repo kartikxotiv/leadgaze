@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type React from 'react';
 
 import { useQuery } from '@tanstack/react-query';
-import { Edit2, Loader2, Plus, Trash2 } from 'lucide-react';
+import { Edit2, Loader2, Plus, Trash2, MoreVertical } from 'lucide-react';
 import { toast } from 'sonner';
 
 import {
@@ -19,11 +19,18 @@ import {
 } from '@kit/ui/alert-dialog';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@kit/ui/dropdown-menu';
 import { ColumnHeader } from '@kit/ui/column-header';
 import CustomTableContainer from '@kit/ui/custom-table-container';
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -31,7 +38,7 @@ import {
 import { Input } from '@kit/ui/input';
 import { Label } from '@kit/ui/label';
 import { ListToolBar } from '@kit/ui/list-toolbar';
-import { PageBody } from '@kit/ui/page';
+import { PageBody, PageHeader } from '@kit/ui/page';
 import {
   Select,
   SelectContent,
@@ -53,6 +60,7 @@ import {
 import { TablePagination } from '@kit/ui/table-pagination';
 import { useColumnResize } from '@kit/ui/use-column-resize';
 import { useTableSort } from '@kit/ui/use-table-sort';
+import { formatDate } from '@kit/shared/utils';
 import { cn } from '@kit/ui/utils';
 
 import {
@@ -176,6 +184,8 @@ type ResourcePageProps = {
   serializeRow?: (record: ServiceCloudRecord) => Record<string, string>;
   exportColumns?: Array<{ key: string; label: string }>;
   actions?: React.ComponentProps<typeof ListToolBar>['actions'];
+  tabsSlot?: React.ReactNode;
+  pageHeaderTitle?: string;
 };
 
 function getInitialForm(
@@ -229,6 +239,8 @@ export function ServiceCloudResourcePage({
   serializeRow,
   exportColumns,
   actions,
+  tabsSlot,
+  pageHeaderTitle,
 }: ResourcePageProps) {
   const [internalSelectedIds, setInternalSelectedIds] = useState<Set<string>>(new Set());
   const [isExporting, setIsExporting] = useState(false);
@@ -547,33 +559,62 @@ export function ServiceCloudResourcePage({
 
   return (
     <>
-      <div className="w-full min-w-0 max-w-full shrink-0 border-b pb-2">
-        <ListToolBar
-          showSearch
-          searchPlaceholder={`Search ${title.toLowerCase()}...`}
-          searchValue={searchTerm}
-          onSearchChange={setSearchTerm}
-          showFilter={!!filterGroups && filterGroups.length > 0}
-          filterGroups={filterGroups}
-          activeFilterCount={activeFilterCount}
-          onClearFilters={onClearFilters}
-          statusSlot={toolbar}
-          exportSlot={exportSlotFinal}
-          actions={
-            actions ||
-            (canCreate
-              ? [
-                  {
-                    key: 'create',
-                    label: createLabel || 'New',
-                    icon: Plus,
-                    onClick: openCreate,
-                    buttonVariant: 'default' as const,
-                  },
-                ]
-              : [])
-          }
-        />
+      {pageHeaderTitle && (
+        <div className="flex items-center justify-between pb-0">
+          <PageHeader title={pageHeaderTitle} className={`w-full`}>
+            {canCreate && (
+              <Button
+                onClick={openCreate}
+                className="secondary-text-small-bold gap-1.5 px-2 bg-leadgaze-primary hover:bg-leadgaze-primary/90 text-white"
+              >
+                <Plus className="h-4 w-4" />
+                {createLabel || 'New'}
+              </Button>
+            )}
+          </PageHeader>
+        </div>
+      )}
+      <div
+        className={cn(
+          'flex w-full min-w-0 max-w-full shrink-0 items-center justify-between border-top-bottom-gray',
+          !pageHeaderTitle && 'border-top-bottom-gray'
+        )}
+      >
+        {tabsSlot ? (
+          <>
+            {typeof tabsSlot === 'function' ? tabsSlot(data) : tabsSlot}
+          </>
+        ) : null}
+        
+          <ListToolBar
+            align="right"
+            className="border-none bg-transparent p-0"
+            showSearch
+            searchPlaceholder={`Search`}
+            searchValue={searchTerm}
+            onSearchChange={setSearchTerm}
+            showFilter={!!filterGroups && filterGroups.length > 0}
+            filterGroups={filterGroups}
+            activeFilterCount={activeFilterCount}
+            onClearFilters={onClearFilters}
+            statusSlot={toolbar}
+            exportSlot={exportSlotFinal}
+            actions={
+              actions ||
+              (canCreate && !pageHeaderTitle
+                ? [
+                    {
+                      key: 'create',
+                      label: createLabel || 'New',
+                      icon: Plus,
+                      onClick: openCreate,
+                      buttonVariant: 'default' as const,
+                    },
+                  ]
+                : [])
+            }
+          />
+        
       </div>
       <PageBody className="sticky flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col overflow-hidden">
         <div className="flex min-h-0 w-full min-w-0 max-w-full flex-1 gap-0">
@@ -653,13 +694,12 @@ export function ServiceCloudResourcePage({
                       <TableHead className="sticky-right-header z-10 w-12 px-1 text-center">
                         <Button
                           type="button"
-                          variant="outline"
                           size="icon"
-                          className="h-8 w-8 mx-auto flex items-center justify-center border-dashed"
+                          className="mx-auto flex h-5 w-5 items-center justify-center rounded-full bg-leadgaze-primary text-white hover:bg-leadgaze-primary/90 border-0 p-0 shadow-xs"
                           onClick={onColumnAddClick}
                           title="Add Column"
                         >
-                          <Plus className="h-4 w-4" />
+                          <Plus className="h-3.5 w-3.5 stroke-[2.5]" />
                         </Button>
                       </TableHead>
                     ) : (
@@ -731,25 +771,35 @@ export function ServiceCloudResourcePage({
                       ))}
                       {canEdit || canDelete ? (
                         <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            {canEdit ? (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => openEdit(record)}
-                              >
-                                <Edit2 className="h-4 w-4" />
-                              </Button>
-                            ) : null}
-                            {canDelete ? (
-                              <Button
-                                variant="ghost"
-                                size="sm"                                
-                                onClick={() => setDeletingRecord(record)}
-                              >
-                                <Trash2 className="text-muted-foreground h-4 w-4" />
-                              </Button>
-                            ) : null}
+                          <div className="flex items-center justify-end">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  className="h-8 w-8 border-0 p-0 focus:outline-none focus-visible:ring-0 focus-visible:outline-none focus-visible:ring-offset-0"
+                                >
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                {canEdit && (
+                                  <DropdownMenuItem
+                                    onClick={() => openEdit(record)}
+                                    className="gap-2 cursor-pointer"
+                                  >
+                                    <Edit2 className="h-4 w-4" /> Edit
+                                  </DropdownMenuItem>
+                                )}
+                                {canDelete && (
+                                  <DropdownMenuItem
+                                    onClick={() => setDeletingRecord(record)}
+                                    className="text-destructive focus:text-destructive cursor-pointer gap-2"
+                                  >
+                                    <Trash2 className="h-4 w-4" /> Delete
+                                  </DropdownMenuItem>
+                                )}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           </div>
                         </TableCell>
                       ) : null}
@@ -799,13 +849,13 @@ export function ServiceCloudResourcePage({
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogContent className="max-h-[90vh] overflow-hidden border-gray-200 bg-white p-0 sm:max-w-[560px] dark:border-slate-800 dark:bg-slate-950">
             <div className="flex max-h-[90vh] flex-col">
-              <DialogHeader className="border-b border-gray-200 bg-white p-6 pb-4 dark:border-slate-800 dark:bg-slate-950">
+              <DialogHeader>
                 <DialogTitle>
                   {editing ? `Edit ${title}` : `New ${title}`}
                 </DialogTitle>
               </DialogHeader>
-              <div className="flex-1 space-y-4 overflow-y-auto p-6 pb-8">
-                <div className="grid gap-4">
+              <div className="flex-1 space-y-2 overflow-y-auto p-2">
+                <div className="grid gap-2 sm:grid-cols-2">
                   {fields
                     // Hide field if canViewField is provided AND returns false
                     .filter((field) => !canViewField || canViewField(field.key))
@@ -813,7 +863,7 @@ export function ServiceCloudResourcePage({
                       // Field is editable only if no canEditField guard, or it returns true
                       const isEditable = !canEditField || canEditField(field.key);
                       return (
-                        <div key={field.key} className="space-y-2">
+                        <div key={field.key}>
                           <Label className="flex items-center gap-1.5">
                             {field.label}
                             {!isEditable && (
@@ -944,16 +994,21 @@ export function ServiceCloudResourcePage({
                     })}
                 </div>
               </div>
-              <div className="border-t border-gray-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
-                <div className="flex justify-end gap-3">
-                  <Button onClick={save} disabled={saving}>
-                    {saving ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : null}
-                    Save
-                  </Button>
-                </div>
-              </div>
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => setOpen(false)}
+                  disabled={saving}
+                >
+                  Cancel
+                </Button>
+                <Button onClick={save} disabled={saving}>
+                  {saving ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : null}
+                  Save
+                </Button>
+              </DialogFooter>
             </div>
           </DialogContent>
         </Dialog>

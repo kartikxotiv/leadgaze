@@ -1,22 +1,30 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import Image from 'next/image';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import {
   Globe,
   ArrowRight,
   MessageSquare,
-  Calendar,
   Sparkles,
   CheckCircle2,
   Lock,
   Building2,
   BarChart3,
   Share2,
+  Mail,
+  Video,
+  ArrowLeft
 } from 'lucide-react';
 
 import { Button } from '@kit/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@kit/ui/card';
 import { Badge } from '@kit/ui/badge';
+import { CardWidgetList, CardWidgetListItem } from '@kit/ui/card-widget-list';
+
+import { CoreEmailSettingsPage } from '@kit/core/pages';
+import { MeetingAccountsSettings } from './meeting-accounts-settings';
+import { useRBAC } from '~/lib/rbac/rbac-provider';
 
 type WorkspaceSummary = {
   id: string;
@@ -29,150 +37,201 @@ interface WorkspaceIntegrationsSettingsProps {
 
 export function WorkspaceIntegrationsSettings({ workspace }: WorkspaceIntegrationsSettingsProps) {
   const router = useRouter();
-
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const { canAccess } = useRBAC();
+  const view = searchParams.get('view');
+  const canManageEmail = canAccess('emails', 'manage_email');
+  
   if (!workspace) return null;
 
-  const activeIntegrations = [
+  if (view === 'emails' && canManageEmail) {
+    return (
+      <div className="flex flex-col h-full space-y-4">
+        <div className="flex items-center border-y-[1px] border-solid card-seperator-border py-1 mb-2">
+          <Button variant="ghost" className="px-2 primary-heading-extra text-leadgaze-dark dark:text-white" onClick={() => router.push('?tab=integrations')}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Email Accounts
+          </Button>
+        </div>
+        <Card className="flex-1 flex flex-col min-h-0 border-0 shadow-none bg-transparent">
+          <CardContent className="p-0 flex-1 flex flex-col min-h-0">
+            <CoreEmailSettingsPage
+              workspace={workspace as any}
+              embedded
+              googleAuthPath="/api/email/google/auth"
+              googleReturnUrl={pathname || '/home/workspace-settings'}
+              permissions={{
+                manageAccounts: canManageEmail,
+                manageTemplates: canManageEmail,
+                manageVariables: canManageEmail,
+              }}
+            />
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (view === 'meetings') {
+    return (
+      <div className="flex flex-col h-full space-y-4">
+        <div className="flex items-center border-y-[1px] border-solid card-seperator-border py-1 mb-2">
+          <Button variant="ghost" className="px-2 primary-heading-extra text-leadgaze-dark dark:text-white" onClick={() => router.push('?tab=integrations')}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Meeting Accounts
+          </Button>
+        </div>
+        <Card className="flex-1 flex flex-col min-h-0 border-0 shadow-none bg-transparent">
+          <CardContent className="p-0 flex-1 flex flex-col min-h-0">
+            <MeetingAccountsSettings workspace={workspace as any} />
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const leadIntegrations = [
     {
       id: 'website-connector',
       name: 'Website Connector',
       description: 'Capture leads & support tickets from your website through embedded forms or direct API submissions.',
-      icon: <Globe className="h-6 w-6 text-primary" />,
+      icon: <Image src="/images/web-icon.png" width={24} height={24} alt="Website Connector" className="object-contain" />,
       badge: 'Available',
-      badgeVariant: 'default' as const,
       path: `/home/sales/workspace-settings/integrations/website-connector`,
-      connected: true,
     },
     {
       id: 'zapier',
       name: 'Zapier Integration',
       description: 'Connect over 5,000+ apps using out-of-the-box automation triggers.',
-      icon: <CheckCircle2 className="h-6 w-6 text-orange-500" />,
+      icon: <Image src="/images/zapier-icon.png" width={24} height={24} alt="Zapier Integration" className="object-contain" />,
       badge: 'Available',
-      badgeVariant: 'default' as const,
       path: `/home/sales/workspace-settings/integrations/zapier`,
-      connected: true,
     },
     {
       id: 'google-ads',
       name: 'Google Ads Lead Forms',
       description: 'Sync Google Ads lead form extensions directly with Leadgaze CRM automatically.',
-      icon: <BarChart3 className="h-6 w-6 text-blue-500" />,
+      icon: <Image src="/images/google-ads-icon.png" width={24} height={24} alt="Google Ads Lead Forms" className="object-contain" />,
       badge: 'Available',
-      badgeVariant: 'default' as const,
       path: `/home/sales/workspace-settings/integrations/google-ads`,
-      connected: true,
     },
     {
       id: 'meta-ads',
       name: 'Meta Lead Ads',
       description: 'Automatically import Facebook and Instagram leads in real-time via webhooks.',
-      icon: <Share2 className="h-6 w-6 text-blue-600" />,
+      icon: <Image src="/images/meta-icon.png" width={24} height={24} alt="Meta Lead Ads" className="object-contain" />,
       badge: 'Available',
-      badgeVariant: 'default' as const,
       path: `/home/sales/workspace-settings/integrations/meta-ads`,
-      connected: true,
     },
     {
       id: 'whatsapp',
       name: 'WhatsApp Business',
       description: 'Receive WhatsApp messages in a shared inbox and capture leads from conversations.',
-      icon: <MessageSquare className="h-6 w-6 text-green-500" />,
+      icon: <Image src="/images/whatsapp-icon.png" width={24} height={24} alt="WhatsApp Business" className="object-contain" />,
       badge: 'Available',
-      badgeVariant: 'default' as const,
       path: `/home/sales/workspace-settings/integrations/whatsapp`,
-      connected: true,
     },
   ];
 
-  const comingSoonIntegrations = [
-
-    // {
-    //   id: 'linkedin-ads',
-    //   name: 'LinkedIn Lead Forms',
-    //   description: 'Capture high-intent B2B leads from LinkedIn Campaign Manager.',
-    //   icon: <Sparkles className="h-6 w-6 text-blue-700" />,
-    //   badge: 'Coming Soon',
-    // },
-
-    // {
-    //   id: 'calendly',
-    //   name: 'Calendly Integration',
-    //   description: 'Automatically route scheduled meetings to assigned lead or ticket owners.',
-    //   icon: <Calendar className="h-6 w-6 text-blue-400" />,
-    //   badge: 'Planned',
-    // }
+  const emailIntegrations = [
+    {
+      id: 'email-accounts',
+      name: 'Email Accounts',
+      description: 'Receive Email messages in a shared inbox and capture leads from conversations.',
+      icon: <Image src="/images/email-icon.png" width={24} height={24} alt="Email Accounts" className="object-contain" />,
+      badge: 'Available',
+      path: `?tab=integrations&view=emails`,
+    }
   ];
+
+  const meetingIntegrations = [
+    {
+      id: 'google-meet',
+      name: 'Google Meet Integration',
+      description: 'Join and manage Google Meet calls from a shared inbox and capture action items from conversations.',
+      icon: <Image src="/images/google-meet-icon.png" width={24} height={24} alt="Google Meet Integration" className="object-contain" />,
+      badge: 'Available',
+      path: `?tab=integrations&view=meetings`,
+    },
+    {
+      id: 'zoom',
+      name: 'Zoom Integration',
+      description: 'Schedule and sync Zoom meetings directly from your CRM to streamline client calls and follow-ups.',
+      icon: <Image src="/images/zoom-icon.png" width={24} height={24} alt="Zoom Integration" className="object-contain" />,
+      badge: 'Available',
+      path: `?tab=integrations&view=meetings`,
+    }
+  ];
+  
+  const renderIntegrationItem = (integration: any) => (
+    <div
+      key={integration.id}
+      className="flex flex-col border border-slate-200 rounded-md bg-white overflow-hidden shadow-sm"
+    >
+      <div className="p-2 flex-1 flex flex-col">
+        <div className="flex justify-between items-start mb-4">
+          <div className="w-7 h-7 flex items-center justify-center ">
+            {integration.icon}
+          </div>
+          <Badge className="bg-leadgaze-primary text-white font-medium text-xs px-2.5 py-0.5 rounded-sm border-0">
+            {integration.badge}
+          </Badge>
+        </div>
+        <div className="primary-text-medium font-bold text-slate-800 mb-2">
+          {integration.name}
+        </div>
+        <div className="text-[13px] text-slate-500 flex-1 leading-relaxed">
+          {integration.description}
+        </div>
+      </div>
+      <div 
+        className="px-2 py-2 border-t border-slate-100 flex items-center justify-between secondary-text-small-bold cursor-pointer text-slate-800 hover:bg-slate-50 transition-colors"
+        onClick={() => router.push(integration.path)}
+      >
+        <span>Configure Settings</span>
+        <ArrowRight className="h-4 w-4 text-slate-600" />
+      </div>
+    </div>
+  );
 
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader className="p-4 pb-3">
-          <CardTitle className="mb-0 flex items-center gap-2 text-base">
-            <Building2 className="h-4 w-4" />
-            Workspace Integrations
+        <CardHeader className="p-2 pb-4 border-b border-slate-200">
+          <CardTitle className="mb-0 flex items-center gap-2 primary-text-big-regular text-leadgaze-dark dark:text-white">
+            Workspace Integration
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="mt-1">
             Connect external channels to automatically ingest CRM Leads and Service Cloud support tickets.
           </CardDescription>
         </CardHeader>
-        <CardContent className="p-4 pt-0">
-
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {activeIntegrations.map((integration) => (
-              <Card key={integration.id} className="relative overflow-hidden border border-primary/20 bg-card hover:bg-accent/10 transition-all duration-300">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <div className="p-2 rounded-lg bg-primary/10">
-                    {integration.icon}
-                  </div>
-                  <Badge variant={integration.badgeVariant}>{integration.badge}</Badge>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <CardTitle className="text-base">{integration.name}</CardTitle>
-                    <CardDescription className="mt-1 line-clamp-3 min-h-[60px]">
-                      {integration.description}
-                    </CardDescription>
-                  </div>
-                  <Button
-                    onClick={() => router.push(integration.path)}
-                    className="w-full justify-between"
-                    variant="outline"
-                  >
-                    Configure Settings
-                    <ArrowRight className="h-4 w-4" />
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-
-            {comingSoonIntegrations.map((integration) => (
-              <Card key={integration.id} className="relative overflow-hidden border border-border bg-card/50 opacity-80">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <div className="p-2 rounded-lg bg-muted text-muted-foreground">
-                    {integration.icon}
-                  </div>
-                  <Badge variant="secondary" className="flex gap-1 items-center">
-                    <Lock className="h-3 w-3" />
-                    {integration.badge}
-                  </Badge>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <CardTitle className="text-base text-muted-foreground">{integration.name}</CardTitle>
-                    <CardDescription className="mt-1 line-clamp-3 min-h-[60px]">
-                      {integration.description}
-                    </CardDescription>
-                  </div>
-                  <Button className="w-full" variant="ghost" disabled>
-                    Locked
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
+        <CardContent className="p-2 space-y-6">
+          
+          <div className="space-y-2">
+            <h3 className="primary-text-big-regular text-leadgaze-dark dark:text-white pb-2 mb-0">Lead Integration</h3>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {leadIntegrations.map(renderIntegrationItem)}
+            </div>
           </div>
+
+          <div className="space-y-2 border-t">
+            <h3 className="primary-text-big-regular text-leadgaze-dark dark:text-white pb-2 mb-0 mt-2">Email Integration</h3>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {emailIntegrations.map(renderIntegrationItem)}
+            </div>
+          </div>
+
+          <div className="space-y-2 border-t">
+            <h3 className="primary-text-big-regular text-leadgaze-dark dark:text-white pb-2 mb-0 mt-2">Meeting Integration</h3>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {meetingIntegrations.map(renderIntegrationItem)}
+            </div>
+          </div>
+
         </CardContent>
       </Card>
     </div>
   );
 }
+

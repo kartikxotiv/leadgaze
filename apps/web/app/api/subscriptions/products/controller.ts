@@ -37,6 +37,7 @@ export const getProducts = catchAsync(
     `,
       )
       .eq('is_public', true)
+      .eq('is_active', true)
       .order('display_name');
 
     if (error) throw new ApiError(error.message, 500);

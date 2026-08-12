@@ -216,9 +216,9 @@ export function CentralStatusManagementDialog({
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="p-0 sm:max-w-[620px] flex flex-col max-h-[620px] gap-0 pb-1">
-          <DialogHeader className="border-b px-6 py-4 shrink-0">
+          <DialogHeader>
             <div className="flex items-center gap-2">
-              <Settings className="h-5 w-5 text-muted-foreground" />
+              <Settings className="h-5 w-5 text-white" />
               <DialogTitle>Manage Workspace Statuses</DialogTitle>
             </div>
             <DialogDescription>
@@ -231,14 +231,14 @@ export function CentralStatusManagementDialog({
             onValueChange={(val) => setActiveTab(val as StatusModuleKey)}
             className="flex-1 flex flex-col overflow-hidden"
           >
-            <div className="border-b px-6 flex items-center justify-between py-3 shrink-0">
-              <TabsList className="grid grid-cols-3 w-[400px]">
-                <TabsTrigger value="leads">Leads</TabsTrigger>
-                <TabsTrigger value="opportunities">Opportunities</TabsTrigger>
-                <TabsTrigger value="accounts">Account Types</TabsTrigger>
+            <div className="border-b px-2 flex items-center justify-between py-2 shrink-0">
+              <TabsList className="grid grid-cols-3 w-[400px] h-[32px]">
+                <TabsTrigger value="leads" className="h-[24px]">Leads</TabsTrigger>
+                <TabsTrigger value="opportunities" className="h-[24px]">Opportunities</TabsTrigger>
+                <TabsTrigger value="accounts" className="h-[24px]">Account Types</TabsTrigger>
               </TabsList>
 
-              <Button size="sm" onClick={openCreate} className="gap-1 bg-[#0b57d0] text-white hover:bg-[#0b57d0]/90 dark:bg-[#0b57d0] dark:hover:bg-[#0b57d0]/90">
+              <Button onClick={openCreate} className="secondary-text-small-bold bg-leadgaze-primary hover:bg-leadgaze-primary text-white gap-1.5 px-2">
                 <Plus className="h-4 w-4" />
                 Add Status
               </Button>
@@ -339,15 +339,15 @@ function StatusList({
         return (
           <div
             key={status.id}
-            className="flex items-center justify-between px-6 py-2 hover:bg-slate-50/50 dark:hover:bg-slate-900/10 transition-colors group"
+            className="flex items-center justify-between px-2 py-1 hover:bg-slate-50/50 dark:hover:bg-slate-900/10 transition-colors group"
           >
             <div className="flex items-center flex-1">
-              <div className="flex items-center gap-3 w-[240px] shrink-0">
+              <div className="flex items-center gap-2 w-[240px] shrink-0">
                 <div
                   className={`h-2.5 w-2.5 rounded-full shrink-0 ${!status.is_active ? 'opacity-40' : ''}`}
                   style={{ backgroundColor: status.color }}
                 />
-                <p className={`text-sm primary-text-medium ${!status.is_active ? 'text-muted-foreground line-through' : ''}`}>
+                <p className={`primary-text-medium text-leadgaze-dark dark:text-white ${!status.is_active ? 'text-muted-foreground line-through' : ''}`}>
                   {status.status_name}
                 </p>
               </div>
@@ -383,7 +383,7 @@ function StatusList({
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8"
+                        className="h-7 w-7"
                         onClick={() => {
                           if (isToggleable) {
                             onToggleActive(status);
@@ -394,9 +394,9 @@ function StatusList({
                         {isCurrentToggling ? (
                           <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                         ) : status.is_active ? (
-                          <Eye className={isToggleable ? "h-5 w-5 text-muted-foreground" : "h-5 w-5 text-muted-foreground opacity-50"} />
+                          <Eye className={isToggleable ? "h-4 w-4 text-muted-foreground" : "h-4 w-4 text-muted-foreground opacity-50"} />
                         ) : (
-                          <EyeOff className="h-5 w-5 text-muted-foreground" />
+                          <EyeOff className="h-4 w-4 text-muted-foreground" />
                         )}
                       </Button>
                     </div>
@@ -415,7 +415,7 @@ function StatusList({
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                className="h-7 w-7 text-muted-foreground hover:text-foreground"
                 onClick={() => onEdit(status)}
               >
                 <Edit2 className="h-4 w-4" />

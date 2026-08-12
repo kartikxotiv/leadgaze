@@ -209,14 +209,14 @@ export function EditOpportunityDialog({
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-[600px]">
-        <DialogHeader className="border-b p-6 pb-4">
+        <DialogHeader>
           <DialogTitle>Edit Opportunity</DialogTitle>
           <DialogDescription>
-            Update the information for this opportunity.
+            Update the information for this opportunity
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form id="dialog-form" onSubmit={form.handleSubmit(onSubmit)} className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+          <form id="dialog-form" onSubmit={form.handleSubmit(onSubmit)} className="flex-1 overflow-y-auto px-2 space-y-2">
             <FieldGuard fieldKey="opportunity_name" canEdit={canEdit}>
               <FormField
                 control={form.control}
@@ -233,7 +233,7 @@ export function EditOpportunityDialog({
               />
             </FieldGuard>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-2">
               <FieldGuard fieldKey="amount" canEdit={canEdit}>
                 <FormField
                   control={form.control}
@@ -280,7 +280,7 @@ export function EditOpportunityDialog({
               </FieldGuard>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-2">
               <FieldGuard fieldKey="probability" canEdit={canEdit}>
                 <FormField
                   control={form.control}
@@ -313,7 +313,7 @@ export function EditOpportunityDialog({
               </FieldGuard>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-2">
               <FieldGuard fieldKey="opportunity_type" canEdit={canEdit}>
                 <FormField
                   control={form.control}
@@ -423,9 +423,9 @@ export function EditOpportunityDialog({
               />
             </FieldGuard>
 
-            <div className="space-y-3 border-t pt-4">
+            <div className="space-y-2 border-t pt-2">
               <h4 className="text-sm font-medium">Outcome</h4>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-2">
                 <FieldGuard fieldKey="is_closed" canEdit={canEdit}>
                   <FormField
                     control={form.control}
@@ -485,7 +485,8 @@ export function EditOpportunityDialog({
 
             </div>
 
-            <div className="border-t pt-4">
+            {Object.keys(customFields).length > 0 && <div className="border-t pt-4">
+              
               <LeadCustomFieldInputs
                 fields={visibleCustomFields}
                 values={customFields}
@@ -495,22 +496,19 @@ export function EditOpportunityDialog({
                 canEdit={canEdit}
                 canView={canView}
               />
-            </div>
-
-            
+            </div>}            
           </form>
         </Form>
-        <DialogFooter className="border-t p-2 mt-auto">
+        <DialogFooter>
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => onOpenChange(false)}
                 disabled={updateMutation.isPending}
-                className="mb-2"
               >
                 Cancel
               </Button>
-              <Button type="submit" form="dialog-form" disabled={updateMutation.isPending} className="mb-2">
+              <Button type="submit" form="dialog-form" disabled={updateMutation.isPending}>
                 {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
               </Button>
             </DialogFooter>

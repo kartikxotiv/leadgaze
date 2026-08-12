@@ -1,6 +1,7 @@
 'use client';
 
 import { CoreEmailInboxPage } from '@kit/core/pages';
+
 import { Skeleton } from '@kit/ui/skeleton';
 
 import {
@@ -23,24 +24,28 @@ export function ServiceCloudInboxesPage({ workspace }: { workspace: any }) {
     return <ServiceCloudAccessDenied label="support inboxes" />;
 
   return (
-    <CoreEmailInboxPage
-      workspace={workspace}
-      embedded
-      templateContext={{
-        module_name: 'Service Cloud',
-        workspace_name: workspace?.name ?? '',
-      }}
-      renderEmailActions={(email) => (
-        <ServiceCloudEmailToTicketAction
-          workspaceId={workspace.id}
-          email={email}
-        />
-      )}
-      permissions={{
-        viewInbox: canManageInbox,
-        sendEmails: canManageInbox,
-      }}
-    />
+    <div className="flex w-full min-w-0 max-w-full flex-1 flex-col overflow-hidden gap-2">
+      <CoreEmailInboxPage
+        workspace={workspace}
+        embedded
+        templateContext={{
+          module_name: 'Service Cloud',
+          workspace_name: workspace?.name ?? '',
+        }}
+        renderEmailActions={(email) => (
+          <ServiceCloudEmailToTicketAction
+            workspaceId={workspace.id}
+            email={email}
+          />
+        )}
+        permissions={{
+          viewInbox: canManageInbox,
+          sendEmails: canManageInbox,
+        }}
+        pageTitle="Support Inboxes"
+        pageDescription="View and reply to support email conversations powered by Core Email."
+      />
+    </div>
   );
 }
 

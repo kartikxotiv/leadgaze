@@ -62,7 +62,7 @@ export function RecruitmentOnboardingTab(props: {
                   <TableCell>
                     <RecruitmentStatusBadge label={formatLabel(task.status)} />
                   </TableCell>
-                  <TableCell className="sticky right-0 px-4 text-right">
+                  <TableCell className="bg-card sticky right-0 px-4 text-right">
                     {props.canManageOnboarding ? (
                       <div className="flex justify-end gap-1">
                         <Button

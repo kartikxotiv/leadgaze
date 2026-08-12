@@ -136,6 +136,16 @@ const importContactsService = asyncHandlerClient(
   },
 );
 
+const getContactsMetaService = asyncHandlerClient(
+  async (params: { workspaceId: string; userId: string; productKey?: string }) => {
+    const { workspaceId, userId, productKey = 'sales' } = params;
+    const response = await ApiClient.get(
+      `/contacts/meta?workspaceId=${workspaceId}&userId=${userId}&productKey=${productKey}`
+    );
+    return response.data;
+  }
+);
+
 export {
   getContactsService,
   getContactByIdService,
@@ -143,4 +153,5 @@ export {
   importContactsService,
   updateContactService,
   deleteContactService,
+  getContactsMetaService,
 };

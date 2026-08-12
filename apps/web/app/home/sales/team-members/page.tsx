@@ -331,7 +331,7 @@
 //                             {isVisible('member') && (
 //                               <TableCell>
 //                                 <div className="flex items-center gap-3">
-//                                   <div className="bg-secondary flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold">
+//                                   <div className="bg-secondary flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold">
 //                                     {(
 //                                       member.user?.email?.charAt(0) || 'M'
 //                                     ).toUpperCase()}

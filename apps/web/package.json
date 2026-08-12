@@ -50,6 +50,7 @@
     "@kit/integration-zoom": "workspace:*",
     "@kit/inventory": "workspace:*",
     "@kit/next": "workspace:*",
+    "@kit/sales": "workspace:*",
     "@kit/service-cloud": "workspace:*",
     "@kit/shared": "workspace:*",
     "@kit/supabase": "workspace:*",

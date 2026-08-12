@@ -178,7 +178,7 @@ export function EditAccountDialog({
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-[700px]">
-        <DialogHeader className="border-b p-6 pb-4">
+        <DialogHeader>
           <DialogTitle>Edit Account</DialogTitle>
           <DialogDescription>
             Update the information for this account.
@@ -188,7 +188,7 @@ export function EditAccountDialog({
           <form
             id="dialog-form"
             onSubmit={form.handleSubmit(onSubmit)}
-            className="flex-1 space-y-4 overflow-y-auto px-6 py-4"
+            className="flex-1 space-y-2 overflow-y-auto px-2"
           >
             <Tabs defaultValue="general" className="w-full">
               <TabsList className="grid w-full grid-cols-4">
@@ -198,7 +198,7 @@ export function EditAccountDialog({
                 <TabsTrigger value="social">Social</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="general" className="space-y-4 pt-4">
+              <TabsContent value="general" className="space-y-2 pt-4">
                 <FormField
                   control={form.control}
                   name="account_name"
@@ -212,7 +212,7 @@ export function EditAccountDialog({
                     </FormItem>
                   )}
                 />
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-2">
                   <FormField
                     control={form.control}
                     name="website"
@@ -292,8 +292,8 @@ export function EditAccountDialog({
                 />
               </TabsContent>
 
-              <TabsContent value="details" className="space-y-4 pt-4">
-                <div className="grid grid-cols-2 gap-4">
+              <TabsContent value="details" className="space-y-2 pt-4">
+                <div className="grid grid-cols-2 gap-2">
                   <FormField
                     control={form.control}
                     name="annual_revenue"
@@ -336,8 +336,8 @@ export function EditAccountDialog({
                 />
               </TabsContent>
 
-              <TabsContent value="address" className="space-y-4 pt-4">
-                <div className="space-y-4">
+              <TabsContent value="address" className="space-y-2 pt-4">
+                <div className="space-y-2">
                   <h4 className="text-primary text-sm font-medium">
                     Billing Address
                   </h4>
@@ -400,7 +400,7 @@ export function EditAccountDialog({
                   </div>
                 </div>
 
-                <div className="space-y-4 border-t pt-4">
+                <div className="space-y-2 border-t pt-4">
                   <h4 className="text-primary text-sm font-medium">
                     Shipping Address
                   </h4>
@@ -464,7 +464,7 @@ export function EditAccountDialog({
                 </div>
               </TabsContent>
 
-              <TabsContent value="social" className="space-y-4 pt-4">
+              <TabsContent value="social" className="space-y-2 pt-4">
                 <FormField
                   control={form.control}
                   name="linkedin_url"
@@ -495,13 +495,12 @@ export function EditAccountDialog({
             </Tabs>
           </form>
         </Form>
-        <DialogFooter className="mt-auto border-t p-6">
+        <DialogFooter>
           <Button
             type="button"
             variant="outline"
             onClick={() => onOpenChange(false)}
             disabled={updateMutation.isPending}
-            className="mb-2"
           >
             Cancel
           </Button>
@@ -509,7 +508,6 @@ export function EditAccountDialog({
             type="submit"
             form="dialog-form"
             disabled={updateMutation.isPending}
-            className="mb-2"
           >
             {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
           </Button>

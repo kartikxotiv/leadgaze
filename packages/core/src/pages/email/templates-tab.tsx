@@ -48,8 +48,7 @@ import {
   getCoreEmailVariablesService,
   saveCoreEmailTemplateService,
 } from '../../services/email-templates.service';
-import { ListToolBar } from '@kit/ui/list-toolbar';
-import CustomTableContainer from '@kit/ui/custom-table-container';
+import { CardWidgetContainer } from '@kit/ui/card-widget-container';
 import { useColumnResize } from '@kit/ui/use-column-resize';
 import { useTableSort } from '@kit/ui/use-table-sort';
 import { SortableTableHead } from '@kit/ui/sortable-table-head';
@@ -102,26 +101,15 @@ export function CoreEmailTemplatesTab({
 
   return (
     <div className="flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col space-y-2">
-      {/* Full-width search / filter / actions toolbar */}
-              <div className="w-full max-w-full min-w-0 shrink-0 border-b">
-                <ListToolBar
-                  showSearch
-                  searchPlaceholder="Search templates..."
-                  searchValue={searchTerm}
-                  onSearchChange={setSearchTerm}
-                  actions={[
-                    {
-                      key: 'add',
-                      label: 'New Template',
-                      icon: Plus,
-                      onClick: () => {setSelectedTemplate(null); setIsDialogOpen(true);},
-                      show: true,
-                      buttonVariant: 'default',
-                    },
-                  ]}                  
-                />
-              </div>
-       <CustomTableContainer>      
+      <CardWidgetContainer headerClassName="p-2 xl:p-2 2xl:p-2" title="Templates" icon2={
+          <Button
+            className="bg-leadgaze-primary hover:bg-leadgaze-primary text-white secondary-text-small-bold gap-1.5 px-2"
+            onClick={() => {setSelectedTemplate(null); setIsDialogOpen(true);}}
+          >
+            <Plus className="h-4 w-4" /> Add
+          </Button>
+      }>
+          <div className="mb-2">
           <Table>
             <TableHeader>
               <TableRow>
@@ -220,7 +208,8 @@ export function CoreEmailTemplatesTab({
               )}
             </TableBody>
           </Table>
-        </CustomTableContainer>
+        </div>
+      </CardWidgetContainer>
 
       <CoreTemplateDialog
         open={isDialogOpen}
@@ -307,12 +296,12 @@ function CoreTemplateDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-hidden border-gray-200 bg-white p-0 sm:max-w-3xl dark:border-slate-800 dark:bg-slate-950">
         <div className="flex max-h-[90vh] flex-col">
-          <DialogHeader className="border-b border-gray-200 bg-white p-6 pb-4 dark:border-slate-800 dark:bg-slate-950">
+          <DialogHeader>
             <DialogTitle>
               {template ? 'Edit Template' : 'Create Template'}
             </DialogTitle>
           </DialogHeader>
-          <div className="flex-1 space-y-4 overflow-y-auto px-6 pb-8">
+          <div className="flex-1 space-y-2 overflow-y-auto px-2">
           <div className="space-y-2">
             <Label>Template Name</Label>
             <Input
@@ -361,7 +350,7 @@ function CoreTemplateDialog({
               </TooltipProvider>
             </div>
             <div className="overflow-hidden rounded-md border">
-              <div className="border-b bg-zinc-50 p-1 dark:bg-zinc-800/50">
+              <div className="border-b bg-zinc-200 p-1 dark:bg-zinc-800/50">
                 {['bold', 'italic', 'underline'].map((command) => (
                   <Button
                     key={command}
@@ -381,7 +370,7 @@ function CoreTemplateDialog({
             </div>
           </div>
           </div>
-          <DialogFooter className="border-t border-gray-200 bg-white p-2 dark:border-slate-800 dark:bg-slate-950">
+          <DialogFooter>
             <Button
               variant="outline"
               onClick={() => onOpenChange(false)}
@@ -389,11 +378,11 @@ function CoreTemplateDialog({
             >
               Cancel
             </Button>
-            <Button onClick={handleSave} disabled={isSaving}>
+            <Button onClick={handleSave} disabled={isSaving} className="secondary-text-small-bold gap-1.5 px-2">
               {isSaving ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-                <Save className="mr-2 h-4 w-4" />
+                <Save className="h-4 w-4" />
               )}
               Save
             </Button>

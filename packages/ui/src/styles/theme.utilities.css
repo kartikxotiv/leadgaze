@@ -1,10 +1,3 @@
-/*
- * theme.utilities.css
- *
- * Leadgaze custom Tailwind @utility classes — shared across all apps via @kit/ui.
- * Add any new global utility classes here.
- */
-
 @utility container {
   margin-inline: auto;
 
@@ -27,9 +20,30 @@
 
 @utility primary-heading {
   font-family: var(--font-sans) !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  line-height: 28px !important;
+}
+@utility primary-heading-extra {
+  font-family: var(--font-sans) !important;
   font-size: 18px !important;
   font-weight: 600 !important;
   line-height: 27px !important;
+}
+
+@utility primary-heading-extra-new {
+  font-family: var(--font-sans) !important;
+  font-size: 18px !important;
+  font-weight: 500 !important;
+  line-height: 20px !important;
+}
+
+
+@utility primary-text-big-regular {
+  font-family: var(--font-sans) !important;
+  font-size: 16px !important;
+  font-weight: 500 !important;
+  line-height: 20px !important;
 }
 
 @utility primary-text-medium {
@@ -52,20 +66,37 @@
   font-weight: 400 !important;
   line-height: 16px !important;
 }
+@utility secondary-text-small-regular {
+  font-family: var(--font-sans) !important;
+  font-size: 12px !important;
+  font-weight: 400 !important;
+  line-height: 20px !important;
+}
+@utility secondary-text-small-bold {
+  font-family: var(--font-sans) !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  line-height: 20px !important;
+}
+@utility secondary-text-small-semibold {
+  font-family: var(--font-sans) !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  line-height: 16px !important;
+}
 
 @utility card-container {
   border: 0.6px solid var(--card-border);
-  border-radius: 0.7px !important;
+  border-radius: 0.7px !important;  
 }
 
 @utility no-raidus {
-    border-radius: 0x !important;
+    border-radius: 0x !important;  
 }
 
 @utility bar-bg {
   background-color: #E6E6E6;
 }
-
 @utility card-seperator-border {
   border-color: var(--card-border);
 }
@@ -73,13 +104,13 @@
 @utility table-row-border {
   border-bottom-width: 0.6px;
   border-bottom-style: solid;
-  border-bottom-color: var(--card-border);
+  border-bottom-color: var(--table-custom-border);
 }
 
 @utility table-header-border{
   border-left-width: 0.6px;
   border-style: solid;
-  border-color: var(--card-border);
+  border-color: var(--table-custom-border);
 }
 
 @utility sticky-right-header{
@@ -108,7 +139,6 @@
 @utility dark-theme-color{
   background-color: #1E1E1E;
 }
-
 @utility dark-button-border-color{
   border-color: #404040 !important;
 }
@@ -116,7 +146,21 @@
 @utility dark-background-color{
   background-color: #171717 !important;
 }
-
 @utility dark-black-light-bg{
   background-color: #262626 !important;
+}
+
+@utility border-top-bottom-gray{
+  border-top-color: var(--table-custom-border) !important;
+  border-bottom-color: var(--table-custom-border) !important;
+  border-top-width: 1px;
+  border-bottom-width: 1px;
+}
+
+@utility dialog-footer-border-top {
+  border-top-color: #E2E8F0 !important;
+  border-top-width: 1px;
+}
+@utility dialog-footer-bg {
+  background-color: #F8FAFC !important;
 }

@@ -5,7 +5,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import {
+import { 
   Briefcase,
   Building2,
   Edit,
@@ -20,10 +20,13 @@ import {
   Trash2,
   User,
   Users,
+  Plus,
+  Download
 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@kit/ui/button';
+import { AddColumnModal } from '@kit/ui/add-column-modal';
 import { Badge } from '@kit/ui/badge';
 import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
 import CustomTableContainer from '@kit/ui/custom-table-container';
@@ -32,6 +35,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from '@kit/ui/dialog';
 import {
   DropdownMenu,
@@ -66,6 +70,7 @@ import { useColumnResize } from '@kit/ui/use-column-resize';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
 import { useDateRangeFilter } from '@kit/ui/use-date-range-filter';
 import { useTableSort } from '@kit/ui/use-table-sort';
+import { CustomDeleteDialog } from '@kit/ui/custom-delete-dialog';
 
 import { useLocalization } from '~/lib/localization/localization-provider';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
@@ -113,8 +118,16 @@ function DocumentPageSkeleton() {
                   <TableHead>Size</TableHead>
                   <TableHead>Uploaded By</TableHead>
                   <TableHead>Entity</TableHead>
-                  <TableHead className="sticky right-0 text-right">
-                    Actions
+                  <TableHead className="sticky-right-header z-10 w-12 px-1 text-center">
+                    <Button
+                      type="button"
+                      size="icon"
+                      className="mx-auto flex h-5 w-5 items-center justify-center rounded-full bg-leadgaze-primary text-white hover:bg-leadgaze-primary/90 border-0 p-0 shadow-xs"
+                      onClick={() => setAddColumnModalOpen(true)}
+                      title="Toggle Columns"
+                    >
+                      <Plus className="h-3.5 w-3.5 stroke-[2.5]" />
+                    </Button>
                   </TableHead>
                 </TableRow>
               </TableHeader>
@@ -136,6 +149,7 @@ function DocumentPageSkeleton() {
 }
 
 export default function DocumentPage() {
+  const [addColumnModalOpen, setAddColumnModalOpen] = useState(false);
   const { currentWorkspace: workspace } = useRBAC();
   const { formatDate } = useLocalization();
   const queryClient = useQueryClient();
@@ -169,6 +183,9 @@ export default function DocumentPage() {
   const [file, setFile] = useState<File | null>(null);
   const [entityType, setEntityType] = useState('lead');
   const [entityId, setEntityId] = useState('');
+
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [documentToDelete, setDocumentToDelete] = useState<string | null>(null);
 
   const documentColumns = useMemo(
     () => [
@@ -204,10 +221,12 @@ export default function DocumentPage() {
 
   const { getHeaderProps, getResizeHandleProps } = useColumnResize('documents');
 
-  const { data: documents = [], isLoading } = useQuery({
+  const { data: documentsResponse, isLoading } = useQuery({
     queryKey: [
       'documents',
       workspace?.id,
+      currentPage,
+      pageSize,
       typeFilter,
       entityTypeFilter,
       debouncedSearchTerm,
@@ -216,12 +235,14 @@ export default function DocumentPage() {
       computedUpdatedOnDates,
     ],
     queryFn: () => {
-      if (!workspace?.id) return [];
+      if (!workspace?.id) return { data: [], total: 0 };
       return getDocumentsService(
         workspace.id,
         entityTypeFilter === 'all' ? undefined : entityTypeFilter,
         undefined,
         {
+          page: currentPage,
+          limit: pageSize,
           type: typeFilter === 'all' ? undefined : typeFilter,
           searchTerm: debouncedSearchTerm || undefined,
           createdAtFrom: computedCreatedOnDates?.from,
@@ -234,6 +255,18 @@ export default function DocumentPage() {
     },
     enabled: !!workspace?.id,
   });
+
+  const documents = useMemo(() => {
+    if (!documentsResponse) return [];
+    if (Array.isArray(documentsResponse)) return documentsResponse;
+    return documentsResponse?.data || [];
+  }, [documentsResponse]);
+
+  const totalCount = useMemo(() => {
+    if (!documentsResponse) return 0;
+    if (Array.isArray(documentsResponse)) return documentsResponse.length;
+    return (documentsResponse as any)?.total ?? documents.length;
+  }, [documentsResponse, documents]);
 
   const { data: leads = [] } = useQuery({
     queryKey: ['leads', workspace?.id],
@@ -293,19 +326,19 @@ export default function DocumentPage() {
       setFile(null);
       setEntityType('lead');
       setEntityId('');
-      queryClient.invalidateQueries({ queryKey: ['documents', workspace?.id] });
+      queryClient.invalidateQueries({ queryKey: ['documents'] });
     },
     onError: () => toast.error('Failed to upload document'),
   });
 
   const updateMutation = useMutation({
-    mutationFn: (name: string) =>
-      updateDocumentService(editingDoc!.id, { name }),
+    mutationFn: ({ id, name }: { id: string; name: string }) =>
+      updateDocumentService(id, { name }),
     onSuccess: () => {
       toast.success('Document renamed');
       setIsEditDialogOpen(false);
       setEditingDoc(null);
-      queryClient.invalidateQueries({ queryKey: ['documents', workspace?.id] });
+      queryClient.invalidateQueries({ queryKey: ['documents'] });
     },
     onError: () => toast.error('Failed to rename document'),
   });
@@ -314,9 +347,15 @@ export default function DocumentPage() {
     mutationFn: deleteDocumentService,
     onSuccess: () => {
       toast.success('Document deleted');
-      queryClient.invalidateQueries({ queryKey: ['documents', workspace?.id] });
+      queryClient.invalidateQueries({ queryKey: ['documents'] });
+      setIsDeleteDialogOpen(false);
+      setDocumentToDelete(null);
     },
-    onError: () => toast.error('Failed to delete document'),
+    onError: () => {
+      toast.error('Failed to delete document');
+      setIsDeleteDialogOpen(false);
+      setDocumentToDelete(null);
+    },
   });
 
   useEffect(() => {
@@ -330,6 +369,40 @@ export default function DocumentPage() {
     createdOnRange,
     updatedOnRange,
   ]);
+
+  const { sortColumn, sortDirection, toggleSort, sortedData } =
+    useTableSort<Document>('documents', documents, {
+      onSortChange: () => setCurrentPage(1),
+    });
+
+  const paginatedDocs = sortedData;
+
+  const totalPages = Math.ceil(totalCount / itemsPerPage) || 1;
+
+  const handleUpload = () => {
+    if (!file || !entityId) return;
+    createMutation.mutate({
+      file,
+      entity_type: entityType,
+      entity_id: entityId,
+    });
+  };
+
+  const handleEdit = (doc: Document) => {
+    setEditingDoc(doc);
+    setNewName(doc.name);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleSave = () => {
+    if (!editingDoc || !newName.trim()) return;
+    updateMutation.mutate({ id: editingDoc.id, name: newName });
+  };
+
+  const handleDelete = (id: string) => {
+    setDocumentToDelete(id);
+    setIsDeleteDialogOpen(true);
+  };
 
   const getFileTypeCategory = (fileType: string): string => {
     const t = (fileType || '').toLowerCase();
@@ -350,49 +423,6 @@ export default function DocumentPage() {
     )
       return 'sheet';
     return 'document';
-  };
-
-  const filteredDocuments = useMemo(() => {
-    return documents;
-  }, [documents]);
-
-  const { sortColumn, sortDirection, toggleSort, sortedData } =
-    useTableSort<Document>('documents', filteredDocuments, {
-      onSortChange: () => setCurrentPage(1),
-    });
-
-  const paginatedDocs = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage;
-    return sortedData.slice(start, start + itemsPerPage);
-  }, [sortedData, currentPage, itemsPerPage]);
-
-  const totalPages = Math.ceil(filteredDocuments.length / itemsPerPage);
-  const totalCount = filteredDocuments.length;
-
-  const handleUpload = () => {
-    if (!file || !entityId) return;
-    createMutation.mutate({
-      file,
-      entity_type: entityType,
-      entity_id: entityId,
-    });
-  };
-
-  const handleEdit = (doc: Document) => {
-    setEditingDoc(doc);
-    setNewName(doc.name);
-    setIsEditDialogOpen(true);
-  };
-
-  const handleSave = () => {
-    if (!editingDoc || !newName.trim()) return;
-    updateMutation.mutate(newName);
-  };
-
-  const handleDelete = (id: string) => {
-    if (confirm('Are you sure you want to delete this document?')) {
-      deleteMutation.mutate(id);
-    }
   };
 
   const getFileIcon = (type: string) => {
@@ -579,19 +609,18 @@ export default function DocumentPage() {
 
   return (
     <>
-      <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden">
+      <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden border-top-bottom-gray">
         <PageHeader
-          title={`Documents (${documents.length})`}
-          description="Manage and organize your files and documents"
-        />
-      </div>
-
-      {/* Full-width search / filter / actions toolbar */}
-      <div className="w-full max-w-full min-w-0 shrink-0 border-b pt-2 pb-2">
-        <ListToolBar
-          showSearch
-          searchPlaceholder="Search documents..."
-          searchValue={searchTerm}
+          title={`Documents`}          
+        >
+          <div className="p-[2px]">
+            <ListToolBar
+              align="right"
+              className="border-none bg-transparent p-0"
+              showSearch
+              expandableSearch
+              searchPlaceholder="Search"
+              searchValue={searchTerm}
           onSearchChange={setSearchTerm}
           showFilter
           filterLabel="Show Filters"
@@ -602,7 +631,7 @@ export default function DocumentPage() {
             {
               key: 'add',
               label: 'Upload File',
-              icon: FileUp,
+              icon: Download,
               onClick: () => {
                 setFile(null);
                 setEntityType('lead');
@@ -622,6 +651,8 @@ export default function DocumentPage() {
             />
           }
         />
+          </div>
+        </PageHeader>
       </div>
 
       <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden">
@@ -831,7 +862,17 @@ export default function DocumentPage() {
                       />
                     </SortableTableHead>
                   )}
-                  <TableHead className="sticky-right-header">Actions</TableHead>
+                  <TableHead className="sticky-right-header z-10 w-12 px-1 text-center">
+                    <Button
+                      type="button"
+                      size="icon"
+                      className="mx-auto flex h-5 w-5 items-center justify-center rounded-full bg-leadgaze-primary text-white hover:bg-leadgaze-primary/90 border-0 p-0 shadow-xs"
+                      onClick={() => setAddColumnModalOpen(true)}
+                      title="Toggle Columns"
+                    >
+                      <Plus className="h-3.5 w-3.5 stroke-[2.5]" />
+                    </Button>
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -990,16 +1031,25 @@ export default function DocumentPage() {
             </Table>
           </CustomTableContainer>
         </div>
+      
+      <AddColumnModal
+        open={addColumnModalOpen}
+        onOpenChange={setAddColumnModalOpen}
+        columns={documentColumns}
+        visibility={visibility}
+        onToggleColumn={toggleVisibility}
+        onResetColumns={reset}
+      />
       </PageBody>
 
       {/* Upload Dialog */}
       <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
         <DialogContent className="flex max-h-[90vh] max-w-[600px] flex-col p-0">
-          <DialogHeader className="border-b p-6 pb-4">
+          <DialogHeader>
             <DialogTitle>Upload Document</DialogTitle>
           </DialogHeader>
-          <div className="flex-1 space-y-4 overflow-y-auto px-6 py-4">
-            <div className="space-y-4">
+          <div className="flex-1 space-y-2 overflow-y-auto px-2">
+            <div className="space-y-2">
               <Label>Associate with</Label>
               <RadioGroup
                 value={entityType}
@@ -1084,32 +1134,38 @@ export default function DocumentPage() {
               <Input
                 type="file"
                 onChange={(e) => setFile(e.target.files?.[0] || null)}
+                className="selectFileDetails"
               />
             </div>
           </div>
-          <div className="mt-auto border-t p-6">
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsUploadDialogOpen(false)}
+              disabled={createMutation.isPending}
+            >
+              Cancel
+            </Button>
             <Button
               onClick={handleUpload}
               disabled={!file || !entityId || createMutation.isPending}
-              className="w-full"
             >
-              {createMutation.isPending ? (
+              {createMutation.isPending && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                'Upload'
               )}
+              Upload
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="flex max-h-[90vh] flex-col p-0">
-          <DialogHeader className="border-b p-6 pb-4">
+          <DialogHeader>
             <DialogTitle>Rename Document</DialogTitle>
           </DialogHeader>
-          <div className="flex-1 space-y-4 px-6 py-4">
+          <div className="flex-1 space-y-2 px-2">
             <div className="space-y-2">
               <Label>Document Name</Label>
               <Input
@@ -1117,20 +1173,40 @@ export default function DocumentPage() {
                 onChange={(e) => setNewName(e.target.value)}
               />
             </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsEditDialogOpen(false)}
+              disabled={updateMutation.isPending}
+            >
+              Cancel
+            </Button>
             <Button
               onClick={handleSave}
               disabled={!newName.trim() || updateMutation.isPending}
-              className="w-full"
             >
-              {updateMutation.isPending ? (
+              {updateMutation.isPending && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                'Rename'
               )}
+              Rename
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
+      
+      <CustomDeleteDialog
+        isOpen={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        title="Delete Document"
+        description="Are you sure you want to delete this document? This action cannot be undone."
+        onConfirm={() => {
+          if (documentToDelete) {
+            deleteMutation.mutate(documentToDelete);
+          }
+        }}
+        isDeleting={deleteMutation.isPending}
+      />
     </>
   );
 }

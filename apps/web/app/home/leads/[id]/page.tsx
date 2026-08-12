@@ -49,6 +49,14 @@ import { Button } from '@kit/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@kit/ui/card';
 import { DetailHeader } from '@kit/ui/detail-header';
 import { DetailInfoList, DetailInfoRow } from '@kit/ui/detail-info-row';
+import { InlineEditableValue } from '@kit/ui/inline-editable-value';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@kit/ui/select';
 import { PageBody, PageHeader } from '@kit/ui/page';
 import { Skeleton } from '@kit/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@kit/ui/tabs';
@@ -78,7 +86,9 @@ import {
   getLeadStatusesService,
   updateLeadService,
 } from '~/services/leads.service';
+import { getIndustriesService } from '~/services/industries.service';
 
+import { EntityActivityLogs } from '../../_components/entity-activity-logs';
 import { DeleteEntityDialog } from '../../_components/delete-entity-dialog';
 import {
   EntityDocuments,
@@ -96,6 +106,25 @@ import EditLeadDialog from '../components/edit-lead-dialog';
 import { LeadAssignees } from '../components/lead-assignees';
 import { LogCallDialog } from '../components/log-call-dialog';
 import { CardWidgetContainer } from '@kit/ui/card-widget-container';
+
+const COMPANY_SIZE_OPTIONS = [
+  { value: 'startup', label: 'Startup (1-10)' },
+  { value: 'small', label: 'Small (11-50)' },
+  { value: 'medium', label: 'Medium (51-500)' },
+  { value: 'large', label: 'Large (501-5000)' },
+  { value: 'enterprise', label: 'Enterprise (5000+)' },
+];
+
+type LeadInlineEditableField =
+  | 'company_name'
+  | 'company_website'
+  | 'email'
+  | 'alt_email'
+  | 'phone_number'
+  | 'mobile_number'
+  | 'location'
+  | 'timezone'
+  | 'linkedin_url';
 
 function LeadDetailsSkeleton() {
   return (
@@ -172,7 +201,7 @@ export default function LeadDetailsPage() {
   const router = useRouter();
   const params = useParams();
   const { currentWorkspace: workspace, canAccess } = useRBAC();
-  const { formatDate, formatDateTime } = useLocalization();
+  const { formatDate } = useLocalization();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [statusModalOpen, setStatusModalOpen] = useState(false);
@@ -180,7 +209,8 @@ export default function LeadDetailsPage() {
   const [isLogCallDialogOpen, setIsLogCallDialogOpen] = useState(false);
   const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [openAccordion, setOpenAccordion] = useState<string>('');
+  const [openAccordions, setOpenAccordions] = useState<string[]>(['company', 'contact']);
+  const [isEditingCompanySize, setIsEditingCompanySize] = useState(false);
 
   const queryClient = useQueryClient();
 
@@ -195,7 +225,7 @@ export default function LeadDetailsPage() {
       const res = await getLeadAssignees(leadId);
       return res?.data ?? [];
     },
-    enabled: !!leadId,
+    enabled: !!leadId && isAssignModalOpen,
   });
   const pageAssignMutation = useMutation({
     mutationFn: (userId: string) =>
@@ -227,7 +257,13 @@ export default function LeadDetailsPage() {
   const { data: coreEmailAccounts = [] } = useQuery({
     queryKey: ['core-email-accounts', workspace?.id],
     queryFn: () => getCoreEmailAccountsService(workspace!.id),
-    enabled: canManageEmail && !!workspace?.id,
+    enabled: canManageEmail && !!workspace?.id && !!lead,
+  });
+
+  const { data: industries = [] } = useQuery({
+    queryKey: ['industries', workspace?.id],
+    queryFn: () => getIndustriesService(workspace?.id || ''),
+    enabled: !!workspace?.id && !!lead,
   });
 
   const { data: user } = useUser();
@@ -247,7 +283,7 @@ export default function LeadDetailsPage() {
       if (!workspace?.id) return Promise.resolve([]);
       return getLeadStatusesService({ workspaceId: workspace.id });
     },
-    enabled: !!workspace?.id,
+    enabled: !!workspace?.id && !!lead,
   });
 
   const scoringResult = useMemo(() => {
@@ -271,14 +307,15 @@ export default function LeadDetailsPage() {
   const { canView } = useFieldPermissions({
     entityType: 'leads',
     workspaceId: workspace?.id,
-    enabled: !!workspace?.id,
+    enabled: !!workspace?.id && !!lead,
   });
 
   const { fields = [] } = useDynamicColumns({
     entityType: 'leads',
     workspaceId: workspace?.id,
     userId: user?.id,
-    enabled: !!workspace?.id,
+    enabled: !!workspace?.id && !!lead,
+    staleTime: 5 * 60 * 1000,
   });
 
   const customFieldsToShow = useMemo(() => {
@@ -293,6 +330,87 @@ export default function LeadDetailsPage() {
         leadCustom[f.field_key] !== '',
     );
   }, [fields, canView, lead]);
+
+  const leadUpdateMutation = useMutation({
+    mutationFn: async (params: {
+      field: LeadInlineEditableField | 'industry' | 'company_size';
+      value: string | null;
+    }) => {
+      if (!lead) {
+        throw new Error('Lead is not available for updates');
+      }
+
+      const payload: Record<string, any> = {
+        first_name: lead.first_name,
+        last_name: lead.last_name,
+        email: lead.email,
+        alt_email: lead.alt_email,
+        phone_number: lead.phone_number,
+        mobile_number: lead.mobile_number,
+        linkedin_url: lead.linkedin_url,
+        company_name: lead.company_name,
+        company_website: lead.company_website,
+        company_linkedin_url: lead.company_linkedin_url,
+        job_title: lead.job_title,
+        department: lead.department,
+        industry_id: lead.industry_id ?? lead.industry?.id,
+        company_size: lead.company_size,
+        annual_revenue: lead.annual_revenue,
+        location: lead.location,
+        timezone: lead.timezone,
+        status_id: lead.status_id,
+        source_id: lead.source_id,
+        trigger: lead.trigger,
+        lead_score: lead.lead_score,
+        owner_id: lead.owner_id,
+        notes: lead.notes,
+        tags: lead.tags,
+        custom_fields: lead.custom_fields,
+      };
+
+      payload[params.field] = params.value;
+      if (params.field === 'industry') {
+        const matchingIndustry = industries.find(
+          (industry: { id: string; industry_name: string }) =>
+            industry.industry_name.toLowerCase() ===
+            (params.value || '').toLowerCase(),
+        );
+
+        payload.industry_id = matchingIndustry?.id || null;
+        delete payload.industry;
+      }
+
+      return updateLeadService(leadId, payload);
+    },
+    onSuccess: async () => {
+      toast.success('Lead updated successfully');
+      await refetch();
+    },
+    onError: (error: unknown) => {
+      const message =
+        error instanceof Error ? error.message : 'Failed to update lead';
+      toast.error(message);
+    },
+  });
+
+  const commitLeadField = async (
+    field: LeadInlineEditableField | 'industry' | 'company_size',
+    value: string,
+  ) => {
+    await leadUpdateMutation.mutateAsync({
+      field,
+      value: value.trim() || null,
+    });
+  };
+  const currentStatus = useMemo(() => {
+    if (!lead) return null;
+    return (
+      lead.status ||
+      statuses.find(
+        (s: any) => s.id === lead.status_id || s.id === lead.status?.id,
+      )
+    );
+  }, [lead, statuses]);
 
   if (!workspace) {
     // Workspace context still hydrating; show skeleton, same as isLoading.
@@ -309,6 +427,9 @@ export default function LeadDetailsPage() {
       await updateLeadService(leadId, { status_id: newStatusId });
       toast.success('Lead status updated successfully');
       setStatusModalOpen(false);
+      queryClient.invalidateQueries({ queryKey: ['lead', leadId] });
+      queryClient.invalidateQueries({ queryKey: ['leads'] });
+      queryClient.invalidateQueries({ queryKey: ['leads-kanban'] });
       await refetch();
     } catch (err: any) {
       console.error('Status update error:', err);
@@ -323,8 +444,15 @@ export default function LeadDetailsPage() {
   };
 
   const handleConvertSuccess = () => {
-    refetch(); // usage of refetch() implies we stay on page, but converted lead might be locked or different view?
-    // For now, refreshing data is fine.
+    // Conversion can create a contact, account, and opportunity. Mark every
+    // affected list stale so navigating to it never displays the 60-second
+    // React Query cache from before the conversion.
+    queryClient.invalidateQueries({ queryKey: ['contacts'] });
+    queryClient.invalidateQueries({ queryKey: ['accounts'] });
+    queryClient.invalidateQueries({ queryKey: ['opportunities'] });
+    queryClient.invalidateQueries({ queryKey: ['leads'] });
+    queryClient.invalidateQueries({ queryKey: ['leads-kanban'] });
+    refetch();
   };
 
   if (isLoading) {
@@ -353,7 +481,7 @@ export default function LeadDetailsPage() {
   }
 
   const fullName = `${lead.first_name}${lead.last_name ? ` ${lead.last_name}` : ''}`;
-  const statusColor = lead.status?.color || '#3B82F6';
+  const statusColor = currentStatus?.color || lead.status?.color || '#3B82F6';
   const sourceColor = lead.source?.color || '#6B7280';
 
   const EditableField = ({
@@ -379,26 +507,20 @@ export default function LeadDetailsPage() {
 
   return (
     <ModuleGuard module="leads">
-      <div className="flex flex-wrap items-start gap-2 pt-4 pb-2 sm:flex-nowrap sm:items-center sm:justify-between">
+      <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap sm:justify-between">
         <div className="flex items-center gap-2">
           <Button
             variant="ghost"
-            size="sm"
             asChild
-            className="border-leadgaze-border border p-0"
+            className="w-6 h-6 border-leadgaze-border border p-0"
           >
             <Link href="/home/sales/leads">
-              <ArrowLeft className="mr-2 ml-2 h-4 w-4" />
+              <ArrowLeft className="h-3 w-3" />
             </Link>
           </Button>
-          <div className="flex flex-col">
-            <h1 className="text-leadgaze-dark text-lg font-bold dark:text-white">
-              Lead details
-            </h1>
-            <p className="text-leadgaze-muted text-sm">
-              View and edit lead information
-            </p>
-          </div>
+          <h1 className="primary-heading-extra text-leadgaze-dark dark:text-white">
+            Lead Details
+          </h1>
         </div>
         <div className="flex items-center gap-2">
           {canEdit && (
@@ -407,12 +529,14 @@ export default function LeadDetailsPage() {
                 <TooltipTrigger asChild>
                   <Button
                     variant="outline"
-                    size="sm"
                     onClick={() => setStatusModalOpen(true)}
-                    className="gap-2"
+                    className="secondary-text-small-bold text-leadgaze-dark dark:text-white gap-1.5 px-2"
                     disabled={isSaving}
                   >
-                    <Flag className="h-4 w-4" />
+                    <Flag
+                      className="h-4 w-4 shrink-0 transition-colors"
+                      style={{ color: statusColor, fill: statusColor }}
+                    />
                     <span className="hidden sm:inline">Change Status</span>
                   </Button>
                 </TooltipTrigger>
@@ -429,9 +553,8 @@ export default function LeadDetailsPage() {
                 <TooltipTrigger asChild>
                   <Button
                     variant="outline"
-                    size="sm"
                     onClick={() => setIsLogCallDialogOpen(true)}
-                    className="gap-2"
+                    className="secondary-text-small-bold text-leadgaze-dark dark:text-white gap-1.5 px-2"
                     title="Log a call"
                   >
                     <Phone className="h-4 w-4" />
@@ -449,8 +572,7 @@ export default function LeadDetailsPage() {
                 <TooltipTrigger asChild>
                   <Button
                     variant="outline"
-                    size="sm"
-                    className={`gap-2 ${!lead.email ? 'opacity-50' : ''}`}
+                    className={`secondary-text-small-bold text-leadgaze-dark dark:text-white gap-1.5 px-2 ${!lead.email ? 'opacity-50' : ''}`}
                     disabled={!lead.email}
                     onClick={() => lead.email && setIsEmailDialogOpen(true)}
                     title={
@@ -476,9 +598,8 @@ export default function LeadDetailsPage() {
                 <TooltipTrigger asChild>
                   <Button
                     variant="outline"
-                    size="sm"
                     onClick={handleConvertLead}
-                    className="gap-2"
+                    className="secondary-text-small-bold text-leadgaze-dark dark:text-white gap-1.5 px-2"
                     disabled={isSaving}
                   >
                     <RefreshCw className="h-4 w-4" />
@@ -495,9 +616,8 @@ export default function LeadDetailsPage() {
           {canEdit && (
             <Button
               variant="default"
-              size="sm"
               onClick={() => setIsEditDialogOpen(true)}
-              className="gap-2"
+              className="secondary-text-small-bold bg-leadgaze-primary hover:bg-leadgaze-primary text-white gap-1.5 px-2"
             >
               <Edit2 className="h-4 w-4" />
               <span className="hidden sm:inline">Edit Profile</span>
@@ -506,7 +626,7 @@ export default function LeadDetailsPage() {
         </div>
       </div>
 
-      <PageBody className="pb-6 lg:overflow-hidden">
+      <PageBody className="pb-2 lg:overflow-hidden">
         <DeleteEntityDialog
           isOpen={deleteDialogOpen}
           onOpenChange={setDeleteDialogOpen}
@@ -515,12 +635,12 @@ export default function LeadDetailsPage() {
           entityName={`${lead.first_name} ${lead.last_name || ''}`}
           onSuccess={() => router.push('/home/sales/leads')}
         />
-        <div className="flex w-full flex-col gap-4 lg:min-h-0 lg:flex-1 lg:flex-row">
+        <div className="flex w-full flex-col gap-2 lg:min-h-0 lg:flex-1 lg:flex-row">
           {/* Main Content */}
           <div className="w-full space-y-4 lg:w-[65%] lg:overflow-y-auto">
             <DetailHeader
               avatar={
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-blue-400 to-blue-600 text-lg font-semibold text-white">
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-leadgaze-primary text-base font-semibold text-white">
                   {lead.first_name?.charAt(0)}
                   {lead.last_name?.charAt(0)}
                 </div>
@@ -564,11 +684,11 @@ export default function LeadDetailsPage() {
               right={
                 lead.lead_score !== null ? (
                   <div className="mx-auto flex flex-col items-center gap-1 lg:mx-0">
-                    <span className="primary-text-medium text-leadgaze-dark dark:text-white">
+                    <span className="text-xs font-medium text-leadgaze-dark dark:text-white">
                       Lead Score
                     </span>
 
-                    <div className="relative h-15 w-15 shrink-0">
+                    <div className="relative h-12 w-12 shrink-0">
                       <svg
                         className="h-full w-full -rotate-90 transform"
                         viewBox="0 0 100 100"
@@ -594,7 +714,7 @@ export default function LeadDetailsPage() {
                         />
                       </svg>
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <span className="primary-heading text-gray-900 dark:text-white">
+                        <span className="primary-text-medium text-leadgaze-dark dark:text-white">
                           {scoringResult?.totalScore ?? lead.lead_score}
                         </span>
                       </div>
@@ -606,9 +726,9 @@ export default function LeadDetailsPage() {
             {/* Tabs Section */}
             <Tabs
               defaultValue={canManageEmail ? 'email' : 'notes'}
-              className="space-y-4"
+              className="space-y-4 mb-2"
             >
-              <TabsList className="mb-2 h-auto w-full justify-start gap-3 overflow-x-auto rounded-none border-b bg-transparent p-0 [-ms-overflow-style:none] [scrollbar-width:none] sm:gap-6 [&::-webkit-scrollbar]:hidden">
+              <TabsList className="mb-0 h-auto w-full justify-start gap-3 overflow-x-auto rounded-none border-b bg-transparent p-0 [-ms-overflow-style:none] [scrollbar-width:none] sm:gap-6 [&::-webkit-scrollbar]:hidden">
                 {canManageEmail && (
                   <TabsTrigger
                     value="email"
@@ -726,51 +846,18 @@ export default function LeadDetailsPage() {
               </TabsContent>
 
               <TabsContent value="activity">
-                <CardWidgetContainer
-                  title="Activity"
-                  hideHeaderBorder={true}
-                  icon={<Clock className="text-leadgaze-dark h-5 w-5 dark:text-white" />}>
-                  <CardContent className="px-6 py-3">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3 dark:bg-slate-900">
-                        <div className="h-2 w-2 rounded-full bg-green-500" />
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm font-medium text-gray-900 dark:text-white">
-                            Lead Created
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            {formatDate(lead.created_at)}
-                          </p>
-                        </div>
-                      </div>
-                      {lead.updated_at &&
-                        lead.updated_at !== lead.created_at && (
-                          <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3 dark:bg-slate-900">
-                            <div className="h-2 w-2 rounded-full bg-blue-500" />
-                            <div className="min-w-0 flex-1">
-                              <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                Lead Updated
-                              </p>
-                              <p className="text-xs text-gray-500">
-                                {formatDate(lead.updated_at)}
-                              </p>
-                            </div>
-                          </div>
-                        )}
-                    </div>
-                  </CardContent>
-                </CardWidgetContainer>
+                <EntityActivityLogs entityType="lead" entityId={leadId} />
               </TabsContent>
             </Tabs>
 
             {/* Danger Zone */}
             {canAccess('leads', 'delete') && (
               <Card className="border-destructive/50 hidden border-solid lg:block">
-                <CardContent>
-                  <div className="mt-6 flex flex-col items-center justify-between md:flex-row">
-                    <div className="mb-2 space-y-1">
-                      <p className="font-medium dark:text-white">Delete Lead</p>
-                      <p className="text-muted-foreground text-sm">
+                <CardContent className="p-2">
+                  <div className="flex flex-col items-center justify-between md:flex-row">
+                    <div className="mb-0 space-y-1">
+                      <p className="primary-text-medium dark:text-white">Delete Lead</p>
+                      <p className="text-muted-foreground secondary-text-small">
                         Once you delete a lead, there is no going back. Please
                         be certain.
                       </p>
@@ -783,6 +870,7 @@ export default function LeadDetailsPage() {
                               variant="destructive"
                               disabled={!canAccess('leads', 'delete')}
                               onClick={() => setDeleteDialogOpen(true)}
+                              className="secondary-text-small-bold"
                             >
                               <Trash2 className="mr-2 h-4 w-4" />
                               Delete Lead
@@ -806,98 +894,151 @@ export default function LeadDetailsPage() {
           <div className="w-full space-y-4 lg:w-[35%] lg:overflow-y-auto">
             {/* Accordion Sections */}
             <Accordion
-              type="single"
-              collapsible
+              type="multiple"
               className="space-y-2"
-              value={openAccordion}
-              onValueChange={setOpenAccordion}
+              value={openAccordions}
+              onValueChange={setOpenAccordions}
             >
               {/* Company */}
               <AccordionItem
                 value="company"
-                className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
+                className="overflow-hidden border bg-white dark:bg-zinc-900"
               >
-                <AccordionTrigger className="px-4 py-3 hover:no-underline">
-                  <span className="primary-heading text-leadgaze-dark flex items-center gap-2 dark:text-white">
+                <AccordionTrigger className="px-2 pb-2 border-b border-b-accordion hover:no-underline py-3">
+                  <span className="primary-text-big-regular text-leadgaze-dark flex items-center gap-2 dark:text-white">
                     <Building2 className="text-leadgaze-dark h-5 w-5 dark:text-white" />
                     Company Details
                   </span>
                 </AccordionTrigger>
-                <AccordionContent className="px-4 pb-4">
+                <AccordionContent className="px-2 pb-2">
                   <DetailInfoList>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <Building2 className="text-muted-foreground h-5 w-5 shrink-0" />
+                        <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
+                          Company Name
+                        </span>
+                      </div>
 
-                    <DetailInfoRow
-                      icon={<Building2 className="h-5 w-5" />}
-                      label="Company Name"
-                      value={lead.company_name || '-'}
-                    />
+                      <div className="min-w-0 flex-1 text-right">
+                        <InlineEditableValue
+                          value={lead.company_name || ''}
+                          disabled={!canEdit}
+                          placeholder="-"
+                          className="justify-end"
+                          displayClassName="primary-text-regular text-leadgaze-dark dark:text-white"
+                          inputClassName="text-right"
+                          onCommit={async (nextValue) => {
+                            await commitLeadField('company_name', nextValue);
+                          }}
+                        />
+                      </div>
+                    </div>
 
-                    {/* {lead.job_title && (
-                      <DetailInfoRow
-                        icon={<Briefcase className="h-4 w-4" />}
-                        label="Job Title"
-                        value={lead.job_title}
-                      />
-                    )} */}
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <Factory className="text-muted-foreground h-5 w-5 shrink-0" />
+                        <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
+                          Industry
+                        </span>
+                      </div>
 
-                    <DetailInfoRow
-                      icon={<Factory className="h-5 w-5" />}
-                      label="Industry"
-                      value={lead?.industry?.industry_name ?? '-'}
-                    />
+                      <div className="min-w-0 flex-1 text-right">
+                        <InlineEditableValue
+                          value={lead?.industry?.industry_name ?? ''}
+                          disabled={!canEdit}
+                          placeholder="-"
+                          className="justify-end"
+                          displayClassName="primary-text-regular text-leadgaze-dark dark:text-white"
+                          inputClassName="text-right"
+                          onCommit={async (nextValue) => {
+                            await commitLeadField('industry', nextValue);
+                          }}
+                        />
+                      </div>
+                    </div>
 
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <Users className="text-muted-foreground h-5 w-5 shrink-0" />
+                        <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
+                          Company Size
+                        </span>
+                      </div>
 
-                    <DetailInfoRow
-                      icon={<Users className="h-5 w-5" />}
-                      label="Company Size"
-                      value={lead?.company_size || '-'}
-                    />
-
-
-                    <DetailInfoRow
-                      icon={<Globe className="h-5 w-5" />}
-                      label="Website"
-                      value={
-                        lead.company_website ? <a
-                          href={lead.company_website}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:underline dark:text-blue-400"
-                        >
-                          {lead.company_website}
-                        </a> : '-'}
-                    />
-
-                    {/* {lead.company_linkedin_url && (
-                      <DetailInfoRow
-                        icon={<Linkedin className="h-5 w-5" />}
-                        label="LinkedIn"
-                        value={
-                          <a
-                            href={lead.company_linkedin_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-600 hover:underline dark:text-blue-400"
+                      <div className="min-w-0 flex-1 text-right">
+                        {isEditingCompanySize ? (
+                          <Select
+                            value={lead.company_size || ''}
+                            onValueChange={async (value) => {
+                              await commitLeadField(
+                                'company_size',
+                                value === '__clear__' ? '' : value,
+                              );
+                              setIsEditingCompanySize(false);
+                            }}
+                            open={isEditingCompanySize}
+                            onOpenChange={(open) => {
+                              if (!open) setIsEditingCompanySize(false);
+                            }}
+                            disabled={!canEdit}
                           >
-                            {lead.company_linkedin_url}
-                          </a>
-                        }
-                      />
-                    )} */}
-                    {/* {lead.department && (
-                      <DetailInfoRow
-                        icon={<FileText className="h-5 w-5" />}
-                        label="Department"
-                        value={lead.department}
-                      />
-                    )} */}
-                    {/* {lead.notes && (
-                      <DetailInfoRow
-                        icon={<FileText className="h-4 w-4" />}
-                        label="Notes"
-                        value={lead.notes}
-                      />
-                    )} */}
+                            <SelectTrigger className="ml-auto w-[220px] justify-end text-right">
+                              <SelectValue placeholder="Select company size" />
+                            </SelectTrigger>
+                            <SelectContent align="end">
+                              {COMPANY_SIZE_OPTIONS.map((size) => (
+                                <SelectItem key={size.value} value={size.value}>
+                                  {size.label}
+                                </SelectItem>
+                              ))}
+                              <SelectItem value="__clear__">Clear selection</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <button
+                            type="button"
+                            disabled={!canEdit}
+                            onClick={() => setIsEditingCompanySize(true)}
+                            className={cn(
+                              'group inline-flex w-full min-h-[34px] py-1 px-2 items-center justify-start rounded-[4px] text-left outline-none transition-colors',
+                              {
+                                'cursor-text': canEdit,
+                                'text-muted-foreground': !lead.company_size,
+                                'hover:bg-accent/20': canEdit,
+                              },
+                            )}
+                          >
+                            <span className="block w-full rounded-[4px] px-0 py-0 text-right text-sm text-gray-900 dark:text-white transition-colors group-hover:text-foreground">
+                              {COMPANY_SIZE_OPTIONS.find((size) => size.value === lead.company_size)?.label || '-'}
+                            </span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between gap-2 border-b border-b-accordion">
+                      <div className="flex items-center gap-2">
+                        <Globe className="text-muted-foreground h-5 w-5 shrink-0" />
+                        <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
+                          Website
+                        </span>
+                      </div>
+
+                      <div className="min-w-0 flex-1 text-right">
+                        <InlineEditableValue
+                          value={lead.company_website || ''}
+                          disabled={!canEdit}
+                          placeholder="-"
+                          className="justify-end"
+                          displayClassName="truncate text-sm text-blue-600 dark:text-blue-400"
+                          inputClassName="text-right"
+                          onCommit={async (nextValue) => {
+                            await commitLeadField('company_website', nextValue);
+                          }}
+                        />
+                      </div>
+                    </div>
                   </DetailInfoList>
                 </AccordionContent>
               </AccordionItem>
@@ -905,90 +1046,190 @@ export default function LeadDetailsPage() {
               {/* Contact */}
               <AccordionItem
                 value="contact"
-                className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
+                className="overflow-hidden border bg-white dark:bg-zinc-900"
               >
-                <AccordionTrigger className="px-4 py-3 hover:no-underline">
-                  <span className="primary-heading text-leadgaze-dark flex items-center gap-2">
+                <AccordionTrigger className="px-2 pb-2 border-b border-b-accordion hover:no-underline py-3">
+                  <span className="primary-text-big-regular text-leadgaze-dark flex items-center gap-2 dark:text-white">
                     <User className="text-leadgaze-dark h-5 w-5 dark:text-white" />
                     Contact Details
                   </span>
                 </AccordionTrigger>
-                <AccordionContent className="px-4 pb-4">
+                <AccordionContent className="px-2 pb-2">
                   <DetailInfoList>
+                    {canView('email') && (
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <Mail className="text-muted-foreground h-5 w-5 shrink-0" />
+                          <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
+                            Email
+                          </span>
+                        </div>
 
-                    <DetailInfoRow
-                      icon={<Mail className="h-5 w-5" />}
-                      label="Email"
-                      value={
-                        lead.email ? <a
-                          href={`mailto:${lead.email}`}
-                          className="text-blue-600 hover:underline dark:text-blue-400"
-                        >
-                          {lead.email}
-                        </a> : '-'
-                      }
-                    />
+                        <div className="min-w-0 flex-1 text-right">
+                          <InlineEditableValue
+                            value={lead.email || ''}
+                            disabled={!canEdit}
+                            placeholder="-"
+                            className="justify-end"
+                            displayClassName="truncate text-sm text-blue-600 dark:text-blue-400"
+                            inputClassName="text-right"
+                            onCommit={async (nextValue) => {
+                              await commitLeadField('email', nextValue);
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
 
-                    <DetailInfoRow
-                      icon={<Mail className="h-5 w-5" />}
-                      label="Alt Email"
-                      value={
-                        lead.alt_email ? <a
-                          href={`mailto:${lead.alt_email}`}
-                          className="text-blue-600 hover:underline dark:text-blue-400"
-                        >
-                          {lead.alt_email}
-                        </a> : '-'
-                      }
-                    />
+                    {canView('alt_email') && (
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <Mail className="text-muted-foreground h-5 w-5 shrink-0" />
+                          <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
+                            Alt Email
+                          </span>
+                        </div>
 
-                    <DetailInfoRow
-                      icon={<Phone className="h-5 w-5" />}
-                      label="Phone"
-                      value={
-                        lead.phone_number ? <a href={`tel:${lead.phone_number}`}>
-                          {lead.phone_number}
-                        </a> : '-'
-                      }
-                    />
+                        <div className="min-w-0 flex-1 text-right">
+                          <InlineEditableValue
+                            value={lead.alt_email || ''}
+                            disabled={!canEdit}
+                            placeholder="-"
+                            className="justify-end"
+                            displayClassName="truncate text-sm text-blue-600 dark:text-blue-400"
+                            inputClassName="text-right"
+                            onCommit={async (nextValue) => {
+                              await commitLeadField('alt_email', nextValue);
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
 
-                    <DetailInfoRow
-                      icon={<Phone className="h-5 w-5" />}
-                      label="Mobile"
-                      value={
-                        lead.mobile_number ? <a href={`tel:${lead.mobile_number}`}>
-                          {lead.mobile_number}
-                        </a> : '-'
-                      }
-                    />
+                    {canView('phone') && (
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <Phone className="text-muted-foreground h-5 w-5 shrink-0" />
+                          <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
+                            Phone
+                          </span>
+                        </div>
 
-                    <DetailInfoRow
-                      icon={<MapPin className="h-5 w-5" />}
-                      label="Location"
-                      value={lead.location || '-'}
-                    />
+                        <div className="min-w-0 flex-1 text-right">
+                          <InlineEditableValue
+                            value={lead.phone_number || ''}
+                            disabled={!canEdit}
+                            placeholder="-"
+                            className="justify-end"
+                            displayClassName="primary-text-regular text-leadgaze-dark dark:text-white"
+                            inputClassName="text-right"
+                            onCommit={async (nextValue) => {
+                              await commitLeadField('phone_number', nextValue);
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
 
-                    <DetailInfoRow
-                      icon={<Clock className="h-5 w-5" />}
-                      label="Timezone"
-                      value={lead.timezone || '-'}
-                    />
+                    {canView('mobile') && (
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <Phone className="text-muted-foreground h-5 w-5 shrink-0" />
+                          <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
+                            Mobile
+                          </span>
+                        </div>
 
-                    <DetailInfoRow
-                      icon={<Linkedin className="h-5 w-5" />}
-                      label="LinkedIn"
-                      value={
-                        lead.linkedin_url ? <a
-                          href={lead.linkedin_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:underline dark:text-blue-400"
-                        >
-                          {lead.linkedin_url}
-                        </a> : '-'
-                      }
-                    />
+                        <div className="min-w-0 flex-1 text-right">
+                          <InlineEditableValue
+                            value={lead.mobile_number || ''}
+                            disabled={!canEdit}
+                            placeholder="-"
+                            className="justify-end"
+                            displayClassName="primary-text-regular text-leadgaze-dark dark:text-white"
+                            inputClassName="text-right"
+                            onCommit={async (nextValue) => {
+                              await commitLeadField('mobile_number', nextValue);
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
 
+                    {canView('location') && (
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <MapPin className="text-muted-foreground h-5 w-5 shrink-0" />
+                          <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
+                            Location
+                          </span>
+                        </div>
+
+                        <div className="min-w-0 flex-1 text-right">
+                          <InlineEditableValue
+                            value={lead.location || ''}
+                            disabled={!canEdit}
+                            placeholder="-"
+                            className="justify-end"
+                            displayClassName="primary-text-regular text-leadgaze-dark dark:text-white"
+                            inputClassName="text-right"
+                            onCommit={async (nextValue) => {
+                              await commitLeadField('location', nextValue);
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {canView('timezone') && (
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <Clock className="text-muted-foreground h-5 w-5 shrink-0" />
+                          <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
+                            Timezone
+                          </span>
+                        </div>
+
+                        <div className="min-w-0 flex-1 text-right">
+                          <InlineEditableValue
+                            value={lead.timezone || ''}
+                            disabled={!canEdit}
+                            placeholder="-"
+                            className="justify-end"
+                            displayClassName="primary-text-regular text-leadgaze-dark dark:text-white"
+                            inputClassName="text-right"
+                            onCommit={async (nextValue) => {
+                              await commitLeadField('timezone', nextValue);
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {canView('linkedin') && (
+                      <div className="flex items-center justify-between gap-2 border-b border-b-accordion">
+                        <div className="flex items-center gap-2">
+                          <Linkedin className="text-muted-foreground h-5 w-5 shrink-0" />
+                          <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
+                            LinkedIn
+                          </span>
+                        </div>
+
+                        <div className="min-w-0 flex-1 text-right">
+                          <InlineEditableValue
+                            value={lead.linkedin_url || ''}
+                            disabled={!canEdit}
+                            placeholder="-"
+                            className="justify-end"
+                            displayClassName="truncate text-sm text-blue-600 dark:text-blue-400"
+                            inputClassName="text-right"
+                            onCommit={async (nextValue) => {
+                              await commitLeadField('linkedin_url', nextValue);
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
                   </DetailInfoList>
                 </AccordionContent>
               </AccordionItem>
@@ -997,20 +1238,19 @@ export default function LeadDetailsPage() {
               {workspace?.id && (
                 <AccordionItem
                   value="assignees"
-                  className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
+                  className="overflow-hidden border bg-white dark:bg-zinc-900"
                 >
                   <AccordionTrigger
                     hideChevron
-                    className="px-4 py-3 hover:no-underline"
+                    className="px-2 pb-2 border-b border-b-accordion hover:no-underline py-2"
                   >
                     <div className="flex w-full justify-between">
-                      <span className="primary-heading text-leadgaze-dark flex items-center gap-2">
+                      <span className="primary-text-big-regular text-leadgaze-dark flex items-center gap-2 dark:text-white">
                         <Users className="text-leadgaze-dark h-5 w-5 dark:text-white" />
                         Assigned Members
                       </span>
                       <Button
-                        size="sm"
-                        className="mr-3 ml-2 shrink-0 gap-2"
+                        className="bg-leadgaze-primary hover:bg-leadgaze-primary text-white secondary-text-small-bold gap-1.5 px-2 mr-2"
                         onPointerDown={(e) => e.stopPropagation()}
                         onClick={(e) => {
                           e.stopPropagation();
@@ -1021,14 +1261,14 @@ export default function LeadDetailsPage() {
                         Assign Member
                       </Button>
                     </div>
-                    <ChevronDown
-                      className={cn(
-                        'text-muted-foreground h-4 w-4 shrink-0 transition-transform duration-200',
-                        openAccordion === 'assignees' && 'rotate-180',
-                      )}
-                    />
+                      <ChevronDown
+                        className={cn(
+                          'h-4 w-4 shrink-0 text-gray-500 transition-transform duration-200 dark:text-gray-400',
+                          openAccordions.includes('assignees') && 'rotate-180',
+                        )}
+                      />
                   </AccordionTrigger>
-                  <AccordionContent className="px-4 pb-4">
+                  <AccordionContent className="px-0 pb-2">
                     <LeadAssignees
                       leadId={leadId}
                       workspaceId={workspace.id}
@@ -1042,15 +1282,15 @@ export default function LeadDetailsPage() {
               {lead.owner && (
                 <AccordionItem
                   value="owner"
-                  className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
+                  className="overflow-hidden border bg-white dark:bg-zinc-900"
                 >
-                  <AccordionTrigger className="px-4 py-3 hover:no-underline">
-                    <span className="primary-heading text-leadgaze-dark flex items-center gap-2">
-                      <User className="text-leadgaze-dark h-4 w-4 dark:text-white" />
+                  <AccordionTrigger className="px-2 pb-2 border-b border-b-accordion hover:no-underline py-3">
+                    <span className="primary-text-big-regular text-leadgaze-dark flex items-center gap-2 dark:text-white">
+                      <User className="text-leadgaze-dark h-5 w-5 dark:text-white" />
                       Lead Owner
                     </span>
                   </AccordionTrigger>
-                  <AccordionContent className="px-4 pb-4">
+                  <AccordionContent className="px-2 pb-2">
                     <div className="flex items-center gap-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-blue-400 to-blue-600 text-sm font-semibold text-white">
                         {lead.owner.name?.charAt(0) || 'U'}
@@ -1072,15 +1312,15 @@ export default function LeadDetailsPage() {
               {customFieldsToShow.length > 0 && (
                 <AccordionItem
                   value="additional"
-                  className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
+                  className="overflow-hidden border bg-white dark:bg-zinc-900"
                 >
-                  <AccordionTrigger className="px-4 py-3 hover:no-underline">
-                    <span className="primary-heading text-leadgaze-dark flex items-center gap-2">
+                  <AccordionTrigger className="px-2 pb-2 border-b border-b-accordion hover:no-underline py-3">
+                    <span className="primary-text-big-regular text-leadgaze-dark flex items-center gap-2 dark:text-white">
                       <FileText className="text-leadgaze-dark h-4 w-4 dark:text-white" />
                       Additional Data
                     </span>
                   </AccordionTrigger>
-                  <AccordionContent className="px-4 pb-4">
+                  <AccordionContent className="px-2 pb-2">
                     <DetailInfoList>
                       {customFieldsToShow.map((field) => {
                         const val = (lead.custom_fields as Record<string, unknown>)?.[field.field_key];
@@ -1098,14 +1338,14 @@ export default function LeadDetailsPage() {
               )}
 
               {/* Details / Metadata */}
-              {/* <AccordionItem value="details" className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900">
+              {/* <AccordionItem value="details" className="overflow-hidden border bg-white dark:bg-zinc-900">
                 <AccordionTrigger className="hover:no-underline px-4 py-3">
-                  <span className="primary-heading text-leadgaze-dark flex items-center gap-2">
+                  <span className="primary-text-big-regular text-leadgaze-dark flex items-center gap-2 dark:text-white">
                     <Clock className="text-leadgaze-dark h-4 w-4 dark:text-white" />
                     Details
                   </span>
                 </AccordionTrigger>
-                <AccordionContent className="px-4 pb-4">
+                <AccordionContent className="px-2 pb-2">
                   <div className="space-y-3">
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">
@@ -1143,11 +1383,11 @@ export default function LeadDetailsPage() {
           <div className="w-full lg:hidden">
             {canAccess('leads', 'delete') && (
               <Card className="border-destructive/50 border-solid">
-                <CardContent>
-                  <div className="mt-6 flex flex-col items-center justify-between md:flex-row">
-                    <div className="mb-2 space-y-1">
-                      <p className="font-medium dark:text-white">Delete Lead</p>
-                      <p className="text-muted-foreground text-sm">
+                <CardContent className="p-2">
+                  <div className="flex flex-col items-center justify-between md:flex-row">
+                    <div className="mb-0 space-y-1">
+                      <p className="primary-text-medium dark:text-white">Delete Lead</p>
+                      <p className="text-muted-foreground secondary-text-small">
                         Once you delete a lead, there is no going back. Please
                         be certain.
                       </p>
@@ -1160,6 +1400,7 @@ export default function LeadDetailsPage() {
                               variant="destructive"
                               disabled={!canAccess('leads', 'delete')}
                               onClick={() => setDeleteDialogOpen(true)}
+                              className="secondary-text-small-bold"
                             >
                               <Trash2 className="mr-2 h-4 w-4" />
                               Delete Lead
@@ -1213,7 +1454,12 @@ export default function LeadDetailsPage() {
         <ChangeStatusDialog
           open={statusModalOpen}
           onOpenChange={setStatusModalOpen}
-          onSuccess={() => refetch()}
+          onSuccess={() => {
+            queryClient.invalidateQueries({ queryKey: ['lead', leadId] });
+            queryClient.invalidateQueries({ queryKey: ['leads'] });
+            queryClient.invalidateQueries({ queryKey: ['leads-kanban'] });
+            refetch();
+          }}
           lead={lead}
           statuses={statuses}
         />

@@ -43,53 +43,32 @@ const DEFAULT_PREFERENCES: WorkspaceLocalizationPreferences = {
 export function LocalizationProvider({
   children,
 }: React.PropsWithChildren) {
-  const { currentWorkspace } = useRBAC();
-  const supabase = useSupabase();
+  const { currentWorkspace, isInitialized } = useRBAC();
 
-  // Fetch workspace preferences (including enabled currencies)
   const { data: preferences, isLoading } = useQuery({
     queryKey: ['workspace-preferences', currentWorkspace?.id],
     queryFn: async () => {
       if (!currentWorkspace?.id) return DEFAULT_PREFERENCES;
-
-      // Fetch workspace preferences
-      const { data: prefData, error: prefError } = await supabase
-        .schema('core')
-        .from('workspace_preferences')
-        .select('timezone, date_format, time_format, default_currency')
-        .eq('workspace_id', currentWorkspace.id)
-        .single();
-
-      if (prefError || !prefData) return DEFAULT_PREFERENCES;
-
-      // Fetch enabled currencies for this workspace
-      const { data: currenciesData, error: currenciesError } = await supabase
-        .schema('core')
-        .from('workspace_currencies')
-        .select('currency_code')
-        .eq('workspace_id', currentWorkspace.id)
-        .eq('is_active', true)
-        .order('is_default', { ascending: false })
-        .order('currency_code', { ascending: true });
-
-      if (currenciesError) {
-        console.error('Failed to fetch workspace currencies:', currenciesError);
-        // Continue with default currencies if fetch fails
+      
+      // Use cached workspace-init data if available
+      const cachedData = typeof window !== 'undefined' 
+        ? JSON.parse(sessionStorage.getItem(`workspace-${currentWorkspace.id}-init`) || '{}') 
+        : null;
+        
+      if (cachedData?.current_workspace?.localization) {
+        return {
+          timezone: cachedData.current_workspace.localization.timezone,
+          dateFormat: cachedData.current_workspace.localization.date_format,
+          timeFormat: cachedData.current_workspace.localization.time_format,
+          defaultCurrency: cachedData.current_workspace.localization.default_currency,
+          enabledCurrencies: cachedData.current_workspace.localization.enabled_currencies || ['USD'],
+        } as WorkspaceLocalizationPreferences;
       }
-
-      const enabledCurrencies = currenciesData?.map((c) => c.currency_code) || ['USD'];
-
-      return {
-        timezone: prefData.timezone,
-        dateFormat: prefData.date_format,
-        timeFormat: prefData.time_format as '12h' | '24h',
-        defaultCurrency: prefData.default_currency,
-        enabledCurrencies,
-      } satisfies WorkspaceLocalizationPreferences;
+      
+      return DEFAULT_PREFERENCES;
     },
-    enabled: !!currentWorkspace?.id,
-    staleTime: 5 * 60 * 1000, // 5 minutes — preferences rarely change
-    gcTime: 30 * 60 * 1000, // 30 minutes
+    enabled: !!currentWorkspace?.id && isInitialized,
+    staleTime: 5 * 60 * 1000,
   });
 
   const resolvedPreferences = preferences || DEFAULT_PREFERENCES;

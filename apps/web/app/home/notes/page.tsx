@@ -23,6 +23,7 @@ import { toast } from 'sonner';
 
 import { useLocalization } from '@kit/shared/localization';
 import { Badge } from '@kit/ui/badge';
+import { AddColumnModal } from '@kit/ui/add-column-modal';
 import { Button } from '@kit/ui/button';
 import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
 import CustomTableContainer from '@kit/ui/custom-table-container';
@@ -31,6 +32,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from '@kit/ui/dialog';
 import {
   DropdownMenu,
@@ -66,6 +68,8 @@ import { useColumnResize } from '@kit/ui/use-column-resize';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
 import { useDateRangeFilter } from '@kit/ui/use-date-range-filter';
 import { useTableSort } from '@kit/ui/use-table-sort';
+
+import { CustomDeleteDialog } from '@kit/ui/custom-delete-dialog';
 
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { useDebounce } from '~/lib/hooks/use-debounce';
@@ -111,8 +115,16 @@ function NotesPageSkeleton() {
                   <TableHead>Associate With</TableHead>
                   <TableHead>Note Content</TableHead>
                   <TableHead>Author</TableHead>
-                  <TableHead className="sticky right-0 text-right">
-                    Actions
+                  <TableHead className="sticky-right-header z-10 w-12 px-1 text-center">
+                    <Button
+                      type="button"
+                      size="icon"
+                      className="mx-auto flex h-5 w-5 items-center justify-center rounded-full bg-leadgaze-primary text-white hover:bg-leadgaze-primary/90 border-0 p-0 shadow-xs"
+                      onClick={() => setAddColumnModalOpen(true)}
+                      title="Toggle Columns"
+                    >
+                      <Plus className="h-3.5 w-3.5 stroke-[2.5]" />
+                    </Button>
                   </TableHead>
                 </TableRow>
               </TableHeader>
@@ -134,6 +146,7 @@ function NotesPageSkeleton() {
 }
 
 export default function NotesPage() {
+  const [addColumnModalOpen, setAddColumnModalOpen] = useState(false);
   const { currentWorkspace: workspace } = useRBAC();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
@@ -169,6 +182,10 @@ export default function NotesPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingNote, setEditingNote] = useState<Note | null>(null);
   const [editContent, setEditContent] = useState('');
+
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [noteToDelete, setNoteToDelete] = useState<string | null>(null);
+
   const { formatDate } = useLocalization();
 
   const noteColumns = useMemo(
@@ -201,10 +218,12 @@ export default function NotesPage() {
 
   const { getHeaderProps, getResizeHandleProps } = useColumnResize('notes');
 
-  const { data: notes = [], isLoading } = useQuery({
+  const { data: notesResponse, isLoading } = useQuery({
     queryKey: [
       'notes',
       workspace?.id,
+      currentPage,
+      pageSize,
       statusFilter,
       categoryFilter,
       debouncedSearchTerm,
@@ -213,13 +232,15 @@ export default function NotesPage() {
       computedUpdatedOnDates,
     ],
     queryFn: async () => {
-      if (!workspace?.id) return [];
+      if (!workspace?.id) return { data: [], total: 0 };
       const res = await getNotesService(
         workspace.id,
         categoryFilter === 'all' ? undefined : categoryFilter,
         undefined,
         statusFilter,
         {
+          page: currentPage,
+          limit: pageSize,
           searchTerm: debouncedSearchTerm || undefined,
           createdAtFrom: computedCreatedOnDates?.from,
           createdAtTo: computedCreatedOnDates?.to,
@@ -233,6 +254,16 @@ export default function NotesPage() {
     },
     enabled: !!workspace?.id,
   });
+
+  const notes = useMemo(() => {
+    if (Array.isArray(notesResponse)) return notesResponse;
+    return notesResponse?.data || [];
+  }, [notesResponse]);
+
+  const totalCount = useMemo(() => {
+    if (Array.isArray(notesResponse)) return notesResponse.length;
+    return notesResponse?.total ?? notes.length;
+  }, [notesResponse, notes]);
 
   const { data: leads = [] } = useQuery({
     queryKey: ['leads', workspace?.id],
@@ -292,7 +323,7 @@ export default function NotesPage() {
       setNewNoteContent('');
       setEntityType('lead');
       setEntityId('');
-      queryClient.invalidateQueries({ queryKey: ['notes', workspace?.id] });
+      queryClient.invalidateQueries({ queryKey: ['notes'] });
     },
     onError: () => toast.error('Failed to add note'),
   });
@@ -315,7 +346,7 @@ export default function NotesPage() {
       }
       setIsEditDialogOpen(false);
       setEditingNote(null);
-      queryClient.invalidateQueries({ queryKey: ['notes', workspace?.id] });
+      queryClient.invalidateQueries({ queryKey: ['notes'] });
     },
     onError: () => toast.error('Failed to update note'),
   });
@@ -324,31 +355,29 @@ export default function NotesPage() {
     mutationFn: deleteNoteService,
     onSuccess: () => {
       toast.success('Note deleted');
-      queryClient.invalidateQueries({ queryKey: ['notes', workspace?.id] });
+      queryClient.invalidateQueries({ queryKey: ['notes'] });
+      setIsDeleteDialogOpen(false);
+      setNoteToDelete(null);
     },
-    onError: () => toast.error('Failed to delete note'),
+    onError: () => {
+      toast.error('Failed to delete note');
+      setIsDeleteDialogOpen(false);
+      setNoteToDelete(null);
+    },
   });
 
   useEffect(() => {
     setCurrentPage(1);
   }, [debouncedSearchTerm, categoryFilter, selectedCreatedByIds, pageSize, createdOnRange, updatedOnRange]);
 
-  const filteredNotes = useMemo(() => {
-    return notes;
-  }, [notes]);
-
   const { sortColumn, sortDirection, toggleSort, sortedData } =
-    useTableSort<Note>('notes', filteredNotes, {
+    useTableSort<Note>('notes', notes, {
       onSortChange: () => setCurrentPage(1),
     });
 
-  const paginatedNotes = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage;
-    return sortedData.slice(start, start + itemsPerPage);
-  }, [sortedData, currentPage, itemsPerPage]);
+  const paginatedNotes = sortedData;
 
-  const totalPages = Math.ceil(filteredNotes.length / itemsPerPage);
-  const totalCount = filteredNotes.length;
+  const totalPages = Math.ceil(totalCount / itemsPerPage) || 1;
 
   const handleEdit = (note: Note) => {
     setEditingNote(note);
@@ -371,9 +400,8 @@ export default function NotesPage() {
   };
 
   const handleDelete = (id: string) => {
-    if (confirm('Are you sure you want to delete this note?')) {
-      deleteMutation.mutate(id);
-    }
+    setNoteToDelete(id);
+    setIsDeleteDialogOpen(true);
   };
 
   const getCategoryBadge = (type: string) => {
@@ -507,19 +535,18 @@ export default function NotesPage() {
 
   return (
     <>
-      <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden">
+      <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden border-top-bottom-gray">
         <PageHeader
-          title={`Notes (${notes.length})`}
-          description="Capture and organize your important thoughts and information"
-        />
-      </div>
-
-      {/* Full-width search / filter / actions toolbar */}
-      <div className="w-full max-w-full min-w-0 shrink-0 border-b pt-2 pb-2">
-        <ListToolBar
-          showSearch
-          searchPlaceholder="Search notes..."
-          searchValue={searchTerm}
+          title={`Notes`}          
+        >
+          <div className="p-[2px]">
+            <ListToolBar
+              align="right"
+              className="border-none bg-transparent p-0"
+              showSearch
+              expandableSearch
+              searchPlaceholder="Search"
+              searchValue={searchTerm}
           onSearchChange={setSearchTerm}
           showFilter
           filterLabel="Show Filters"
@@ -562,6 +589,8 @@ export default function NotesPage() {
             />
           }
         />
+          </div>
+        </PageHeader>
       </div>
 
       <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden">
@@ -737,7 +766,17 @@ export default function NotesPage() {
                       />
                     </SortableTableHead>
                   )}
-                  <TableHead className="sticky-right-header">Actions</TableHead>
+                  <TableHead className="sticky-right-header z-10 w-12 px-1 text-center">
+                    <Button
+                      type="button"
+                      size="icon"
+                      className="mx-auto flex h-5 w-5 items-center justify-center rounded-full bg-leadgaze-primary text-white hover:bg-leadgaze-primary/90 border-0 p-0 shadow-xs"
+                      onClick={() => setAddColumnModalOpen(true)}
+                      title="Toggle Columns"
+                    >
+                      <Plus className="h-3.5 w-3.5 stroke-[2.5]" />
+                    </Button>
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -902,16 +941,25 @@ export default function NotesPage() {
             </Table>
           </CustomTableContainer>
         </div>
+      
+      <AddColumnModal
+        open={addColumnModalOpen}
+        onOpenChange={setAddColumnModalOpen}
+        columns={noteColumns}
+        visibility={visibility}
+        onToggleColumn={toggleVisibility}
+        onResetColumns={reset}
+      />
       </PageBody>
 
       {/* Create Dialog */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
         <DialogContent className="flex max-h-[90vh] max-w-[600px] flex-col p-0">
-          <DialogHeader className="border-b p-6 pb-4">
+          <DialogHeader>
             <DialogTitle>Add New Note</DialogTitle>
           </DialogHeader>
-          <div className="flex-1 space-y-4 overflow-y-auto px-6 py-4">
-            <div className="space-y-4">
+          <div className="flex-1 space-y-2 overflow-y-auto px-2">
+            <div className="space-y-2">
               <Label>Associate with</Label>
               <RadioGroup
                 value={entityType}
@@ -992,7 +1040,7 @@ export default function NotesPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
+            <div>
               <Label>Note Content</Label>
               <Textarea
                 placeholder="Enter note content..."
@@ -1002,7 +1050,7 @@ export default function NotesPage() {
               />
             </div>
           </div>
-          <div className="mt-auto flex justify-end gap-2 border-t p-6">
+          <DialogFooter>
             <Button
               variant="outline"
               onClick={() => setIsCreateDialogOpen(false)}
@@ -1021,17 +1069,17 @@ export default function NotesPage() {
               )}
               Save Note
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="flex max-h-[90vh] flex-col p-0">
-          <DialogHeader className="border-b p-6 pb-4">
+          <DialogHeader>
             <DialogTitle>Edit Note</DialogTitle>
           </DialogHeader>
-          <div className="flex-1 space-y-4 overflow-y-auto px-6 py-4">
+          <div className="flex-1 space-y-2 overflow-y-auto px-2">
             <Textarea
               placeholder="Enter note content..."
               value={editContent}
@@ -1039,7 +1087,7 @@ export default function NotesPage() {
               rows={6}
             />
           </div>
-          <div className="mt-auto flex justify-end gap-2 border-t p-6">
+          <DialogFooter>
             <Button
               variant="outline"
               onClick={() => setIsEditDialogOpen(false)}
@@ -1056,9 +1104,22 @@ export default function NotesPage() {
               )}
               Update Note
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
+      
+      <CustomDeleteDialog
+        isOpen={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        title="Delete Note"
+        description="Are you sure you want to delete this note? This action cannot be undone."
+        onConfirm={() => {
+          if (noteToDelete) {
+            deleteMutation.mutate(noteToDelete);
+          }
+        }}
+        isDeleting={deleteMutation.isPending}
+      />
     </>
   );
 }

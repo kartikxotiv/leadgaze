@@ -151,7 +151,7 @@ function ModuleSelectorPage() {
       currentWorkspace.owner_id === authUser.id,
   );
 
-  const { data, isLoading: isSubLoading } = useQuery<WorkspaceSubscriptionStatus>({
+  const { data, isLoading: isSubLoading, isError: isSubError } = useQuery<WorkspaceSubscriptionStatus>({
     queryKey: ['workspace-subscription', workspaceId],
     queryFn: () => getWorkspaceSubscriptionService(workspaceId),
     enabled: Boolean(workspaceId) && !isRBACLoading,
@@ -205,8 +205,15 @@ function ModuleSelectorPage() {
         return;
       }
 
-      if (isSubLoading || !data) return;
-      if (!data.is_subscription_valid && data.is_trial_expired) return;
+      if (isSubLoading) return;
+      if (!data || isSubError) {
+        setIsPageLoading(false);
+        return;
+      }
+      if (!data.is_subscription_valid && data.is_trial_expired) {
+        setIsPageLoading(false);
+        return;
+      }
 
       const savedModule =
         typeof window !== 'undefined'
@@ -267,8 +274,39 @@ function ModuleSelectorPage() {
   }, [enabledModules, workspaceId, queryClient]);
 
   // Loading
-  if (isLoading || !data || isPageLoading) {
+  if (isLoading || isPageLoading) {
     return <FullScreenLoader />;
+  }
+
+  // Prevent crashing if workspace is missing (WorkspaceCheckWrapper will redirect)
+  if (!workspaceId) {
+    return <FullScreenLoader />;
+  }
+
+  // Error state
+  if (isSubError || (!data && !isSubLoading)) {
+    return (
+      <div className="bg-background flex h-screen flex-col items-center justify-center">
+        <Card className="mx-4 w-full max-w-md text-center">
+          <CardContent className="flex flex-col items-center gap-5 p-10">
+            <div className="bg-destructive/10 flex h-14 w-14 items-center justify-center rounded-full">
+              <AlertTriangle className="text-destructive h-7 w-7" />
+            </div>
+            <div>
+              <h2 className="primary-heading text-foreground">
+                Loading Error
+              </h2>
+              <p className="primary-text-regular text-muted-foreground mt-2">
+                We couldn't load your workspace details. Please try again.
+              </p>
+            </div>
+            <Button onClick={() => window.location.reload()}>
+              Retry
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   // No active subscription
@@ -415,7 +453,7 @@ function ModuleSelectorPage() {
       {/* Module grid */}
       <div className="py-1">
         <div className="mb-1 flex items-center justify-between">
-          <h2 className="primary-heading text-foreground">Available Modules</h2>
+          <h2 className="primary-heading-extra text-leadgaze-dark dark:text-white">Available Modules</h2>
           <Button
             variant="ghost"
             size="sm"
@@ -506,7 +544,7 @@ function ModuleCard({
         )}
       />
 
-      <CardContent className="p-5">
+      <CardContent className="p-2">
         {/* Header */}
         <div className="flex items-start justify-between">
           <div
@@ -524,8 +562,8 @@ function ModuleCard({
         </div>
 
         {/* Module info */}
-        <div className="mt-4">
-          <h3 className="primary-heading text-foreground">{mod.module_name}</h3>
+        <div className="mt-2">
+          <h3 className="primary-heading text-leadgaze-dark dark:text-white">{mod.module_name}</h3>
           <p className="secondary-text-small text-muted-foreground mt-1">
             {meta.description}
           </p>
@@ -546,7 +584,7 @@ function ModuleCard({
         )}
 
         {/* Seat usage */}
-        <div className="mt-4 space-y-2">
+        <div className="mt-3 space-y-2">
           <div className="flex items-center justify-between">
             <span className="secondary-text-small text-muted-foreground">
               Seat usage
@@ -572,7 +610,7 @@ function ModuleCard({
       </CardContent>
 
       {/* Footer */}
-      <div className="border-border bg-muted/30 group-hover:bg-muted/50 flex items-center justify-between border-t px-5 py-3 transition-colors">
+      <div className="border-border bg-muted/30 group-hover:bg-muted/50 flex items-center justify-between border-t px-2 py-2 transition-colors">
         <span className="primary-text-medium text-primary">
           Open {meta.stat}
         </span>

@@ -10,7 +10,12 @@ import { PageHeaderActions } from '@kit/ui/page';
 import { ListToolBar } from '@kit/ui/list-toolbar';
 import { useDateRangeFilter } from '@kit/ui/use-date-range-filter';
 import { DownloadReportButton } from '@kit/ui/download-report-button';
-import { Users, User, Building, Target, Info } from 'lucide-react';
+import { Users, File, Building2, Target, Info } from 'lucide-react';
+
+import { convertFromUSD, findLatestRateToUsd } from '@kit/shared/currency';
+import type { ExchangeRateRecord } from '@kit/shared/currency';
+import { useSupabase } from '@kit/supabase/hooks/use-supabase';
+import { useLocalization } from '~/lib/localization/localization-provider';
 
 import { DashboardDemo } from '~/home/_components/dashboard-demo';
 import { ModuleSwitcher } from '~/home/_components/module-switcher';
@@ -27,6 +32,7 @@ import {
   addBrandedPage,
   getIconAsBase64,
   generateDonutChartBase64,
+  formatPdfCurrency,
   PDF_BRAND,
 } from '~/lib/pdf/pdf-report-utils';
 
@@ -36,6 +42,8 @@ export default function HomePage() {
   const { dateRange, setDateRange, computedDates } = useDateRangeFilter();
   const [isGenerating, setIsGenerating] = useState(false);
   const queryClient = useQueryClient();
+  const supabase = useSupabase();
+  const { formatCurrency } = useLocalization();
 
   const handleDownload = async () => {
     if (!workspaceId) return;
@@ -54,6 +62,40 @@ export default function HomePage() {
         return;
       }
 
+      // Use workspace currency & exchange rates from initialized context
+      const currenciesData = [{
+        currency_code: currentWorkspace?.localization?.default_currency || 'USD',
+        is_default: true
+      }];
+      
+      const exchangeRates = currentWorkspace?.localization?.exchange_rates || [];
+
+      const workspaceCurrency = currenciesData?.find((c: any) => c.is_default)?.currency_code || 'USD';
+      const pipelineValueUsd = metrics?.opportunities?.totalAmount ?? 0;
+      const rate = findLatestRateToUsd((exchangeRates || []) as ExchangeRateRecord[], workspaceCurrency)?.exchange_rate || 1;
+      const convertedPipelineValue = convertFromUSD(pipelineValueUsd, rate);
+      const formattedPipelineValue = formatPdfCurrency(convertedPipelineValue, workspaceCurrency);
+
+      // Fetch workspace company profile (company name & logo from companies table)
+      const { data: workspaceCompanyData } = await supabase
+        .from('workspaces')
+        .select(`
+          id,
+          name,
+          company_id,
+          companies (
+            id,
+            name,
+            logo_url
+          )
+        `)
+        .eq('id', workspaceId)
+        .single();
+
+      const companyObj = (workspaceCompanyData as any)?.companies;
+      const companyName = companyObj?.name || workspaceCompanyData?.name || currentWorkspace?.name || 'Organization';
+      const companyLogoUrl = companyObj?.logo_url || (currentWorkspace as any)?.company_logo_url || null;
+
       const getPortalName = (key?: string | null) => {
         switch (key) {
           case 'sales':
@@ -67,7 +109,6 @@ export default function HomePage() {
       };
 
       const portalName = getPortalName(currentWorkspace?.currentProductKey);
-      const orgName = currentWorkspace?.name ?? 'Organization';
 
       // Build info line
       let infoLine = 'Timeframe: All Time';
@@ -82,10 +123,10 @@ export default function HomePage() {
       const graphBase64 = await loadImageAsBase64(graphImageUrl);
 
       // Create the branded report document
-      const { doc, startY, logoBase64 } = await createBrandedReport({
+      const { doc, startY, logoBase64, logoDimensions } = await createBrandedReport({
         org: {
-          name: orgName,
-          logoUrl: currentWorkspace?.company_logo_url,
+          name: companyName,
+          logoUrl: companyLogoUrl,
         },
         title: `${portalName} Dashboard Report`,
       });
@@ -104,8 +145,8 @@ export default function HomePage() {
       y = drawKeyMetrics(doc, y, [
         { value: metrics.leads.total, label: 'Total Leads', color: PDF_BRAND.primary, iconBase64: iconLeads },
         { value: metrics.contacts.total, label: 'Contacts', color: PDF_BRAND.accent, iconBase64: iconContacts },
-        { value: metrics.accounts.total, label: 'Accounts', color: [100, 107, 190], iconBase64: iconAccounts }, // Purple-ish
-        { value: metrics.opportunities.count, label: 'Pipeline Opportunities', color: PDF_BRAND.amber, iconBase64: iconOpp },
+        { value: metrics.accounts.total, label: 'Accounts', color: [100, 107, 190], iconBase64: iconAccounts },
+        { value: formattedPipelineValue, label: 'Pipeline Value', color: PDF_BRAND.amber, iconBase64: iconOpp },
       ]);
 
       // ── Overview Section ────────────────────────────────────────────
@@ -118,7 +159,7 @@ export default function HomePage() {
           ['Total Leads', metrics.leads.total.toString()],
           ['Contacts', metrics.contacts.total.toString()],
           ['Accounts', metrics.accounts.total.toString()],
-          ['Pipeline Opportunities', metrics.opportunities.count.toString()],
+          ['Pipeline Value', formattedPipelineValue],
         ],
         theme: 'grid',
         headStyles: {
@@ -217,7 +258,7 @@ export default function HomePage() {
         let tasksY: number;
         if (finalY2 > 220) {
           // Not enough room — start a new page
-          tasksY = await addBrandedPage(doc, { name: orgName, logoUrl: currentWorkspace?.company_logo_url }, `${portalName} Dashboard Report`, logoBase64);
+          tasksY = await addBrandedPage(doc, { name: companyName, logoUrl: companyLogoUrl }, `${portalName} Dashboard Report`, logoBase64, logoDimensions);
           tasksY = drawSectionHeading(doc, 'Upcoming Tasks', tasksY, PDF_BRAND.amber);
         } else {
           tasksY = drawSectionHeading(doc, 'Upcoming Tasks', finalY2 + 12, PDF_BRAND.amber);
@@ -246,9 +287,9 @@ export default function HomePage() {
       }
 
       // Finalize (adds footers to every page)
-      finalizeReport(doc, orgName);
+      finalizeReport(doc, companyName);
 
-      doc.save(`${orgName.replace(/\s+/g, '-')}-dashboard-report.pdf`);
+      doc.save(`${companyName.replace(/\s+/g, '-')}-dashboard-report.pdf`);
       toast.success('Report downloaded successfully');
     } catch (error) {
       console.error(error);
@@ -260,11 +301,14 @@ export default function HomePage() {
 
   return (
     <WorkspaceCheckWrapper>
-      <PageHeader title="Dashboard" description="Your SaaS at a glance">
+      <PageHeader title="Dashboard"
+      //  description="Your SaaS at a glance"
+       >
         <PageHeaderActions>
           <DownloadReportButton 
             onDownload={handleDownload} 
             isGenerating={isGenerating} 
+            text="Download Report"
           />
           <ListToolBar
             className="border-none bg-transparent shadow-none p-0"
@@ -288,12 +332,12 @@ export default function HomePage() {
         <DashboardDemo dateFilter={computedDates} dateRange={dateRange} />
       </PageBody>
 
-      {/* Hidden icons for PDF generation */}
+      {/* Hidden icons for PDF generation matching dashboard cards */}
       <div id="pdf-icons-cache" className="hidden" style={{ display: 'none' }}>
         <Info id="pdf-icon-info" color="#3953E7" size={24} />
-        <Users id="pdf-icon-leads" color="white" size={24} />
-        <User id="pdf-icon-contacts" color="white" size={24} />
-        <Building id="pdf-icon-accounts" color="white" size={24} />
+        <File id="pdf-icon-leads" color="white" size={24} />
+        <Users id="pdf-icon-contacts" color="white" size={24} />
+        <Building2 id="pdf-icon-accounts" color="white" size={24} />
         <Target id="pdf-icon-opportunities" color="white" size={24} />
       </div>
     </WorkspaceCheckWrapper>
