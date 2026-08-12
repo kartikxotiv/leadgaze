@@ -1,5 +1,6 @@
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
+import MEETING_INVITATION_TEMPLATE from '~/constants/email.templates/meeting-invitation.template';
 import MEETING_REMINDER_TEMPLATE from '~/constants/email.templates/meeting-reminder.template';
 import REMINDER_EMAIL_TEMPLATE from '~/constants/email.templates/reminder.template';
 import { transporter } from '~/utils/send-mail';
@@ -28,6 +29,20 @@ interface MeetingEmailData {
   location?: string;
   meetingLink?: string;
   intervalLabel: string;
+  workspaceId?: string;
+  recipientTz?: string;
+}
+
+interface MeetingInvitationEmailData {
+  to: string;
+  meetingTitle: string;
+  meetingDescription?: string;
+  startTime: string;
+  endTime: string;
+  location?: string;
+  meetingLink?: string;
+  hostName?: string;
+  hostEmail?: string;
   workspaceId?: string;
   recipientTz?: string;
 }
@@ -137,6 +152,50 @@ export class NotificationService {
     } catch (error) {
       console.error(
         '[NotificationService] Failed to send meeting email:',
+        error,
+      );
+      return false;
+    }
+  }
+
+  /**
+   * Send a meeting invitation email to external invitees
+   */
+  static async sendMeetingInvitationEmail(
+    data: MeetingInvitationEmailData,
+  ): Promise<boolean> {
+    try {
+      console.log('[NotificationService] Sending meeting invitation:', {
+        to: data.to,
+        title: data.meetingTitle,
+      });
+
+      await transporter.sendMail({
+        from: this.FROM_EMAIL,
+        to: data.to,
+        subject: `📅 You're invited: ${data.meetingTitle} - ${this.PRODUCT_NAME}`,
+        html: MEETING_INVITATION_TEMPLATE({
+          meetingTitle: data.meetingTitle,
+          meetingDescription: data.meetingDescription,
+          startTime: data.startTime,
+          endTime: data.endTime,
+          location: data.location,
+          meetingLink: data.meetingLink,
+          hostName: data.hostName,
+          hostEmail: data.hostEmail,
+          productName: this.PRODUCT_NAME,
+          recipientTz: data.recipientTz,
+        }),
+      });
+
+      console.log(
+        '[NotificationService] Meeting invitation sent successfully to:',
+        data.to,
+      );
+      return true;
+    } catch (error) {
+      console.error(
+        '[NotificationService] Failed to send meeting invitation email:',
         error,
       );
       return false;

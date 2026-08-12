@@ -1227,144 +1227,143 @@ export default function AccountDetailsPage() {
               </AccordionItem>
 
               {/* Opportunities */}
-              <AccordionItem
-                value="opportunities"
-                className="overflow-hidden border bg-white dark:bg-zinc-900"
-              >
-                <AccordionTrigger
-                  hideChevron
-                  className="px-2 pb-2 border-b border-b-accordion hover:no-underline py-2"
-                >
-                  <div className="flex w-full justify-between items-center">
-                    <span className="primary-text-big-regular text-leadgaze-dark flex items-center gap-2 dark:text-white">
-                      <Briefcase className="text-leadgaze-dark h-5 w-5 dark:text-white" />
-                      Opportunities
-                    </span>
-                    <Button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setIsOpportunityDialogOpen(true);
-                      }}
-                      className="bg-leadgaze-primary hover:bg-leadgaze-primary text-white secondary-text-small-bold gap-1.5 px-2 disabled:pointer-events-none disabled:opacity-50 mr-2"
+              {rbacCanAccess('accounts', 'view_opportunities') &&
+                (rbacCanAccess('opportunities', 'view') ||
+                  rbacCanAccess('opportunities', 'read')) && (
+                  <AccordionItem
+                    value="opportunities"
+                    className="overflow-hidden border bg-white dark:bg-zinc-900"
+                  >
+                    <AccordionTrigger
+                      hideChevron
+                      className="px-2 pb-2 border-b border-b-accordion hover:no-underline py-2"
                     >
-                      <Plus className="h-4 w-4" />
-                      <span>New Opportunity</span>
-                    </Button>
-                  </div>
-                  <ChevronDown
-                    className={cn(
-                      'h-4 w-4 shrink-0 text-gray-500 transition-transform duration-200 dark:text-gray-400',
-                      openAccordions.includes('opportunities') && 'rotate-180'
-                    )}
-                  />
-                </AccordionTrigger>
-                <AccordionContent className="px-2 pb-2">
-                  {rbacCanAccess('accounts', 'view_opportunities') ? (
-                    opportunities && opportunities.length > 0 ? (
-                      <CardWidgetList>
-                        {opportunities.map((opp: any) => (
-                          <CardWidgetListItem
-                            key={opp.id}
-                            actionStyle="slide"
-                            title={opp.opportunity_name}
-                            badge={
-                              opp.stage && (
-                                <Badge
-                                  variant="outline"
-                                  className="h-5 text-[10px] text-leadgaze-dark dark:text-white"
-                                >
-                                  {opp.stage.status_name}
-                                </Badge>
-                              )
-                            }
-                            subtitle={
-                              <span>
-                                {(() => {
-                                  const workspaceCurrency =
-                                    currenciesData?.find((c) => c.is_default)
-                                      ?.currency_code || 'USD';
-
-                                  // If opportunity has base_amount_usd, use that with workspace currency
-                                  if (
-                                    opp.base_amount_usd !== null &&
-                                    opp.base_amount_usd !== undefined
-                                  ) {
-                                    const rate =
-                                      findLatestRateToUsd(
-                                        exchangeRates as ExchangeRateRecord[],
-                                        workspaceCurrency,
-                                      )?.exchange_rate || 1;
-                                    const convertedAmount = convertFromUSD(
-                                      opp.base_amount_usd,
-                                      rate,
-                                    );
-                                    return formatWorkspaceCurrency(
-                                      convertedAmount,
-                                      workspaceCurrency,
-                                    );
-                                  }
-
-                                  // Fallback: use original amount with original currency
-                                  if (
-                                    opp.amount_original !== null &&
-                                    opp.amount_original !== undefined
-                                  ) {
-                                    const currency =
-                                      opp.currency_original ||
-                                      opp.currency ||
-                                      'USD';
-                                    return formatWorkspaceCurrency(
-                                      opp.amount_original,
-                                      currency,
-                                    );
-                                  }
-
-                                  // Last resort: use stored amount
-                                  return formatWorkspaceCurrency(
-                                    opp.amount || 0,
-                                    opp.currency || 'USD',
-                                  );
-                                })()}
-                              </span>
-                            }
-                            metadata={
-                              <span>
-                                {opp.expected_close_date &&
-                                  `Expected Close: ${formatDate(opp.expected_close_date)}`}
-                                {opp.expected_close_date &&
-                                  opp.probability !== undefined &&
-                                  ' • '}
-                                {opp.probability !== undefined &&
-                                  `Probability: ${opp.probability}%`}
-                              </span>
-                            }
-                            actions={
-                              rbacCanAccess('opportunities', 'view') && (
-                                <Button size="sm" variant="ghost" asChild>
-                                  <Link
-                                    href={`/home/sales/opportunities/${opp.id}`}
-                                  >
-                                    View
-                                  </Link>
-                                </Button>
-                              )
-                            }
-                          />
-                        ))}
-                      </CardWidgetList>
-                    ) : (
-                      <div className="text-muted-foreground py-6 text-center text-sm">
-                        No opportunities associated with this account.
+                      <div className="flex w-full justify-between items-center">
+                        <span className="primary-text-big-regular text-leadgaze-dark flex items-center gap-2 dark:text-white">
+                          <Briefcase className="text-leadgaze-dark h-5 w-5 dark:text-white" />
+                          Opportunities
+                        </span>
+                        <Button
+                          type="button"
+                          disabled={!rbacCanAccess('opportunities', 'create')}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setIsOpportunityDialogOpen(true);
+                          }}
+                          className="bg-leadgaze-primary hover:bg-leadgaze-primary text-white secondary-text-small-bold gap-1.5 px-2 disabled:pointer-events-none disabled:opacity-50 mr-2"
+                        >
+                          <Plus className="h-4 w-4" />
+                          <span>New Opportunity</span>
+                        </Button>
                       </div>
-                    )
-                  ) : (
-                    <div className="text-muted-foreground py-6 text-center text-sm">
-                      You do not have permission to view opportunities.
-                    </div>
-                  )}
-                </AccordionContent>
-              </AccordionItem>
+                      <ChevronDown
+                        className={cn(
+                          'h-4 w-4 shrink-0 text-gray-500 transition-transform duration-200 dark:text-gray-400',
+                          openAccordions.includes('opportunities') && 'rotate-180'
+                        )}
+                      />
+                    </AccordionTrigger>
+                    <AccordionContent className="px-2 pb-2">
+                      {opportunities && opportunities.length > 0 ? (
+                        <CardWidgetList>
+                          {opportunities.map((opp: any) => (
+                            <CardWidgetListItem
+                              key={opp.id}
+                              actionStyle="slide"
+                              title={opp.opportunity_name}
+                              badge={
+                                opp.stage && (
+                                  <Badge
+                                    variant="outline"
+                                    className="h-5 text-[10px] text-leadgaze-dark dark:text-white"
+                                  >
+                                    {opp.stage.status_name}
+                                  </Badge>
+                                )
+                              }
+                              subtitle={
+                                <span>
+                                  {(() => {
+                                    const workspaceCurrency =
+                                      currenciesData?.find((c) => c.is_default)
+                                        ?.currency_code || 'USD';
+
+                                    // If opportunity has base_amount_usd, use that with workspace currency
+                                    if (
+                                      opp.base_amount_usd !== null &&
+                                      opp.base_amount_usd !== undefined
+                                    ) {
+                                      const rate =
+                                        findLatestRateToUsd(
+                                          exchangeRates as ExchangeRateRecord[],
+                                          workspaceCurrency,
+                                        )?.exchange_rate || 1;
+                                      const convertedAmount = convertFromUSD(
+                                        opp.base_amount_usd,
+                                        rate,
+                                      );
+                                      return formatWorkspaceCurrency(
+                                        convertedAmount,
+                                        workspaceCurrency,
+                                      );
+                                    }
+
+                                    // Fallback: use original amount with original currency
+                                    if (
+                                      opp.amount_original !== null &&
+                                      opp.amount_original !== undefined
+                                    ) {
+                                      const currency =
+                                        opp.currency_original ||
+                                        opp.currency ||
+                                        'USD';
+                                      return formatWorkspaceCurrency(
+                                        opp.amount_original,
+                                        currency,
+                                      );
+                                    }
+
+                                    // Last resort: use stored amount
+                                    return formatWorkspaceCurrency(
+                                      opp.amount || 0,
+                                      opp.currency || 'USD',
+                                    );
+                                  })()}
+                                </span>
+                              }
+                              metadata={
+                                <span>
+                                  {opp.expected_close_date &&
+                                    `Expected Close: ${formatDate(opp.expected_close_date)}`}
+                                  {opp.expected_close_date &&
+                                    opp.probability !== undefined &&
+                                    ' • '}
+                                  {opp.probability !== undefined &&
+                                    `Probability: ${opp.probability}%`}
+                                </span>
+                              }
+                              actions={
+                                rbacCanAccess('opportunities', 'view') && (
+                                  <Button size="sm" variant="ghost" asChild>
+                                    <Link
+                                      href={`/home/sales/opportunities/${opp.id}`}
+                                    >
+                                      View
+                                    </Link>
+                                  </Button>
+                                )
+                              }
+                            />
+                          ))}
+                        </CardWidgetList>
+                      ) : (
+                        <div className="text-muted-foreground py-6 text-center text-sm">
+                          No opportunities associated with this account.
+                        </div>
+                      )}
+                    </AccordionContent>
+                  </AccordionItem>
+                )}
 
               {/* Assigned Team Members */}
               {workspace?.id && (
