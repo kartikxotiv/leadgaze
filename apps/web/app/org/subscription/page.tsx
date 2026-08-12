@@ -32,7 +32,7 @@ import {
 } from '@kit/core/services';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@kit/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@kit/ui/card';
 import {
   Dialog,
   DialogContent,
@@ -243,10 +243,20 @@ export default function OrgSubscriptionPage({
       queryClient.invalidateQueries({
         queryKey: ['workspace-entitlements', workspaceId],
       });
-      window.history.replaceState({}, '', '/org/subscription');
+      if (typeof window !== 'undefined') {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('checkout');
+        url.searchParams.delete('session_id');
+        window.history.replaceState({}, '', url.pathname + url.search);
+      }
     } else if (checkout === 'cancel') {
       toast.error('Checkout was cancelled.');
-      window.history.replaceState({}, '', '/org/subscription');
+      if (typeof window !== 'undefined') {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('checkout');
+        url.searchParams.delete('session_id');
+        window.history.replaceState({}, '', url.pathname + url.search);
+      }
     }
   }, [searchParams, workspaceId, queryClient]);
   const { formatDate } = useLocalization();
@@ -435,6 +445,10 @@ export default function OrgSubscriptionPage({
         workspaceId,
         items: allItems,
         billingCycle,
+        returnUrl:
+          typeof window !== 'undefined'
+            ? `${window.location.pathname}${window.location.search}`
+            : undefined,
       });
     },
     onSuccess: (data: { data?: { url?: string } }) => {
@@ -566,8 +580,8 @@ export default function OrgSubscriptionPage({
       };
       toast.error(
         error?.response?.data?.message ||
-          error?.message ||
-          'Failed to remove module',
+        error?.message ||
+        'Failed to remove module',
       );
     },
   });
@@ -636,34 +650,27 @@ export default function OrgSubscriptionPage({
         />
       )}
 
-      {/* Quick stats */}
-      <div className="flex flex-wrap items-center gap-5">
-        <div className="flex items-center gap-2">
-          <Package className="text-primary h-4 w-4" />
-          <span className="text-muted-foreground text-sm">Active modules</span>
-          <span className="text-foreground text-sm font-bold">
-            {seats.length}
-          </span>
+      {/* Quick stats pills */}
+      <div className="flex gap-2 border-b border-slate-200 dark:border-zinc-800 pb-3">
+        <div className="px-3 border border-slate-200 dark:border-zinc-800 rounded-md text-sm font-medium text-foreground flex items-center gap-2 bg-white dark:bg-zinc-900 h-9 shadow-sm">
+          <div className="w-2 h-2 rounded-full bg-orange-500" />
+          Active Modules ({seats.length})
         </div>
-        <div className="bg-border h-4 w-px" />
-        <div className="flex items-center gap-2">
-          <Users className="text-primary h-4 w-4" />
-          <span className="text-muted-foreground text-sm">Total seats</span>
-          <span className="text-foreground text-sm font-bold">
-            {totalSeats}
-          </span>
+        <div className="px-3 border border-slate-200 dark:border-zinc-800 rounded-md text-sm font-medium text-foreground flex items-center gap-2 bg-white dark:bg-zinc-900 h-9 shadow-sm">
+          <div className="w-2 h-2 rounded-full bg-blue-500" />
+          Total Seats ({totalSeats})
         </div>
       </div>
 
       {/* Active Subscriptions — Table layout */}
       {seats.length > 0 && (
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between p-4 pb-2">
-            <CardTitle className="text-lg">Your Modules</CardTitle>
-            <span className="text-muted-foreground text-sm">
-              {seats.length} module{seats.length !== 1 ? 's' : ''}
+          <CardHeader className="flex flex-row items-center justify-between p-4 pb-3 border-b border-slate-100 dark:border-zinc-800">
+            <CardTitle className="text-lg font-semibold">Your Modules</CardTitle>
+            <Badge variant="secondary" className="uppercase font-bold text-xs tracking-wider">
+              {seats.length} MODULE{seats.length !== 1 ? 'S' : ''}
               {isTrial && ' (Trial)'}
-            </span>
+            </Badge>
           </CardHeader>
           <CardContent className="p-0">
             <Table>
@@ -910,6 +917,37 @@ export default function OrgSubscriptionPage({
           />
         )}
 
+      {/* Payment Method Section */}
+      {/* <Card>
+        <CardHeader className="flex flex-row items-center justify-between p-4 border-b border-slate-100 dark:border-zinc-800">
+          <div>
+            <CardTitle className="text-lg font-semibold">Payment Method</CardTitle>
+            <CardDescription className="text-xs text-muted-foreground mt-0.5">
+              Payment for domains, emails, and other usage are made using the default card.
+            </CardDescription>
+          </div>
+          <Button size="sm" className="bg-primary text-white text-xs gap-1.5 px-3">
+            Add Card
+          </Button>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="flex justify-between items-center px-4 py-3 border-b border-slate-100 dark:border-zinc-800">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-6 bg-slate-100 dark:bg-zinc-800 rounded border flex items-center justify-center shadow-sm">
+                <div className="flex -space-x-1">
+                  <div className="w-2.5 h-2.5 rounded-full bg-red-500 opacity-90"></div>
+                  <div className="w-2.5 h-2.5 rounded-full bg-orange-400 opacity-90"></div>
+                </div>
+              </div>
+              <span className="text-sm font-medium text-foreground">Master Card Credit .... 4575</span>
+            </div>
+            <div className="text-xs text-muted-foreground font-medium">
+              Valid until 2/2032
+            </div>
+          </div>
+        </CardContent>
+      </Card> */}
+
       {/* Cancel Subscription Section (only for paid subscriptions) */}
       {canManageSubscription && isPaid && seats.length > 0 && (
         <Card className="border-destructive/20">
@@ -990,7 +1028,7 @@ export default function OrgSubscriptionPage({
                         <strong>pro-rata basis</strong> and reflected in your
                         next invoice.{' '}
                         {seatUpdateDialog.newSeats >
-                        seatUpdateDialog.currentSeats
+                          seatUpdateDialog.currentSeats
                           ? 'You will be charged for the remaining days of the current billing period.'
                           : 'A prorated credit will be applied to your next invoice.'}
                       </p>
