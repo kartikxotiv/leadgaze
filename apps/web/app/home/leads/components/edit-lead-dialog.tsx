@@ -603,39 +603,19 @@ export default function EditLeadDialog({
                   </FieldGuard>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2">
-                  <FieldGuard fieldKey="trigger" canEdit={canEdit}>
-                    <div>
-                      <Label htmlFor="trigger">Trigger (Optional)</Label>
-                      <Input
-                        id="trigger"
-                        placeholder="e.g., Inbound inquiry"
-                        value={formData.trigger}
-                        onChange={(e) => handleInputChange('trigger', e.target.value)}
-                        disabled={isLoading}
-                        className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
-                      />
-                    </div>
-                  </FieldGuard>
-                  <FieldGuard fieldKey="score" canEdit={canEdit}>
-                    <div>
-                      <Label htmlFor="lead_score">Lead Score (0-100)</Label>
-                      <Input
-                        id="lead_score"
-                        type="number"
-                        min="0"
-                        max="100"
-                        placeholder="75"
-                        value={formData.lead_score}
-                        onChange={(e) =>
-                          handleInputChange('lead_score', parseInt(e.target.value) || 0)
-                        }
-                        disabled={isLoading}
-                        className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
-                      />
-                    </div>
-                  </FieldGuard>
-                </div>
+                <FieldGuard fieldKey="trigger" canEdit={canEdit}>
+                  <div>
+                    <Label htmlFor="trigger">Trigger (Optional)</Label>
+                    <Input
+                      id="trigger"
+                      placeholder="e.g., Inbound inquiry"
+                      value={formData.trigger}
+                      onChange={(e) => handleInputChange('trigger', e.target.value)}
+                      disabled={isLoading}
+                      className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
+                    />
+                  </div>
+                </FieldGuard>
               </div>
 
               {/* ── Additional Information ── */}

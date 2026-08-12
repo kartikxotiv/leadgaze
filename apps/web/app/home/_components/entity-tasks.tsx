@@ -13,6 +13,7 @@ import {
   History,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { CustomTimeLog, type TimeLogValue } from '@kit/ui/custom-time-log';
 import { DateTimePicker } from '@kit/ui/datetime-picker';
 import { format } from 'date-fns';
 import { Button } from '@kit/ui/button';
@@ -78,13 +79,6 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
   const [timeLogTask, setTimeLogTask] = useState<Task | null>(null);
   const [isTimeLogOpen, setIsTimeLogOpen] = useState(false);
   const [isCompletingTask, setIsCompletingTask] = useState(false);
-  const getTodayDateString = () => new Date().toISOString().split('T')[0];
-  const [timeLogData, setTimeLogData] = useState({
-    hours: '',
-    minutes: '',
-    description: '',
-    logged_at: getTodayDateString(),
-  });
 
   // View logs states
   const [viewLogsTask, setViewLogsTask] = useState<Task | null>(null);
@@ -177,15 +171,12 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
   });
 
   const timeLogMutation = useMutation({
-    mutationFn: () => {
-      const hoursVal = parseInt(timeLogData.hours || '0', 10);
-      const minutesVal = parseInt(timeLogData.minutes || '0', 10);
-      const totalMin = hoursVal * 60 + minutesVal;
+    mutationFn: (value: TimeLogValue) => {
       return createTaskTimeLogService(timeLogTask!.id, {
         workspace_id: workspace!.id,
-        duration_minutes: totalMin,
-        description: timeLogData.description,
-        logged_at: timeLogData.logged_at ? new Date(timeLogData.logged_at).toISOString() : undefined,
+        duration_minutes: value.durationMinutes,
+        description: value.description,
+        logged_at: value.dateTime,
       });
     },
     onSuccess: () => {
@@ -196,7 +187,6 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
       }
       setIsTimeLogOpen(false);
       setIsCompletingTask(false);
-      setTimeLogData({ hours: '', minutes: '', description: '', logged_at: getTodayDateString() });
       setTimeLogTask(null);
     },
     onError: () => toast.error('Failed to log time'),
@@ -254,8 +244,7 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
   return (
     <CardWidgetContainer
       title="Tasks & Checklist"
-      hideHeaderBorder={true}
-      headerClassName="p-2 xl:p-2 2xl:p-2"
+      headerClassName="p-2 xl:p-2 2xl:p-2 mb-1"
       icon={<CheckSquare className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
       icon2={
         <div className="flex items-center gap-2">
@@ -477,102 +466,48 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
             ))}
           </CardWidgetList>
         ) : (
-          <div className="py-8 text-center">
-            <CheckSquare className="mx-auto mb-2 h-8 w-8 text-gray-300" />
-            <p className="text-sm text-gray-500">No tasks found</p>
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#F0F3FF]">
+              <CheckSquare className="h-6 w-6 text-blue-500" />
+            </div>
+            <p className="mt-4 text-sm text-gray-500">No tasks found</p>
           </div>
         )}
       </div>
 
       {/* Log Time Dialog */}
-      <Dialog
+      <CustomTimeLog
         open={isTimeLogOpen}
         onOpenChange={(open) => {
           setIsTimeLogOpen(open);
           if (!open) {
             setTimeLogTask(null);
             setIsCompletingTask(false);
-            setTimeLogData({ hours: '', minutes: '', description: '', logged_at: getTodayDateString() });
           }
         }}
-      >
-        <DialogContent className="sm:max-w-[400px]">
-          <DialogHeader>
-            <DialogTitle>Log Time for: {timeLogTask?.title}</DialogTitle>
-            {(timeLogTask?.total_logged_minutes ?? 0) > 0 && (
-              <p className="text-sm text-blue-500 mt-1 font-medium">
-                Total Logged Time: {Math.floor((timeLogTask?.total_logged_minutes ?? 0) / 60)}h {(timeLogTask?.total_logged_minutes ?? 0) % 60}m
-              </p>
-            )}
-            {isCompletingTask && (timeLogTask?.total_logged_minutes ?? 0) <= 0 && (
-              <p className="primary-text-regular text-red-500 mt-1">Please input time before closing this task</p>
-            )}
-          </DialogHeader>
-          <div className="space-y-2 py-4">
-            <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-2">
-                <Label>Hours</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  placeholder="0"
-                  value={timeLogData.hours}
-                  onChange={(e) => setTimeLogData({ ...timeLogData, hours: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Minutes</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  max="59"
-                  placeholder="0"
-                  value={timeLogData.minutes}
-                  onChange={(e) => setTimeLogData({ ...timeLogData, minutes: e.target.value })}
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Work Date</Label>
-              <DateTimePicker
-                mode="date"
-                placeholder="Select date"
-                value={timeLogData.logged_at ? new Date(timeLogData.logged_at) : undefined}
-                onChange={(date) => setTimeLogData({ ...timeLogData, logged_at: date ? format(date, 'yyyy-MM-dd') : '' })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Description</Label>
-              <Textarea
-                placeholder="Describe what you worked on"
-                value={timeLogData.description}
-                onChange={(e) => setTimeLogData({ ...timeLogData, description: e.target.value })}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setIsTimeLogOpen(false)}>Cancel</Button>
-            {isCompletingTask && (
-              <Button
-                variant="outline"
-                disabled={(timeLogTask?.total_logged_minutes ?? 0) <= 0}
-                onClick={() => {
-                  if (timeLogTask) toggleMutation.mutate(timeLogTask);
-                  setIsTimeLogOpen(false);
-                }}
-              >
-                Skip
-              </Button>
-            )}
-            <Button
-              onClick={() => timeLogMutation.mutate()}
-              disabled={(!timeLogData.hours && !timeLogData.minutes) || timeLogMutation.isPending}
-            >
-              {timeLogMutation.isPending ? 'Saving...' : 'Submit Log'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        title={`Log Time for: ${timeLogTask?.title ?? ''}`}
+        subtitle={
+          isCompletingTask && (timeLogTask?.total_logged_minutes ?? 0) <= 0
+            ? 'Please input time before closing this task'
+            : undefined
+        }
+        headerExtra={
+          (timeLogTask?.total_logged_minutes ?? 0) > 0 ? (
+            <p className="text-sm text-blue-500 mt-1 font-medium">
+              Total Logged Time: {Math.floor((timeLogTask?.total_logged_minutes ?? 0) / 60)}h {(timeLogTask?.total_logged_minutes ?? 0) % 60}m
+            </p>
+          ) : undefined
+        }
+        onSave={(value) => timeLogMutation.mutate(value)}
+        isSaving={timeLogMutation.isPending}
+        saveLabel="Submit Log"
+        showSkip={isCompletingTask}
+        skipDisabled={(timeLogTask?.total_logged_minutes ?? 0) <= 0}
+        onSkip={() => {
+          if (timeLogTask) toggleMutation.mutate(timeLogTask);
+          setIsTimeLogOpen(false);
+        }}
+      />
 
       {/* View Logs Dialog */}
       <Dialog

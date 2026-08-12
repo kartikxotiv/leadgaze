@@ -76,37 +76,37 @@ export function EntityCalls({ entityType, entityId }: EntityCallsProps) {
         const statusConfig = {
             completed: {
                 variant: 'default' as const,
-                className: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
+                className: 'bg-green-100 hover:bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
                 label: 'Connected',
             },
             no_answer: {
                 variant: 'secondary' as const,
-                className: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
+                className: 'bg-gray-100 hover:bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
                 label: 'No Answer',
             },
             busy: {
                 variant: 'secondary' as const,
-                className: 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300',
+                className: 'bg-orange-100 hover:bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300',
                 label: 'Busy',
             },
             left_voicemail: {
                 variant: 'secondary' as const,
-                className: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
+                className: 'bg-blue-100 hover:bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
                 label: 'Left Voicemail',
             },
             missed: {
                 variant: 'destructive' as const,
-                className: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300',
+                className: 'bg-red-100 hover:bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300',
                 label: 'Missed',
             },
             failed: {
                 variant: 'destructive' as const,
-                className: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300',
+                className: 'bg-red-100 hover:bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300',
                 label: 'Failed',
             },
             voicemail: {
                 variant: 'secondary' as const,
-                className: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
+                className: 'bg-blue-100 hover:bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
                 label: 'Voicemail',
             }
         };
@@ -124,8 +124,7 @@ export function EntityCalls({ entityType, entityId }: EntityCallsProps) {
     return (
         <CardWidgetContainer
             title="Call Logs"
-            hideHeaderBorder={true}
-            headerClassName="p-2 xl:p-2 2xl:p-2"
+            headerClassName="p-2 xl:p-2 2xl:p-2 mb-1"
             icon={<Phone className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
             icon2={
                 <Button
@@ -187,9 +186,11 @@ export function EntityCalls({ entityType, entityId }: EntityCallsProps) {
                         ))}
                     </CardWidgetList>
                 ) : (
-                    <div className="py-8 text-center">
-                        <Phone className="mx-auto mb-2 h-8 w-8 text-gray-300" />
-                        <p className="text-sm text-gray-500">No call logs</p>
+                    <div className="flex flex-col items-center justify-center py-8 text-center">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#F0F3FF]">
+                        <Phone className="h-6 w-6 text-blue-500" />
+                      </div>
+                      <p className="mt-4 text-sm text-gray-500">No call logs</p>
                     </div>
                 )}
             </div>

@@ -122,6 +122,7 @@
     "./inline-editable-value": "./src/shadcn/inline-editable-value.tsx",
     "./view-toggle": "./src/shadcn/view-toggle.tsx",
     "./custom-delete-dialog": "./src/shadcn/custom-delete-dialog.tsx",
+    "./custom-time-log": "./src/shadcn/custom-time-log.tsx",
     "./utils": "./src/lib/utils/index.ts",
     "./use-column-visibility": "./src/hooks/use-column-visibility.ts",
     "./use-column-resize": "./src/hooks/use-column-resize.ts",

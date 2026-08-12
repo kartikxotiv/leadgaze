@@ -250,11 +250,12 @@
   --color-status-neutral-text: #364153;
 
   /* --- 6. TICKET STATUS & PRIORITY COLORS --- */
-  --color-ticket-status-new: #33D9B0; /* Best guess for #33D9B, maybe cyan/teal? Or use #033D9B if it should be blue. Let's use #33D9B0. User asked for #33D9B */
+  --color-ticket-status-new: #003D9B;
   --color-ticket-status-open: #0071E6;
   --color-ticket-status-in-progress: #0052CC;
   --color-ticket-status-waiting: #737685;
   --color-ticket-status-resolved: #7B2600;
+  --color-ticket-status-closed: #6B4FA1;
 
   --color-ticket-priority-urgent-bg: #FFDAD6;
   --color-ticket-priority-critical-bg: #BA1A1A;

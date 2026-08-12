@@ -185,6 +185,13 @@ const deleteAccountTypeService = asyncHandlerClient(async (id: string) => {
   return response.data?.data;
 });
 
+const reorderAccountTypesService = asyncHandlerClient(
+  async (payload: { workspaceId: string; orderedStatusIds: string[] }) => {
+    const response = await ApiClient.put('/accounts/types/reorder', payload);
+    return response.data?.data;
+  },
+);
+
 const importAccountsService = asyncHandlerClient(
   async (payload: { workspaceId: string; data: any[] }) => {
     const response = await ApiClient.post('/accounts/import', payload);
@@ -214,6 +221,7 @@ export {
   createAccountTypeService,
   updateAccountTypeService,
   deleteAccountTypeService,
+  reorderAccountTypesService,
   importAccountsService,
   getAccountsMetaService,
 };
