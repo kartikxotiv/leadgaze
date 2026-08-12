@@ -302,7 +302,7 @@ export function ServiceCloudDashboardPage({
                           <div className="text-[10px] mt-1 uppercase" style={{ color: subTextColor || 'var(--color-leadgaze-muted)' }}>{`${priority.openCount} OPEN`}</div>
                         </div>
                         <Badge 
-                          className="px-2 py-1 !secondary-text-small-semibold rounded-none hover:opacity-100"
+                          className="px-2 py-1 !secondary-text-small-semibold rounded-sm hover:opacity-100"
                           style={{ backgroundColor: badgeBg, color: badgeColor, border: 'none' }}
                         >
                           {priority.count}
