@@ -2,6 +2,8 @@
 
 import React, { useCallback, useMemo, useState } from 'react';
 
+import { useRouter } from 'next/navigation';
+
 import { useQuery } from '@tanstack/react-query';
 import {
   Edit,
@@ -110,6 +112,7 @@ const EXPORT_COLUMNS = [
 ];
 
 export default function AdminWorkspacesPage() {
+  const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPlans, setSelectedPlans] = useState<string[]>([]);
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
@@ -548,10 +551,11 @@ export default function AdminWorkspacesPage() {
                         <TableRow
                           key={ws.id}
                           data-state={isSelected ? 'selected' : undefined}
-                          className="group"
+                          className="group cursor-pointer hover:bg-muted/50"
+                          onClick={() => router.push(`/workspaces/${ws.id}`)}
                         >
                           {/* Checkbox */}
-                          <TableCell className="pl-4">
+                          <TableCell className="pl-4" onClick={(e) => e.stopPropagation()}>
                             <Checkbox
                               checked={isSelected}
                               onCheckedChange={() => handleSelectRow(ws.id)}
@@ -658,7 +662,7 @@ export default function AdminWorkspacesPage() {
                           )}
 
                           {/* Action Menu */}
-                          <TableCell className="text-right pr-4">
+                          <TableCell className="text-right pr-4" onClick={(e) => e.stopPropagation()}>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" size="icon" className="h-8 w-8">

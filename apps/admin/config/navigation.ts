@@ -4,21 +4,34 @@ export const adminNavigation: NavigationItem[] = [
   {
     label: 'Dashboard',
     path: '/dashboard',
+    end: true,
   },
   {
-    label: 'Workspaces',
+    label: 'Workspace',
     path: '/workspaces',
+  },
+  {
+    label: 'Subscriptions',
+    path: '/subscriptions',
+  },
+  {
+    label: 'Modules',
+    path: '/modules',
   },
   {
     label: 'Users',
     path: '/users',
   },
   {
-    label: 'Plans',
-    path: '/plans',
+    label: 'Support',
+    path: '/support',
   },
   {
-    label: 'Billing',
-    path: '/billing',
+    label: 'Audit Logs',
+    path: '/audit-logs',
+  },
+  {
+    label: 'System',
+    path: '/system',
   },
 ];
