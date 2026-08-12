@@ -354,9 +354,6 @@ importers:
       nodemailer:
         specifier: ^7.0.12
         version: 7.0.12
-      razorpay:
-        specifier: ^2.9.6
-        version: 2.9.6
       react:
         specifier: 19.2.1
         version: 19.2.1
@@ -5191,9 +5188,6 @@ packages:
   raf@3.4.1:
     resolution: {integrity: sha512-Sq4CW4QhwOHE8ucn6J34MqtZCeWFP2aQSmrlroYgqAV1PjStIhJXxYuTgUIfkEk7zTLjmIjLmU5q+fbD1NnOJA==}
 
-  razorpay@2.9.6:
-    resolution: {integrity: sha512-zsHAQzd6e1Cc6BNoCNZQaf65ElL6O6yw0wulxmoG5VQDr363fZC90Mp1V5EktVzG45yPyNomNXWlf4cQ3622gQ==}
-
   rc@1.2.8:
     resolution: {integrity: sha512-y3bGgqKj3QBdxLbLkomlohkvsA8gdAiUQlSBJnBhfn+BPxg4bc62d8TcBW15wavDfgexCgccckhcZvywyQYPOw==}
     hasBin: true
@@ -9933,13 +9927,6 @@ snapshots:
     dependencies:
       performance-now: 2.1.0
     optional: true
-
-  razorpay@2.9.6:
-    dependencies:
-      axios: 1.16.1
-    transitivePeerDependencies:
-      - debug
-      - supports-color
 
   rc@1.2.8:
     dependencies:
