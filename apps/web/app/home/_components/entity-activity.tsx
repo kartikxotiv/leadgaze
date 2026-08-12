@@ -238,7 +238,7 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
   return (
     <CardWidgetContainer
       title="Reminders"
-      headerClassName="p-2 xl:p-2 2xl:p-2"
+      headerClassName="p-2 xl:p-2 2xl:p-2 mb-1"
       icon={<AlertCircle className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
       icon2={
         <Dialog
@@ -741,7 +741,7 @@ export function EntityMeetings({ entityType, entityId }: EntityActivityProps) {
   return (
     <CardWidgetContainer
       title="Meetings"
-      headerClassName="p-2 xl:p-2 2xl:p-2"
+      headerClassName="p-2 xl:p-2 2xl:p-2 mb-1"
       icon={<Calendar className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
       icon2={
         canScheduleMeeting && (
@@ -930,7 +930,7 @@ export function EntityDocuments({ entityType, entityId }: EntityActivityProps) {
   return (
     <CardWidgetContainer
       title="Documents"
-      headerClassName="p-2 xl:p-2 2xl:p-2"
+      headerClassName="p-2 xl:p-2 2xl:p-2 mb-1"
       icon={<Download className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
       icon2={
         <Dialog

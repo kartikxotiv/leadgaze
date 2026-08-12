@@ -10,6 +10,7 @@ import { Button } from './button';
 import { Calendar } from './calendar';
 import { Popover, PopoverContent, PopoverTrigger } from './popover';
 import { Textarea } from './textarea';
+import { Input } from './input';
 import {
   Dialog,
   DialogContent,
@@ -31,6 +32,8 @@ export interface TimeLogValue {
   endTime: Date;
   /** Description text */
   description: string;
+  /** Activities text */
+  activities?: string;
 }
 
 export interface CustomTimeLogProps {
@@ -52,6 +55,8 @@ export interface CustomTimeLogProps {
   initialDate?: Date;
   /** Initial description */
   initialDescription?: string;
+  /** Initial activities */
+  initialActivities?: string;
   /** Show cancel button (default true) */
   showCancel?: boolean;
   /** Show skip button */
@@ -64,6 +69,8 @@ export interface CustomTimeLogProps {
   saveLabel?: string;
   /** Additional info shown below title (e.g. total logged time) */
   headerExtra?: React.ReactNode;
+  /** Show activities input field */
+  showActivities?: boolean;
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -207,7 +214,7 @@ function SmartTimeInput({ value, onChange, normalizedDisplay, className }: Smart
   };
 
   return (
-    <div className={cn('relative', className)}>
+    <div className={cn('relative mb-3', className)}>
       <input
         ref={inputRef}
         type="text"
@@ -467,15 +474,15 @@ function DateTimeRow({
   const formattedDate = format(selectedDate, 'EEE, MMM d');
 
   return (
-    <div className="flex items-center gap-2 text-sm">
+    <div className="flex items-center gap-1 text-sm mb-2">
       {/* Calendar trigger */}
       <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
         <PopoverTrigger asChild>
           <button
             type="button"
-            className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-slate-800"
+            className="flex items-center gap-3 pl-0 px-2 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-slate-800"
           >
-            <CalendarIcon className="h-4 w-4 text-blue-500" />
+            <CalendarIcon className="h-4 w-4 text-leadgaze-dark dark:text-white" />
             <span>{formattedDate}</span>
           </button>
         </PopoverTrigger>
@@ -532,6 +539,8 @@ export function CustomTimeLog({
   skipDisabled = false,
   saveLabel = 'Save',
   headerExtra,
+  showActivities = false,
+  initialActivities = '',
 }: CustomTimeLogProps) {
   const now = new Date();
   const [durationInput, setDurationInput] = React.useState(initialDuration);
@@ -539,6 +548,7 @@ export function CustomTimeLog({
   const [startTime, setStartTime] = React.useState<Date>(now);
   const [endTime, setEndTime] = React.useState<Date>(now);
   const [description, setDescription] = React.useState(initialDescription);
+  const [activities, setActivities] = React.useState(initialActivities || '');
 
   // Track whether the user manually selected a start time (vs auto-calculated)
   const userSelectedStartRef = React.useRef(false);
@@ -552,9 +562,10 @@ export function CustomTimeLog({
       setStartTime(currentNow);
       setEndTime(currentNow);
       setDescription(initialDescription);
+      setActivities(initialActivities || '');
       userSelectedStartRef.current = false;
     }
-  }, [open, initialDuration, initialDate, initialDescription]);
+  }, [open, initialDuration, initialDate, initialDescription, initialActivities]);
 
   // Compute normalized display for the suggestion
   const normalizedDisplay = React.useMemo(() => {
@@ -628,6 +639,7 @@ export function CustomTimeLog({
       startTime: dateWithTime,
       endTime: computedEndTime,
       description,
+      activities,
     });
   };
 
@@ -703,9 +715,24 @@ export function CustomTimeLog({
             }}
           />
 
+          {/* Activities */}
+          {showActivities && (
+            <div className="mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Activities
+              </label>
+              <Input
+                placeholder="Subject"
+                value={activities}
+                onChange={(e) => setActivities(e.target.value)}
+                className="w-full"
+              />
+            </div>
+          )}
+
           {/* Description */}
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Description
             </label>
             <Textarea

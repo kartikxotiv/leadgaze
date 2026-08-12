@@ -151,7 +151,7 @@ export function EntityNotes({ entityType, entityId }: EntityNotesProps) {
   return (
     <CardWidgetContainer
       title="Notes"
-      headerClassName="p-2 xl:p-2 2xl:p-2"
+      headerClassName="p-2 xl:p-2 2xl:p-2 mb-1"
       icon={<FileText className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
       icon2={
         canAddNote ? (

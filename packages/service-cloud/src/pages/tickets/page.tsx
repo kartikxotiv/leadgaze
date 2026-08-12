@@ -787,19 +787,34 @@ export function ServiceCloudTicketsPage({
         ]}
         columns={[
           {
-            key: 'ticket_number',
-            label: getLabel('ticket_number', 'Ticket #'),
+            key: 'sno',
+            label: 'S. No.',
+            sortable: false,
+            width: 'w-12',
+            minWidth: 30,
+            className: 'text-muted-foreground w-12',
+            render: (_, index, pagination) => {
+              if (index === undefined || !pagination) return '-';
+              return (pagination.currentPage - 1) * pagination.pageSize + index + 1;
+            },
           },
           {
             key: 'subject',
             label: getLabel('subject', 'Subject'),
             render: (ticket) => (
-              <Link
-                href={`/home/services/tickets/${ticket.id}`}
-                className="text-primary font-medium hover:underline"
-              >
-                {ticket.subject}
-              </Link>
+              <div className="flex items-center gap-2">
+                <Link
+                  href={`/home/services/tickets/${ticket.id}`}
+                  className="text-primary font-medium hover:underline"
+                >
+                  {ticket.subject}
+                </Link>
+                {ticket.ticket_number && (
+                  <span className="inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">
+                    #{ticket.ticket_number}
+                  </span>
+                )}
+              </div>
             ),
           },
           {

@@ -53,6 +53,7 @@ import {
 } from '@kit/ui/accordion';
 import { DetailHeader } from '@kit/ui/detail-header';
 import { DetailInfoList, DetailInfoRow } from '@kit/ui/detail-info-row';
+import { CustomTimeLog, type TimeLogValue } from '@kit/ui/custom-time-log';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -303,7 +304,7 @@ function getActivityUIDetails(activity: any) {
     case 'note_added':
       return { icon: <FileText className="h-3.5 w-3.5 text-purple-500" />, module: 'Note', action: 'CREATED', color: 'emerald' };
     case 'document_uploaded':
-      return { icon: <File className="h-3.5 w-3.5 text-gray-500" />, module: 'Document', action: 'UPLOADED', color: 'emerald' };
+      return { icon: <FileText className="h-3.5 w-3.5 text-gray-500" />, module: 'Document', action: 'UPLOADED', color: 'emerald' };
     case 'deleted':
       return { icon: <Trash2 className="h-3.5 w-3.5 text-red-500" />, module: 'Ticket', action: 'DELETED', color: 'rose' };
     default:
@@ -342,13 +343,7 @@ export function ServiceCloudTicketDetailPage({
     SERVICE_CLOUD_FEATURE_KEYS.manageInbox,
   );
   const queryKey = ['service-cloud', 'ticket-detail', workspaceId, ticketId];
-  const [timeForm, setTimeForm] = useState({
-    hours: '',
-    minutes: '',
-    description: '',
-    activities: '',
-    logged_date: todayLocalDate(),
-  });
+
   const [editingLogId, setEditingLogId] = useState<string | null>(null);
   const [deletingLogId, setDeletingLogId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({
@@ -368,6 +363,8 @@ export function ServiceCloudTicketDetailPage({
   const [editingNote, setEditingNote] = useState<any>(null);
   const [noteContent, setNoteContent] = useState('');
   const [deletingNoteId, setDeletingNoteId] = useState<string | null>(null);
+
+  const [isTimeLogOpen, setIsTimeLogOpen] = useState(false);
 
   const [isDocumentModalOpen, setIsDocumentModalOpen] = useState(false);
   const [documentForm, setDocumentForm] = useState({ name: '', file: null as File | null, file_url: '', category: '', description: '' });
@@ -425,26 +422,17 @@ export function ServiceCloudTicketDetailPage({
   });
 
   const timeMutation = useMutation({
-    mutationFn: () => {
-      const durationSeconds =
-        Number(timeForm.hours || 0) * 3600 + Number(timeForm.minutes || 0) * 60;
-
+    mutationFn: (value: TimeLogValue) => {
       return logServiceCloudTicketTimeService(workspaceId, ticketId, {
-        durationSeconds,
-        description: timeForm.description,
-        activities: timeForm.activities,
-        logged_date: timeForm.logged_date,
+        durationSeconds: value.durationMinutes * 60,
+        description: value.description,
+        activities: value.activities ?? '',
+        logged_date: value.dateTime.split('T')[0],
       });
     },
     onSuccess: async () => {
       toast.success('Time logged');
-      setTimeForm({
-        hours: '',
-        minutes: '',
-        description: '',
-        activities: '',
-        logged_date: todayLocalDate(),
-      });
+      setIsTimeLogOpen(false);
       await queryClient.invalidateQueries({ queryKey });
     },
     onError: (error: any) => toast.error(error.message || 'Failed to log time'),
@@ -463,17 +451,19 @@ export function ServiceCloudTicketDetailPage({
   });
 
   const updateTimeMutation = useMutation({
-    mutationFn: () => {
-      const durationSeconds =
-        Number(editForm.hours || 0) * 3600 + Number(editForm.minutes || 0) * 60;
-
+    mutationFn: (data: {
+      duration_seconds: number;
+      description: string;
+      activities?: string;
+      logged_date: string;
+    }) => {
       return updateServiceCloudResourceService('time-entries', {
         id: editingLogId,
         workspace_id: workspaceId,
-        duration_seconds: durationSeconds,
-        description: editForm.description,
-        activities: editForm.activities,
-        logged_date: editForm.logged_date,
+        duration_seconds: data.duration_seconds,
+        description: data.description,
+        activities: data.activities,
+        logged_date: data.logged_date,
       });
     },
     onSuccess: async () => {
@@ -710,8 +700,7 @@ export function ServiceCloudTicketDetailPage({
     (sum: number, entry: any) => sum + Number(entry.duration_seconds ?? 0),
     0,
   );
-  const canLogTime =
-    Number(timeForm.hours || 0) > 0 || Number(timeForm.minutes || 0) > 0;
+
   const isUpdating = updateMutation.isPending;
   const dueValue =
     ticket.due_date ??
@@ -758,7 +747,7 @@ export function ServiceCloudTicketDetailPage({
             <span className="font-medium text-gray-700 dark:text-white">Logged:</span>
             <span className="text-gray-500 dark:text-white">{formatDuration(totalLoggedSeconds)}</span>
           </Button>
-          <Button variant="default" className="secondary-text-small-bold bg-leadgaze-primary hover:bg-leadgaze-primary text-white gap-1.5 px-2">
+          <Button variant="default" className="secondary-text-small-bold bg-leadgaze-primary hover:bg-leadgaze-primary text-white gap-1.5 px-2" onClick={() => setIsTimeLogOpen(true)}>
             <Edit2 className="h-4 w-4" />
                       <span className="hidden sm:inline">Add Time</span>
           </Button>          
@@ -959,13 +948,14 @@ export function ServiceCloudTicketDetailPage({
                       title="Time loged"
                       className="flex min-h-0 flex-1 flex-col"
                       contentClassName="flex min-h-0 flex-1 flex-col p-0"
-                      headerClassName="p-2 xl:p-2 2xl:p-2"
+                      headerClassName="p-2 xl:p-2 2xl:p-2 mb-1"
                       icon={<Clock3 className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
                       icon2={
                         <Button
                           size="sm"
                           variant="ghost"
                           className="gap-2 text-sm text-blue-500 hover:text-blue-600"
+                          onClick={() => setIsTimeLogOpen(true)}
                         >
                           <Plus className="h-4 w-4" />
                           Add Time
@@ -1161,7 +1151,7 @@ export function ServiceCloudTicketDetailPage({
                       </Button>
                     }
                   >
-                    <div className="px-2 pb-4 pt-2">
+                    <div className="px-2 pb-2 pt-2">
                       {notesLoading ? (
                         <div className="flex justify-center py-4">
                           <Skeleton className="h-8 w-8 rounded-full" />
@@ -1229,7 +1219,7 @@ export function ServiceCloudTicketDetailPage({
                       </Button>
                     }
                   >
-                    <div className="px-2 pb-4 pt-2">
+                    <div className="px-2 pb-2 pt-2">
                       {documentsLoading ? (
                         <div className="flex justify-center py-4">
                           <Skeleton className="h-8 w-8 rounded-full" />
@@ -1715,117 +1705,45 @@ export function ServiceCloudTicketDetailPage({
         </>
       ) : null}
 
-      <Dialog
+      <CustomTimeLog
+        open={isTimeLogOpen}
+        onOpenChange={setIsTimeLogOpen}
+        title="Time Log on Task"
+        showActivities={true}
+        onSave={(val) => timeMutation.mutate(val)}
+        isSaving={timeMutation.isPending}
+      />
+
+      <CustomTimeLog
         open={Boolean(editingLogId)}
         onOpenChange={(open) => {
           if (!open) setEditingLogId(null);
         }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Time Entry</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-2">
-            <Field label="Date">
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      'w-full justify-start text-left font-normal',
-                      !editForm.logged_date && 'text-muted-foreground',
-                    )}
-                  >
-                    <CalendarDays className="mr-2 h-4 w-4" />
-                    {editForm.logged_date
-                      ? formatDateOnly(editForm.logged_date)
-                      : 'Pick a date'}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={
-                      editForm.logged_date
-                        ? new Date(editForm.logged_date + 'T00:00:00')
-                        : undefined
-                    }
-                    onSelect={(date) =>
-                      setEditForm((prev) => ({
-                        ...prev,
-                        logged_date: date
-                          ? toLocalDateString(date)
-                          : prev.logged_date,
-                      }))
-                    }
-                    captionLayout="dropdown"
-                  />
-                </PopoverContent>
-              </Popover>
-            </Field>
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="Hours">
-                <Input
-                  type="number"
-                  min="0"
-                  value={editForm.hours}
-                  onChange={(event) =>
-                    setEditForm((prev) => ({
-                      ...prev,
-                      hours: event.target.value,
-                    }))
-                  }
-                />
-              </Field>
-              <Field label="Minutes">
-                <Input
-                  type="number"
-                  min="0"
-                  value={editForm.minutes}
-                  onChange={(event) =>
-                    setEditForm((prev) => ({
-                      ...prev,
-                      minutes: event.target.value,
-                    }))
-                  }
-                />
-              </Field>
-            </div>
-            <Field label="Activities">
-              <Input
-                value={editForm.activities}
-                onChange={(event) =>
-                  setEditForm((prev) => ({
-                    ...prev,
-                    activities: event.target.value,
-                  }))
-                }
-                placeholder="What activities did you perform?"
-              />
-            </Field>
-            <Field label="Description">
-              <Textarea
-                value={editForm.description}
-                onChange={(event) =>
-                  setEditForm((prev) => ({
-                    ...prev,
-                    description: event.target.value,
-                  }))
-                }
-                placeholder="What did you work on?"
-              />
-            </Field>
-            <Button
-              className="w-full"
-              disabled={updateTimeMutation.isPending}
-              onClick={() => updateTimeMutation.mutate()}
-            >
-              <Clock3 className="mr-2 h-4 w-4" />
-              Save Changes
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+        title="Edit Time Entry"
+        showActivities={true}
+        initialDuration={(() => {
+          const parts = [];
+          if (editForm.hours) parts.push(`${editForm.hours}h`);
+          if (editForm.minutes) parts.push(`${editForm.minutes}m`);
+          return parts.join(' ');
+        })()}
+        initialDate={
+          editForm.logged_date
+            ? new Date(editForm.logged_date + 'T00:00:00')
+            : undefined
+        }
+        initialDescription={editForm.description}
+        initialActivities={editForm.activities}
+        onSave={(val) => {
+          updateTimeMutation.mutate({
+            duration_seconds: val.durationMinutes * 60,
+            description: val.description,
+            activities: val.activities,
+            logged_date: val.dateTime.split('T')[0] as string,
+          });
+        }}
+        isSaving={updateTimeMutation.isPending}
+      />
 
       <AlertDialog
         open={Boolean(deletingLogId)}

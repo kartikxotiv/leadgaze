@@ -1273,8 +1273,7 @@ export function CreateMeetingDialog({
               (meetingType === 'scheduled' &&
                 provider === 'GOOGLE' &&
                 googleAccounts.length === 0)
-            }
-            className="min-w-[160px]"
+            }            
           >
             {isBusy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {isCreatingGoogleMeeting

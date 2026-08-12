@@ -244,7 +244,7 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
   return (
     <CardWidgetContainer
       title="Tasks & Checklist"
-      headerClassName="p-2 xl:p-2 2xl:p-2"
+      headerClassName="p-2 xl:p-2 2xl:p-2 mb-1"
       icon={<CheckSquare className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
       icon2={
         <div className="flex items-center gap-2">
