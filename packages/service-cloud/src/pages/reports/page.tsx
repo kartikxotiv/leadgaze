@@ -154,7 +154,7 @@ export function ServiceCloudReportsPage({
             description="How many tickets are currently sitting in each status."
             headerClassName="p-2 xl:p-2 2xl:p-2"
           >
-            <div className="space-y-2 px-2 py-2  max-h-[460px] overflow-auto">
+            <div className="space-y-4 px-2 py-2  max-h-[460px] overflow-auto">
               {statusBreakdown.length === 0 ? (
                 <EmptyReport label="No ticket statuses found." />
               ) : (
@@ -166,6 +166,7 @@ export function ServiceCloudReportsPage({
                   else if (nameLower === 'in progress') barColor = 'var(--color-ticket-status-in-progress)';
                   else if (nameLower.includes('waiting')) barColor = 'var(--color-ticket-status-waiting)';
                   else if (nameLower === 'resolved') barColor = 'var(--color-ticket-status-resolved)';
+                  else if (nameLower === 'closed') barColor = 'var(--color-ticket-status-closed)';
 
                   return (
                     <MetricBar
@@ -305,7 +306,7 @@ export function ServiceCloudReportsPage({
               {priorityBreakdown.length === 0 ? (
                 <EmptyReport label="No priority data." />
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {priorityBreakdown.map((priority: any) => {
                     const nameLower = priority.name.toLowerCase();
                     const isUrgent = nameLower === 'urgent';
