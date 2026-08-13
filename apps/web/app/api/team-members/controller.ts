@@ -455,10 +455,10 @@ const updateMember = catchAsync(
       );
     }
 
-    // Get current member
+    // Get current member with role details
     const { data: currentMember, error: fetchError } = await supabase
       .from('workspace_members')
-      .select('*')
+      .select('*, role:workspace_roles(id, role_name, role_key, hierarchy_level)')
       .eq('id', memberId)
       .single();
 
@@ -469,11 +469,42 @@ const updateMember = catchAsync(
       );
     }
 
+    // Authorization check: verify workspace owner is not modified by other team members
+    const {
+      data: { user: currentUser },
+    } = await supabase.auth.getUser();
+
+    if (!currentUser) {
+      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { data: workspace } = await supabase
+      .from('workspaces')
+      .select('id, owner_id')
+      .eq('id', currentMember.workspace_id)
+      .single();
+
+    const isTargetOwner =
+      (workspace?.owner_id && currentMember.user_id === workspace.owner_id) ||
+      currentMember.role?.role_key === 'owner' ||
+      currentMember.is_primary_contact === true;
+
+    const isRequestingOwner =
+      currentUser.id === currentMember.user_id ||
+      (workspace?.owner_id && currentUser.id === workspace.owner_id);
+
+    if (isTargetOwner && !isRequestingOwner) {
+      return NextResponse.json(
+        { message: 'The workspace owner role cannot be modified by other team members' },
+        { status: 403 },
+      );
+    }
+
     // If changing role, verify new role exists in same workspace
     if (role_id) {
       const { data: role, error: roleError } = await supabase
         .from('workspace_roles')
-        .select('id')
+        .select('id, role_key, hierarchy_level')
         .eq('id', role_id)
         .eq('workspace_id', currentMember.workspace_id)
         .single();
@@ -557,10 +588,10 @@ const removeMember = catchAsync(
       );
     }
 
-    // Get current member
+    // Get current member with role details
     const { data: member, error: fetchError } = await supabase
       .from('workspace_members')
-      .select('*')
+      .select('*, role:workspace_roles(id, role_name, role_key, hierarchy_level)')
       .eq('id', memberId)
       .single();
 
@@ -568,6 +599,37 @@ const removeMember = catchAsync(
       return NextResponse.json(
         { message: 'Member not found' },
         { status: 404 },
+      );
+    }
+
+    // Authorization check: verify workspace owner is not removed by other team members
+    const {
+      data: { user: currentUser },
+    } = await supabase.auth.getUser();
+
+    if (!currentUser) {
+      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { data: workspace } = await supabase
+      .from('workspaces')
+      .select('id, owner_id')
+      .eq('id', member.workspace_id)
+      .single();
+
+    const isTargetOwner =
+      (workspace?.owner_id && member.user_id === workspace.owner_id) ||
+      member.role?.role_key === 'owner' ||
+      member.is_primary_contact === true;
+
+    const isRequestingOwner =
+      currentUser.id === member.user_id ||
+      (workspace?.owner_id && currentUser.id === workspace.owner_id);
+
+    if (isTargetOwner && !isRequestingOwner) {
+      return NextResponse.json(
+        { message: 'The workspace owner cannot be removed by other team members' },
+        { status: 403 },
       );
     }
 
