@@ -1,6 +1,10 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { arrayMove, SortableContext, rectSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { X } from 'lucide-react';
 
 import Link from 'next/link';
 
@@ -80,6 +84,67 @@ import { OpportunityDialog } from '../opportunities/components/opportunity-dialo
 import { CardWidgetContainer } from '@kit/ui/card-widget-container';
 import { Skeleton } from '@kit/ui/skeleton';
 
+
+const WIDGET_REGISTRY: Record<string, { label: string, component: (props: any) => React.ReactNode }> = {
+  pipeline: { label: 'Lead Pipeline', component: (props) => (
+    <CardWidgetContainer title="Lead Pipeline">
+      <div className="flex-1 h-[360px] overflow-auto">
+        <PipelineOverview metrics={props.metrics} />
+      </div>
+    </CardWidgetContainer>
+  )},
+  latest_leads: { label: 'Latest Leads', component: () => <LatestLeadsTable /> },
+  upcoming_tasks: { label: 'Upcoming Tasks', component: (props) => (
+    <CardWidgetContainer title="Upcoming Tasks" icon2={<Calendar className="w-5 h-5 text-leadgaze-muted dark:text-white" />}>
+      <div className="flex-1 h-[360px] overflow-auto">
+        <UpcomingTasks tasks={props.metrics.upcomingTasks} />
+      </div>
+    </CardWidgetContainer>
+  )},
+  growth_trends: { label: 'Monthly Trend', component: () => <AccountGrowthTrends /> },
+  recent_actions: { label: 'Recent Actions', component: () => (
+    <CardWidgetContainer title="Recent Action" icon2={<History className="w-4 h-4 text-leadgaze-muted" />}>
+      <div className="flex-1 h-[360px] overflow-auto">
+        <RecentActionsList />
+      </div>
+    </CardWidgetContainer>
+  )},
+  latest_accounts: { label: 'Latest Accounts', component: () => <LatestAccountsTable /> },
+};
+
+function SortableWidgetWrapper({ id, onRemove, children }: { id: string; onRemove: (id: string) => void; children: React.ReactNode }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 50 : 1,
+    opacity: isDragging ? 0.8 : 1,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className="relative group w-full h-full">
+      {/* Drag Handle & Remove overlay */}
+      <div className="absolute top-3 right-4 opacity-0 group-hover:opacity-100 transition-opacity z-50 flex items-center gap-1.5">
+        <div {...attributes} {...listeners} className="p-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 rounded-md cursor-grab active:cursor-grabbing text-slate-500 shadow-sm border border-slate-200 dark:border-zinc-700">
+          <GripVertical className="w-4 h-4" />
+        </div>
+        <button onClick={() => onRemove(id)} className="p-1.5 bg-red-50 hover:bg-red-100 dark:bg-red-900/30 dark:hover:bg-red-900/50 rounded-md cursor-pointer text-red-500 shadow-sm border border-red-100 dark:border-red-900/30">
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+      {children}
+    </div>
+  );
+}
+
 export default function DashboardDemo({
   dateFilter,
   dateRange,
@@ -93,6 +158,37 @@ export default function DashboardDemo({
   const { formatCurrency } = useLocalization();
   const supabase = useSupabase();
   const workspaceId = currentWorkspace?.id;
+
+  const [activeWidgets, setActiveWidgets] = useState<string[]>([
+    'pipeline', 'growth_trends',
+    'latest_leads', 'recent_actions',
+    'upcoming_tasks', 'latest_accounts'
+  ]);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+  );
+
+  const handleDragEnd = (event: any) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      setActiveWidgets((items) => {
+        const oldIndex = items.indexOf(active.id);
+        const newIndex = items.indexOf(over.id);
+        return arrayMove(items, oldIndex, newIndex);
+      });
+    }
+  };
+
+  const removeWidget = (id: string) => {
+    setActiveWidgets((prev) => prev.filter(w => w !== id));
+  };
+  
+  const addWidget = (id: string) => {
+    if (!activeWidgets.includes(id)) {
+      setActiveWidgets((prev) => [...prev, id]);
+    }
+  };
 
   const {
     data: metrics,
@@ -351,44 +447,28 @@ export default function DashboardDemo({
       />
 
       {/* Section 3: Pipeline & Upcoming Tasks and Masonry */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:gap-4 2xl:gap-4 mt-2">
-        {/* Left Column */}
-        <div className="flex flex-col gap-4">
-          <CardWidgetContainer title="Lead Pipeline">
-            <div className="flex-1 h-[360px] overflow-auto">
-              <PipelineOverview metrics={metrics} />
-            </div>
-          </CardWidgetContainer>
-
-          <LatestLeadsTable />
-
-          <CardWidgetContainer title="Upcoming Tasks" icon2={<Calendar className="w-5 h-5 text-leadgaze-muted dark:text-white" />}>
-            <div className="flex-1 h-[360px] overflow-auto">
-              <UpcomingTasks tasks={metrics.upcomingTasks} />
-            </div>
-          </CardWidgetContainer>
-        </div>
-
-        {/* Right Column */}
-        <div className="flex flex-col gap-4">
-          <AccountGrowthTrends />
-          
-          <CardWidgetContainer title="Recent Action" icon2={<History className="w-4 h-4 text-leadgaze-muted" />}>
-             <div className="flex-1 h-[360px] overflow-auto">
-               <RecentActionsList />
-             </div>
-          </CardWidgetContainer>
-
-          <LatestAccountsTable />
-        </div>
-      </div>
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <SortableContext items={activeWidgets} strategy={rectSortingStrategy}>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-2">
+            {activeWidgets.map(id => {
+              const widget = WIDGET_REGISTRY[id];
+              if (!widget) return null;
+              return (
+                <SortableWidgetWrapper key={id} id={id} onRemove={removeWidget}>
+                  {widget.component({ metrics })}
+                </SortableWidgetWrapper>
+              );
+            })}
+          </div>
+        </SortableContext>
+      </DndContext>
       
         </div>
 
         {/* Widget Library Sidebar */}
         {isWidgetLibraryOpen && (
           <div className="w-[300px] xl:w-[320px] shrink-0 sticky top-4 h-[calc(100vh-140px)]">
-            <WidgetLibrary />
+            <WidgetLibrary activeWidgets={activeWidgets} onAddWidget={addWidget} />
           </div>
         )}
       </div>
@@ -1405,7 +1485,8 @@ function AccountGrowthTrends() {
   )
 }
 
-function WidgetLibrary() {
+function WidgetLibrary({ activeWidgets, onAddWidget }: { activeWidgets: string[], onAddWidget: (id: string) => void }) {
+  const isWidgetActive = (id: string) => activeWidgets.includes(id);
   return (
     <div className="flex flex-col h-full bg-[#f8fafc] dark:bg-zinc-900/40 rounded-xl border border-slate-200/60 dark:border-zinc-800 overflow-hidden">
        {/* Fixed Heading */}
@@ -1424,15 +1505,15 @@ function WidgetLibrary() {
           </WidgetSection>
 
           <WidgetSection title="CHARTS">
-            <WidgetItem label="Lead pipeline" disabled />
-            <WidgetItem label="Monthly Trend" />
+            <WidgetItem label="Lead pipeline" disabled={isWidgetActive('pipeline')} onClick={() => onAddWidget('pipeline')} />
+            <WidgetItem label="Monthly Trend" disabled={isWidgetActive('growth_trends')} onClick={() => onAddWidget('growth_trends')} />
           </WidgetSection>
 
           <WidgetSection title="ACTIVITY">
-            <WidgetItem label="Upcoming Tasks" disabled />
-            <WidgetItem label="Recent Actions" disabled />
-            <WidgetItem label="Latest Lead" disabled />
-            <WidgetItem label="Latest Account" disabled />
+            <WidgetItem label="Upcoming Tasks" disabled={isWidgetActive('upcoming_tasks')} onClick={() => onAddWidget('upcoming_tasks')} />
+            <WidgetItem label="Recent Actions" disabled={isWidgetActive('recent_actions')} onClick={() => onAddWidget('recent_actions')} />
+            <WidgetItem label="Latest Leads" disabled={isWidgetActive('latest_leads')} onClick={() => onAddWidget('latest_leads')} />
+            <WidgetItem label="Latest Accounts" disabled={isWidgetActive('latest_accounts')} onClick={() => onAddWidget('latest_accounts')} />
           </WidgetSection>
 
           <div className="mt-2 pb-4">
@@ -1456,10 +1537,10 @@ function WidgetSection({ title, children }: { title: string, children: React.Rea
   )
 }
 
-function WidgetItem({ label, disabled }: { label: string, disabled?: boolean }) {
+function WidgetItem({ label, disabled, onClick }: { label: string, disabled?: boolean, onClick?: () => void }) {
   return (
-    <div className={`flex items-center gap-2.5 p-2 px-3 rounded-lg border bg-white dark:bg-zinc-900 dark:border-zinc-800 transition-all ${disabled ? 'opacity-60 cursor-not-allowed border-slate-200 shadow-sm' : 'cursor-grab border-slate-200 hover:border-blue-400 shadow-sm hover:shadow-md'}`}>
-       <GripVertical className="w-3.5 h-3.5 text-slate-300 shrink-0" />
+    <div onClick={disabled ? undefined : onClick} className={`flex items-center gap-2.5 p-2 px-3 rounded-lg border bg-white dark:bg-zinc-900 dark:border-zinc-800 transition-all ${disabled ? 'opacity-60 cursor-not-allowed border-slate-200 shadow-sm' : 'cursor-pointer border-slate-200 hover:border-blue-400 shadow-sm hover:shadow-md'}`}>
+       <Plus className="w-3.5 h-3.5 text-slate-400 shrink-0" />
        {/* Icon mapping could be added here */}
        <span className="text-[13px] font-semibold text-slate-600 dark:text-zinc-300">{label}</span>
     </div>
