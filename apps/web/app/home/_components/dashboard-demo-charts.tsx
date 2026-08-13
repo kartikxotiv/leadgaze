@@ -88,31 +88,31 @@ import { Skeleton } from '@kit/ui/skeleton';
 const WIDGET_REGISTRY: Record<string, { label: string, component: (props: any) => React.ReactNode }> = {
   pipeline: { label: 'Lead Pipeline', component: (props) => (
     <CardWidgetContainer title="Lead Pipeline">
-      <div className="flex-1 h-[360px] overflow-auto">
+      <div className={`flex-1 ${props.heightClass} overflow-auto`}>
         <PipelineOverview metrics={props.metrics} />
       </div>
     </CardWidgetContainer>
   )},
-  latest_leads: { label: 'Latest Leads', component: () => <LatestLeadsTable /> },
+  latest_leads: { label: 'Latest Leads', component: (props) => <LatestLeadsTable heightClass={props.heightClass} /> },
   upcoming_tasks: { label: 'Upcoming Tasks', component: (props) => (
     <CardWidgetContainer title="Upcoming Tasks" icon2={<Calendar className="w-5 h-5 text-leadgaze-muted dark:text-white" />}>
-      <div className="flex-1 h-[360px] overflow-auto">
+      <div className={`flex-1 ${props.heightClass} overflow-auto`}>
         <UpcomingTasks tasks={props.metrics.upcomingTasks} />
       </div>
     </CardWidgetContainer>
   )},
-  growth_trends: { label: 'Monthly Trend', component: () => <AccountGrowthTrends /> },
-  recent_actions: { label: 'Recent Actions', component: () => (
+  growth_trends: { label: 'Monthly Trend', component: (props) => <AccountGrowthTrends heightClass={props.heightClass} /> },
+  recent_actions: { label: 'Recent Actions', component: (props) => (
     <CardWidgetContainer title="Recent Action" icon2={<History className="w-4 h-4 text-leadgaze-muted" />}>
-      <div className="flex-1 h-[360px] overflow-auto">
+      <div className={`flex-1 ${props.heightClass} overflow-auto`}>
         <RecentActionsList />
       </div>
     </CardWidgetContainer>
   )},
-  latest_accounts: { label: 'Latest Accounts', component: () => <LatestAccountsTable /> },
+  latest_accounts: { label: 'Latest Accounts', component: (props) => <LatestAccountsTable heightClass={props.heightClass} /> },
 };
 
-function SortableWidgetWrapper({ id, children }: { id: string; children: React.ReactNode }) {
+function SortableWidgetWrapper({ id, children, isFullWidth }: { id: string; children: React.ReactNode; isFullWidth?: boolean }) {
   const {
     attributes,
     listeners,
@@ -130,13 +130,14 @@ function SortableWidgetWrapper({ id, children }: { id: string; children: React.R
   };
 
   return (
-    <div ref={setNodeRef} style={style} className="relative group w-full h-full">
-      {/* Drag Handle */}
-      <div className="absolute top-4 left-4 opacity-0 group-hover:opacity-100 transition-opacity z-50 flex items-center">
-        <div {...attributes} {...listeners} className="p-1.5 bg-slate-100/90 hover:bg-slate-200 dark:bg-zinc-800/90 dark:hover:bg-zinc-700 rounded-md cursor-grab active:cursor-grabbing text-slate-500 shadow-sm border border-slate-200 dark:border-zinc-700">
-          <GripVertical className="w-4 h-4" />
-        </div>
-      </div>
+    <div ref={setNodeRef} style={style} className={`relative group w-full h-full ${isFullWidth ? 'lg:col-span-2' : ''}`}>
+      {/* Invisible Drag Zone over the header title area */}
+      <div 
+        {...attributes} 
+        {...listeners} 
+        className="absolute top-0 left-0 w-[60%] h-14 z-40 cursor-grab active:cursor-grabbing"
+        title="Drag to move"
+      />
       {children}
     </div>
   );
@@ -447,12 +448,22 @@ export default function DashboardDemo({
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={activeWidgets} strategy={rectSortingStrategy}>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-2">
-            {activeWidgets.map(id => {
+            {activeWidgets.map((id, index) => {
               const widget = WIDGET_REGISTRY[id];
               if (!widget) return null;
+
+              // Determine layer based on index (2 cards per layer)
+              // Layer 1: index 0, 1 -> h-[360px]
+              // Layer 2: index 2, 3 -> h-[200px]
+              // Layer 3+: index >= 4 -> h-[360px]
+              const isSecondLayer = index === 2 || index === 3;
+              const heightClass = isSecondLayer ? 'h-[200px]' : 'h-[360px]';
+
+              const isLastAndOdd = index === activeWidgets.length - 1 && activeWidgets.length % 2 !== 0;
+
               return (
-                <SortableWidgetWrapper key={id} id={id}>
-                  {widget.component({ metrics })}
+                <SortableWidgetWrapper key={id} id={id} isFullWidth={isLastAndOdd}>
+                  {widget.component({ metrics, heightClass })}
                 </SortableWidgetWrapper>
               );
             })}
@@ -868,7 +879,7 @@ function SalesDashboardSkeleton() {
   );
 }
 
-function LatestLeadsTable() {
+function LatestLeadsTable({ heightClass = "h-[360px]" }: { heightClass?: string }) {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
 
@@ -891,7 +902,7 @@ function LatestLeadsTable() {
 
   return (
     <CardWidgetContainer title="Latest Leads">
-      <div className="flex flex-col h-[360px]">
+      <div className={`flex flex-col ${heightClass}`}>
         <div className="flex-1 overflow-auto [&>div]:overflow-visible">
           <Table>
             <TableHeader>
@@ -933,21 +944,21 @@ function LatestLeadsTable() {
   )
 }
 
-function LatestAccountsTable() {
+function LatestAccountsTable({ heightClass = "h-[360px]" }: { heightClass?: string }) {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
 
   const mockAccounts = [
-    { name: 'Sarah Jenkins', email: 'sarah.j@techwave.io', phone: '+55 1236547896' },
-    { name: 'Noah Kim', email: 'noah.kim@acme.com', phone: '+1 9876543210' },
-    { name: 'Emily Chen', email: 'echen@globaltech.net', phone: '+44 2071234567' },
-    { name: 'David Miller', email: 'dmiller@peak.io', phone: '+61 212345678' },
-    { name: 'Rachel Green', email: 'rachel@startup.io', phone: '+1 5551234567' },
-    { name: 'Tom Wilson', email: 'tom@techwave.io', phone: '+55 1236547896' },
-    { name: 'Alex Wong', email: 'alex@acme.com', phone: '+1 9876543210' },
-    { name: 'Sophie Martin', email: 'sophie@globaltech.net', phone: '+44 2071234567' },
-    { name: 'Chris Evans', email: 'chris@peak.io', phone: '+61 212345678' },
-    { name: 'Jessica Lee', email: 'jessica@startup.io', phone: '+1 5551234567' },
+    { name: 'Stark Industries', industry: 'Technology', owner: 'Tony Stark' },
+    { name: 'Wayne Enterprises', industry: 'Finance', owner: 'Bruce Wayne' },
+    { name: 'Oscorp', industry: 'Healthcare', owner: 'Norman Osborn' },
+    { name: 'LexCorp', industry: 'Technology', owner: 'Lex Luthor' },
+    { name: 'Daily Bugle', industry: 'Media', owner: 'J.J. Jameson' },
+    { name: 'Nelson & Murdock', industry: 'Legal', owner: 'Matt Murdock' },
+    { name: 'Pym Technologies', industry: 'Research', owner: 'Hank Pym' },
+    { name: 'Rand Enterprises', industry: 'Finance', owner: 'Danny Rand' },
+    { name: 'Roxxon Energy', industry: 'Energy', owner: 'Hugh Jones' },
+    { name: 'Hammer Industries', industry: 'Defense', owner: 'Justin Hammer' },
   ];
 
   const totalCount = mockAccounts.length;
@@ -956,22 +967,22 @@ function LatestAccountsTable() {
 
   return (
     <CardWidgetContainer title="Latest Accounts">
-      <div className="flex flex-col h-[360px]">
+      <div className={`flex flex-col ${heightClass}`}>
         <div className="flex-1 overflow-auto [&>div]:overflow-visible">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
-                <TableHead>Phone</TableHead>
-                <TableHead>Email</TableHead>
+                <TableHead>Industry</TableHead>
+                <TableHead>Owner</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {paginatedAccounts.map((a, i) => (
                 <TableRow key={i}>
                   <TableCell>{a.name}</TableCell>
-                  <TableCell>{a.email}</TableCell>
-                  <TableCell>{a.phone}</TableCell>
+                  <TableCell>{a.industry}</TableCell>
+                  <TableCell>{a.owner}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -1015,25 +1026,30 @@ function RecentActionsList() {
   )
 }
 
-function AccountGrowthTrends() {
+function AccountGrowthTrends({ heightClass = "h-[360px]" }: { heightClass?: string }) {
   const data = [
-    { name: 'JAN', value: 4000, value2: 2400 },
-    { name: 'FEB', value: 3000, value2: 1398 },
-    { name: 'MAR', value: 2000, value2: 9800 },
-    { name: 'APR', value: 2780, value2: 3908 },
+    { name: 'JAN', value: 300, value2: 120 },
+    { name: 'FEB', value: 250, value2: 90 },
+    { name: 'MAR', value: 210, value2: 240 },
+    { name: 'APR', value: 280, value2: 190 },
   ];
+
   return (
     <CardWidgetContainer 
-      title="Account Growth Trends"
+      title="Revenu Chart"
       icon2={
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-sm bg-blue-600" /> <span className="text-[11px] font-medium text-slate-500">Gross Revenue</span></div>
-          <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-sm bg-slate-300" /> <span className="text-[11px] font-medium text-slate-500">Active Users</span></div>
-          <div className="flex items-center gap-1 relative cursor-pointer text-[11px] font-medium text-slate-600 ml-2">
-             <select className="appearance-none bg-transparent outline-none pr-4 cursor-pointer">
-                <option value="1">Last 1 Month</option>
-                <option value="3">Last 3 Months</option>
-                <option value="6" selected>Last 6 Months</option>
+        <div className="flex items-center gap-3">
+          {/* <div className="flex items-center gap-1.5">
+             <div className="w-2 h-2 rounded-full bg-blue-600"></div>
+             <span className="text-[10px] font-bold text-slate-500 uppercase">Gross Revenue</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+             <div className="w-2 h-2 rounded-full bg-slate-300"></div>
+             <span className="text-[10px] font-bold text-slate-500 uppercase">Active Users</span>
+          </div> */}
+          <div className="relative flex items-center bg-slate-50 dark:bg-zinc-800/50 rounded p-1 px-2 border border-slate-100 dark:border-zinc-800 ml-2">
+             <select className="bg-transparent text-[11px] font-bold text-slate-600 dark:text-zinc-400 outline-none pr-4 appearance-none cursor-pointer">
+                <option value="6">Last 6 month</option>
                 <option value="12">Last 1 Year</option>
              </select>
              <ChevronDown className="w-3.5 h-3.5 absolute right-0 pointer-events-none" />
@@ -1041,7 +1057,7 @@ function AccountGrowthTrends() {
         </div>
       }
     >
-      <div className="h-[360px] w-full p-4 pl-0">
+      <div className={`${heightClass} w-full p-4 pl-0`}>
         <ChartContainer config={{ 
            gross: { label: 'Gross Revenue', color: '#2563eb' },
            active: { label: 'Active Users', color: '#cbd5e1' }
@@ -1089,12 +1105,6 @@ function WidgetLibrary({ activeWidgets, onAddWidget, onRemoveWidget }: { activeW
             <WidgetItem label="Latest Leads" disabled={isWidgetActive('latest_leads')} onClick={() => onAddWidget('latest_leads')} onRemove={() => onRemoveWidget('latest_leads')} />
             <WidgetItem label="Latest Accounts" disabled={isWidgetActive('latest_accounts')} onClick={() => onAddWidget('latest_accounts')} onRemove={() => onRemoveWidget('latest_accounts')} />
           </WidgetSection>
-
-          <div className="mt-2 pb-4">
-            <Button variant="outline" className="w-full bg-white dark:bg-zinc-900 text-blue-600 border-blue-200 hover:border-blue-300 hover:bg-blue-50/50 dark:hover:bg-blue-900/20 font-semibold shadow-sm">
-               <Plus className="w-4 h-4 mr-2" /> Add Custom Widget
-            </Button>
-          </div>
        </div>
     </div>
   )
