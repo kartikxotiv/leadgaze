@@ -31,7 +31,7 @@ const REMINDER_EMAIL_TEMPLATE = ({
   <title>Reminder: ${reminderTitle}</title>
 </head>
 <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
-  <div style="max-width: 600px; margin: 40px auto; background-color: #000; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+  <div style="max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
     <!-- Header -->
     <div style="background-color: #3953E7; background: linear-gradient(135deg, #3953E7 0%, #283BA4 100%); padding: 32px 24px; text-align: center;">
       <p style="margin: 0; color: #000; font-size: 26px; font-weight: bold; letter-spacing: 0.5px; text-shadow: 0 1px 2px rgba(0,0,0,0.1);">📌 Reminder</p>
@@ -41,11 +41,10 @@ const REMINDER_EMAIL_TEMPLATE = ({
     <div style="padding: 32px 24px;">
       <p style="margin: 0 0 16px 0; color: #1a202c; font-size: 20px; font-weight: bold; line-height: 1.2;">${reminderTitle}</p>
       
-      ${
-        reminderDescription
-          ? `<p style="margin: 0 0 24px 0; color: #4a5568; font-size: 15px; line-height: 1.6;">${reminderDescription}</p>`
-          : ''
-      }
+      ${reminderDescription
+      ? `<p style="margin: 0 0 24px 0; color: #4a5568; font-size: 15px; line-height: 1.6;">${reminderDescription}</p>`
+      : ''
+    }
       
       <div style="background-color: #f7fafc; border-left: 4px solid #3953E7; padding: 16px; margin: 24px 0; border-radius: 4px;">
         <p style="margin: 0; color: #283BA4; font-size: 14px; font-weight: 600;">⏰ Due Date</p>

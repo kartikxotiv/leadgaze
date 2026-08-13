@@ -1,3 +1,4 @@
+import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
 import MEETING_INVITATION_TEMPLATE from '~/constants/email.templates/meeting-invitation.template';
@@ -207,20 +208,25 @@ export class NotificationService {
    */
   static async getUserEmail(userId: string): Promise<string | null> {
     try {
-      const supabase = getSupabaseServerClient();
+      const adminClient = getSupabaseServerAdminClient();
 
-      const { data, error } = await supabase
+      const { data } = await adminClient
         .from('accounts')
         .select('email')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
-      if (error || !data) {
-        console.error('[NotificationService] Failed to get user email:', error);
-        return null;
+      if (data?.email) {
+        return data.email;
       }
 
-      return data.email;
+      // Fallback: fetch directly from Supabase Auth users
+      const { data: authUser } = await adminClient.auth.admin.getUserById(userId);
+      if (authUser?.user?.email) {
+        return authUser.user.email;
+      }
+
+      return null;
     } catch (error) {
       console.error('[NotificationService] Error fetching user email:', error);
       return null;

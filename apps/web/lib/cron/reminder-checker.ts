@@ -1,4 +1,5 @@
-import { getSupabaseServerClient } from '@kit/supabase/server-client';
+import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
+import { Database } from '@kit/supabase/database';
 
 import { NotificationService } from './notification-service';
 import { REMINDER_CONFIG } from './reminder-config';
@@ -15,7 +16,7 @@ export class ReminderChecker {
    * Returns the number of notifications sent
    */
   static async checkAndNotify(): Promise<number> {
-    const supabase = getSupabaseServerClient();
+    const supabase = getSupabaseServerAdminClient<Database>();
     let notificationCount = 0;
 
     try {
@@ -33,7 +34,7 @@ export class ReminderChecker {
         .from('reminders')
         .select('*')
         .eq('is_deleted', false)
-        .eq('status', 'open')
+        .neq('status', 'completed')
         .lte('due_at', new Date().toISOString())
         .gte('due_at', lookbackDate.toISOString())
         .order('due_at', { ascending: true });
