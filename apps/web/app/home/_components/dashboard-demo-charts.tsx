@@ -112,7 +112,7 @@ const WIDGET_REGISTRY: Record<string, { label: string, component: (props: any) =
   latest_accounts: { label: 'Latest Accounts', component: () => <LatestAccountsTable /> },
 };
 
-function SortableWidgetWrapper({ id, onRemove, children }: { id: string; onRemove: (id: string) => void; children: React.ReactNode }) {
+function SortableWidgetWrapper({ id, children }: { id: string; children: React.ReactNode }) {
   const {
     attributes,
     listeners,
@@ -131,14 +131,11 @@ function SortableWidgetWrapper({ id, onRemove, children }: { id: string; onRemov
 
   return (
     <div ref={setNodeRef} style={style} className="relative group w-full h-full">
-      {/* Drag Handle & Remove overlay */}
-      <div className="absolute top-3 right-4 opacity-0 group-hover:opacity-100 transition-opacity z-50 flex items-center gap-1.5">
-        <div {...attributes} {...listeners} className="p-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 rounded-md cursor-grab active:cursor-grabbing text-slate-500 shadow-sm border border-slate-200 dark:border-zinc-700">
+      {/* Drag Handle */}
+      <div className="absolute top-4 left-4 opacity-0 group-hover:opacity-100 transition-opacity z-50 flex items-center">
+        <div {...attributes} {...listeners} className="p-1.5 bg-slate-100/90 hover:bg-slate-200 dark:bg-zinc-800/90 dark:hover:bg-zinc-700 rounded-md cursor-grab active:cursor-grabbing text-slate-500 shadow-sm border border-slate-200 dark:border-zinc-700">
           <GripVertical className="w-4 h-4" />
         </div>
-        <button onClick={() => onRemove(id)} className="p-1.5 bg-red-50 hover:bg-red-100 dark:bg-red-900/30 dark:hover:bg-red-900/50 rounded-md cursor-pointer text-red-500 shadow-sm border border-red-100 dark:border-red-900/30">
-          <X className="w-4 h-4" />
-        </button>
       </div>
       {children}
     </div>
@@ -454,7 +451,7 @@ export default function DashboardDemo({
               const widget = WIDGET_REGISTRY[id];
               if (!widget) return null;
               return (
-                <SortableWidgetWrapper key={id} id={id} onRemove={removeWidget}>
+                <SortableWidgetWrapper key={id} id={id}>
                   {widget.component({ metrics })}
                 </SortableWidgetWrapper>
               );
@@ -468,7 +465,7 @@ export default function DashboardDemo({
         {/* Widget Library Sidebar */}
         {isWidgetLibraryOpen && (
           <div className="w-[300px] xl:w-[320px] shrink-0 sticky top-4 h-[calc(100vh-140px)]">
-            <WidgetLibrary activeWidgets={activeWidgets} onAddWidget={addWidget} />
+            <WidgetLibrary activeWidgets={activeWidgets} onAddWidget={addWidget} onRemoveWidget={removeWidget} />
           </div>
         )}
       </div>
@@ -1062,7 +1059,7 @@ function AccountGrowthTrends() {
   )
 }
 
-function WidgetLibrary({ activeWidgets, onAddWidget }: { activeWidgets: string[], onAddWidget: (id: string) => void }) {
+function WidgetLibrary({ activeWidgets, onAddWidget, onRemoveWidget }: { activeWidgets: string[], onAddWidget: (id: string) => void, onRemoveWidget: (id: string) => void }) {
   const isWidgetActive = (id: string) => activeWidgets.includes(id);
   return (
     <div className="flex flex-col h-full bg-[#f8fafc] dark:bg-zinc-900/40 rounded-xl border border-slate-200/60 dark:border-zinc-800 overflow-hidden">
@@ -1082,15 +1079,15 @@ function WidgetLibrary({ activeWidgets, onAddWidget }: { activeWidgets: string[]
           </WidgetSection>
 
           <WidgetSection title="CHARTS">
-            <WidgetItem label="Lead pipeline" disabled={isWidgetActive('pipeline')} onClick={() => onAddWidget('pipeline')} />
-            <WidgetItem label="Monthly Trend" disabled={isWidgetActive('growth_trends')} onClick={() => onAddWidget('growth_trends')} />
+            <WidgetItem label="Lead pipeline" disabled={isWidgetActive('pipeline')} onClick={() => onAddWidget('pipeline')} onRemove={() => onRemoveWidget('pipeline')} />
+            <WidgetItem label="Monthly Trend" disabled={isWidgetActive('growth_trends')} onClick={() => onAddWidget('growth_trends')} onRemove={() => onRemoveWidget('growth_trends')} />
           </WidgetSection>
 
           <WidgetSection title="ACTIVITY">
-            <WidgetItem label="Upcoming Tasks" disabled={isWidgetActive('upcoming_tasks')} onClick={() => onAddWidget('upcoming_tasks')} />
-            <WidgetItem label="Recent Actions" disabled={isWidgetActive('recent_actions')} onClick={() => onAddWidget('recent_actions')} />
-            <WidgetItem label="Latest Leads" disabled={isWidgetActive('latest_leads')} onClick={() => onAddWidget('latest_leads')} />
-            <WidgetItem label="Latest Accounts" disabled={isWidgetActive('latest_accounts')} onClick={() => onAddWidget('latest_accounts')} />
+            <WidgetItem label="Upcoming Tasks" disabled={isWidgetActive('upcoming_tasks')} onClick={() => onAddWidget('upcoming_tasks')} onRemove={() => onRemoveWidget('upcoming_tasks')} />
+            <WidgetItem label="Recent Actions" disabled={isWidgetActive('recent_actions')} onClick={() => onAddWidget('recent_actions')} onRemove={() => onRemoveWidget('recent_actions')} />
+            <WidgetItem label="Latest Leads" disabled={isWidgetActive('latest_leads')} onClick={() => onAddWidget('latest_leads')} onRemove={() => onRemoveWidget('latest_leads')} />
+            <WidgetItem label="Latest Accounts" disabled={isWidgetActive('latest_accounts')} onClick={() => onAddWidget('latest_accounts')} onRemove={() => onRemoveWidget('latest_accounts')} />
           </WidgetSection>
 
           <div className="mt-2 pb-4">
@@ -1114,12 +1111,17 @@ function WidgetSection({ title, children }: { title: string, children: React.Rea
   )
 }
 
-function WidgetItem({ label, disabled, onClick }: { label: string, disabled?: boolean, onClick?: () => void }) {
+function WidgetItem({ label, disabled, onClick, onRemove }: { label: string, disabled?: boolean, onClick?: () => void, onRemove?: () => void }) {
   return (
-    <div onClick={disabled ? undefined : onClick} className={`flex items-center gap-2.5 p-2 px-3 rounded-lg border bg-white dark:bg-zinc-900 dark:border-zinc-800 transition-all ${disabled ? 'opacity-60 cursor-not-allowed border-slate-200 shadow-sm' : 'cursor-pointer border-slate-200 hover:border-blue-400 shadow-sm hover:shadow-md'}`}>
+    <div onClick={disabled ? undefined : onClick} className={`group flex items-center gap-2.5 p-2 px-3 rounded-lg border bg-white dark:bg-zinc-900 dark:border-zinc-800 transition-all ${disabled ? 'opacity-70 border-slate-200 shadow-sm' : 'cursor-pointer border-slate-200 hover:border-blue-400 shadow-sm hover:shadow-md'}`}>
        <Plus className="w-3.5 h-3.5 text-slate-400 shrink-0" />
        {/* Icon mapping could be added here */}
-       <span className="text-[13px] font-semibold text-slate-600 dark:text-zinc-300">{label}</span>
+       <span className="text-[13px] font-semibold text-slate-600 dark:text-zinc-300 flex-1">{label}</span>
+       {disabled && onRemove && (
+         <button onClick={(e) => { e.stopPropagation(); onRemove(); }} className="hidden group-hover:flex p-1 bg-red-50 hover:bg-red-100 dark:bg-red-900/30 dark:hover:bg-red-900/50 rounded cursor-pointer text-red-500 shadow-sm border border-red-100 dark:border-red-900/30">
+           <X className="w-3.5 h-3.5" />
+         </button>
+       )}
     </div>
   )
 }
