@@ -58,6 +58,7 @@ export const getServiceCloudTicketDetailController = catchAsync(
 
     const [
       ticketEmails,
+      coreEmailRelations,
       timeEntries,
       activities,
       statuses,
@@ -74,6 +75,15 @@ export const getServiceCloudTicketDetailController = catchAsync(
             .eq('workspace_id', workspaceId)
             .eq('ticket_id', ticketId)
             .order('created_at', { ascending: true })
+        : Promise.resolve({ data: [], error: null }),
+      canManageInbox
+        ? (supabase as any)
+            .schema('core')
+            .from('email_relations')
+            .select('email_id')
+            .eq('workspace_id', workspaceId)
+            .eq('entity_id', ticketId)
+            .in('entity_type', ['service_cloud_ticket', 'service_cloud_tickets', 'ticket', 'tickets'])
         : Promise.resolve({ data: [], error: null }),
       client
         .from('time_entries')
@@ -141,6 +151,7 @@ export const getServiceCloudTicketDetailController = catchAsync(
     ]);
 
     if (ticketEmails.error) throw ticketEmails.error;
+    if (coreEmailRelations.error) throw coreEmailRelations.error;
     if (timeEntries.error) throw timeEntries.error;
     if (activities.error) throw activities.error;
     if (statuses.error) throw statuses.error;
@@ -177,12 +188,14 @@ export const getServiceCloudTicketDetailController = catchAsync(
       ),
     );
 
+    const emailRelationsData = coreEmailRelations?.data ?? [];
+    const relationEmailIds = emailRelationsData.map((item: any) => item.email_id).filter(Boolean);
+
     const emailIds = Array.from(
-      new Set(
-        (ticketEmails.data ?? [])
-          .map((item: any) => item.email_id)
-          .filter(Boolean),
-      ),
+      new Set([
+        ...(ticketEmails.data ?? []).map((item: any) => item.email_id).filter(Boolean),
+        ...relationEmailIds,
+      ]),
     );
 
     const memberIds = Array.from(
@@ -226,25 +239,45 @@ export const getServiceCloudTicketDetailController = catchAsync(
     if (memberAccountsResult.error) throw memberAccountsResult.error;
     const memberAccounts = memberAccountsResult.data;
 
-    // Ticket conversation is sourced exclusively from ticket_emails (the
-    // source of truth). DB triggers auto-link legitimate replies via
-    // core_email_matches_thread(). The controller does NOT perform its
-    // own thread-key / subject / participant discovery, which previously
-    // pulled in many unrelated emails.
-
     const memberAccountById = new Map(
       (memberAccounts ?? []).map((account: any) => [account.id, account]),
     );
     const coreEmailById = new Map(
       linkedEmails.map((email: any) => [email.id, email]),
     );
-    const emails = (ticketEmails.data ?? [])
-      .map((item: any) => ({
-        ...item,
-        email: coreEmailById.get(item.email_id) ?? null,
-      }))
-      .filter((item: any) => item.email !== null)
-      .sort((left: any, right: any) => {
+
+    const ticketEmailsData = ticketEmails.data ?? [];
+    const ticketEmailMap = new Map(
+      ticketEmailsData.map((item: any) => [item.email_id, item]),
+    );
+
+    // Combine email items from ticket_emails + any emails linked via core.email_relations
+    const combinedEmailMap = new Map<string, any>();
+    ticketEmailsData.forEach((item: any) => {
+      const emailObj = coreEmailById.get(item.email_id) ?? null;
+      if (emailObj) {
+        combinedEmailMap.set(item.email_id, {
+          ...item,
+          email: emailObj,
+        });
+      }
+    });
+
+    linkedEmails.forEach((emailObj: any) => {
+      if (!combinedEmailMap.has(emailObj.id)) {
+        combinedEmailMap.set(emailObj.id, {
+          id: emailObj.id,
+          ticket_id: ticketId,
+          workspace_id: workspaceId,
+          email_id: emailObj.id,
+          email: emailObj,
+          created_at: emailObj.created_at,
+        });
+      }
+    });
+
+    const emails = Array.from(combinedEmailMap.values()).sort(
+      (left: any, right: any) => {
         const leftDate =
           left.email?.received_at ??
           left.email?.sent_at ??
@@ -257,7 +290,8 @@ export const getServiceCloudTicketDetailController = catchAsync(
           right.created_at;
 
         return new Date(leftDate).getTime() - new Date(rightDate).getTime();
-      });
+      },
+    );
 
     return successDataResponse('Ticket detail retrieved successfully', {
       ticket: {
