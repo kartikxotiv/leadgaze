@@ -41,6 +41,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from '@kit/ui/dialog';
 import { Input } from '@kit/ui/input';
 import { Label } from '@kit/ui/label';
@@ -625,19 +626,19 @@ export function WhatsAppSettingsPage({
       <Dialog open={showDisconnectDialog} onOpenChange={setShowDisconnectDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Disconnect WhatsApp Number</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to disconnect <strong>{accountToDisconnect?.display_name}</strong>?
-              Existing conversations will be preserved but new messages will not be received.
-            </DialogDescription>
+            <DialogTitle>Disconnect WhatsApp Number</DialogTitle>            
           </DialogHeader>
-          <div className="flex justify-end gap-3 mt-4">
+          <div className="space-y-2 px-2">
+            <p className="primary-text-regular text-leadgaze-dark dark:text-white">Are you sure you want to disconnect <strong>{accountToDisconnect?.display_name}</strong>?
+              Existing conversations will be preserved but new messages will not be received.</p>
+          </div>
+          <DialogFooter>
             <Button variant="outline" onClick={() => { setShowDisconnectDialog(false); setAccountToDisconnect(null); }}>Cancel</Button>
             <Button variant="destructive" onClick={handleDisconnect} disabled={isMutating} className="gap-2">
               {isMutating ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
               Disconnect
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>

@@ -147,7 +147,7 @@ export default function DashboardDemo({
         <Card className="h-32 xl:h-28 2xl:h-32 flex flex-col justify-between">
           <CardHeader className="flex flex-row items-start justify-between space-y-0 xl:p-3 xl:pb-0 2xl:p-5 2xl:pb-0">
             <div className="space-y-1">
-              <CardTitle className="secondary-text-small text-leadgaze-muted dark:text-white">
+              <CardTitle className="secondary-text-small-semibold text-leadgaze-dark dark:text-white">
                 Total Leads
               </CardTitle>
               <Link
@@ -171,7 +171,7 @@ export default function DashboardDemo({
         <Card className="h-32 xl:h-28 2xl:h-32 flex flex-col justify-between">
           <CardHeader className="flex flex-row items-start justify-between space-y-0 xl:p-3 xl:pb-0 2xl:p-5 2xl:pb-0">
             <div className="space-y-1">
-              <CardTitle className="secondary-text-small text-leadgaze-muted dark:text-white">
+              <CardTitle className="secondary-text-small-semibold text-leadgaze-dark dark:text-white">
                 Contacts
               </CardTitle>
               <Link
@@ -195,7 +195,7 @@ export default function DashboardDemo({
         <Card className="h-32 xl:h-28 2xl:h-32 flex flex-col justify-between">
           <CardHeader className="flex flex-row items-start justify-between space-y-0 xl:p-3 xl:pb-0 2xl:p-5 2xl:pb-0">
             <div className="space-y-1">
-              <CardTitle className="secondary-text-small text-leadgaze-muted dark:text-white">
+              <CardTitle className="secondary-text-small-semibold text-leadgaze-dark dark:text-white">
                 Accounts
               </CardTitle>
               <Link
@@ -219,7 +219,7 @@ export default function DashboardDemo({
         <Card className="h-32 xl:h-28 2xl:h-32 flex flex-col justify-between">
           <CardHeader className="flex flex-row items-start justify-between space-y-0 xl:p-3 xl:pb-0 2xl:p-5 2xl:pb-0">
             <div className="space-y-1">
-              <CardTitle className="secondary-text-small text-leadgaze-muted dark:text-white">
+              <CardTitle className="secondary-text-small-semibold text-leadgaze-dark dark:text-white">
                 Pipeline Value
               </CardTitle>
               <Link

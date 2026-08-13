@@ -227,12 +227,10 @@ export function MeetingAccountsSettings({
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Connect {selectedProvider?.name}</DialogTitle>
-            <DialogDescription>
-              You will be redirected to authenticate your{' '}
-              {selectedProvider?.name} account.
-            </DialogDescription>
           </DialogHeader>
-          <div className="py-4">
+          <div className="space-y-2 px-2">
+            <p className="primary-text-regular text-leadgaze-dark dark:text-white">You will be redirected to authenticate your{' '}
+              {selectedProvider?.name} account.</p>
             <div className="flex items-center gap-4 rounded-lg border p-4">
               <div
                 className="flex h-14 w-14 items-center justify-center rounded-xl"
