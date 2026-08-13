@@ -26,6 +26,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from '@kit/ui/dialog';
 
 import { useLocalization } from '@kit/shared/localization';
@@ -483,12 +484,12 @@ X-Zapier-Api-Key: ${activeKey?.masked_key || 'YOUR_ZAPIER_API_KEY'}`}
       }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>New API Key Generated</DialogTitle>
-            <DialogDescription>
-              Copy this key and save it in a secure password manager. For security reasons, <strong>this key will not be shown again</strong>.
-            </DialogDescription>
+            <DialogTitle>New API Key Generated</DialogTitle>            
+              
+            
           </DialogHeader>
-          <div className="space-y-2 py-2">
+          <div className="space-y-2 px-2 pb-2">
+            <p className="primary-text-regular text-leadgaze-dark dark:text-white">Copy this key and save it in a secure password manager. For security reasons, <strong>this key will not be shown again</strong>.</p>
             <div className="flex items-center gap-2 rounded border bg-muted/20 p-2.5 font-mono text-sm">
               <span className="flex-1 truncate">{generatedKey}</span>
               <Button
@@ -509,6 +510,11 @@ X-Zapier-Api-Key: ${activeKey?.masked_key || 'YOUR_ZAPIER_API_KEY'}`}
               <strong>Important:</strong> Storing a new key immediately revokes any previously generated keys for this integration.
             </div>
           </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowKeyDialog(false)}>
+              Done
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>
