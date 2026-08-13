@@ -29,7 +29,7 @@ interface LeadsKanbanColumnProps {
   canCreate: boolean;
   onLeadClick: (id: string) => void;
   onDelete: (lead: Lead) => void;
-  onCreateLead: () => void;
+  onCreateLead: (statusId: string) => void;
 }
 
 export function LeadsKanbanColumn({
@@ -111,7 +111,7 @@ export function LeadsKanbanColumn({
             variant="ghost"
             size="sm"
             className="h-8 w-full justify-start gap-1.5 rounded-lg text-xs text-muted-foreground hover:bg-muted/60 hover:text-foreground"
-            onClick={onCreateLead}
+            onClick={() => onCreateLead(status.id)}
           >
             <Plus className="h-3.5 w-3.5" />
             Add Lead

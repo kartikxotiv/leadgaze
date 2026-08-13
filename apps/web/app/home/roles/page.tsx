@@ -283,12 +283,16 @@ export default function RolesPage() {
     return colorMap[role.role_key] || '#6b7280';
   };
 
-  const getHierarchyLabel = (role: Role) => {
+  const getHierarchyLabel = (role: Role, rowIndex?: number) => {
     if (role.role_key === 'admin') {
       return 'Admin (Highest)';
     }
 
-    return `Level ${role.hierarchy_level || 0}`;
+    const customRoles = filteredRoles.filter((r) => r.role_key !== 'admin');
+    const customIndex = customRoles.findIndex((r) => r.id === role.id);
+    const fallbackLevel = customIndex >= 0 ? customIndex + 1 : (rowIndex ?? 1);
+
+    return `Level ${role.hierarchy_level && role.hierarchy_level > 0 ? role.hierarchy_level : fallbackLevel}`;
   };
 
   const activeFilterCount = useMemo(() => {
@@ -531,7 +535,7 @@ export default function RolesPage() {
                             variant="outline"
                             className="dark-button-border-color"
                           >
-                            {getHierarchyLabel(role)}
+                            {getHierarchyLabel(role, index)}
                           </Badge>
                         </TableCell>
                       )}
