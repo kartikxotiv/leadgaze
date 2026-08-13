@@ -11,6 +11,8 @@ import { useUser } from '@kit/supabase/hooks/use-user';
 import featuresFlagConfig from '~/config/feature-flags.config';
 import pathsConfig from '~/config/paths.config';
 
+import { useRBAC } from '~/lib/rbac/rbac-provider';
+
 const paths = {
   home: pathsConfig.app.home,
 };
@@ -27,10 +29,12 @@ export function ProfileAccountDropdownContainer(props: {
     id: string | null;
     name: string | null;
     picture_url: string | null;
+    color?: string | null;
   };
 }) {
   const signOut = useSignOut();
   const user = useUser(props.user);
+  const { currentWorkspace } = useRBAC();
   const userData = user.data;
   const pathname = usePathname() || '';
   const profilePath = getProfileSettingsPath(pathname);
@@ -39,13 +43,21 @@ export function ProfileAccountDropdownContainer(props: {
     return null;
   }
 
+  const roleColor = currentWorkspace?.currentRole?.color || null;
+  const mergedAccount = {
+    id: props.account?.id ?? null,
+    name: props.account?.name ?? null,
+    picture_url: props.account?.picture_url ?? null,
+    color: props.account?.color || roleColor,
+  };
+
   return (
     <PersonalAccountDropdown
       className={'w-full'}
       paths={{ ...paths, profile: profilePath }}
       features={features}
       user={userData}
-      account={props.account}
+      account={mergedAccount}
       signOutRequested={() => signOut.mutateAsync()}
       showProfileName={props.showProfileName}
     />
