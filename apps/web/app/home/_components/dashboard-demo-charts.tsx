@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { arrayMove, SortableContext, rectSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -28,6 +28,9 @@ import {
   ChevronDown,
   GripVertical,
   History,
+  Bell,
+  CheckSquare,
+  Activity,
 } from 'lucide-react';
 import {
   Area,
@@ -65,6 +68,7 @@ import {
   TableRow,
 } from '@kit/ui/table';
 import { TablePagination } from '@kit/ui/table-pagination';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@kit/ui/select';
 
 import { useLocalization } from '~/lib/localization/localization-provider';
 import { convertFromUSD, findLatestRateToUsd } from '@kit/shared/currency';
@@ -86,30 +90,30 @@ import { Skeleton } from '@kit/ui/skeleton';
 
 
 const WIDGET_REGISTRY: Record<string, { label: string, component: (props: any) => React.ReactNode }> = {
-  pipeline: { label: 'Lead Pipeline', component: (props) => (
-    <CardWidgetContainer title="Lead Pipeline">
+  pipeline: { label: 'Opportunity Pipeline', component: (props) => (
+    <CardWidgetContainer title="Opportunity Pipeline" headerClassName="p-2 xl:p-2 2xl:p-2">
       <div className={`flex-1 ${props.heightClass} overflow-auto`}>
         <PipelineOverview metrics={props.metrics} />
       </div>
     </CardWidgetContainer>
   )},
-  latest_leads: { label: 'Latest Leads', component: (props) => <LatestLeadsTable heightClass={props.heightClass} /> },
+  latest_leads: { label: 'Latest Leads', component: (props) => <LatestLeadsTable heightClass={props.heightClass} data={props.metrics?.latestLeads} /> },
   upcoming_tasks: { label: 'Upcoming Tasks', component: (props) => (
-    <CardWidgetContainer title="Upcoming Tasks" icon2={<Calendar className="w-5 h-5 text-leadgaze-muted dark:text-white" />}>
+    <CardWidgetContainer title="Upcoming Tasks" headerClassName="p-2 xl:p-2 2xl:p-2" icon2={<Calendar className="w-5 h-5 text-leadgaze-muted dark:text-white" />}>
       <div className={`flex-1 ${props.heightClass} overflow-auto`}>
-        <UpcomingTasks tasks={props.metrics.upcomingTasks} />
+        <UpcomingTasks tasks={props.metrics?.upcomingTasks} />
       </div>
     </CardWidgetContainer>
   )},
-  growth_trends: { label: 'Monthly Trend', component: (props) => <AccountGrowthTrends heightClass={props.heightClass} /> },
+  growth_trends: { label: 'Revenue Chart', component: (props) => <AccountGrowthTrends heightClass={props.heightClass} data={props.metrics?.revenueChart} /> },
   recent_actions: { label: 'Recent Actions', component: (props) => (
-    <CardWidgetContainer title="Recent Action" icon2={<History className="w-4 h-4 text-leadgaze-muted" />}>
+    <CardWidgetContainer title="Recent Action" headerClassName="p-2 xl:p-2 2xl:p-2" icon2={<History className="w-4 h-4 text-leadgaze-muted" />}>
       <div className={`flex-1 ${props.heightClass} overflow-auto`}>
-        <RecentActionsList />
+        <RecentActionsList data={props.metrics?.recentActions} />
       </div>
     </CardWidgetContainer>
   )},
-  latest_accounts: { label: 'Latest Accounts', component: (props) => <LatestAccountsTable heightClass={props.heightClass} /> },
+  latest_accounts: { label: 'Latest Accounts', component: (props) => <LatestAccountsTable heightClass={props.heightClass} data={props.metrics?.latestAccounts} /> },
 };
 
 function SortableWidgetWrapper({ id, children, isFullWidth }: { id: string; children: React.ReactNode; isFullWidth?: boolean }) {
@@ -157,11 +161,29 @@ export default function DashboardDemo({
   const supabase = useSupabase();
   const workspaceId = currentWorkspace?.id;
 
-  const [activeWidgets, setActiveWidgets] = useState<string[]>([
-    'pipeline', 'growth_trends',
-    'latest_leads', 'recent_actions',
-    'upcoming_tasks', 'latest_accounts'
-  ]);
+  const [activeWidgets, setActiveWidgets] = useState<string[]>([]);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+    const saved = localStorage.getItem('dashboard_active_widgets');
+    if (saved) {
+      try {
+        setActiveWidgets(JSON.parse(saved));
+      } catch (e) {
+        // Fallback
+        setActiveWidgets(['pipeline', 'growth_trends', 'latest_leads', 'recent_actions', 'upcoming_tasks', 'latest_accounts']);
+      }
+    } else {
+       setActiveWidgets(['pipeline', 'growth_trends', 'latest_leads', 'recent_actions', 'upcoming_tasks', 'latest_accounts']);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isMounted) {
+      localStorage.setItem('dashboard_active_widgets', JSON.stringify(activeWidgets));
+    }
+  }, [activeWidgets, isMounted]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
@@ -239,11 +261,11 @@ export default function DashboardDemo({
 
   return (
     <div className="animate-in fade-in flex flex-col pb-4 duration-500 w-full relative">
-      <div className="flex w-full gap-6 items-start">
+      <div className="flex w-full gap-2 items-start">
         <div className={`flex flex-col transition-all duration-300 ${isWidgetLibraryOpen ? 'w-[calc(100%-300px)] xl:w-[calc(100%-320px)]' : 'w-full'}`}>
           <div
             className={
-              'grid grid-cols-1 gap-4 pb-6 md:grid-cols-2 xl:grid-cols-4 xl:gap-3 xl:pb-4 2xl:grid-cols-4 2xl:gap-4 2xl:pb-6'
+              'grid grid-cols-1 gap-2 pb-0 md:grid-cols-2 xl:grid-cols-4 xl:gap-2 xl:pb-0 2xl:grid-cols-4 2xl:gap-2 2xl:pb-0'
             }
           >
             <Card className="h-32 xl:h-28 2xl:h-32 flex flex-col justify-between">
@@ -447,17 +469,17 @@ export default function DashboardDemo({
       {/* Section 3: Pipeline & Upcoming Tasks and Masonry */}
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={activeWidgets} strategy={rectSortingStrategy}>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-2">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 mt-2">
             {activeWidgets.map((id, index) => {
               const widget = WIDGET_REGISTRY[id];
               if (!widget) return null;
 
               // Determine layer based on index (2 cards per layer)
-              // Layer 1: index 0, 1 -> h-[360px]
+              // Layer 1: index 0, 1 -> h-[320px]
               // Layer 2: index 2, 3 -> h-[200px]
-              // Layer 3+: index >= 4 -> h-[360px]
+              // Layer 3+: index >= 4 -> h-[320px]
               const isSecondLayer = index === 2 || index === 3;
-              const heightClass = isSecondLayer ? 'h-[200px]' : 'h-[360px]';
+              const heightClass = isSecondLayer ? 'h-[200px]' : 'h-[320px]';
 
               const isLastAndOdd = index === activeWidgets.length - 1 && activeWidgets.length % 2 !== 0;
 
@@ -474,11 +496,15 @@ export default function DashboardDemo({
         </div>
 
         {/* Widget Library Sidebar */}
-        {isWidgetLibraryOpen && (
-          <div className="w-[300px] xl:w-[320px] shrink-0 sticky top-4 h-[calc(100vh-140px)]">
+        <div 
+          className={`shrink-0 sticky top-0 h-[calc(100vh-80px)] transition-all duration-300 overflow-hidden ${
+            isWidgetLibraryOpen ? 'w-[300px] xl:w-[320px] opacity-100' : 'w-0 opacity-0'
+          }`}
+        >
+          <div className="w-[300px] xl:w-[320px] h-full">
             <WidgetLibrary activeWidgets={activeWidgets} onAddWidget={addWidget} onRemoveWidget={removeWidget} />
           </div>
-        )}
+        </div>
       </div>
 
     </div>
@@ -486,33 +512,29 @@ export default function DashboardDemo({
 }
 
 function PipelineOverview({ metrics }: { metrics: DashboardMetrics }) {
-  const pipeline = metrics.pipeline || {
-    newLeads: 0,
-    contacted: 0,
-    qualified: 0,
-    proposalSent: 0,
-    won: 0,
-  };
-
-  const stages = [
-    { label: 'New Leads', value: pipeline.newLeads },
-    { label: 'Contacted', value: pipeline.contacted },
-    { label: 'Qualified', value: pipeline.qualified },
-    { label: 'Proposal Sent', value: pipeline.proposalSent },
-    { label: 'Won', value: pipeline.won },
+  const pipeline = Array.isArray(metrics.pipeline) ? metrics.pipeline : [
+    { label: 'New', value: 0 },
+    { label: 'Qualify', value: 0 },
+    { label: 'Meet & Present', value: 0 },
+    { label: 'Propose', value: 0 },
+    { label: 'Negotiation', value: 0 },
+    { label: 'Closed Won', value: 0 },
+    { label: 'Closed Lost', value: 0 }
   ];
 
-  const maxValue = Math.max(...stages.map((s) => s.value), 1);
+  const stages = pipeline;
+
+  const maxValue = Math.max(...stages.map((s: any) => s.value), 1);
 
   return (
-    <div className="max-h-[400px] space-y-6 p-6 xl:max-h-[430px] xl:space-y-4 xl:p-4 2xl:max-h-[440px] 2xl:space-y-6 2xl:p-6 overflow-auto">
+    <div className="max-h-[400px] space-y-4 px-2 py-2 xl:max-h-[430px] 2xl:max-h-[440px] overflow-auto">
       {stages.map((stage, index) => (
-        <div key={stage.label} className="flex flex-col gap-1.5">
+        <div key={stage.label} className="flex flex-col gap-1">
           <div className="flex justify-between items-center">
-            <span className="primary-text-medium text-leadgaze-dark dark:text-white">
+            <span className="secondary-text-small-semibold text-leadgaze-dark dark:text-white">
               {stage.label}
             </span>
-            <span className="primary-text-regular text-leadgaze-muted dark:text-white">
+            <span className="secondary-text-small-semibold font-bold text-leadgaze-dark dark:text-white">
               {stage.value}
             </span>
           </div>
@@ -593,12 +615,12 @@ function UpcomingTasks({ tasks }: { tasks: DashboardTask[] }) {
             return (
               <div
                 key={task.id}
-                className="flex items-center justify-between px-6 py-2 transition-colors hover:bg-slate-50/30 dark:hover:bg-zinc-800/30 border-b border-gray-300 last:border-0 xl:px-4 2xl:px-6"
+                className="flex items-center justify-between px-2 py-1 transition-colors hover:bg-slate-50/30 dark:hover:bg-zinc-800/30 border-b border-gray-300 last:border-0"
               >
                 <div className="flex items-start gap-4">
 
                   <div className="flex flex-col gap-0.5">
-                    <span className="primary-text-medium text-leadgaze-dark dark:text-zinc-200">
+                    <span className="primary-text-medium text-leadgaze-dark dark:text-white">
                       {task.title}
                       {task.entityName && (
                         <span className="font-normal text-leadgaze-muted dark:text-white">
@@ -810,233 +832,291 @@ function Figure(props: React.PropsWithChildren) {
 
 function SalesDashboardSkeleton() {
   return (
-    <div className="flex flex-col gap-4 pb-4">
-      {/* 4 stat cards */}
-      <div className="grid grid-cols-1 gap-4 pb-6 md:grid-cols-2 xl:grid-cols-4 xl:gap-3 xl:pb-4 2xl:grid-cols-4 2xl:gap-4 2xl:pb-6">
-        {[1, 2, 3, 4].map((i) => (
-          <Card key={i} className="h-32 xl:h-28 2xl:h-32 flex flex-col justify-between">
-            <CardHeader className="flex flex-row items-start justify-between space-y-0 xl:p-3 xl:pb-0 2xl:p-5 2xl:pb-0">
-              <div className="space-y-2">
-                <Skeleton className="h-3 w-24" />
-                <Skeleton className="h-7 w-16" />
-              </div>
-              <Skeleton className="h-8 w-8 rounded" />
-            </CardHeader>
-            <CardContent className="xl:p-3 xl:pt-2 2xl:p-5 2xl:pt-2">
-              <Skeleton className="h-3 w-36" />
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* Lead Pipeline + Upcoming Tasks */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:gap-4 2xl:gap-4">
-        {/* Lead Pipeline skeleton */}
-        <Card>
-          <CardHeader className="border-b">
-            <Skeleton className="h-5 w-32" />
-          </CardHeader>
-          <div className="space-y-6 p-6 xl:space-y-4 xl:p-4 2xl:space-y-6 2xl:p-6">
-            {['New Leads', 'Contacted', 'Qualified', 'Proposal Sent', 'Won'].map((stage) => (
-              <div key={stage} className="flex flex-col gap-1.5">
-                <div className="flex items-center justify-between">
-                  <Skeleton className="h-4 w-24" />
-                  <Skeleton className="h-4 w-6" />
-                </div>
-                <Skeleton className="h-2 w-full rounded-full" />
-              </div>
-            ))}
-          </div>
-        </Card>
-
-        {/* Upcoming Tasks skeleton */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between border-b">
-            <Skeleton className="h-5 w-36" />
-            <Skeleton className="h-5 w-5 rounded" />
-          </CardHeader>
-          <div className="divide-y dark:divide-zinc-800">
-            {[1, 2, 3].map((i) => (
-              <div
-                key={i}
-                className="flex items-center justify-between p-5 xl:p-3 2xl:p-5"
-              >
-                <div className="flex items-start gap-4">
-
-                  <div className="flex flex-col gap-1.5">
-                    <Skeleton className={`h-4 ${i === 1 ? 'w-48' : i === 2 ? 'w-40' : 'w-52'}`} />
-                    <Skeleton className="h-3 w-16" />
+    <div className="flex flex-col pb-4 w-full relative">
+      <div className="flex w-full gap-2 items-start">
+        <div className="flex flex-col w-[calc(100%-300px)] xl:w-[calc(100%-320px)]">
+          {/* 4 stat cards */}
+          <div className="grid grid-cols-1 gap-2 pb-0 md:grid-cols-2 xl:grid-cols-4 xl:gap-2 xl:pb-0 2xl:grid-cols-4 2xl:gap-2 2xl:pb-0">
+            {[1, 2, 3, 4].map((i) => (
+              <Card key={i} className="h-32 xl:h-28 2xl:h-32 flex flex-col justify-between">
+                <CardHeader className="flex flex-row items-start justify-between space-y-0 xl:p-3 xl:pb-0 2xl:p-5 2xl:pb-0">
+                  <div className="space-y-2">
+                    <Skeleton className="h-3 w-24" />
+                    <Skeleton className="h-7 w-16" />
                   </div>
-                </div>
-                {/* Priority badge */}
-                <Skeleton className="h-5 w-14 rounded-md" />
-              </div>
+                  <Skeleton className="h-8 w-8 rounded" />
+                </CardHeader>
+                <CardContent className="xl:p-3 xl:pt-2 2xl:p-5 2xl:pt-2">
+                  <Skeleton className="h-3 w-36" />
+                </CardContent>
+              </Card>
             ))}
           </div>
-        </Card>
+
+          {/* 6 widgets (2 columns) */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 mt-2">
+            {[1, 2, 3, 4, 5, 6].map((i) => {
+              const isSecondLayer = i === 3 || i === 4;
+              const heightClass = isSecondLayer ? 'h-[200px]' : 'h-[320px]';
+              
+              return (
+                <Card key={i} className={`${heightClass} flex flex-col overflow-hidden`}>
+                  <CardHeader className="border-b p-2 xl:p-2 2xl:p-2 flex flex-row items-center justify-between space-y-0">
+                    <Skeleton className="h-4 w-32" />
+                    {i % 2 === 0 && <Skeleton className="h-4 w-4 rounded" />}
+                  </CardHeader>
+                  <div className="p-4 flex flex-col gap-4 flex-1">
+                    {isSecondLayer ? (
+                      <>
+                        <Skeleton className="h-10 w-full" />
+                        <Skeleton className="h-10 w-full" />
+                        <Skeleton className="h-10 w-full" />
+                      </>
+                    ) : (
+                      <>
+                        <Skeleton className="h-4 w-full" />
+                        <Skeleton className="h-32 w-full flex-1" />
+                        <Skeleton className="h-4 w-3/4" />
+                      </>
+                    )}
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Widget Library Sidebar Skeleton */}
+        <div className="shrink-0 sticky top-0 h-[calc(100vh-80px)] w-[300px] xl:w-[320px]">
+          <div className="flex flex-col h-full bg-card border border-[#C3C6D6] overflow-hidden rounded-xl">
+             <div className="flex flex-col p-3 border-b bg-card border-[#C3C6D6] sticky top-0 z-10 shrink-0">
+               <Skeleton className="h-5 w-32" />
+               <Skeleton className="h-2 w-20 mt-2" />
+             </div>
+             <div className="flex flex-col gap-4 p-3 flex-1 overflow-y-auto">
+               <div className="flex flex-col gap-2">
+                 <Skeleton className="h-3 w-16 mb-1" />
+                 <Skeleton className="h-10 w-full rounded-lg" />
+                 <Skeleton className="h-10 w-full rounded-lg" />
+                 <Skeleton className="h-10 w-full rounded-lg" />
+                 <Skeleton className="h-10 w-full rounded-lg" />
+               </div>
+               <div className="flex flex-col gap-2 mt-2">
+                 <Skeleton className="h-3 w-16 mb-1" />
+                 <Skeleton className="h-10 w-full rounded-lg" />
+                 <Skeleton className="h-10 w-full rounded-lg" />
+               </div>
+             </div>
+          </div>
+        </div>
       </div>
     </div>
   );
 }
 
-function LatestLeadsTable({ heightClass = "h-[360px]" }: { heightClass?: string }) {
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(5);
-
-  const mockLeads = [
-    { name: 'Sarah Jenkins', status: 'NEW', value: '$42,000' },
-    { name: 'Acme Corp IT', status: 'QUALIFIED', value: '$156,000' },
-    { name: 'David Miller', status: 'CONTACTED', value: '$12,500' },
-    { name: 'Emily Chen', status: 'NEW', value: '$89,000' },
-    { name: 'Global Tech', status: 'PROPOSAL SENT', value: '$210,000' },
-    { name: 'Michael Brown', status: 'CONTACTED', value: '$34,000' },
-    { name: 'Peak Solutions', status: 'WON', value: '$45,000' },
-    { name: 'Rachel Green', status: 'NEW', value: '$67,000' },
-    { name: 'StartUp Inc', status: 'QUALIFIED', value: '$120,000' },
-    { name: 'Tom Wilson', status: 'NEW', value: '$22,000' },
-  ];
-
-  const totalCount = mockLeads.length;
-  const totalPages = Math.ceil(totalCount / pageSize);
-  const paginatedLeads = mockLeads.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+function LatestLeadsTable({ heightClass = "h-[320px]", data = [] }: { heightClass?: string, data?: any[] }) {
+  const leads = data;
 
   return (
-    <CardWidgetContainer title="Latest Leads">
+    <CardWidgetContainer title="Latest Leads" headerClassName="p-2 xl:p-2 2xl:p-2">
       <div className={`flex flex-col ${heightClass}`}>
-        <div className="flex-1 overflow-auto [&>div]:overflow-visible">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Contact Name</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Value</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {paginatedLeads.map((l, i) => (
-                <TableRow key={i}>
-                  <TableCell>{l.name}</TableCell>
-                  <TableCell>
-                     <Badge variant="outline" className={`h-5 text-[10px] uppercase border-transparent font-semibold shadow-none ${l.status === 'NEW' ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/30 dark:text-blue-400' : l.status === 'QUALIFIED' ? 'text-green-600 bg-green-50 dark:bg-green-900/30 dark:text-green-400' : 'text-orange-600 bg-orange-50 dark:bg-orange-900/30 dark:text-orange-400'}`}>{l.status}</Badge>
-                  </TableCell>
-                  <TableCell>{l.value}</TableCell>
+        {leads.length === 0 ? (
+          <div className="flex h-full flex-col items-center justify-center text-slate-400">
+            <Users className="mb-2 h-8 w-8 opacity-20" />
+            <p className="text-sm">No latest leads</p>
+          </div>
+        ) : (
+          <div className="flex-1 overflow-auto [&>div]:overflow-visible">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Contact Name</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Value</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-        <div className="border-t p-2 dark:border-zinc-800">
-          <TablePagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            totalCount={totalCount}
-            pageSize={pageSize}
-            onPageChange={setCurrentPage}
-            onPageSizeChange={(val) => {
-              setPageSize(val);
-              setCurrentPage(1);
-            }}
-            entityLabel="leads"
-          />
-        </div>
+              </TableHeader>
+              <TableBody>
+                {leads.map((l, i) => (
+                  <TableRow key={i}>
+                    <TableCell>{l.name}</TableCell>
+                    <TableCell>
+                       <Badge variant="outline" className={`h-5 text-[10px] uppercase border-transparent font-semibold shadow-none ${(l.status?.toUpperCase() === 'NEW' || l.status?.toUpperCase() === 'OPEN') ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/30 dark:text-blue-400' : (l.status?.toUpperCase() === 'QUALIFIED' || l.status?.toUpperCase() === 'WON') ? 'text-green-600 bg-green-50 dark:bg-green-900/30 dark:text-green-400' : 'text-orange-600 bg-orange-50 dark:bg-orange-900/30 dark:text-orange-400'}`}>{l.status}</Badge>
+                    </TableCell>
+                    <TableCell>{typeof l.value === 'number' ? `$${l.value.toLocaleString()}` : l.value}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
       </div>
     </CardWidgetContainer>
   )
 }
 
-function LatestAccountsTable({ heightClass = "h-[360px]" }: { heightClass?: string }) {
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(5);
-
-  const mockAccounts = [
-    { name: 'Stark Industries', industry: 'Technology', owner: 'Tony Stark' },
-    { name: 'Wayne Enterprises', industry: 'Finance', owner: 'Bruce Wayne' },
-    { name: 'Oscorp', industry: 'Healthcare', owner: 'Norman Osborn' },
-    { name: 'LexCorp', industry: 'Technology', owner: 'Lex Luthor' },
-    { name: 'Daily Bugle', industry: 'Media', owner: 'J.J. Jameson' },
-    { name: 'Nelson & Murdock', industry: 'Legal', owner: 'Matt Murdock' },
-    { name: 'Pym Technologies', industry: 'Research', owner: 'Hank Pym' },
-    { name: 'Rand Enterprises', industry: 'Finance', owner: 'Danny Rand' },
-    { name: 'Roxxon Energy', industry: 'Energy', owner: 'Hugh Jones' },
-    { name: 'Hammer Industries', industry: 'Defense', owner: 'Justin Hammer' },
-  ];
-
-  const totalCount = mockAccounts.length;
-  const totalPages = Math.ceil(totalCount / pageSize);
-  const paginatedAccounts = mockAccounts.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+function LatestAccountsTable({ heightClass = "h-[320px]", data = [] }: { heightClass?: string, data?: any[] }) {
+  const accounts = data;
 
   return (
-    <CardWidgetContainer title="Latest Accounts">
+    <CardWidgetContainer title="Latest Accounts" headerClassName="p-2 xl:p-2 2xl:p-2">
       <div className={`flex flex-col ${heightClass}`}>
-        <div className="flex-1 overflow-auto [&>div]:overflow-visible">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Industry</TableHead>
-                <TableHead>Owner</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {paginatedAccounts.map((a, i) => (
-                <TableRow key={i}>
-                  <TableCell>{a.name}</TableCell>
-                  <TableCell>{a.industry}</TableCell>
-                  <TableCell>{a.owner}</TableCell>
+        {accounts.length === 0 ? (
+          <div className="flex h-full flex-col items-center justify-center text-slate-400">
+            <Building2 className="mb-2 h-8 w-8 opacity-20" />
+            <p className="text-sm">No latest accounts</p>
+          </div>
+        ) : (
+          <div className="flex-1 overflow-auto [&>div]:overflow-visible">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Industry</TableHead>
+                  <TableHead>Owner</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-        <div className="border-t p-2 dark:border-zinc-800">
-          <TablePagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            totalCount={totalCount}
-            pageSize={pageSize}
-            onPageChange={setCurrentPage}
-            onPageSizeChange={(val) => {
-              setPageSize(val);
-              setCurrentPage(1);
-            }}
-            entityLabel="accounts"
-          />
-        </div>
+              </TableHeader>
+              <TableBody>
+                {accounts.map((a, i) => (
+                  <TableRow key={i}>
+                    <TableCell>{a.name}</TableCell>
+                    <TableCell>{a.industry}</TableCell>
+                    <TableCell>{a.owner}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
       </div>
     </CardWidgetContainer>
   )
 }
 
-function RecentActionsList() {
+function RecentActionsList({ data = [] }: { data?: any[] }) {
+  const actions = data;
+
+  const timeAgo = (dateString: string) => {
+    const rtf = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
+    const diff = (new Date(dateString).getTime() - Date.now()) / 1000;
+    if (Math.abs(diff) < 60) return rtf.format(Math.round(diff), 'second');
+    if (Math.abs(diff) < 3600) return rtf.format(Math.round(diff / 60), 'minute');
+    if (Math.abs(diff) < 86400) return rtf.format(Math.round(diff / 3600), 'hour');
+    return rtf.format(Math.round(diff / 86400), 'day');
+  };
+
+  const getActionDetails = (module?: string, action?: string) => {
+    const mod = String(module || '').toLowerCase();
+    const act = String(action || 'UPDATE').toUpperCase();
+
+    let icon = <Activity className="h-3.5 w-3.5 text-slate-500" />;
+    let moduleName = 'Activity';
+
+    if (mod.includes('email')) {
+      icon = <Mail className="h-3.5 w-3.5 text-blue-500" />;
+      moduleName = 'Email';
+    } else if (mod.includes('meeting')) {
+      icon = <Calendar className="h-3.5 w-3.5 text-indigo-500" />;
+      moduleName = 'Meeting';
+    } else if (mod.includes('lead')) {
+      icon = <User className="h-3.5 w-3.5 text-blue-500" />;
+      moduleName = 'Lead';
+    } else if (mod.includes('document') || mod.includes('file')) {
+      icon = <FileText className="h-3.5 w-3.5 text-emerald-500" />;
+      moduleName = 'Document';
+    } else if (mod.includes('task')) {
+      icon = <CheckSquare className="h-3.5 w-3.5 text-emerald-500" />;
+      moduleName = 'Task';
+    } else if (mod.includes('call')) {
+      icon = <Phone className="h-3.5 w-3.5 text-emerald-500" />;
+      moduleName = 'Call';
+    } else if (mod.includes('reminder')) {
+      icon = <Bell className="h-3.5 w-3.5 text-orange-500" />;
+      moduleName = 'Reminder';
+    } else if (mod.includes('contact')) {
+      icon = <Users className="h-3.5 w-3.5 text-blue-500" />;
+      moduleName = 'Contact';
+    } else if (mod.includes('account')) {
+      icon = <Building2 className="h-3.5 w-3.5 text-purple-500" />;
+      moduleName = 'Account';
+    } else if (mod.includes('opportunit')) {
+      icon = <Target className="h-3.5 w-3.5 text-red-500" />;
+      moduleName = 'Opportunity';
+    }
+
+    const badgeColor = act === 'CREATE' || act === 'CREATED' 
+      ? 'text-emerald-600 bg-emerald-50 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800' 
+      : act === 'DELETE' || act === 'DELETED'
+        ? 'text-rose-600 bg-rose-50 border-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800'
+        : 'text-blue-600 bg-blue-50 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800';
+
+    const actionText = act === 'CREATE' ? 'CREATED' : act === 'UPDATE' ? 'UPDATED' : act === 'DELETE' ? 'DELETED' : act;
+
+    return { icon, moduleName, badgeColor, actionText };
+  };
+
   return (
-    <div className="flex flex-col p-5 gap-5 pb-6">
-       <div className="flex flex-col gap-1">
-         <span className="text-sm font-semibold text-slate-800 dark:text-zinc-200 leading-tight">Call with Sarah Jenkins</span>
-         <span className="text-xs text-muted-foreground font-medium">Product demo follow-up • 2h ago</span>
-       </div>
-       <div className="flex flex-col gap-1">
-         <span className="text-sm font-semibold text-slate-800 dark:text-zinc-200 leading-tight">Email Sent: Proposal V2</span>
-         <span className="text-xs text-muted-foreground font-medium">To: Global Tech Corp • 4h ago</span>
-       </div>
-       <div className="flex flex-col gap-1">
-         <span className="text-sm font-semibold text-slate-800 dark:text-zinc-200 leading-tight">Discovery Meeting</span>
-         <span className="text-xs text-muted-foreground font-medium">With Peak Solutions • Yesterday</span>
-       </div>
+    <div className="flex flex-col gap-0 h-full">
+       {actions.length === 0 ? (
+         <div className="flex h-40 flex-col items-center justify-center text-slate-400 mt-4">
+           <History className="mb-2 h-8 w-8 opacity-20" />
+           <p className="text-sm">No recent actions</p>
+         </div>
+       ) : (
+         actions.map((a, i) => {
+           const details = getActionDetails(a.module, a.action);
+           
+           return (
+             <div key={i} className="flex items-center justify-between gap-4 px-3 py-2.5 border-b last:border-0 border-slate-100 dark:border-zinc-800/50 hover:bg-slate-50 dark:hover:bg-zinc-800/50 transition-colors">
+               <div className="flex items-center gap-2 min-w-0">
+                 {details.icon}
+                 <span className="primary-text-medium text-leadgaze-dark dark:text-white">{details.moduleName}</span>
+                 <Badge variant="outline" className={`h-[18px] text-[9px] px-1.5 uppercase font-bold shadow-none ${details.badgeColor}`}>
+                   {details.actionText}
+                 </Badge>
+                 <span className="text-[13px] text-slate-600 dark:text-zinc-300 font-medium truncate ml-1">{a.entityName || 'No Details'}</span>
+               </div>
+               <div className="flex items-center shrink-0">
+                 <span className="text-[11px] text-slate-400 dark:text-zinc-500 font-medium whitespace-nowrap">
+                   {a.actorName ? `by ${a.actorName}` : 'by System'} • {timeAgo(a.createdAt)}
+                 </span>
+               </div>
+             </div>
+           );
+         })
+       )}
     </div>
   )
 }
 
-function AccountGrowthTrends({ heightClass = "h-[360px]" }: { heightClass?: string }) {
-  const data = [
+function AccountGrowthTrends({ heightClass = "h-[320px]", data = [] }: { heightClass?: string, data?: any[] }) {
+  const [timeRange, setTimeRange] = useState("6");
+  
+  // Default mock data if no real data is passed yet
+  const chartData = data.length > 0 ? data : [
     { name: 'JAN', value: 300, value2: 120 },
     { name: 'FEB', value: 250, value2: 90 },
     { name: 'MAR', value: 210, value2: 240 },
     { name: 'APR', value: 280, value2: 190 },
+    { name: 'MAY', value: 310, value2: 210 },
+    { name: 'JUN', value: 350, value2: 250 },
+    { name: 'JUL', value: 400, value2: 280 },
+    { name: 'AUG', value: 420, value2: 300 },
+    { name: 'SEP', value: 450, value2: 320 },
+    { name: 'OCT', value: 480, value2: 350 },
+    { name: 'NOV', value: 500, value2: 380 },
+    { name: 'DEC', value: 520, value2: 400 },
   ];
+
+  // Slice the data to show only the selected number of months
+  const filteredData = useMemo(() => {
+    const numMonths = parseInt(timeRange);
+    return chartData.slice(-numMonths);
+  }, [chartData, timeRange]);
 
   return (
     <CardWidgetContainer 
-      title="Revenu Chart"
+      title="Revenue Chart"
+      headerClassName="p-2 xl:p-2 2xl:p-2"
       icon2={
         <div className="flex items-center gap-3">
           {/* <div className="flex items-center gap-1.5">
@@ -1047,22 +1127,28 @@ function AccountGrowthTrends({ heightClass = "h-[360px]" }: { heightClass?: stri
              <div className="w-2 h-2 rounded-full bg-slate-300"></div>
              <span className="text-[10px] font-bold text-slate-500 uppercase">Active Users</span>
           </div> */}
-          <div className="relative flex items-center bg-slate-50 dark:bg-zinc-800/50 rounded p-1 px-2 border border-slate-100 dark:border-zinc-800 ml-2">
-             <select className="bg-transparent text-[11px] font-bold text-slate-600 dark:text-zinc-400 outline-none pr-4 appearance-none cursor-pointer">
-                <option value="6">Last 6 month</option>
-                <option value="12">Last 1 Year</option>
-             </select>
-             <ChevronDown className="w-3.5 h-3.5 absolute right-0 pointer-events-none" />
+          <div className="ml-2 w-32">
+             <Select value={timeRange} onValueChange={setTimeRange}>
+                <SelectTrigger className="h-8 text-[11px] font-bold text-slate-600 dark:text-zinc-400 bg-slate-50 dark:bg-zinc-800/50 border-slate-100 dark:border-zinc-800">
+                  <SelectValue placeholder="Select Range" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">1 Month</SelectItem>
+                  <SelectItem value="3">3 Months</SelectItem>
+                  <SelectItem value="6">6 Months</SelectItem>
+                  <SelectItem value="12">12 Months</SelectItem>
+                </SelectContent>
+             </Select>
           </div>
         </div>
       }
     >
       <div className={`${heightClass} w-full p-4 pl-0`}>
         <ChartContainer config={{ 
-           gross: { label: 'Gross Revenue', color: '#2563eb' },
-           active: { label: 'Active Users', color: '#cbd5e1' }
+           value: { label: 'Actual Won Revenue', color: '#2563eb' },
+           value2: { label: 'Expected Pipeline Revenue', color: '#cbd5e1' }
         }} className="h-full w-full">
-           <LineChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+           <LineChart data={filteredData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
               <CartesianGrid vertical={false} strokeDasharray="3 3" />
               <XAxis dataKey="name" axisLine={false} tickLine={false} tickMargin={12} fontSize={11} fill="currentColor" className="text-muted-foreground font-medium" />
               <ChartTooltip content={<ChartTooltipContent />} />
@@ -1078,16 +1164,16 @@ function AccountGrowthTrends({ heightClass = "h-[360px]" }: { heightClass?: stri
 function WidgetLibrary({ activeWidgets, onAddWidget, onRemoveWidget }: { activeWidgets: string[], onAddWidget: (id: string) => void, onRemoveWidget: (id: string) => void }) {
   const isWidgetActive = (id: string) => activeWidgets.includes(id);
   return (
-    <div className="flex flex-col h-full bg-[#f8fafc] dark:bg-zinc-900/40 rounded-xl border border-slate-200/60 dark:border-zinc-800 overflow-hidden">
+    <div className="flex flex-col h-full bg-card border border-[#C3C6D6] overflow-hidden">
        {/* Fixed Heading */}
-       <div className="flex flex-col p-4 px-5 border-b border-slate-200/60 dark:border-zinc-800 bg-[#f8fafc] dark:bg-zinc-900 sticky top-0 z-10 shrink-0">
-          <h3 className="font-bold text-[15px] text-slate-800 dark:text-zinc-100">Widget Library</h3>
-          <p className="text-[11px] text-slate-500 font-medium mt-0.5">Drag to dashboard</p>
+       <div className="flex flex-col p-3 border-b bg-card border-[#C3C6D6] sticky top-0 z-10 shrink-0">
+          <h3 className="primary-heading text-leadgaze-dark leading-none tracking-tight dark:text-white">Widget Library</h3>
+          <p className="text-[11px] text-leadgaze-dark dark:text-white font-medium mt-0.5">Drag to dashboard</p>
        </div>
 
        {/* Scrollable Content */}
-       <div className="flex flex-col gap-6 p-5 overflow-y-auto flex-1 custom-scrollbar">
-          <WidgetSection title="KPI CARDS">
+       <div className="flex flex-col gap-4 p-3 overflow-y-auto flex-1 custom-scrollbar">
+          <WidgetSection title="KPI CARDS"> 
             <WidgetItem label="Total Leads" disabled />
             <WidgetItem label="Qualified Leads" disabled />
             <WidgetItem label="Revenue" disabled />
@@ -1095,8 +1181,8 @@ function WidgetLibrary({ activeWidgets, onAddWidget, onRemoveWidget }: { activeW
           </WidgetSection>
 
           <WidgetSection title="CHARTS">
-            <WidgetItem label="Lead pipeline" disabled={isWidgetActive('pipeline')} onClick={() => onAddWidget('pipeline')} onRemove={() => onRemoveWidget('pipeline')} />
-            <WidgetItem label="Monthly Trend" disabled={isWidgetActive('growth_trends')} onClick={() => onAddWidget('growth_trends')} onRemove={() => onRemoveWidget('growth_trends')} />
+            <WidgetItem label="Opportunity Pipeline" disabled={isWidgetActive('pipeline')} onClick={() => onAddWidget('pipeline')} onRemove={() => onRemoveWidget('pipeline')} />
+            <WidgetItem label="Revenue Chart" disabled={isWidgetActive('growth_trends')} onClick={() => onAddWidget('growth_trends')} onRemove={() => onRemoveWidget('growth_trends')} />
           </WidgetSection>
 
           <WidgetSection title="ACTIVITY">
@@ -1112,9 +1198,9 @@ function WidgetLibrary({ activeWidgets, onAddWidget, onRemoveWidget }: { activeW
 
 function WidgetSection({ title, children }: { title: string, children: React.ReactNode }) {
   return (
-    <div className="flex flex-col gap-3">
-       <span className="text-[11px] font-bold text-slate-400 tracking-wider">{title}</span>
-       <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-1">
+       <span className="secondary-text-small-bold text-[#737685] tracking-wider">{title}</span>
+       <div className="flex flex-col gap-1">
          {children}
        </div>
     </div>
@@ -1123,8 +1209,8 @@ function WidgetSection({ title, children }: { title: string, children: React.Rea
 
 function WidgetItem({ label, disabled, onClick, onRemove }: { label: string, disabled?: boolean, onClick?: () => void, onRemove?: () => void }) {
   return (
-    <div onClick={disabled ? undefined : onClick} className={`group flex items-center gap-2.5 p-2 px-3 rounded-lg border bg-white dark:bg-zinc-900 dark:border-zinc-800 transition-all ${disabled ? 'opacity-70 border-slate-200 shadow-sm' : 'cursor-pointer border-slate-200 hover:border-blue-400 shadow-sm hover:shadow-md'}`}>
-       <Plus className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+    <div onClick={disabled ? undefined : onClick} className={`group flex items-center gap-2.5 p-2 border bg-white border-[#C3C6D6] dark:bg-transparent transition-all ${disabled ? 'opacity-70 border-slate-200 shadow-sm' : 'cursor-pointer border-blue-400'}`}>
+       <Plus className="w-3.5 h-3.5 text-slate-600 dark:text-zinc-300 shrink-0" />
        {/* Icon mapping could be added here */}
        <span className="text-[13px] font-semibold text-slate-600 dark:text-zinc-300 flex-1">{label}</span>
        {disabled && onRemove && (
