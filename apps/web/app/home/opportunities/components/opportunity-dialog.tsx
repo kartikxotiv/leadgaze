@@ -82,6 +82,7 @@ interface OpportunityDialogProps {
   onSuccess?: () => void;
   opportunity?: any;
   defaultAccountId?: string;
+  defaultStageId?: string;
 }
 
 export function OpportunityDialog({
@@ -90,6 +91,7 @@ export function OpportunityDialog({
   onSuccess,
   opportunity,
   defaultAccountId,
+  defaultStageId,
 }: OpportunityDialogProps) {
   const queryClient = useQueryClient();
   const { currentWorkspace } = useRBAC();
@@ -175,7 +177,7 @@ export function OpportunityDialog({
         form.reset({
           opportunity_name: '',
           account_id: defaultAccountId || '',
-          stage_id: '',
+          stage_id: defaultStageId || '',
           amount: '',
           currency: 'USD',
           probability: '',

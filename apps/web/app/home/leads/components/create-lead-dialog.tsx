@@ -44,6 +44,7 @@ interface CreateLeadDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
+  defaultStatusId?: string;
 }
 
 const COMPANY_SIZES = [
@@ -82,6 +83,7 @@ export default function CreateLeadDialog({
   open,
   onOpenChange,
   onSuccess,
+  defaultStatusId,
 }: CreateLeadDialogProps) {
   const { currentWorkspace: workspace } = useRBAC();
   const {
@@ -136,7 +138,11 @@ export default function CreateLeadDialog({
     enabled: !!workspace,
   });
 
-  useEffect(() => {}, [workspace]);
+  useEffect(() => {
+    if (open && defaultStatusId) {
+      setFormData((prev) => ({ ...prev, status_id: defaultStatusId }));
+    }
+  }, [open, defaultStatusId]);
 
   const handleInputChange = useCallback(
     (field: keyof FormDataState, value: string) => {

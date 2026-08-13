@@ -192,6 +192,7 @@ export default function OpportunitiesPage() {
   const [selectedStage, setSelectedStage] = useState<string>('all');
   const [selectedCreatedId, setSelectedCreatedId] = useState<string>('all');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [createOppDefaultStageId, setCreateOppDefaultStageId] = useState<string | undefined>(undefined);
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [opportunityToDelete, setOpportunityToDelete] =
@@ -1262,7 +1263,10 @@ export default function OpportunitiesPage() {
               setDeleteDialogOpen(true);
             }}
             onStageChange={handleKanbanStageChange}
-            onCreateOpportunity={() => setIsCreateDialogOpen(true)}
+            onCreateOpportunity={(stageId) => {
+              setCreateOppDefaultStageId(stageId);
+              setIsCreateDialogOpen(true);
+            }}
           />
         ) : (
           <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 gap-0">
@@ -1601,7 +1605,13 @@ export default function OpportunitiesPage() {
 
         <OpportunityDialog
           isOpen={isCreateDialogOpen}
-          onOpenChange={setIsCreateDialogOpen}
+          onOpenChange={(open) => {
+            setIsCreateDialogOpen(open);
+            if (!open) {
+              setCreateOppDefaultStageId(undefined);
+            }
+          }}
+          defaultStageId={createOppDefaultStageId}
         />
 
         <CsvImportDialog

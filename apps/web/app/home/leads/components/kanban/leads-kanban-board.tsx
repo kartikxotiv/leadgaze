@@ -41,7 +41,7 @@ interface LeadsKanbanBoardProps {
   onLeadClick: (id: string) => void;
   onDelete: (lead: Lead) => void;
   onStatusChange: (leadId: string, newStatusId: string) => Promise<void>;
-  onCreateLead: () => void;
+  onCreateLead: (statusId?: string) => void;
 }
 
 // ---------------------------------------------------------------------------

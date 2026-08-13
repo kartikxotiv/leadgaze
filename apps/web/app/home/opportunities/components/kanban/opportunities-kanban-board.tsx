@@ -40,7 +40,7 @@ interface OpportunitiesKanbanBoardProps {
   onOpportunityClick: (id: string) => void;
   onDelete: (opportunity: Opportunity) => void;
   onStageChange: (opportunityId: string, newStageId: string) => Promise<void>;
-  onCreateOpportunity: () => void;
+  onCreateOpportunity: (stageId?: string) => void;
 }
 
 // ---------------------------------------------------------------------------

@@ -230,6 +230,7 @@ export default function LeadsPage() {
     [],
   );
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [createLeadDefaultStatusId, setCreateLeadDefaultStatusId] = useState<string | undefined>(undefined);
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const { preloadLeadDetail } = usePreloadStrategies();
   const { handleMouseEnter, handleMouseLeave } = usePreloadHoverHandlers();
@@ -1241,7 +1242,10 @@ export default function LeadsPage() {
                 setDeleteDialogOpen(true);
               }}
               onStatusChange={handleKanbanStatusChange}
-              onCreateLead={() => setIsCreateDialogOpen(true)}
+              onCreateLead={(statusId) => {
+                setCreateLeadDefaultStatusId(statusId);
+                setIsCreateDialogOpen(true);
+              }}
             />
           </div>
         ) : (
@@ -1637,7 +1641,13 @@ export default function LeadsPage() {
         {/* Create Lead Dialog */}
         <CreateLeadDialog
           open={isCreateDialogOpen}
-          onOpenChange={setIsCreateDialogOpen}
+          onOpenChange={(open) => {
+            setIsCreateDialogOpen(open);
+            if (!open) {
+              setCreateLeadDefaultStatusId(undefined);
+            }
+          }}
+          defaultStatusId={createLeadDefaultStatusId}
           onSuccess={handleCreateSuccess}
         />
 
