@@ -21,6 +21,9 @@ import {
   Users,
   Video,
   Calendar,
+  ChevronDown,
+  GripVertical,
+  History,
 } from 'lucide-react';
 import {
   Area,
@@ -57,6 +60,7 @@ import {
   TableHeader,
   TableRow,
 } from '@kit/ui/table';
+import { TablePagination } from '@kit/ui/table-pagination';
 
 import { useLocalization } from '~/lib/localization/localization-provider';
 import { convertFromUSD, findLatestRateToUsd } from '@kit/shared/currency';
@@ -79,9 +83,11 @@ import { Skeleton } from '@kit/ui/skeleton';
 export default function DashboardDemo({
   dateFilter,
   dateRange,
+  isWidgetLibraryOpen,
 }: {
   dateFilter?: { from: string | null; to: string | null } | null;
   dateRange?: any;
+  isWidgetLibraryOpen?: boolean;
 }) {
   const { currentWorkspace } = useRBAC();
   const { formatCurrency } = useLocalization();
@@ -138,16 +144,18 @@ export default function DashboardDemo({
   }
 
   return (
-    <div className="animate-in fade-in flex flex-col pb-4 duration-500">
-      <div
-        className={
-          'grid grid-cols-1 gap-4 pb-6 md:grid-cols-2 xl:grid-cols-4 xl:gap-3 xl:pb-4 2xl:grid-cols-4 2xl:gap-4 2xl:pb-6'
-        }
-      >
-        <Card className="h-32 xl:h-28 2xl:h-32 flex flex-col justify-between">
-          <CardHeader className="flex flex-row items-start justify-between space-y-0 xl:p-3 xl:pb-0 2xl:p-5 2xl:pb-0">
-            <div className="space-y-1">
-              <CardTitle className="secondary-text-small-semibold text-leadgaze-dark dark:text-white">
+    <div className="animate-in fade-in flex flex-col pb-4 duration-500 w-full relative">
+      <div className="flex w-full gap-6 items-start">
+        <div className={`flex flex-col transition-all duration-300 ${isWidgetLibraryOpen ? 'w-[calc(100%-300px)] xl:w-[calc(100%-320px)]' : 'w-full'}`}>
+          <div
+            className={
+              'grid grid-cols-1 gap-4 pb-6 md:grid-cols-2 xl:grid-cols-4 xl:gap-3 xl:pb-4 2xl:grid-cols-4 2xl:gap-4 2xl:pb-6'
+            }
+          >
+            <Card className="h-32 xl:h-28 2xl:h-32 flex flex-col justify-between">
+              <CardHeader className="flex flex-row items-start justify-between space-y-0 xl:p-3 xl:pb-0 2xl:p-5 2xl:pb-0">
+                <div className="space-y-1">
+                  <CardTitle className="secondary-text-small-semibold text-leadgaze-dark dark:text-white">
                 Total Leads
               </CardTitle>
               <Link
@@ -342,21 +350,49 @@ export default function DashboardDemo({
         onSuccess={handleCreateSuccess}
       />
 
-      {/* Section 3: Pipeline & Upcoming Tasks */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:gap-4 2xl:gap-4">
-        <CardWidgetContainer title="Lead Pipeline">
-          <div className="flex-1">
-            <PipelineOverview metrics={metrics} />
-          </div>
-        </CardWidgetContainer>
+      {/* Section 3: Pipeline & Upcoming Tasks and Masonry */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:gap-4 2xl:gap-4 mt-2">
+        {/* Left Column */}
+        <div className="flex flex-col gap-4">
+          <CardWidgetContainer title="Lead Pipeline">
+            <div className="flex-1 h-[360px] overflow-auto">
+              <PipelineOverview metrics={metrics} />
+            </div>
+          </CardWidgetContainer>
 
-        <CardWidgetContainer title="Upcoming Tasks" icon2={<Calendar className="w-5 h-5 text-leadgaze-muted dark:text-white" />}>
-          <div className="flex-1">
-            <UpcomingTasks tasks={metrics.upcomingTasks} />
-          </div>
-        </CardWidgetContainer>
+          <LatestLeadsTable />
 
+          <CardWidgetContainer title="Upcoming Tasks" icon2={<Calendar className="w-5 h-5 text-leadgaze-muted dark:text-white" />}>
+            <div className="flex-1 h-[360px] overflow-auto">
+              <UpcomingTasks tasks={metrics.upcomingTasks} />
+            </div>
+          </CardWidgetContainer>
+        </div>
+
+        {/* Right Column */}
+        <div className="flex flex-col gap-4">
+          <AccountGrowthTrends />
+          
+          <CardWidgetContainer title="Recent Action" icon2={<History className="w-4 h-4 text-leadgaze-muted" />}>
+             <div className="flex-1 h-[360px] overflow-auto">
+               <RecentActionsList />
+             </div>
+          </CardWidgetContainer>
+
+          <LatestAccountsTable />
+        </div>
       </div>
+      
+        </div>
+
+        {/* Widget Library Sidebar */}
+        {isWidgetLibraryOpen && (
+          <div className="w-[300px] xl:w-[320px] shrink-0 sticky top-4 h-[calc(100vh-140px)]">
+            <WidgetLibrary />
+          </div>
+        )}
+      </div>
+
     </div>
   );
 }
@@ -1177,3 +1213,255 @@ function SalesDashboardSkeleton() {
 //     </Card>
 //   );
 // }
+
+function LatestLeadsTable() {
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(5);
+
+  const mockLeads = [
+    { name: 'Sarah Jenkins', status: 'NEW', value: '$42,000' },
+    { name: 'Acme Corp IT', status: 'QUALIFIED', value: '$156,000' },
+    { name: 'David Miller', status: 'CONTACTED', value: '$12,500' },
+    { name: 'Emily Chen', status: 'NEW', value: '$89,000' },
+    { name: 'Global Tech', status: 'PROPOSAL SENT', value: '$210,000' },
+    { name: 'Michael Brown', status: 'CONTACTED', value: '$34,000' },
+    { name: 'Peak Solutions', status: 'WON', value: '$45,000' },
+    { name: 'Rachel Green', status: 'NEW', value: '$67,000' },
+    { name: 'StartUp Inc', status: 'QUALIFIED', value: '$120,000' },
+    { name: 'Tom Wilson', status: 'NEW', value: '$22,000' },
+  ];
+
+  const totalCount = mockLeads.length;
+  const totalPages = Math.ceil(totalCount / pageSize);
+  const paginatedLeads = mockLeads.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  return (
+    <CardWidgetContainer title="Latest Leads">
+      <div className="flex flex-col h-[360px]">
+        <div className="flex-1 overflow-auto [&>div]:overflow-visible">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Contact Name</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Value</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {paginatedLeads.map((l, i) => (
+                <TableRow key={i}>
+                  <TableCell>{l.name}</TableCell>
+                  <TableCell>
+                     <Badge variant="outline" className={`h-5 text-[10px] uppercase border-transparent font-semibold shadow-none ${l.status === 'NEW' ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/30 dark:text-blue-400' : l.status === 'QUALIFIED' ? 'text-green-600 bg-green-50 dark:bg-green-900/30 dark:text-green-400' : 'text-orange-600 bg-orange-50 dark:bg-orange-900/30 dark:text-orange-400'}`}>{l.status}</Badge>
+                  </TableCell>
+                  <TableCell>{l.value}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+        <div className="border-t p-2 dark:border-zinc-800">
+          <TablePagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalCount={totalCount}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={(val) => {
+              setPageSize(val);
+              setCurrentPage(1);
+            }}
+            entityLabel="leads"
+          />
+        </div>
+      </div>
+    </CardWidgetContainer>
+  )
+}
+
+function LatestAccountsTable() {
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(5);
+
+  const mockAccounts = [
+    { name: 'Sarah Jenkins', email: 'sarah.j@techwave.io', phone: '+55 1236547896' },
+    { name: 'Noah Kim', email: 'noah.kim@acme.com', phone: '+1 9876543210' },
+    { name: 'Emily Chen', email: 'echen@globaltech.net', phone: '+44 2071234567' },
+    { name: 'David Miller', email: 'dmiller@peak.io', phone: '+61 212345678' },
+    { name: 'Rachel Green', email: 'rachel@startup.io', phone: '+1 5551234567' },
+    { name: 'Tom Wilson', email: 'tom@techwave.io', phone: '+55 1236547896' },
+    { name: 'Alex Wong', email: 'alex@acme.com', phone: '+1 9876543210' },
+    { name: 'Sophie Martin', email: 'sophie@globaltech.net', phone: '+44 2071234567' },
+    { name: 'Chris Evans', email: 'chris@peak.io', phone: '+61 212345678' },
+    { name: 'Jessica Lee', email: 'jessica@startup.io', phone: '+1 5551234567' },
+  ];
+
+  const totalCount = mockAccounts.length;
+  const totalPages = Math.ceil(totalCount / pageSize);
+  const paginatedAccounts = mockAccounts.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  return (
+    <CardWidgetContainer title="Latest Accounts">
+      <div className="flex flex-col h-[360px]">
+        <div className="flex-1 overflow-auto [&>div]:overflow-visible">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Phone</TableHead>
+                <TableHead>Email</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {paginatedAccounts.map((a, i) => (
+                <TableRow key={i}>
+                  <TableCell>{a.name}</TableCell>
+                  <TableCell>{a.email}</TableCell>
+                  <TableCell>{a.phone}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+        <div className="border-t p-2 dark:border-zinc-800">
+          <TablePagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalCount={totalCount}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={(val) => {
+              setPageSize(val);
+              setCurrentPage(1);
+            }}
+            entityLabel="accounts"
+          />
+        </div>
+      </div>
+    </CardWidgetContainer>
+  )
+}
+
+function RecentActionsList() {
+  return (
+    <div className="flex flex-col p-5 gap-5 pb-6">
+       <div className="flex flex-col gap-1">
+         <span className="text-sm font-semibold text-slate-800 dark:text-zinc-200 leading-tight">Call with Sarah Jenkins</span>
+         <span className="text-xs text-muted-foreground font-medium">Product demo follow-up • 2h ago</span>
+       </div>
+       <div className="flex flex-col gap-1">
+         <span className="text-sm font-semibold text-slate-800 dark:text-zinc-200 leading-tight">Email Sent: Proposal V2</span>
+         <span className="text-xs text-muted-foreground font-medium">To: Global Tech Corp • 4h ago</span>
+       </div>
+       <div className="flex flex-col gap-1">
+         <span className="text-sm font-semibold text-slate-800 dark:text-zinc-200 leading-tight">Discovery Meeting</span>
+         <span className="text-xs text-muted-foreground font-medium">With Peak Solutions • Yesterday</span>
+       </div>
+    </div>
+  )
+}
+
+function AccountGrowthTrends() {
+  const data = [
+    { name: 'JAN', value: 4000, value2: 2400 },
+    { name: 'FEB', value: 3000, value2: 1398 },
+    { name: 'MAR', value: 2000, value2: 9800 },
+    { name: 'APR', value: 2780, value2: 3908 },
+  ];
+  return (
+    <CardWidgetContainer 
+      title="Account Growth Trends"
+      icon2={
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-sm bg-blue-600" /> <span className="text-[11px] font-medium text-slate-500">Gross Revenue</span></div>
+          <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-sm bg-slate-300" /> <span className="text-[11px] font-medium text-slate-500">Active Users</span></div>
+          <div className="flex items-center gap-1 relative cursor-pointer text-[11px] font-medium text-slate-600 ml-2">
+             <select className="appearance-none bg-transparent outline-none pr-4 cursor-pointer">
+                <option value="1">Last 1 Month</option>
+                <option value="3">Last 3 Months</option>
+                <option value="6" selected>Last 6 Months</option>
+                <option value="12">Last 1 Year</option>
+             </select>
+             <ChevronDown className="w-3.5 h-3.5 absolute right-0 pointer-events-none" />
+          </div>
+        </div>
+      }
+    >
+      <div className="h-[360px] w-full p-4 pl-0">
+        <ChartContainer config={{ 
+           gross: { label: 'Gross Revenue', color: '#2563eb' },
+           active: { label: 'Active Users', color: '#cbd5e1' }
+        }} className="h-full w-full">
+           <LineChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+              <CartesianGrid vertical={false} strokeDasharray="3 3" />
+              <XAxis dataKey="name" axisLine={false} tickLine={false} tickMargin={12} fontSize={11} fill="currentColor" className="text-muted-foreground font-medium" />
+              <ChartTooltip content={<ChartTooltipContent />} />
+              <Line type="monotone" dataKey="value" stroke="#2563eb" strokeWidth={2.5} dot={false} />
+              <Line type="monotone" dataKey="value2" stroke="#cbd5e1" strokeWidth={2.5} strokeDasharray="5 5" dot={false} />
+           </LineChart>
+        </ChartContainer>
+      </div>
+    </CardWidgetContainer>
+  )
+}
+
+function WidgetLibrary() {
+  return (
+    <div className="flex flex-col h-full bg-[#f8fafc] dark:bg-zinc-900/40 rounded-xl border border-slate-200/60 dark:border-zinc-800 overflow-hidden">
+       {/* Fixed Heading */}
+       <div className="flex flex-col p-4 px-5 border-b border-slate-200/60 dark:border-zinc-800 bg-[#f8fafc] dark:bg-zinc-900 sticky top-0 z-10 shrink-0">
+          <h3 className="font-bold text-[15px] text-slate-800 dark:text-zinc-100">Widget Library</h3>
+          <p className="text-[11px] text-slate-500 font-medium mt-0.5">Drag to dashboard</p>
+       </div>
+
+       {/* Scrollable Content */}
+       <div className="flex flex-col gap-6 p-5 overflow-y-auto flex-1 custom-scrollbar">
+          <WidgetSection title="KPI CARDS">
+            <WidgetItem label="Total Leads" disabled />
+            <WidgetItem label="Qualified Leads" disabled />
+            <WidgetItem label="Revenue" disabled />
+            <WidgetItem label="Conversion Rate" disabled />
+          </WidgetSection>
+
+          <WidgetSection title="CHARTS">
+            <WidgetItem label="Lead pipeline" disabled />
+            <WidgetItem label="Monthly Trend" />
+          </WidgetSection>
+
+          <WidgetSection title="ACTIVITY">
+            <WidgetItem label="Upcoming Tasks" disabled />
+            <WidgetItem label="Recent Actions" disabled />
+            <WidgetItem label="Latest Lead" disabled />
+            <WidgetItem label="Latest Account" disabled />
+          </WidgetSection>
+
+          <div className="mt-2 pb-4">
+            <Button variant="outline" className="w-full bg-white dark:bg-zinc-900 text-blue-600 border-blue-200 hover:border-blue-300 hover:bg-blue-50/50 dark:hover:bg-blue-900/20 font-semibold shadow-sm">
+               <Plus className="w-4 h-4 mr-2" /> Add Custom Widget
+            </Button>
+          </div>
+       </div>
+    </div>
+  )
+}
+
+function WidgetSection({ title, children }: { title: string, children: React.ReactNode }) {
+  return (
+    <div className="flex flex-col gap-3">
+       <span className="text-[11px] font-bold text-slate-400 tracking-wider">{title}</span>
+       <div className="flex flex-col gap-2">
+         {children}
+       </div>
+    </div>
+  )
+}
+
+function WidgetItem({ label, disabled }: { label: string, disabled?: boolean }) {
+  return (
+    <div className={`flex items-center gap-2.5 p-2 px-3 rounded-lg border bg-white dark:bg-zinc-900 dark:border-zinc-800 transition-all ${disabled ? 'opacity-60 cursor-not-allowed border-slate-200 shadow-sm' : 'cursor-grab border-slate-200 hover:border-blue-400 shadow-sm hover:shadow-md'}`}>
+       <GripVertical className="w-3.5 h-3.5 text-slate-300 shrink-0" />
+       {/* Icon mapping could be added here */}
+       <span className="text-[13px] font-semibold text-slate-600 dark:text-zinc-300">{label}</span>
+    </div>
+  )
+}

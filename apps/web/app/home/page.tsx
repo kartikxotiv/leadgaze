@@ -10,6 +10,7 @@ import { PageHeaderActions } from '@kit/ui/page';
 import { ListToolBar } from '@kit/ui/list-toolbar';
 import { useDateRangeFilter } from '@kit/ui/use-date-range-filter';
 import { DownloadReportButton } from '@kit/ui/download-report-button';
+import { Button } from '@kit/ui/button';
 import { Users, File, Building2, Target, Info } from 'lucide-react';
 
 import { convertFromUSD, findLatestRateToUsd } from '@kit/shared/currency';
@@ -41,6 +42,7 @@ export default function HomePage() {
   const workspaceId = currentWorkspace?.id;
   const { dateRange, setDateRange, computedDates } = useDateRangeFilter();
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isWidgetLibraryOpen, setIsWidgetLibraryOpen] = useState(true);
   const queryClient = useQueryClient();
   const supabase = useSupabase();
   const { formatCurrency } = useLocalization();
@@ -325,11 +327,18 @@ export default function HomePage() {
             activeFilterCount={dateRange ? 1 : 0}
             onClearFilters={() => setDateRange(null)}
           />
+          <Button 
+             variant="default"
+             className="h-[28px] bg-blue-600 hover:bg-blue-700 text-white px-4 text-xs font-medium rounded-md shadow-sm"
+             onClick={() => setIsWidgetLibraryOpen(!isWidgetLibraryOpen)}
+          >
+             {isWidgetLibraryOpen ? 'Hide Widget' : 'Show Widget'}
+          </Button>
           <ModuleSwitcher value="leadgaze" />
         </PageHeaderActions>
       </PageHeader>
       <PageBody>
-        <DashboardDemo dateFilter={computedDates} dateRange={dateRange} />
+        <DashboardDemo dateFilter={computedDates} dateRange={dateRange} isWidgetLibraryOpen={isWidgetLibraryOpen} />
       </PageBody>
 
       {/* Hidden icons for PDF generation matching dashboard cards */}
