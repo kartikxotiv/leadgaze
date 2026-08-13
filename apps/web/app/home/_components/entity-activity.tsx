@@ -274,7 +274,7 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
       });
       toast.success(
         reminder.is_completed
-          ? 'Reminder marked as active'
+          ? 'Reminder marked as pending'
           : 'Reminder marked as completed',
       );
     });
@@ -399,7 +399,7 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
                 : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
             }`}
           >
-            Active
+            Pending
           </button>
           <button
             onClick={() => setReminderTab('sent')}
@@ -409,7 +409,7 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
                 : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
             }`}
           >
-            Sent
+            Completed
           </button>
         </div>
 
@@ -435,7 +435,7 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
                         />
                       </TooltipTrigger>
                       <TooltipContent side="top">
-                        <p>{reminder.is_completed ? 'Mark as active' : 'Mark as sent'}</p>
+                        <p>{reminder.is_completed ? 'Mark as pending' : 'Mark as completed'}</p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
