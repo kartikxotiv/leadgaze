@@ -37,6 +37,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from '@kit/ui/dialog';
 import { Switch } from '@kit/ui/switch';
 
@@ -885,14 +886,16 @@ Subscribe to: leadgen`}
       <Dialog open={showDisconnectDialog} onOpenChange={setShowDisconnectDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Disconnect Facebook Page</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to disconnect{' '}
-              <strong>{pageToDisconnect?.display_name}</strong>? This will stop lead syncing
-              for all forms on this page. This action cannot be undone.
-            </DialogDescription>
+            <DialogTitle>Disconnect Facebook Page</DialogTitle>            
+              
+            
           </DialogHeader>
-          <div className="flex justify-end gap-3 mt-4">
+          <div className="space-y-2 px-2">
+            <p className="primary-text-regular text-leadgaze-dark dark:text-white">Are you sure you want to disconnect{' '}
+              <strong>{pageToDisconnect?.display_name}</strong>? This will stop lead syncing
+              for all forms on this page. This action cannot be undone.</p>
+          </div>
+          <DialogFooter>
             <Button
               variant="outline"
               onClick={() => {
@@ -911,7 +914,7 @@ Subscribe to: leadgen`}
               {isMutating ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
               Disconnect
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>

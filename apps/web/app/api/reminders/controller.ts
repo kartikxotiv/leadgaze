@@ -124,6 +124,8 @@ export const getReminders = catchAsync(
       created_by_name: reminder.created_by_user?.name || reminder.created_by_user?.email || null,
       created_by_email: reminder.created_by_user?.email || null,
       assigned_to_name: reminder.assigned_to_user?.name || reminder.assigned_to_user?.email || null,
+      created_by_user: reminder.created_by_user || (reminder.created_by_name ? { name: reminder.created_by_name, email: reminder.created_by_email } : null),
+      assigned_to_user: reminder.assigned_to_user || (reminder.assigned_to_name ? { name: reminder.assigned_to_name } : null),
       created_at: reminder.created_at,
       updated_at: reminder.updated_at,
     }));

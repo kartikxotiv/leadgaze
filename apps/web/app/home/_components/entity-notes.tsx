@@ -151,8 +151,7 @@ export function EntityNotes({ entityType, entityId }: EntityNotesProps) {
   return (
     <CardWidgetContainer
       title="Notes"
-      hideHeaderBorder={true}
-      headerClassName="p-2 xl:p-2 2xl:p-2"
+      headerClassName="p-2 xl:p-2 2xl:p-2 mb-1"
       icon={<FileText className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
       icon2={
         canAddNote ? (
@@ -342,9 +341,11 @@ export function EntityNotes({ entityType, entityId }: EntityNotesProps) {
             ))}
           </div>
         ) : (
-          <div className="py-8 text-center">
-            <FileText className="mx-auto mb-2 h-8 w-8 text-gray-300 dark:text-gray-700" />
-            <p className="text-xs text-gray-400 dark:text-gray-500">No notes yet</p>
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#F0F3FF]">
+              <FileText className="h-6 w-6 text-blue-500" />
+            </div>
+            <p className="mt-4 text-sm text-gray-500">No notes yet</p>
           </div>
         )}
       </div>

@@ -278,6 +278,13 @@ const deleteLeadStatusService = asyncHandlerClient(
   },
 );
 
+const reorderLeadStatusesService = asyncHandlerClient(
+  async (payload: { workspaceId: string; orderedStatusIds: string[] }) => {
+    const response = await ApiClient.put('/leads/statuses/reorder', payload);
+    return response.data?.data;
+  },
+);
+
 const updateLeadService = asyncHandlerClient(
   async (leadId: string, payload: UpdateLeadPayload) => {
     const response = await ApiClient.patch(`/leads/${leadId}`, payload);
@@ -351,6 +358,7 @@ export {
   createLeadStatusService,
   updateLeadStatusService,
   deleteLeadStatusService,
+  reorderLeadStatusesService,
   updateLeadService,
   deleteLeadService,
   sendLeadEmailService,

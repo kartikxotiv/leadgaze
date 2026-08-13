@@ -53,10 +53,12 @@ export const createMultiProductCheckout = catchAsync(
       workspaceId,
       items,
       billingCycle,
+      returnUrl,
     }: {
       workspaceId: string;
       items: Array<{ productKey: string; seats: number }>;
       billingCycle?: 'monthly' | 'yearly';
+      returnUrl?: string;
     } = body;
 
     if (!workspaceId || !items || !Array.isArray(items) || items.length === 0) {
@@ -239,6 +241,22 @@ export const createMultiProductCheckout = catchAsync(
     const stripe = getStripeClient();
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
+    let basePath = '/org/subscription';
+    let extraParams = '';
+    if (returnUrl && typeof returnUrl === 'string' && returnUrl.startsWith('/')) {
+      const parts = returnUrl.split('?');
+      basePath = parts[0] || '/org/subscription';
+      if (parts[1]) {
+        const search = new URLSearchParams(parts[1]);
+        search.delete('checkout');
+        search.delete('session_id');
+        const paramStr = search.toString();
+        if (paramStr) {
+          extraParams = `&${paramStr}`;
+        }
+      }
+    }
+
     const session = await stripe.checkout.sessions.create({
       customer: stripeCustomerId,
       mode: 'subscription',
@@ -248,8 +266,8 @@ export const createMultiProductCheckout = catchAsync(
       subscription_data: {
         metadata: sessionMetadata,
       },
-      success_url: `${appUrl}/org/subscription?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${appUrl}/org/subscription?checkout=cancel`,
+      success_url: `${appUrl}${basePath}?checkout=success&session_id={CHECKOUT_SESSION_ID}${extraParams}`,
+      cancel_url: `${appUrl}${basePath}?checkout=cancel${extraParams}`,
       allow_promotion_codes: true,
     });
 

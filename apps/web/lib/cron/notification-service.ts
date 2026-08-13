@@ -1,5 +1,7 @@
+import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
+import MEETING_INVITATION_TEMPLATE from '~/constants/email.templates/meeting-invitation.template';
 import MEETING_REMINDER_TEMPLATE from '~/constants/email.templates/meeting-reminder.template';
 import REMINDER_EMAIL_TEMPLATE from '~/constants/email.templates/reminder.template';
 import { transporter } from '~/utils/send-mail';
@@ -28,6 +30,20 @@ interface MeetingEmailData {
   location?: string;
   meetingLink?: string;
   intervalLabel: string;
+  workspaceId?: string;
+  recipientTz?: string;
+}
+
+interface MeetingInvitationEmailData {
+  to: string;
+  meetingTitle: string;
+  meetingDescription?: string;
+  startTime: string;
+  endTime: string;
+  location?: string;
+  meetingLink?: string;
+  hostName?: string;
+  hostEmail?: string;
   workspaceId?: string;
   recipientTz?: string;
 }
@@ -144,24 +160,73 @@ export class NotificationService {
   }
 
   /**
+   * Send a meeting invitation email to external invitees
+   */
+  static async sendMeetingInvitationEmail(
+    data: MeetingInvitationEmailData,
+  ): Promise<boolean> {
+    try {
+      console.log('[NotificationService] Sending meeting invitation:', {
+        to: data.to,
+        title: data.meetingTitle,
+      });
+
+      await transporter.sendMail({
+        from: this.FROM_EMAIL,
+        to: data.to,
+        subject: `📅 You're invited: ${data.meetingTitle} - ${this.PRODUCT_NAME}`,
+        html: MEETING_INVITATION_TEMPLATE({
+          meetingTitle: data.meetingTitle,
+          meetingDescription: data.meetingDescription,
+          startTime: data.startTime,
+          endTime: data.endTime,
+          location: data.location,
+          meetingLink: data.meetingLink,
+          hostName: data.hostName,
+          hostEmail: data.hostEmail,
+          productName: this.PRODUCT_NAME,
+          recipientTz: data.recipientTz,
+        }),
+      });
+
+      console.log(
+        '[NotificationService] Meeting invitation sent successfully to:',
+        data.to,
+      );
+      return true;
+    } catch (error) {
+      console.error(
+        '[NotificationService] Failed to send meeting invitation email:',
+        error,
+      );
+      return false;
+    }
+  }
+
+  /**
    * Get user email by user ID
    */
   static async getUserEmail(userId: string): Promise<string | null> {
     try {
-      const supabase = getSupabaseServerClient();
+      const adminClient = getSupabaseServerAdminClient();
 
-      const { data, error } = await supabase
+      const { data } = await adminClient
         .from('accounts')
         .select('email')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
-      if (error || !data) {
-        console.error('[NotificationService] Failed to get user email:', error);
-        return null;
+      if (data?.email) {
+        return data.email;
       }
 
-      return data.email;
+      // Fallback: fetch directly from Supabase Auth users
+      const { data: authUser } = await adminClient.auth.admin.getUserById(userId);
+      if (authUser?.user?.email) {
+        return authUser.user.email;
+      }
+
+      return null;
     } catch (error) {
       console.error('[NotificationService] Error fetching user email:', error);
       return null;

@@ -97,7 +97,7 @@ export type ResourceField = {
 export type ResourceColumn = {
   key: string;
   label: string;
-  render?: (record: ServiceCloudRecord) => React.ReactNode;
+  render?: (record: ServiceCloudRecord, index?: number, pagination?: { currentPage: number, pageSize: number }) => React.ReactNode;
   /**
    * Optional sort key when the sort field differs from the column key.
    * e.g. key='status_id' but sortKey='status.name'
@@ -108,6 +108,10 @@ export type ResourceColumn = {
    * to indicate field-level security (access is restricted to certain members).
    */
   accessRestricted?: boolean;
+  className?: string;
+  width?: string;
+  minWidth?: number;
+  sortable?: boolean;
 };
 
 export type ResourceUniqueField = {
@@ -664,9 +668,9 @@ export function ServiceCloudResourcePage({
                       sortKey={column.sortKey}
                       sortColumn={sortColumn}
                       sortDirection={sortDirection}
-                      sortable={!nonSortableColumnKeys.includes(column.key)}
+                      sortable={column.sortable !== false && !nonSortableColumnKeys.includes(column.key)}
                       onSort={toggleSort}
-                      className="relative"
+                      className={cn("relative", column.width)}
                       isAdmin={isAdmin}
                       onEditClick={
                         onColumnEditClick &&
@@ -685,6 +689,7 @@ export function ServiceCloudResourcePage({
                     >
                       <span
                         className="col-resize-handle"
+                        data-min-width={column.minWidth}
                         {...getResizeHandleProps(column.key)}
                       />
                     </ColumnHeader>
@@ -742,7 +747,7 @@ export function ServiceCloudResourcePage({
                     </TableCell>
                   </TableRow>
                 ) : (
-                  paginatedData.map((record: ServiceCloudRecord) => (
+                  paginatedData.map((record: ServiceCloudRecord, index: number) => (
                     <TableRow key={record.id}>
                       {showSelectionFinal && (
                         <TableCell
@@ -760,12 +765,14 @@ export function ServiceCloudResourcePage({
                         <TableCell
                           key={column.key}
                           className={cn(
+                            column.className,
+                            column.width,
                             column.key === 'name' &&
                               'primary-text-medium text-leadgaze-primary dark:text-leadgaze-primary',
                           )}
                         >
                           {column.render
-                            ? column.render(record)
+                            ? column.render(record, index, { currentPage, pageSize })
                             : String(record[column.key] ?? '-')}
                         </TableCell>
                       ))}

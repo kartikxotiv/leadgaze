@@ -154,7 +154,6 @@ export function EntityActivityLogs({ entityType, entityId }: EntityActivityLogsP
   return (
     <CardWidgetContainer
       title="Activity"
-      hideHeaderBorder={true}
       headerClassName="p-2 xl:p-2 2xl:p-2"
       icon={<Clock className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
       icon2={
@@ -171,13 +170,13 @@ export function EntityActivityLogs({ entityType, entityId }: EntityActivityLogsP
         </Button>
       }
     >
-      <div className="px-2 mb-2">
+      <div className="px-0 mb-2">
         {isLoading ? (
           <div className="flex justify-center py-4">
             <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
           </div>
         ) : logs.length > 0 ? (
-          <div className="max-h-[350px] overflow-y-auto divide-y divide-gray-100 rounded-lg border border-gray-200 bg-white dark:divide-gray-800/60 dark:border-gray-800 dark:bg-slate-950">
+          <div className="max-h-[350px] overflow-y-auto divide-y divide-gray-100 border border-gray-200 bg-white dark:divide-gray-800/60 dark:border-gray-800 dark:bg-slate-950">
             {logs.map((log: any) => {
               const formattedName = formatEntityName(log.entity_name);
 
@@ -213,8 +212,11 @@ export function EntityActivityLogs({ entityType, entityId }: EntityActivityLogsP
             })}
           </div>
         ) : (
-          <div className="py-4 text-center text-xs text-gray-500">
-            No activity logs recorded yet
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#F0F3FF]">
+              <Clock className="h-6 w-6 text-blue-500" />
+            </div>
+            <p className="mt-4 text-sm text-gray-500">No activity logs recorded yet</p>
           </div>
         )}
       </div>

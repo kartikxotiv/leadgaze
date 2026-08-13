@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from 'react';
 
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Clock, FileText, Loader2, Mail, Plus, Trash2 } from 'lucide-react';
+import { Clock, Download, FileText, Loader2, Mail, Paperclip, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { useSupabase } from '@kit/supabase/hooks/use-supabase';
 import {
   CoreEmailComposeDialog,
   CoreEmailDetailDialog,
@@ -24,6 +24,7 @@ import { cn } from '@kit/ui/utils';
 
 import { useLocalization } from '~/lib/localization/localization-provider';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 interface EntityEmailsProps {
   entityId: string;
@@ -47,6 +48,7 @@ export function EntityEmails({
   onOpenDraft: _onOpenDraft,
 }: EntityEmailsProps) {
   const queryClient = useQueryClient();
+  const supabase = useSupabase();
   const { currentWorkspace: workspace, canAccess } = useRBAC();
   const { formatDate } = useLocalization();
   const canManageEmail = canAccess('emails', 'manage_email');
@@ -56,6 +58,39 @@ export function EntityEmails({
   const [selectedEmail, setSelectedEmail] = useState<any>(null); // eslint-disable-line @typescript-eslint/no-explicit-any
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isReplyOpen, setIsReplyOpen] = useState(false);
+
+  const handleDownloadAttachment = async (e: React.MouseEvent, attachment: any) => {
+    e.stopPropagation();
+    try {
+      const path = attachment.path || attachment.url;
+      if (!path) return;
+
+      if (path.startsWith('http://') || path.startsWith('https://')) {
+        window.open(path, '_blank');
+        return;
+      }
+
+      const { data, error } = await supabase.storage
+        .from('email_attachments')
+        .createSignedUrl(path, 300);
+
+      if (error || !data?.signedUrl) {
+        toast.error('Failed to download attachment');
+        return;
+      }
+
+      const a = document.createElement('a');
+      a.href = data.signedUrl;
+      a.download = attachment.name || attachment.fileName || 'attachment';
+      a.target = '_blank';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch (err) {
+      console.error('Download error:', err);
+      toast.error('Failed to download attachment');
+    }
+  };
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -97,8 +132,7 @@ export function EntityEmails({
     return (
       <CardWidgetContainer
         title="Emails"
-        hideHeaderBorder={true}
-        icon={<Mail className="text-leadgaze-dark h-5 w-5 dark:text-white" />}        
+        icon={<Mail className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
       >
         <div className="px-2">
           <div className="flex justify-center py-4">
@@ -117,7 +151,6 @@ export function EntityEmails({
     return (
       <CardWidgetContainer
         title="Emails"
-        hideHeaderBorder={true}
         icon={<Mail className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
       >
         <div className="px-6 py-3">
@@ -133,8 +166,7 @@ export function EntityEmails({
     <>
       <CardWidgetContainer
         title="Emails"
-        hideHeaderBorder={true}
-        headerClassName="p-2 xl:p-2 2xl:p-2"
+        headerClassName="p-2 xl:p-2 2xl:p-2 mb-1"
         icon={<Mail className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
         icon2={
           <Button
@@ -153,9 +185,11 @@ export function EntityEmails({
       >
         <div className="px-2">
           {combinedItems.length === 0 ? (
-            <div className="py-8 text-center">
-              <Mail className="mx-auto mb-2 h-8 w-8 text-gray-300" />
-              <p className="text-sm text-gray-500">No email activity yet</p>
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#F0F3FF]">
+                <Mail className="h-6 w-6 text-blue-500" />
+              </div>
+              <p className="mt-4 text-sm text-gray-500">No email activity yet</p>
             </div>
           ) : (
             <div className="max-h-[280px] overflow-y-auto mb-2">
@@ -229,7 +263,7 @@ export function EntityEmails({
                             {item.direction === 'inbound'
                               ? 'Inbound'
                               : item.status.charAt(0).toUpperCase() +
-                                item.status.slice(1)}
+                              item.status.slice(1)}
                           </Badge>
                           {item.direction !== 'inbound' &&
                             item.status !== 'sent' && (
@@ -250,16 +284,16 @@ export function EntityEmails({
                         />
                       }
                       metadata={
-                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] text-leadgaze-dark dark:text-white">
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[10px] text-leadgaze-dark dark:text-white">
                           <div className="flex items-center gap-1">
                             <Clock className="h-3 w-3" />
                             <span>
                               {formatDate(
                                 item.received_at ||
-                                  item.sent_at ||
-                                  item.updated_at ||
-                                  item.created_at ||
-                                  new Date().toISOString(),
+                                item.sent_at ||
+                                item.updated_at ||
+                                item.created_at ||
+                                new Date().toISOString(),
                               )}
                             </span>
                           </div>
@@ -272,15 +306,44 @@ export function EntityEmails({
                               To: {item.to_emails}
                             </span>
                           )}
-                          {item.cc_emails && (
-                            <span className="max-w-[100px] truncate">
-                              CC: {item.cc_emails}
-                            </span>
-                          )}
+                          {(() => {
+                            const ccVal = item.cc_emails ?? item.cc;
+                            let ccStr = '';
+                            if (Array.isArray(ccVal)) {
+                              ccStr = ccVal.filter(Boolean).join(', ');
+                            } else if (typeof ccVal === 'string') {
+                              ccStr = ccVal.trim().replace(/^\[\s*\]$/, '');
+                            }
+                            if (!ccStr) return null;
+                            return (
+                              <span className="max-w-[150px] truncate">
+                                CC: {ccStr}
+                              </span>
+                            );
+                          })()}
                           {item.status === 'scheduled' && item.scheduled_at && (
                             <span className="font-semibold text-blue-600">
                               Due: {formatDate(item.scheduled_at)}
                             </span>
+                          )}
+                          {Array.isArray(item.attachments) && item.attachments.length > 0 && (
+                            <div className="flex flex-wrap items-center gap-1">
+                              {item.attachments.map((att: any, attIdx: number) => (
+                                <button
+                                  key={attIdx}
+                                  type="button"
+                                  onClick={(e) => handleDownloadAttachment(e, att)}
+                                  className="inline-flex items-center gap-1 rounded bg-blue-50 px-1.5 py-0.5 font-medium text-blue-600 hover:bg-blue-100 dark:bg-blue-950/60 dark:text-blue-400 dark:hover:bg-blue-900/60 transition-colors"
+                                  title={`Download ${att.name || att.fileName || 'attachment'}`}
+                                >
+                                  <Paperclip className="h-3 w-3" />
+                                  <span className="max-w-[120px] truncate">
+                                    {att.name || att.fileName || `File ${attIdx + 1}`}
+                                  </span>
+                                  <Download className="h-3 w-3 text-blue-500 shrink-0" />
+                                </button>
+                              ))}
+                            </div>
                           )}
                         </div>
                       }
