@@ -138,7 +138,7 @@ function TeamMembersPageSkeleton() {
 export default function TeamMembersPage() {
   const [addColumnModalOpen, setAddColumnModalOpen] = useState(false);
   const queryClient = useQueryClient();
-  const { currentWorkspace, canAccess } = useRBAC();
+  const { currentWorkspace, user, canAccess } = useRBAC();
   const pathname = usePathname();
   const productKey = getModuleKeyFromPath(pathname);
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
@@ -275,7 +275,7 @@ export default function TeamMembersPage() {
 
   // Remove member mutation
   const removeMutation = useMutation({
-    mutationFn: removeMemberService,
+    mutationFn: (id: string) => removeMemberService(id),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ['workspaceMembers', currentWorkspace?.id],
@@ -345,7 +345,7 @@ export default function TeamMembersPage() {
 
   // Delete invitation mutation
   const deleteInvitationMutation = useMutation({
-    mutationFn: deleteInvitationService,
+    mutationFn: (id: string) => deleteInvitationService(id),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ['pendingInvitations', currentWorkspace?.id],
@@ -639,6 +639,26 @@ export default function TeamMembersPage() {
                   sortedData.map((row: UnifiedMember) => {
                     if (row._type === 'member') {
                       const member = row.originalData as WorkspaceMember;
+                      const isTargetOwner =
+                        (currentWorkspace?.owner_id &&
+                          member.user_id === currentWorkspace.owner_id) ||
+                        member.role?.role_key === 'owner' ||
+                        member.is_primary_contact === true;
+                      const isCurrentUserOwner =
+                        (currentWorkspace?.owner_id &&
+                          user?.id === currentWorkspace.owner_id) ||
+                        (user?.id && member.user_id && user.id === member.user_id);
+                      const isMemberActionDisabled =
+                        isTargetOwner && !isCurrentUserOwner;
+                      const canResend = member.status === 'pending';
+                      const canEdit =
+                        canAccess('team_members', 'edit') &&
+                        !isMemberActionDisabled;
+                      const canDelete =
+                        canAccess('team_members', 'delete') &&
+                        !isMemberActionDisabled;
+                      const hasActions = canResend || canEdit || canDelete;
+
                       return (
                         <TableRow key={member.id} className="hover:bg-muted/50">
                           {isVisible('member') && (
@@ -690,49 +710,54 @@ export default function TeamMembersPage() {
                             </TableCell>
                           )}
                           <TableCell className="bg-card sticky right-0 px-4 text-right">
-                            <div className="flex items-center justify-end">
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    className="h-8 w-8 border-0 p-0 focus:outline-none focus-visible:ring-0 focus-visible:outline-none focus-visible:ring-offset-0"
-                                  >
-                                    <MoreVertical className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  {member.status === 'pending' && (
-                                    <DropdownMenuItem
-                                      onClick={() => handleResendInvitation(member.id)}
-                                      disabled={resendMutation.isPending}
-                                      className="gap-2 cursor-pointer"
+                            {hasActions && (
+                              <div className="flex items-center justify-end">
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      className="h-8 w-8 border-0 p-0 focus:outline-none focus-visible:ring-0 focus-visible:outline-none focus-visible:ring-offset-0"
                                     >
-                                      <RotateCcw className="h-4 w-4" /> Resend Invitation
-                                    </DropdownMenuItem>
-                                  )}
-                                  {canAccess('team_members', 'edit') && (
-                                    <DropdownMenuItem
-                                      onClick={() => handleEditMember(member)}
-                                      className="gap-2 cursor-pointer"
-                                    >
-                                      <Edit2 className="h-4 w-4" /> Edit Member
-                                    </DropdownMenuItem>
-                                  )}
-                                  {canAccess('team_members', 'delete') && (
-                                    <DropdownMenuItem
-                                      onClick={() => {
-                                        setMemberToRemove(member.id);
-                                        setIsRemoveMemberDialogOpen(true);
-                                      }}
-                                      disabled={removeMutation.isPending}
-                                      className="text-destructive focus:text-destructive cursor-pointer gap-2"
-                                    >
-                                      <Trash2 className="h-4 w-4" /> Remove Member
-                                    </DropdownMenuItem>
-                                  )}
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </div>
+                                      <MoreVertical className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    {canResend && (
+                                      <DropdownMenuItem
+                                        onClick={() =>
+                                          handleResendInvitation(member.id)
+                                        }
+                                        disabled={resendMutation.isPending}
+                                        className="gap-2 cursor-pointer"
+                                      >
+                                        <RotateCcw className="h-4 w-4" /> Resend
+                                        Invitation
+                                      </DropdownMenuItem>
+                                    )}
+                                    {canEdit && (
+                                      <DropdownMenuItem
+                                        onClick={() => handleEditMember(member)}
+                                        className="gap-2 cursor-pointer"
+                                      >
+                                        <Edit2 className="h-4 w-4" /> Edit Member
+                                      </DropdownMenuItem>
+                                    )}
+                                    {canDelete && (
+                                      <DropdownMenuItem
+                                        onClick={() => {
+                                          setMemberToRemove(member.id);
+                                          setIsRemoveMemberDialogOpen(true);
+                                        }}
+                                        disabled={removeMutation.isPending}
+                                        className="text-destructive focus:text-destructive cursor-pointer gap-2"
+                                      >
+                                        <Trash2 className="h-4 w-4" /> Remove Member
+                                      </DropdownMenuItem>
+                                    )}
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
+                            )}
                           </TableCell>
                         </TableRow>
                       );

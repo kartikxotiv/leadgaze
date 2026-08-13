@@ -43,7 +43,7 @@ import {
   CoreEmailReplyDialog,
   CoreEntityPanel,
 } from '@kit/core/pages';
-import { getCoreEmailAccountsService } from '@kit/core/services';
+import { useSupabase } from '@kit/supabase/hooks/use-supabase';
 import { useLocalization } from '@kit/shared/localization';
 import {
   Accordion,
@@ -319,6 +319,13 @@ function eventLabel(eventType?: string | null) {
     .join(' ');
 }
 
+function formatFileSize(size?: number) {
+  if (!size) return '';
+  if (size < 1024) return `${size} B`;
+  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 export function ServiceCloudTicketDetailPage({
   workspaceId,
   ticketId,
@@ -334,7 +341,41 @@ export function ServiceCloudTicketDetailPage({
   canEditField?: (fieldKey: string) => boolean;
   customFieldsList?: any[];
 }) {
+  const supabase = useSupabase();
   const { formatDate, formatDateOnly, formatDateTime } = useLocalization();
+
+  const handleDownloadAttachment = async (e: React.MouseEvent, attachment: any) => {
+    e.stopPropagation();
+    try {
+      const path = attachment.path || attachment.url;
+      if (!path) return;
+
+      if (path.startsWith('http://') || path.startsWith('https://')) {
+        window.open(path, '_blank');
+        return;
+      }
+
+      const { data, error } = await supabase.storage
+        .from('email_attachments')
+        .createSignedUrl(path, 300);
+
+      if (error || !data?.signedUrl) {
+        toast.error('Failed to download attachment');
+        return;
+      }
+
+      const a = document.createElement('a');
+      a.href = data.signedUrl;
+      a.download = attachment.name || attachment.fileName || 'attachment';
+      a.target = '_blank';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch (err) {
+      console.error('Download error:', err);
+      toast.error('Failed to download attachment');
+    }
+  };
   const queryClient = useQueryClient();
   const { canAccess, isLoading: permissionsLoading } =
     useServiceCloudPermissions(workspaceId);
@@ -931,6 +972,50 @@ export function ServiceCloudTicketDetailPage({
                                     </p>
                                   )}
                                 </div>
+
+                                {Array.isArray(email?.attachments) && email.attachments.length > 0 && (
+                                  <div className="mt-4 border-t pt-3">
+                                    <div className="flex items-center gap-1.5 text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-2">
+                                      <Paperclip className="h-3.5 w-3.5 text-blue-500" />
+                                      <span>Attachments ({email.attachments.length})</span>
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                      {email.attachments.map((att: any, attIdx: number) => {
+                                        const name = att.name || att.fileName || `Attachment ${attIdx + 1}`;
+                                        const sizeStr = formatFileSize(att.size);
+                                        return (
+                                          <div
+                                            key={attIdx}
+                                            className="flex items-center justify-between gap-2 rounded-md border border-zinc-200 bg-zinc-50/70 p-2 transition-colors hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900/60"
+                                          >
+                                            <div className="flex items-center gap-2 min-w-0 flex-1">
+                                              <Paperclip className="h-3.5 w-3.5 text-blue-500 shrink-0" />
+                                              <div className="min-w-0 flex-1">
+                                                <p className="truncate text-xs font-medium text-zinc-900 dark:text-zinc-100" title={name}>
+                                                  {name}
+                                                </p>
+                                                {sizeStr && (
+                                                  <p className="text-[10px] text-zinc-500 dark:text-zinc-400">{sizeStr}</p>
+                                                )}
+                                              </div>
+                                            </div>
+                                            <Button
+                                              type="button"
+                                              variant="ghost"
+                                              size="sm"
+                                              className="h-7 gap-1 px-2 text-xs text-blue-600 hover:bg-blue-50 dark:text-blue-400 shrink-0"
+                                              onClick={(e) => handleDownloadAttachment(e, att)}
+                                              title={`Download ${name}`}
+                                            >
+                                              <Download className="h-3.5 w-3.5" />
+                                              <span>Download</span>
+                                            </Button>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                )}
                               </div>
                             </article>
                           );
@@ -1685,6 +1770,8 @@ export function ServiceCloudTicketDetailPage({
             workspaceId={workspaceId}
             email={replyEmail}
             accounts={emailAccounts}
+            entityType="service_cloud_ticket"
+            entityId={ticketId}
             templateContext={ticketTemplateContext}
           />
           <CoreEmailComposeDialog

@@ -323,6 +323,19 @@ export const getAuditLogs = catchAsync(
             .trim();
         }
 
+        // Detect soft-delete updates and map action to DELETE
+        const newIsDeleted =
+          log.new_data?.is_deleted === true ||
+          log.new_data?.is_deleted === 'true' ||
+          Boolean(log.new_data?.deleted_at);
+        const oldIsDeleted =
+          log.old_data?.is_deleted === true ||
+          log.old_data?.is_deleted === 'true' ||
+          Boolean(log.old_data?.deleted_at);
+        if (log.action === 'UPDATE' && newIsDeleted && !oldIsDeleted) {
+          log.action = 'DELETE';
+        }
+
         // If entity_name still equals raw UUID or empty fallback string, clear it so no raw ID displays
         if (log.entity_name && uuidPattern.test(log.entity_name)) {
           log.entity_name = '';

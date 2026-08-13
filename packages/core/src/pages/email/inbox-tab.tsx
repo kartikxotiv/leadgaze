@@ -10,6 +10,7 @@ import {
   ChevronRight,
   Inbox,
   MailPlus,
+  Paperclip,
   RefreshCw,
   Search,
   Send,
@@ -396,8 +397,14 @@ export function CoreInboxTab({
                         </TableCell>
                         <TableCell className="max-w-[400px] py-2">
                           <div className="line-clamp-2 text-sm text-wrap whitespace-normal break-words">
-                            <span className="primary-text-medium text-leadgaze-dark dark:text-white">
-                              {email.subject || '(No Subject)'}
+                            <span className="primary-text-medium text-leadgaze-dark dark:text-white inline-flex items-center gap-1.5 flex-wrap">
+                              <span>{email.subject || '(No Subject)'}</span>
+                              {Array.isArray(email.attachments) && email.attachments.length > 0 && (
+                                <span className="inline-flex items-center gap-0.5 rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-medium text-blue-600 dark:bg-blue-950/60 dark:text-blue-400">
+                                  <Paperclip className="h-3 w-3" />
+                                  <span>{email.attachments.length}</span>
+                                </span>
+                              )}
                             </span>
                             <span className="text-muted-foreground">
                               {' — '}{email.snippet || email.text_body || String(email.body || '').replace(/<[^>]+>/g, '')}

@@ -84,6 +84,8 @@ export function CoreEmailReplyDialog({
   email,
   accounts,
   templateContext = {},
+  entityType,
+  entityId,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -91,6 +93,8 @@ export function CoreEmailReplyDialog({
   email: any;
   accounts: CoreEmailAccount[];
   templateContext?: Record<string, unknown>;
+  entityType?: string;
+  entityId?: string;
 }) {
   const queryClient = useQueryClient();
   const sendableAccounts = useMemo(
@@ -457,6 +461,8 @@ export function CoreEmailReplyDialog({
                   ),
                   body: renderEmailContent(body, variables, templateContext),
                   templateId: templateId ? Number(templateId) : undefined,
+                  entityType,
+                  entityId,
                   threadId: email.thread_id,
                   threadKey:
                     email.thread_key ||
