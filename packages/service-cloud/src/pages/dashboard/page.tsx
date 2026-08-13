@@ -149,7 +149,7 @@ export function ServiceCloudDashboardPage({
             >
               <CardHeader className="flex flex-row items-start justify-between space-y-0 xl:p-3 xl:pb-0 2xl:p-5 2xl:pb-0">
                 <div className="space-y-1">
-                  <CardTitle className="secondary-text-small text-leadgaze-muted dark:text-white">
+                  <CardTitle className="secondary-text-small-semibold text-leadgaze-dark dark:text-white">
                     {card.label}
                   </CardTitle>
                   {card.link ? <Link
