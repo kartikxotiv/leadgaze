@@ -441,6 +441,7 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
                   </TooltipProvider>
                 }
                 iconAlignTop={true}
+                actionStyle="slide"
                 title={
                   <span
                     onClick={() => openEditDialog(reminder)}
@@ -739,6 +740,7 @@ export function EntityMeetings({ entityType, entityId }: EntityActivityProps) {
           {items.map((meeting: CoreMeeting) => (
           <CardWidgetListItem
             key={meeting.id}
+            actionStyle="slide"
             title={
               <div className="flex items-center gap-2">
                 <span
@@ -1105,6 +1107,7 @@ export function EntityDocuments({ entityType, entityId }: EntityActivityProps) {
             {documents.map((doc: any) => (
               <CardWidgetListItem
                 key={doc.id}
+                actionStyle="slide"
                 icon={
                   <div className="rounded border border-gray-200/50 bg-white p-2 dark:bg-slate-800">
                     <File className="h-4 w-4 text-blue-500" />

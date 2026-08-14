@@ -668,7 +668,7 @@ export default function AccountDetailsPage() {
               {canManageEmail && (
                 <TabsContent
                   value="email"
-                  className="max-h-[500px] overflow-y-auto"
+                  className="max-h-[500px] overflow-y-auto mb-2"
                 >
                   <EntityEmails
                     entityId={id}
@@ -681,42 +681,42 @@ export default function AccountDetailsPage() {
 
               <TabsContent
                 value="notes"
-                className="max-h-[500px] overflow-y-auto"
+                className="max-h-[500px] overflow-y-auto mb-2"
               >
                 <EntityNotes entityType="account" entityId={id} />
               </TabsContent>
 
               <TabsContent
                 value="meetings"
-                className="max-h-[500px] overflow-y-auto"
+                className="max-h-[500px] overflow-y-auto mb-2"
               >
                 <EntityMeetings entityType="account" entityId={id} />
               </TabsContent>
 
               <TabsContent
                 value="calls"
-                className="max-h-[500px] overflow-y-auto"
+                className="max-h-[500px] overflow-y-auto mb-2"
               >
                 <EntityCalls entityType="account" entityId={id} />
               </TabsContent>
 
               <TabsContent
                 value="reminders"
-                className="max-h-[500px] overflow-y-auto"
+                className="max-h-[500px] overflow-y-auto mb-2"
               >
                 <EntityReminders entityType="account" entityId={id} />
               </TabsContent>
 
               <TabsContent
                 value="documents"
-                className="max-h-[500px] overflow-y-auto"
+                className="max-h-[500px] overflow-y-auto mb-2"
               >
                 <EntityDocuments entityType="account" entityId={id} />
               </TabsContent>
 
               <TabsContent
                 value="tasks"
-                className="max-h-[500px] overflow-y-auto"
+                className="max-h-[500px] overflow-y-auto mb-2"
               >
                 <EntityTasks entityType="account" entityId={id} />
               </TabsContent>
@@ -748,7 +748,7 @@ export default function AccountDetailsPage() {
                               variant="destructive"
                               disabled={!rbacCanAccess('accounts', 'delete')}
                               onClick={() => setDeleteDialogOpen(true)}
-                              className="secondary-text-small-bold"
+                              className="secondary-text-small-bold px-2"
                             >
                               <Trash2 className="mr-2 h-4 w-4" />
                               Delete Account
@@ -1535,7 +1535,7 @@ export default function AccountDetailsPage() {
                               variant="destructive"
                               disabled={!rbacCanAccess('accounts', 'delete')}
                               onClick={() => setDeleteDialogOpen(true)}
-                              className="secondary-text-small-bold"
+                              className="secondary-text-small-bold px-2"
                             >
                               <Trash2 className="mr-2 h-4 w-4" />
                               Delete Account
