@@ -49,6 +49,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@kit/ui/accordion';
+import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { Card, CardContent, CardHeader } from '@kit/ui/card';
 import { CardWidgetContainer } from '@kit/ui/card-widget-container';
@@ -743,7 +744,26 @@ export default function OpportunityDetailsPage() {
                   <FileText className="h-6 w-6 text-white" />
                 </div>
               }
-              title={opportunity.opportunity_name}
+              title={
+                <div className="flex items-center gap-2">
+                  <h1 className="primary-heading text-leadgaze-dark dark:text-white">
+                    {opportunity.opportunity_name}
+                  </h1>
+                  {opportunity.stage && (
+                    <Badge
+                      variant="outline"
+                      className="h-5 text-[10px] font-medium"
+                      style={{
+                        borderColor: opportunity.stage.color ? `${opportunity.stage.color}60` : undefined,
+                        color: opportunity.stage.color || undefined,
+                        backgroundColor: opportunity.stage.color ? `${opportunity.stage.color}15` : undefined,
+                      }}
+                    >
+                      {opportunity.stage.status_name}
+                    </Badge>
+                  )}
+                </div>
+              }
               subtitle={
                 <>
                   {opportunity.account && (

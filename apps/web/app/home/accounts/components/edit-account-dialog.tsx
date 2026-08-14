@@ -199,6 +199,7 @@ export function EditAccountDialog({
     onSuccess: () => {
       toast.success('Account updated successfully');
       queryClient.invalidateQueries({ queryKey: ['account', account.id] });
+      queryClient.invalidateQueries({ queryKey: ['accounts'] });
       onOpenChange(false);
     },
     onError: () => toast.error('Failed to update account'),
@@ -584,18 +585,19 @@ export function EditAccountDialog({
                 </FieldGuard>
               </TabsContent>
             </Tabs>            
-            {Object.keys(customFields).length > 0 && <div className="border-t pt-4">
-              <LeadCustomFieldInputs
-                fields={visibleCustomFields}
-                values={customFields}
-                onChange={(key, val) =>
-                  setCustomFields((prev) => ({ ...prev, [key]: val }))
-                }
-                canEdit={canEdit}
-                canView={canView}
-              />
-            </div>
-              }
+            {visibleCustomFields.length > 0 && (
+              <div className="border-t pt-4">
+                <LeadCustomFieldInputs
+                  fields={visibleCustomFields}
+                  values={customFields}
+                  onChange={(key, val) =>
+                    setCustomFields((prev) => ({ ...prev, [key]: val }))
+                  }
+                  canEdit={canEdit}
+                  canView={canView}
+                />
+              </div>
+            )}
           </form>
         </Form>
         <DialogFooter>

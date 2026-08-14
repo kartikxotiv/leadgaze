@@ -168,6 +168,7 @@ export function EditContactDialog({
     onSuccess: () => {
       toast.success('Contact updated successfully');
       queryClient.invalidateQueries({ queryKey: ['contact', contact.id] });
+      queryClient.invalidateQueries({ queryKey: ['contacts'] });
       onOpenChange(false);
     },
     onError: () => toast.error('Failed to update contact'),

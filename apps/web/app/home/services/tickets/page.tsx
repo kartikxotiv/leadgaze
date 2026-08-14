@@ -235,6 +235,7 @@ export default function ServiceCloudTicketsRoute() {
     try {
       await deleteField.mutateAsync({ fieldId });
       setEditingField(null);
+      refetchEntityFields();
     } catch (error) {
       console.error('Error deleting field:', error);
     }
