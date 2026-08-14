@@ -71,7 +71,7 @@ const AlertDialogTitle: React.FC<
   React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Title>
 > = ({ className, ...props }) => (
   <AlertDialogPrimitive.Title
-    className={cn('px-2 py-3 bg-leadgaze-primary primary-heading-extra text-white', className)}
+    className={cn('px-2 py-3 bg-(--color-destructive) primary-heading-extra text-white', className)}
     {...props}
   />
 );
@@ -81,7 +81,7 @@ const AlertDialogDescription: React.FC<
   React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Description>
 > = ({ className, ...props }) => (
   <AlertDialogPrimitive.Description
-    className={cn('text-leadgaze-dark primary-text-medium px-2', className)}
+    className={cn('text-leadgaze-dark primary-text-medium px-2 dark:text-white', className)}
     {...props}
   />
 );

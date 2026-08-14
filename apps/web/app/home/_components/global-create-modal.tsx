@@ -17,6 +17,8 @@ import { CreateAccountDialog } from '../accounts/components/create-account-dialo
 import { OpportunityDialog } from '../opportunities/components/opportunity-dialog';
 import { GlobalCreateReminderForm } from './global-create-reminder-form';
 import { GlobalCreateNoteForm } from './global-create-note-form';
+import { GlobalCreateTicketForm } from './global-create-ticket-form';
+import { GlobalCreateServiceResourceForm } from './global-create-service-resource-form';
 
 interface GlobalCreateModalProps {
   open: boolean;
@@ -26,17 +28,27 @@ interface GlobalCreateModalProps {
 export function GlobalCreateModal({ open, onOpenChange }: GlobalCreateModalProps) {
   const queryClient = useQueryClient();
   const pathname = usePathname() || '';
-  const isSalesModule = pathname.startsWith('/home/sales');
+  const isSalesModule = pathname.startsWith('/home/sales') || pathname === '/home';
+  const isServiceModule = pathname.startsWith('/home/services');
   
-  // Right now we only support sales tabs, but we can expand this
-  const tabs = isSalesModule ? [
-    { id: 'lead', label: 'New Lead' },
-    { id: 'contact', label: 'New Contact' },
-    { id: 'account', label: 'New Account' },
-    { id: 'opportunity', label: 'New Opportunity' },
-    { id: 'reminder', label: 'New Reminder' },
-    { id: 'note', label: 'New Note' },
-  ] : [];
+  let tabs: { id: string; label: string }[] = [];
+
+  if (isSalesModule) {
+    tabs = [
+      { id: 'lead', label: 'New Lead' },
+      { id: 'contact', label: 'New Contact' },
+      { id: 'account', label: 'New Account' },
+      { id: 'opportunity', label: 'New Opportunity' },
+      { id: 'reminder', label: 'New Reminder' },
+      { id: 'note', label: 'New Note' },
+    ];
+  } else if (isServiceModule) {
+    tabs = [
+      { id: 'ticket', label: 'New Ticket' },
+      { id: 'customer', label: 'New Customer' },
+      { id: 'organization', label: 'New Organization' },
+    ];
+  }
 
   const [activeTab, setActiveTab] = useState(tabs.length > 0 ? tabs[0].id : '');
 
@@ -75,14 +87,14 @@ export function GlobalCreateModal({ open, onOpenChange }: GlobalCreateModalProps
           <DialogHeader className="border-b border-gray-200 bg-white p-0 dark:border-slate-800 dark:bg-slate-950">
             <DialogTitle className="sr-only">Create New Item</DialogTitle>
             {/* Tabs Header */}
-            <div className="flex overflow-x-auto pl-4 pr-12 pt-4 hide-scrollbar">
+            <div className="flex overflow-x-auto pl-4 pr-12 pt-2.5 hide-scrollbar">
               <div className="flex space-x-6 border-b border-transparent">
                 {tabs.map((tab) => (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
                     className={cn(
-                      'whitespace-nowrap pb-3 text-sm font-medium transition-colors',
+                      'whitespace-nowrap pb-1 text-sm font-medium transition-colors',
                       activeTab === tab.id
                         ? 'border-b-2 border-blue-600 text-blue-600 dark:border-blue-500 dark:text-blue-500'
                         : 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-300'
@@ -137,6 +149,32 @@ export function GlobalCreateModal({ open, onOpenChange }: GlobalCreateModalProps
              )}
              {activeTab === 'note' && (
                 <GlobalCreateNoteForm
+                  onSuccess={handleSuccess}
+                  onCancel={() => onOpenChange(false)}
+                />
+             )}
+             {activeTab === 'ticket' && (
+                <GlobalCreateTicketForm
+                  onSuccess={handleSuccess}
+                  onCancel={() => onOpenChange(false)}
+                />
+             )}
+             {activeTab === 'customer' && (
+                <GlobalCreateServiceResourceForm
+                  title="Customer"
+                  endpoint="customers"
+                  entityType="customers"
+                  productKey="service-cloud"
+                  onSuccess={handleSuccess}
+                  onCancel={() => onOpenChange(false)}
+                />
+             )}
+             {activeTab === 'organization' && (
+                <GlobalCreateServiceResourceForm
+                  title="Organization"
+                  endpoint="organizations"
+                  entityType="organizations"
+                  productKey="service-cloud"
                   onSuccess={handleSuccess}
                   onCancel={() => onOpenChange(false)}
                 />
