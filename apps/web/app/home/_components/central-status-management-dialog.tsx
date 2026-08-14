@@ -119,9 +119,9 @@ export function CentralStatusManagementDialog({
 
   // Derive stable string keys so the effects only fire when data actually changes,
   // not on every render when React Query returns a new array reference.
-  const leadStatusesKey = leadStatuses.map((s) => `${s.id}:${s.sort_order}:${s.is_active}`).join(',');
-  const opportunityStagesKey = opportunityStages.map((s) => `${s.id}:${s.sort_order}:${s.is_active}`).join(',');
-  const accountTypesKey = accountTypes.map((s) => `${s.id}:${s.sort_order}:${s.is_active}`).join(',');
+  const leadStatusesKey = leadStatuses.map((s) => `${s.id}:${s.sort_order}:${s.is_active}:${s.status_name}:${s.color}:${s.is_closed}`).join(',');
+  const opportunityStagesKey = opportunityStages.map((s) => `${s.id}:${s.sort_order}:${s.is_active}:${s.status_name}:${s.color}:${s.is_closed}`).join(',');
+  const accountTypesKey = accountTypes.map((s) => `${s.id}:${s.sort_order}:${s.is_active}:${s.status_name}:${s.color}:${s.is_closed}`).join(',');
 
   // Sync fetched data into local ordered state (only when actual data changes)
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -147,12 +147,23 @@ export function CentralStatusManagementDialog({
     if (activeTab === 'leads') {
       refetchLeads();
       queryClient.invalidateQueries({ queryKey: ['lead-statuses', workspaceId] });
+      queryClient.invalidateQueries({ queryKey: ['lead-statuses-mgmt', workspaceId] });
+      queryClient.invalidateQueries({ queryKey: ['leads'] });
+      queryClient.invalidateQueries({ queryKey: ['leads-kanban'] });
+      queryClient.invalidateQueries({ queryKey: ['lead'] });
     } else if (activeTab === 'opportunities') {
       refetchOpportunities();
       queryClient.invalidateQueries({ queryKey: ['opportunity-stages', workspaceId] });
+      queryClient.invalidateQueries({ queryKey: ['opportunity-stages-mgmt', workspaceId] });
+      queryClient.invalidateQueries({ queryKey: ['opportunities'] });
+      queryClient.invalidateQueries({ queryKey: ['opportunities-kanban'] });
+      queryClient.invalidateQueries({ queryKey: ['opportunity'] });
     } else {
       refetchAccountTypes();
       queryClient.invalidateQueries({ queryKey: ['account-types', workspaceId] });
+      queryClient.invalidateQueries({ queryKey: ['account-types-mgmt', workspaceId] });
+      queryClient.invalidateQueries({ queryKey: ['accounts'] });
+      queryClient.invalidateQueries({ queryKey: ['account'] });
     }
   };
 

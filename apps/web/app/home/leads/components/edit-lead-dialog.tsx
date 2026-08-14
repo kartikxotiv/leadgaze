@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
 import { Button } from '@kit/ui/button';
@@ -104,6 +104,7 @@ export default function EditLeadDialog({
     enabled: open && !!workspace?.id && !!lead,
     staleTime: 5 * 60 * 1000,
   });
+  const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(false);
   const [customFields, setCustomFields] = useState<Record<string, unknown>>({});
   const [formData, setFormData] = useState<FormDataState>({
@@ -211,6 +212,9 @@ export default function EditLeadDialog({
     },
     onSuccess: () => {
       toast.success('Lead updated successfully');
+      queryClient.invalidateQueries({ queryKey: ['lead', lead.id] });
+      queryClient.invalidateQueries({ queryKey: ['leads'] });
+      queryClient.invalidateQueries({ queryKey: ['leads-kanban'] });
       onSuccess();
     },
     onError: (error: any) => {

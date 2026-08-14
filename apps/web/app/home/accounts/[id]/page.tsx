@@ -1275,7 +1275,12 @@ export default function AccountDetailsPage() {
                                 opp.stage && (
                                   <Badge
                                     variant="outline"
-                                    className="h-5 text-[10px] text-leadgaze-dark dark:text-white"
+                                    className="h-5 text-[10px] font-medium"
+                                    style={{
+                                      borderColor: opp.stage.color ? `${opp.stage.color}60` : undefined,
+                                      color: opp.stage.color || undefined,
+                                      backgroundColor: opp.stage.color ? `${opp.stage.color}15` : undefined,
+                                    }}
                                   >
                                     {opp.stage.status_name}
                                   </Badge>
