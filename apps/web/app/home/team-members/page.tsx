@@ -644,10 +644,10 @@ export default function TeamMembersPage() {
                           member.user_id === currentWorkspace.owner_id) ||
                         member.role?.role_key === 'owner' ||
                         member.is_primary_contact === true;
+                      const isSelf = user?.id && member.user_id && user.id === member.user_id;
                       const isCurrentUserOwner =
-                        (currentWorkspace?.owner_id &&
-                          user?.id === currentWorkspace.owner_id) ||
-                        (user?.id && member.user_id && user.id === member.user_id);
+                        currentWorkspace?.owner_id &&
+                        user?.id === currentWorkspace.owner_id;
                       const isMemberActionDisabled =
                         isTargetOwner && !isCurrentUserOwner;
                       const canResend = member.status === 'pending';
@@ -656,7 +656,8 @@ export default function TeamMembersPage() {
                         !isMemberActionDisabled;
                       const canDelete =
                         canAccess('team_members', 'delete') &&
-                        !isMemberActionDisabled;
+                        !isTargetOwner &&
+                        !isSelf;
                       const hasActions = canResend || canEdit || canDelete;
 
                       return (
