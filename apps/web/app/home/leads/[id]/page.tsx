@@ -732,7 +732,7 @@ export default function LeadDetailsPage() {
                 {canManageEmail && (
                   <TabsTrigger
                     value="email"
-                    className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
+                    className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent cursor-pointer"
                   >
                     <Mail className="mr-2 h-4 w-4" />
                     Email
@@ -740,49 +740,49 @@ export default function LeadDetailsPage() {
                 )}
                 <TabsTrigger
                   value="notes"
-                  className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
+                  className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent cursor-pointer"
                 >
                   <FileText className="mr-2 h-4 w-4" />
                   Notes
                 </TabsTrigger>
                 <TabsTrigger
                   value="meetings"
-                  className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
+                  className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent cursor-pointer"
                 >
                   <Calendar className="mr-2 h-4 w-4" />
                   Meetings
                 </TabsTrigger>
                 <TabsTrigger
                   value="calls"
-                  className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
+                  className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent cursor-pointer"
                 >
                   <Phone className="mr-2 h-4 w-4" />
                   Calls
                 </TabsTrigger>
                 <TabsTrigger
                   value="reminders"
-                  className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
+                  className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent cursor-pointer"
                 >
                   <Bell className="mr-2 h-4 w-4" />
                   Reminders
                 </TabsTrigger>
                 <TabsTrigger
                   value="tasks"
-                  className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
+                  className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent cursor-pointer"
                 >
                   <CheckSquare className="mr-2 h-4 w-4" />
                   Tasks
                 </TabsTrigger>
                 <TabsTrigger
                   value="documents"
-                  className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
+                  className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent cursor-pointer"
                 >
                   <FileText className="mr-2 h-4 w-4" />
                   Documents
                 </TabsTrigger>
                 <TabsTrigger
                   value="activity"
-                  className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
+                  className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent cursor-pointer"
                 >
                   <Clock className="mr-2 h-4 w-4" />
                   Activity

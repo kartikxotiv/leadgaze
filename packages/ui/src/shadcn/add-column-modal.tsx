@@ -279,7 +279,7 @@ export function AddColumnModal({
     if (!fieldLabel.trim() || !fieldKey.trim()) return;
     setIsLoading(true);
     try {
-      await onSubmit({
+      await onSubmit?.({
         field_label: fieldLabel,
         field_key: fieldKey,
         field_type: fieldType,

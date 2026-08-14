@@ -1341,6 +1341,7 @@ export function EditMeetingDialog({
   const [duration, setDuration] = useState(30);
   const [timezone, setTimezone] = useState('UTC');
   const [location, setLocation] = useState('');
+  const [meetingUrl, setMeetingUrl] = useState('');
   const [status, setStatus] = useState<MeetingStatus>('scheduled');
   const [externalEmails, setExternalEmails] = useState<string[]>([]);
   const [newEmail, setNewEmail] = useState('');
@@ -1368,6 +1369,7 @@ export function EditMeetingDialog({
         setDuration(30);
       }
       setLocation(meeting.location || '');
+      setMeetingUrl(meeting.meeting_url || '');
       setStatus(meeting.status || 'scheduled');
       setSelectedAccountId(meeting.meeting_host_email_account_id || '');
       setExternalEmails(
@@ -1403,6 +1405,7 @@ export function EditMeetingDialog({
     setDuration(30);
     setTimezone('UTC');
     setLocation('');
+    setMeetingUrl('');
     setStatus('scheduled');
     setExternalEmails([]);
     setNewEmail('');
@@ -1446,6 +1449,7 @@ export function EditMeetingDialog({
         scheduled_end: utcScheduledEnd,
         timezone,
         location: location || undefined,
+        meeting_url: meetingUrl || undefined,
         participants: externalEmails.map((email) => ({
           participant_type: 'EXTERNAL' as const,
           external_email: email,
@@ -1610,6 +1614,18 @@ export function EditMeetingDialog({
                   className="pl-10"
                 />
               </div>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label className="font-medium">Meeting Link / URL</Label>
+            <div className="relative">
+              <Link2 className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <Input
+                value={meetingUrl}
+                onChange={(e) => setMeetingUrl(e.target.value)}
+                placeholder="https://..."
+                className="pl-10"
+              />
             </div>
           </div>
           {meeting.provider === 'GOOGLE' && googleAccounts.length > 0 && (

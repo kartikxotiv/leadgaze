@@ -53,8 +53,6 @@ export function EntityActivityLogs({ entityType, entityId }: EntityActivityLogsP
     enabled: !!workspace?.id && !!entityId,
   });
 
-  const logs = data?.logs || [];
-
   const getModuleIcon = (moduleName: string) => {
     switch (moduleName) {
       case 'leads':
@@ -143,13 +141,52 @@ export function EntityActivityLogs({ entityType, entityId }: EntityActivityLogsP
     return map[moduleName] || moduleName;
   };
 
-  const formatEntityName = (name: string | null) => {
+  const formatEntityName = (name: string | null, moduleName?: string) => {
     if (!name) return '';
     const uuidRegex = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
-    const cleaned = name.replace(uuidRegex, '').replace(/^#\s*/, '').replace(/\s+Task\s*$/i, '').trim();
+    let cleaned = name.replace(uuidRegex, '').replace(/^#\s*/, '').replace(/\s+Task\s*$/i, '').trim();
     if (cleaned.startsWith('Task #') || cleaned === 'Task' || cleaned === 'Time log:') return name.replace(uuidRegex, '').trim();
+
+    if (moduleName) {
+      const label = getModuleLabel(moduleName);
+      const prefixRegex = new RegExp(`^(${label}|Note|Task|Meeting|Reminder|Document|Email|Call):\\s*`, 'i');
+      cleaned = cleaned.replace(prefixRegex, '').trim();
+    } else {
+      cleaned = cleaned.replace(/^(Note|Task|Meeting|Reminder|Document|Email|Call):\s*/i, '').trim();
+    }
+
     return cleaned;
   };
+
+  const rawLogs = data?.logs || [];
+  const logs = React.useMemo(() => {
+    const result: typeof rawLogs = [];
+    for (const log of rawLogs) {
+      const logTime = new Date(log.created_at).getTime();
+      const normModule = getModuleLabel(log.module);
+      const normName = formatEntityName(log.entity_name, log.module);
+
+      const isDuplicate = result.some((prev) => {
+        const prevTime = new Date(prev.created_at).getTime();
+        const timeDiff = Math.abs(logTime - prevTime);
+        const prevModule = getModuleLabel(prev.module);
+        const prevName = formatEntityName(prev.entity_name, prev.module);
+
+        return (
+          prev.action === log.action &&
+          prevModule === normModule &&
+          prevName === normName &&
+          (prev.actor_id === log.actor_id || prev.actor?.email === log.actor?.email) &&
+          timeDiff <= 3000
+        );
+      });
+
+      if (!isDuplicate) {
+        result.push(log);
+      }
+    }
+    return result;
+  }, [rawLogs]);
 
   return (
     <CardWidgetContainer
@@ -178,7 +215,7 @@ export function EntityActivityLogs({ entityType, entityId }: EntityActivityLogsP
         ) : logs.length > 0 ? (
           <div className="max-h-[350px] overflow-y-auto divide-y divide-gray-100 border border-gray-200 bg-white dark:divide-gray-800/60 dark:border-gray-800 dark:bg-slate-950">
             {logs.map((log: any) => {
-              const formattedName = formatEntityName(log.entity_name);
+              const formattedName = formatEntityName(log.entity_name, log.module);
 
               return (
                 <div
