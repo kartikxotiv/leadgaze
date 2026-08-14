@@ -9,7 +9,7 @@ function DashboardFallback() {
   return (
     <div className="flex flex-col pb-4 w-full relative">
       <div className="flex w-full gap-2 items-start">
-        <div className="flex flex-col w-[calc(100%-300px)] xl:w-[calc(100%-320px)]">
+        <div className="flex flex-col w-full">
           {/* 4 stat cards */}
           <div className="grid grid-cols-1 gap-2 pb-0 md:grid-cols-2 xl:grid-cols-4 xl:gap-2 xl:pb-0 2xl:grid-cols-4 2xl:gap-2 2xl:pb-0">
             {[1, 2, 3, 4].map((i) => (
@@ -61,29 +61,7 @@ function DashboardFallback() {
           </div>
         </div>
 
-        {/* Widget Library Sidebar Skeleton */}
-        <div className="shrink-0 sticky top-0 h-[calc(100vh-80px)] w-[300px] xl:w-[320px]">
-          <div className="flex flex-col h-full bg-card border border-[#C3C6D6] overflow-hidden rounded-xl">
-             <div className="flex flex-col p-3 border-b bg-card border-[#C3C6D6] sticky top-0 z-10 shrink-0">
-               <Skeleton className="h-5 w-32" />
-               <Skeleton className="h-2 w-20 mt-2" />
-             </div>
-             <div className="flex flex-col gap-4 p-3 flex-1 overflow-y-auto">
-               <div className="flex flex-col gap-2">
-                 <Skeleton className="h-3 w-16 mb-1" />
-                 <Skeleton className="h-10 w-full rounded-lg" />
-                 <Skeleton className="h-10 w-full rounded-lg" />
-                 <Skeleton className="h-10 w-full rounded-lg" />
-                 <Skeleton className="h-10 w-full rounded-lg" />
-               </div>
-               <div className="flex flex-col gap-2 mt-2">
-                 <Skeleton className="h-3 w-16 mb-1" />
-                 <Skeleton className="h-10 w-full rounded-lg" />
-                 <Skeleton className="h-10 w-full rounded-lg" />
-               </div>
-             </div>
-          </div>
-        </div>
+
       </div>
     </div>
   );

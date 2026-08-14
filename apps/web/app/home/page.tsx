@@ -43,7 +43,7 @@ export default function HomePage() {
   const workspaceId = currentWorkspace?.id;
   const { dateRange, setDateRange, computedDates } = useDateRangeFilter();
   const [isGenerating, setIsGenerating] = useState(false);
-  const [isWidgetLibraryOpen, setIsWidgetLibraryOpen] = useState(true);
+  const [isWidgetLibraryOpen, setIsWidgetLibraryOpen] = useState(false);
   const queryClient = useQueryClient();
   const supabase = useSupabase();
   const { formatCurrency } = useLocalization();
@@ -331,14 +331,14 @@ export default function HomePage() {
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button 
+                {/* <Button 
                    variant="outline"
                    size="icon"
                    className="shrink-0"
                    onClick={() => setIsWidgetLibraryOpen(!isWidgetLibraryOpen)}
                 >
                    {isWidgetLibraryOpen ? <PanelRightClose className="h-4 w-4 text-slate-600 dark:text-zinc-300" /> : <PanelRightOpen className="h-4 w-4 text-slate-600 dark:text-zinc-300" />}
-                </Button>
+                </Button> */}
               </TooltipTrigger>
               <TooltipContent>
                 <p>{isWidgetLibraryOpen ? 'Hide Widget' : 'Show Widget'}</p>
