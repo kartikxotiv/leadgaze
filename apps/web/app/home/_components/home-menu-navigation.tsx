@@ -1591,12 +1591,12 @@ export function HomeMenuNavigation() {
         </button>
 
         {/* Notifications Bell */}
-        <button className="relative cursor-pointer rounded-full p-2 text-blue-100 transition-colors hover:bg-white/10 hover:text-white">
-          <Bell className="h-4 w-4" />
+        {/* <button className="relative cursor-pointer rounded-full p-2 text-blue-100 transition-colors hover:bg-white/10 hover:text-white"> */}
+          {/* <Bell className="h-4 w-4" /> */}
           {/* <span className="absolute right-1 top-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white ring-2 ring-header-primary">
             2
           </span> */}
-        </button>
+        {/* </button> */}
 
         {/* Settings gear dropdown */}
         {!isOrgRoute && settingsMenuItems.length > 0 && (
