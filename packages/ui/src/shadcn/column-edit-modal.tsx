@@ -5,6 +5,7 @@ import React, { useEffect, useState } from 'react';
 import { Check, Shield, Trash2, User, Users, X } from 'lucide-react';
 
 import { Button } from './button';
+import { CustomDeleteDialog } from './custom-delete-dialog';
 import {
   Dialog,
   DialogContent,
@@ -232,6 +233,9 @@ export function ColumnEditModal({
   const showRoleSelection = accessType !== 'user_based';
   const showUserSelection = accessType !== 'role_based';
 
+  const [isConfirmDeleteDialogOpen, setIsConfirmDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   // ── Handlers ────────────────────────────────────────────────────────────────
 
   const handleSave = () => {
@@ -240,9 +244,21 @@ export function ColumnEditModal({
     onSave({ field_label: fieldLabel }, accessType, memberPayload);
   };
 
-  const handleDelete = () => {
-    onDelete?.(field.id);
-    onOpenChange(false);
+  const handleDeleteClick = () => {
+    setIsConfirmDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    try {
+      setIsDeleting(true);
+      await onDelete?.(field.id);
+      setIsConfirmDeleteDialogOpen(false);
+      onOpenChange(false);
+    } catch (err) {
+      console.error('Failed to delete column:', err);
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   // ── Render ──────────────────────────────────────────────────────────────────
@@ -264,7 +280,7 @@ export function ColumnEditModal({
                   </svg>
                 </div>
                 <div>
-                  <h2 className="text-base font-bold text-foreground">Edit Column</h2>
+                  <DialogTitle className="text-base font-bold text-foreground">Edit Column</DialogTitle>
                   <p className="text-xs text-muted-foreground">General settings and identity</p>
                 </div>
               </div>
@@ -351,7 +367,7 @@ export function ColumnEditModal({
                   variant="ghost"
                   size="sm"
                   className="flex items-center gap-1.5 h-8 text-xs px-2.5 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                  onClick={handleDelete}
+                  onClick={handleDeleteClick}
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                   Delete Column
@@ -369,9 +385,6 @@ export function ColumnEditModal({
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Access Control</Label>
-                      {/* <span className="text-[10px] font-semibold text-[#2D45D8] hover:underline cursor-pointer">
-                        {accessType === 'role_based' ? '+ Add Role' : accessType === 'user_based' ? '+ Add User' : '+ Add Role/User'}
-                      </span> */}
                     </div>
 
                     <Select
@@ -393,7 +406,8 @@ export function ColumnEditModal({
                               <div
                                 key={member.member_id}
                                 className="bg-[#2D45D8] text-white flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-medium"
-                                onClick={(e) => e.stopPropagation()} // Prevent trigger from opening dropdown when clicking on badge
+                                onPointerDown={(e) => e.stopPropagation()}
+                                onClick={(e) => e.stopPropagation()} 
                               >
                                 {member.member_type === 'role' ? (
                                   <Shield className="h-3 w-3 shrink-0" />
@@ -403,11 +417,16 @@ export function ColumnEditModal({
                                 <span>{getMemberName(member.member_type, member.member_id)}</span>
                                 <button
                                   type="button"
+                                  onPointerDown={(e) => {
+                                    e.stopPropagation();
+                                    e.preventDefault();
+                                  }}
                                   onClick={(e) => {
                                     e.stopPropagation();
+                                    e.preventDefault();
                                     removeMember(member.member_type, member.member_id);
                                   }}
-                                  className="text-white/80 hover:text-white shrink-0"
+                                  className="text-white/80 hover:text-white shrink-0 p-0.5 rounded-full hover:bg-white/20 transition-colors"
                                 >
                                   <X className="h-3 w-3" />
                                 </button>
@@ -538,10 +557,6 @@ export function ColumnEditModal({
 
             {/* Footer */}
             <div className="flex items-center justify-end border-t border-slate-200 pt-4 mt-6">
-              {/* <div className="flex flex-col text-[9px] text-muted-foreground tracking-wider uppercase">
-                <div>Product owned by Programea LLC</div>
-                <div className="font-semibold opacity-70">LEADGAZE V2.4.0 PRECISION SYSTEM</div>
-              </div> */}
               <div className="flex items-center gap-3">
                 <Button variant="outline" size="sm" onClick={() => onOpenChange(false)} className="h-9 px-4 text-xs font-semibold">
                   Cancel
@@ -554,6 +569,14 @@ export function ColumnEditModal({
           </div>
         </div>
       </DialogContent>
+      <CustomDeleteDialog
+        isOpen={isConfirmDeleteDialogOpen}
+        onOpenChange={setIsConfirmDeleteDialogOpen}
+        title="Delete Column"
+        description={`Are you sure you want to delete the column "${field.field_label}"? This action cannot be undone and any data stored in this column will be permanently removed.`}
+        onConfirm={handleConfirmDelete}
+        isDeleting={isDeleting}
+      />
     </Dialog>
   );
 }

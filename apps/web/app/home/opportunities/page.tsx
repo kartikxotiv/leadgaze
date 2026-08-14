@@ -306,6 +306,7 @@ export default function OpportunitiesPage() {
     visibleCustomFields,
     ctx: _fieldPermissionCtx,
     isLoading: _fieldPermissionsLoading,
+    refetch: refetchPermissions,
   } = useFieldPermissions({
     entityType: 'opportunities',
     workspaceId: workspace?.id,
@@ -455,18 +456,22 @@ export default function OpportunitiesPage() {
     } as EntityField);
   };
 
-  const renderCustomFieldValue = (value: unknown) => {
-    if (value === undefined || value === null) {
-      return '-';
+  const renderCustomFieldValue = (
+    customFieldsObj: Record<string, unknown> | null | undefined,
+    field: { field_key: string; field_name?: string; id?: string; field_label?: string },
+  ) => {
+    if (!customFieldsObj || typeof customFieldsObj !== 'object') return '-';
+    const val =
+      customFieldsObj[field.field_key] ??
+      (field.field_name ? customFieldsObj[field.field_name] : undefined) ??
+      (field.id ? customFieldsObj[field.id] : undefined) ??
+      (field.field_label ? customFieldsObj[field.field_label] : undefined);
+    if (val === null || val === undefined || val === '') return '-';
+    if (typeof val === 'boolean') return val ? 'Yes' : 'No';
+    if (typeof val === 'object') {
+      try { return JSON.stringify(val); } catch { return '-'; }
     }
-    if (typeof value === 'object') {
-      try {
-        return JSON.stringify(value);
-      } catch {
-        return '-';
-      }
-    }
-    return String(value);
+    return String(val);
   };
 
   const canAddColumn = useMemo(() => {
@@ -546,6 +551,9 @@ export default function OpportunitiesPage() {
   const handleDeleteField = async (fieldId: string) => {
     try {
       await deleteField.mutateAsync({ fieldId });
+      refetchEntityFields();
+      refetchPermissions?.();
+      refetch();
     } catch (error) {
       console.error('Error deleting field:', error);
     }
@@ -971,7 +979,8 @@ export default function OpportunitiesPage() {
       // Append custom fields
       customFields.forEach((cf) => {
         base[cf.field_key] = renderCustomFieldValue(
-          (opportunity as any).custom_fields?.[cf.field_key],
+          (opportunity as any).custom_fields,
+          cf,
         );
       });
 
@@ -1570,11 +1579,8 @@ export default function OpportunitiesPage() {
                           showColumn(field.field_key) ? (
                             <TableCell key={field.id}>
                               {renderCustomFieldValue(
-                                (
-                                  opportunity as {
-                                    custom_fields?: Record<string, unknown>;
-                                  }
-                                ).custom_fields?.[field.field_key],
+                                (opportunity as { custom_fields?: Record<string, unknown> }).custom_fields,
+                                field,
                               )}
                             </TableCell>
                           ) : null,

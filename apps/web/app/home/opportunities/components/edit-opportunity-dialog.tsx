@@ -181,6 +181,12 @@ export function EditOpportunityDialog({
       queryClient.invalidateQueries({
         queryKey: ['opportunity', opportunity.id],
       });
+      queryClient.invalidateQueries({
+        queryKey: ['opportunities'],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['opportunities-kanban'],
+      });
       onOpenChange(false);
     },
     onError: () => toast.error('Failed to update opportunity'),
@@ -485,7 +491,9 @@ export function EditOpportunityDialog({
 
             </div>
 
-            {Object.keys(customFields).length > 0 && <div className="border-t pt-4">
+
+            {visibleCustomFields.length > 0 && (
+              <div className="border-t pt-4">
               
               <LeadCustomFieldInputs
                 fields={visibleCustomFields}
@@ -496,7 +504,7 @@ export function EditOpportunityDialog({
                 canEdit={canEdit}
                 canView={canView}
               />
-            </div>}            
+            </div>)}
           </form>
         </Form>
         <DialogFooter>

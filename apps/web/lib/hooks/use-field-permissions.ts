@@ -43,7 +43,7 @@ export function useFieldPermissions({
 
   const effectiveWorkspaceId = workspaceId ?? workspace?.id;
 
-  const { fields = [], isLoading } = useDynamicColumns({
+  const { fields = [], isLoading, refetch } = useDynamicColumns({
     entityType,
     workspaceId: effectiveWorkspaceId,
     userId: user?.id,
@@ -153,5 +153,6 @@ export function useFieldPermissions({
     visibleCustomFields,
     editableCustomFields,
     allFields: fields,
+    refetch,
   };
 }

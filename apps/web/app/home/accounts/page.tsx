@@ -251,6 +251,7 @@ export default function AccountsPage() {
     visibleCustomFields,
     ctx: _fieldPermissionCtx,
     isLoading: _fieldPermissionsLoading,
+    refetch: refetchPermissions,
   } = useFieldPermissions({
     entityType: 'accounts',
     workspaceId: workspace?.id,
@@ -482,6 +483,9 @@ export default function AccountsPage() {
   const handleDeleteField = async (fieldId: string) => {
     try {
       await deleteField.mutateAsync({ fieldId });
+      refetchEntityFields();
+      refetchPermissions?.();
+      refetch();
     } catch (error) {
       console.error('Error deleting field:', error);
     }
@@ -1193,13 +1197,15 @@ export default function AccountsPage() {
                       {customFields.map((field) =>
                         showColumn(field.field_key) ? (
                           <TableCell key={field.id}>
-                            {String(
-                              (
-                                account as unknown as {
-                                  custom_fields?: Record<string, unknown>;
-                                }
-                              ).custom_fields?.[field.field_key] ?? '-',
-                            )}
+                            {(() => {
+                              const cf = (account as any)?.custom_fields;
+                              if (!cf || typeof cf !== 'object') return '-';
+                              const val = cf[field.field_key] ?? (field.field_name ? cf[field.field_name] : undefined) ?? (field.id ? cf[field.id] : undefined) ?? (field.field_label ? cf[field.field_label] : undefined);
+                              if (val === null || val === undefined || val === '') return '-';
+                              if (typeof val === 'boolean') return val ? 'Yes' : 'No';
+                              if (typeof val === 'object') return JSON.stringify(val);
+                              return String(val);
+                            })()}
                           </TableCell>
                         ) : null,
                       )}
