@@ -157,7 +157,7 @@ export default function DocumentPage() {
   const [typeFilter, setTypeFilter] = useState('all');
   const [entityTypeFilter, setEntityTypeFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(15);
+  const [pageSize, setPageSize] = useState(25);
   const itemsPerPage = pageSize;
   const {
     dateRange: createdOnRange,

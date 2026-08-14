@@ -237,7 +237,7 @@ export default function LeadsPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [leadToDelete, setLeadToDelete] = useState<Lead | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(15);
+  const [pageSize, setPageSize] = useState(25);
   const [addColumnModalOpen, setAddColumnModalOpen] = useState(false);
 
   // Row selection state (for CSV export)

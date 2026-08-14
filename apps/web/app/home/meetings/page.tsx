@@ -2059,7 +2059,7 @@ export default function MeetingsPage() {
     [],
   );
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(15);
+  const [pageSize, setPageSize] = useState(25);
   const [viewFilter, setViewFilter] = useState<'my' | 'team'>('my');
   const {
     dateRange: createdOnRange,

@@ -69,7 +69,7 @@ export function DataTable<T extends object>({
 }: ReactTableProps<T>) {
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: pageIndex ?? 0,
-    pageSize: pageSize ?? 15,
+    pageSize: pageSize ?? 25,
   });
 
   const [sorting, setSorting] = useState<SortingState>(initialSorting ?? []);

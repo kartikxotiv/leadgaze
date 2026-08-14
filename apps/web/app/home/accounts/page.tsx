@@ -138,7 +138,7 @@ export default function AccountsPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [accountToDelete, setAccountToDelete] = useState<Account | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(15);
+  const [pageSize, setPageSize] = useState(25);
   const itemsPerPage = pageSize;
   const { data: user } = useUser();
 

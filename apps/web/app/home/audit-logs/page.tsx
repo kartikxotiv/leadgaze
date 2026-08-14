@@ -49,7 +49,7 @@ export default function AuditLogsPage() {
   const { currentWorkspace: workspace } = useRBAC();
   const { formatDate, formatDateTime } = useLocalization();
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(15);
+  const [pageSize, setPageSize] = useState(25);
   const [selectedModule, setSelectedModule] = useState<string>('all');
   const [selectedAction, setSelectedAction] = useState<string>('all');
   const pathname = usePathname();

@@ -117,7 +117,7 @@ export default function AdminUsersPage() {
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(15);
+  const [pageSize, setPageSize] = useState(25);
   const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(
     new Set(),
   );
