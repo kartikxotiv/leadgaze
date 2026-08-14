@@ -13,6 +13,7 @@ import {
   Box,
   Calendar,
   ChevronDown,
+  CircleCheckBig,
   DollarSign,
   FileText,
   Grip,
@@ -104,6 +105,7 @@ import { CreateAccountDialog } from '../accounts/components/create-account-dialo
 import { CreateContactDialog } from '../contacts/components/create-contact-dialog';
 import CreateLeadDialog from '../leads/components/create-lead-dialog';
 import { OpportunityDialog } from '../opportunities/components/opportunity-dialog';
+import { GlobalCreateModal } from './global-create-modal';
 
 function getModuleCommonPaths(moduleBasePath: string) {
   return {
@@ -614,6 +616,7 @@ export function HomeMenuNavigation() {
   } | null>(null);
   const [isSubmittingInterest, setIsSubmittingInterest] = useState(false);
   const [windowWidth, setWindowWidth] = useState(1200);
+  const [isGlobalCreateModalOpen, setIsGlobalCreateModalOpen] = useState(false);
   const supabase = useSupabase();
 
   useEffect(() => {
@@ -1579,13 +1582,21 @@ export function HomeMenuNavigation() {
           />
         </div> */}
 
+        {/* Check Circle */}
+        <button 
+          onClick={() => setIsGlobalCreateModalOpen(true)}
+          className="cursor-pointer rounded-full p-2 text-blue-100 transition-colors hover:bg-white/10 hover:text-white"
+        >
+          <CircleCheckBig className="h-4 w-4" />
+        </button>
+
         {/* Notifications Bell */}
-        {/* <button className="relative p-2 text-blue-100 hover:text-white rounded-full hover:bg-white/10 transition-colors">
-          <Bell className="h-5 w-5" />
-          <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-header-primary">
+        <button className="relative cursor-pointer rounded-full p-2 text-blue-100 transition-colors hover:bg-white/10 hover:text-white">
+          <Bell className="h-4 w-4" />
+          {/* <span className="absolute right-1 top-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white ring-2 ring-header-primary">
             2
-          </span>
-        </button> */}
+          </span> */}
+        </button>
 
         {/* Settings gear dropdown */}
         {!isOrgRoute && settingsMenuItems.length > 0 && (
@@ -1658,6 +1669,12 @@ export function HomeMenuNavigation() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Global Create Modal */}
+      <GlobalCreateModal 
+        open={isGlobalCreateModalOpen}
+        onOpenChange={setIsGlobalCreateModalOpen}
+      />
     </div>
   );
 }

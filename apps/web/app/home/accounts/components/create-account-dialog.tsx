@@ -38,12 +38,14 @@ interface CreateAccountDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: (account: any) => void;
+  asFormOnly?: boolean;
 }
 
 export function CreateAccountDialog({
   open,
   onOpenChange,
   onSuccess,
+  asFormOnly = false,
 }: CreateAccountDialogProps) {
   const { currentWorkspace: workspace } = useRBAC();
   const queryClient = useQueryClient();
@@ -111,22 +113,23 @@ export function CreateAccountDialog({
     mutation.mutate(payload);
   };
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-[700px]">
+  const innerContent = (
+    <div className={asFormOnly ? "flex h-full flex-col overflow-auto" : "flex max-h-[90vh] flex-col"}>
+      {!asFormOnly && (
         <DialogHeader>
           <DialogTitle>Create New Account</DialogTitle>
           <DialogDescription>
             Add a new business account to your workspace
           </DialogDescription>
         </DialogHeader>
+      )}
 
-        <form
-          id="create-account-form"
-          onSubmit={handleSubmit}
-          className="flex-1 space-y-2 overflow-y-auto px-2"
-        >
-          <div className="space-y-2">
+      <form
+        id="create-account-form"
+        onSubmit={handleSubmit}
+        className={`flex flex-col flex-1 space-y-2 overflow-y-auto px-2 ${asFormOnly && 'mb-2'}`}
+      >
+          <div className={`space-y-2 ${asFormOnly && 'pt-2'}`}>
             <h3 className="primary-heading text-leadgaze-dark uppercase dark:text-white custom-sub-heading-dialog-form">
               Basic Information
             </h3>            
@@ -320,6 +323,17 @@ export function CreateAccountDialog({
             Create Account
           </Button>
         </DialogFooter>
+      </div>
+  );
+
+  if (asFormOnly) {
+    return innerContent;
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-[700px]">
+        {innerContent}
       </DialogContent>
     </Dialog>
   );

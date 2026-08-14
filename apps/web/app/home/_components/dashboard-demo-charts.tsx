@@ -147,6 +147,37 @@ function SortableWidgetWrapper({ id, children, isFullWidth }: { id: string; chil
   );
 }
 
+function SortableKpiWrapper({ id, children }: { id: string; children: React.ReactNode }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 50 : 1,
+    opacity: isDragging ? 0.8 : 1,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className={`relative group w-full h-full`}>
+      {/* Drag handle specifically covering the top title area */}
+      <div 
+        {...attributes} 
+        {...listeners} 
+        className="absolute top-0 left-0 right-12 h-10 z-40 cursor-grab active:cursor-grabbing"
+        title="Drag to move"
+      />
+      {children}
+    </div>
+  );
+}
+
 export default function DashboardDemo({
   dateFilter,
   dateRange,
@@ -162,6 +193,7 @@ export default function DashboardDemo({
   const workspaceId = currentWorkspace?.id;
 
   const [activeWidgets, setActiveWidgets] = useState<string[]>([]);
+  const [activeKpiCards, setActiveKpiCards] = useState<string[]>([]);
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
@@ -177,13 +209,25 @@ export default function DashboardDemo({
     } else {
        setActiveWidgets(['pipeline', 'growth_trends', 'latest_leads', 'recent_actions', 'upcoming_tasks', 'latest_accounts']);
     }
+
+    const savedKpi = localStorage.getItem('dashboard_active_kpi_cards');
+    if (savedKpi) {
+      try {
+        setActiveKpiCards(JSON.parse(savedKpi));
+      } catch (e) {
+        setActiveKpiCards(['total_leads', 'contacts', 'accounts', 'pipeline_value']);
+      }
+    } else {
+       setActiveKpiCards(['total_leads', 'contacts', 'accounts', 'pipeline_value']);
+    }
   }, []);
 
   useEffect(() => {
     if (isMounted) {
       localStorage.setItem('dashboard_active_widgets', JSON.stringify(activeWidgets));
+      localStorage.setItem('dashboard_active_kpi_cards', JSON.stringify(activeKpiCards));
     }
-  }, [activeWidgets, isMounted]);
+  }, [activeWidgets, activeKpiCards, isMounted]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
@@ -208,6 +252,34 @@ export default function DashboardDemo({
     if (!activeWidgets.includes(id)) {
       setActiveWidgets((prev) => [...prev, id]);
     }
+  };
+
+  const handleKpiDragEnd = (event: any) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      setActiveKpiCards((items) => {
+        const oldIndex = items.indexOf(active.id);
+        const newIndex = items.indexOf(over.id);
+        return arrayMove(items, oldIndex, newIndex);
+      });
+    }
+  };
+
+  const removeKpiCard = (id: string) => {
+    setActiveKpiCards((prev) => prev.filter(w => w !== id));
+  };
+
+  const addKpiCard = (id: string) => {
+    if (!activeKpiCards.includes(id)) {
+      setActiveKpiCards((prev) => [...prev, id]);
+    }
+  };
+
+  const getKpiGridClass = (count: number) => {
+    if (count === 1) return 'grid-cols-1';
+    if (count === 2) return 'grid-cols-1 md:grid-cols-2';
+    if (count === 3) return 'grid-cols-1 md:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-3';
+    return 'grid-cols-1 md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-4';
   };
 
   const {
@@ -263,109 +335,81 @@ export default function DashboardDemo({
     <div className="animate-in fade-in flex flex-col pb-4 duration-500 w-full relative">
       <div className="flex w-full gap-2 items-start">
         <div className={`flex flex-col transition-all duration-300 ${isWidgetLibraryOpen ? 'w-[calc(100%-300px)] xl:w-[calc(100%-320px)]' : 'w-full'}`}>
-          <div
-            className={
-              'grid grid-cols-1 gap-2 pb-0 md:grid-cols-2 xl:grid-cols-4 xl:gap-2 xl:pb-0 2xl:grid-cols-4 2xl:gap-2 2xl:pb-0'
-            }
-          >
-            <Card className="h-32 xl:h-28 2xl:h-32 flex flex-col justify-between">
-              <CardHeader className="flex flex-row items-start justify-between space-y-0 xl:p-3 xl:pb-0 2xl:p-5 2xl:pb-0">
-                <div className="space-y-1">
-                  <CardTitle className="secondary-text-small-semibold text-leadgaze-dark dark:text-white">
-                Total Leads
-              </CardTitle>
-              <Link
-                href={`/home/sales/leads${queryString}`}
-                className="hover:underline"
+          <DndContext id="kpi-dnd" sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleKpiDragEnd}>
+            <SortableContext items={activeKpiCards} strategy={rectSortingStrategy}>
+              <div
+                className={`grid gap-2 pb-0 xl:gap-2 xl:pb-0 2xl:gap-2 2xl:pb-0 ${getKpiGridClass(activeKpiCards.length)}`}
               >
-                <Figure>{metrics.leads.total}</Figure>
-              </Link>
-            </div>
-            <div className="flex h-8 w-8 items-center justify-center rounded bg-primary dark:bg-primary">
-              <File className="h-4 w-4 text-white" />
-            </div>
-          </CardHeader>
-          <CardContent className="xl:p-3 xl:pt-2 2xl:p-5 2xl:pt-2">
-            <CardDescription className="secondary-text-small text-leadgaze-success">
-              Potential customers in the funnel
-            </CardDescription>
-          </CardContent>
-        </Card>
+                {activeKpiCards.map((id) => {
+                  let kpiData = null;
+                  if (id === 'total_leads') {
+                    kpiData = {
+                      title: 'Total Leads',
+                      value: <Figure>{metrics.leads.total}</Figure>,
+                      link: `/home/sales/leads${queryString}`,
+                      icon: <File className="h-4 w-4 text-white" />,
+                      iconBg: 'bg-primary dark:bg-primary',
+                      description: 'Potential customers in the funnel',
+                    };
+                  } else if (id === 'contacts') {
+                    kpiData = {
+                      title: 'Contacts',
+                      value: <Figure>{metrics.contacts.total}</Figure>,
+                      link: `/home/sales/contacts${queryString}`,
+                      icon: <Users className="h-4 w-4 text-white" />,
+                      iconBg: 'bg-activity-5',
+                      description: 'Total individual relationships',
+                    };
+                  } else if (id === 'accounts') {
+                    kpiData = {
+                      title: 'Accounts',
+                      value: <Figure>{metrics.accounts.total}</Figure>,
+                      link: `/home/sales/accounts${queryString}`,
+                      icon: <Building2 className="h-4 w-4 text-white" />,
+                      iconBg: 'bg-activity-3',
+                      description: 'Total company organizations',
+                    };
+                  } else if (id === 'pipeline_value') {
+                    kpiData = {
+                      title: 'Pipeline Value',
+                      value: <Figure>{formatCurrency(pipelineValue, workspaceCurrency)}</Figure>,
+                      link: `/home/sales/opportunities${queryString}`,
+                      icon: <Target className="h-4 w-4 text-white" />,
+                      iconBg: 'bg-activity-4',
+                      description: 'Total value of opportunities',
+                    };
+                  }
 
-        <Card className="h-32 xl:h-28 2xl:h-32 flex flex-col justify-between">
-          <CardHeader className="flex flex-row items-start justify-between space-y-0 xl:p-3 xl:pb-0 2xl:p-5 2xl:pb-0">
-            <div className="space-y-1">
-              <CardTitle className="secondary-text-small-semibold text-leadgaze-dark dark:text-white">
-                Contacts
-              </CardTitle>
-              <Link
-                href={`/home/sales/contacts${queryString}`}
-                className="hover:underline"
-              >
-                <Figure>{metrics.contacts.total}</Figure>
-              </Link>
-            </div>
-            <div className="flex h-8 w-8 items-center justify-center rounded bg-activity-5">
-              <Users className="h-4 w-4 text-white" />
-            </div>
-          </CardHeader>
-          <CardContent className="xl:p-3 xl:pt-2 2xl:p-5 2xl:pt-2">
-            <CardDescription className="secondary-text-small text-leadgaze-success">
-              Total individual relationships
-            </CardDescription>
-          </CardContent>
-        </Card>
+                  if (!kpiData) return null;
 
-        <Card className="h-32 xl:h-28 2xl:h-32 flex flex-col justify-between">
-          <CardHeader className="flex flex-row items-start justify-between space-y-0 xl:p-3 xl:pb-0 2xl:p-5 2xl:pb-0">
-            <div className="space-y-1">
-              <CardTitle className="secondary-text-small-semibold text-leadgaze-dark dark:text-white">
-                Accounts
-              </CardTitle>
-              <Link
-                href={`/home/sales/accounts${queryString}`}
-                className="hover:underline"
-              >
-                <Figure>{metrics.accounts.total}</Figure>
-              </Link>
-            </div>
-            <div className="flex h-8 w-8 items-center justify-center rounded bg-activity-3">
-              <Building2 className="h-4 w-4 text-white" />
-            </div>
-          </CardHeader>
-          <CardContent className="xl:p-3 xl:pt-2 2xl:p-5 2xl:pt-2">
-            <CardDescription className="secondary-text-small text-leadgaze-success">
-              Total company organizations
-            </CardDescription>
-          </CardContent>
-        </Card>
-
-        <Card className="h-32 xl:h-28 2xl:h-32 flex flex-col justify-between">
-          <CardHeader className="flex flex-row items-start justify-between space-y-0 xl:p-3 xl:pb-0 2xl:p-5 2xl:pb-0">
-            <div className="space-y-1">
-              <CardTitle className="secondary-text-small-semibold text-leadgaze-dark dark:text-white">
-                Pipeline Value
-              </CardTitle>
-              <Link
-                href={`/home/sales/opportunities${queryString}`}
-                className="hover:underline"
-              >
-                <Figure>
-                  {formatCurrency(pipelineValue, workspaceCurrency)}
-                </Figure>
-              </Link>
-            </div>
-            <div className="flex h-8 w-8 items-center justify-center rounded bg-activity-4">
-              <Target className="h-4 w-4 text-white" />
-            </div>
-          </CardHeader>
-          <CardContent className="xl:p-3 xl:pt-2 2xl:p-5 2xl:pt-2">
-            <CardDescription className="secondary-text-small text-leadgaze-success">
-              Total value of opportunities
-            </CardDescription>
-          </CardContent>
-        </Card>
-      </div>
+                  return (
+                    <SortableKpiWrapper key={id} id={id}>
+                      <Card className="h-32 xl:h-28 2xl:h-32 flex flex-col justify-between">
+                        <CardHeader className="flex flex-row items-start justify-between space-y-0 xl:p-3 xl:pb-0 2xl:p-5 2xl:pb-0 relative">
+                          <div className="space-y-1">
+                            <CardTitle className="secondary-text-small-semibold text-leadgaze-dark dark:text-white pointer-events-auto">
+                              {kpiData.title}
+                            </CardTitle>
+                            <Link href={kpiData.link} className="hover:underline inline-block relative z-10 pointer-events-auto">
+                              {kpiData.value}
+                            </Link>
+                          </div>
+                          <div className={`flex h-8 w-8 items-center justify-center rounded relative z-10 pointer-events-none ${kpiData.iconBg}`}>
+                            {kpiData.icon}
+                          </div>
+                        </CardHeader>
+                        <CardContent className="xl:p-3 xl:pt-2 2xl:p-5 2xl:pt-2 relative z-10 pointer-events-none">
+                          <CardDescription className="secondary-text-small text-leadgaze-success">
+                            {kpiData.description}
+                          </CardDescription>
+                        </CardContent>
+                      </Card>
+                    </SortableKpiWrapper>
+                  );
+                })}
+              </div>
+            </SortableContext>
+          </DndContext>
 
       {/* <VisitorsChart /> */}
 
@@ -502,7 +546,14 @@ export default function DashboardDemo({
           }`}
         >
           <div className="w-[300px] xl:w-[320px] h-full">
-            <WidgetLibrary activeWidgets={activeWidgets} onAddWidget={addWidget} onRemoveWidget={removeWidget} />
+            <WidgetLibrary 
+              activeWidgets={activeWidgets} 
+              onAddWidget={addWidget} 
+              onRemoveWidget={removeWidget}
+              activeKpiCards={activeKpiCards}
+              onAddKpiCard={addKpiCard}
+              onRemoveKpiCard={removeKpiCard}
+            />
           </div>
         </div>
       </div>
@@ -1161,23 +1212,31 @@ function AccountGrowthTrends({ heightClass = "h-[320px]", data = [] }: { heightC
   )
 }
 
-function WidgetLibrary({ activeWidgets, onAddWidget, onRemoveWidget }: { activeWidgets: string[], onAddWidget: (id: string) => void, onRemoveWidget: (id: string) => void }) {
+function WidgetLibrary({ 
+  activeWidgets, onAddWidget, onRemoveWidget,
+  activeKpiCards, onAddKpiCard, onRemoveKpiCard
+}: { 
+  activeWidgets: string[], onAddWidget: (id: string) => void, onRemoveWidget: (id: string) => void,
+  activeKpiCards: string[], onAddKpiCard: (id: string) => void, onRemoveKpiCard: (id: string) => void
+}) {
   const isWidgetActive = (id: string) => activeWidgets.includes(id);
+  const isKpiActive = (id: string) => activeKpiCards.includes(id);
+
   return (
     <div className="flex flex-col h-full bg-card border border-[#C3C6D6] overflow-hidden">
        {/* Fixed Heading */}
        <div className="flex flex-col p-3 border-b bg-card border-[#C3C6D6] sticky top-0 z-10 shrink-0">
-          <h3 className="primary-heading text-leadgaze-dark leading-none tracking-tight dark:text-white">Widget Library</h3>
+          <h3 className="primary-heading text-leadgaze-dark leading-none dark:text-white">Widget Library</h3>
           <p className="text-[11px] text-leadgaze-dark dark:text-white font-medium mt-0.5">Drag to dashboard</p>
        </div>
 
        {/* Scrollable Content */}
        <div className="flex flex-col gap-4 p-3 overflow-y-auto flex-1 custom-scrollbar">
           <WidgetSection title="KPI CARDS"> 
-            <WidgetItem label="Total Leads" disabled />
-            <WidgetItem label="Qualified Leads" disabled />
-            <WidgetItem label="Revenue" disabled />
-            <WidgetItem label="Conversion Rate" disabled />
+            <WidgetItem label="Total Leads" disabled={isKpiActive('total_leads')} onClick={() => onAddKpiCard('total_leads')} onRemove={() => onRemoveKpiCard('total_leads')} />
+            <WidgetItem label="Contacts" disabled={isKpiActive('contacts')} onClick={() => onAddKpiCard('contacts')} onRemove={() => onRemoveKpiCard('contacts')} />
+            <WidgetItem label="Account" disabled={isKpiActive('accounts')} onClick={() => onAddKpiCard('accounts')} onRemove={() => onRemoveKpiCard('accounts')} />
+            <WidgetItem label="Pipeline Value" disabled={isKpiActive('pipeline_value')} onClick={() => onAddKpiCard('pipeline_value')} onRemove={() => onRemoveKpiCard('pipeline_value')} />
           </WidgetSection>
 
           <WidgetSection title="CHARTS">
