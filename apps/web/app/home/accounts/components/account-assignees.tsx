@@ -104,7 +104,7 @@ export function AccountAssignees({
             className="secondary-text-small-bold text-leadgaze-dark dark:text-white gap-1.5 px-2"
           >
             <Plus className="h-4 w-4" />
-            Assign First Member
+            Assign Member
           </Button>
         </div>
       ) : (
