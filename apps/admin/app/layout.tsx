@@ -13,6 +13,11 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'Leadgaze Admin',
   description: 'Leadgaze Admin Panel — manage your platform.',
+  icons: {
+    icon: '/images/favicon/favicon.ico',
+    shortcut: '/images/favicon/favicon-32x32.png',
+    apple: '/images/favicon/apple-touch-icon.png',
+  },
 };
 
 async function RootLayout({

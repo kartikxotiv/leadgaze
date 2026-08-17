@@ -26,6 +26,7 @@ import {
   deleteEmailTemplateService,
   getEmailTemplatesService,
 } from '~/services/email-templates.service';
+import { CustomDeleteDialog } from '@kit/ui/custom-delete-dialog';
 
 import { TemplateDialog } from './template-dialog';
 
@@ -36,6 +37,10 @@ export function EmailTemplatesTab() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
+
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [templateToDelete, setTemplateToDelete] = useState<number | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const canManage = canAccess('emails', 'manage_email');
 
@@ -56,17 +61,28 @@ export function EmailTemplatesTab() {
     setIsDialogOpen(true);
   };
 
-  const handleDelete = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this template?')) return;
+  const handleDeleteClick = (id: number) => {
+    setTemplateToDelete(id);
+    setIsDeleteDialogOpen(true);
+  };
 
+  const performDelete = async () => {
+    if (!templateToDelete) return;
+    setIsDeleting(true);
     try {
-      await deleteEmailTemplateService(id);
+      await deleteEmailTemplateService(templateToDelete);
       toast.success('Template deleted successfully');
       queryClient.invalidateQueries({
         queryKey: ['email-templates', workspace?.id],
       });
+      setIsDeleteDialogOpen(false);
+      setTemplateToDelete(null);
     } catch (error: any) {
       toast.error(error.message || 'Failed to delete template');
+      setIsDeleteDialogOpen(false);
+      setTemplateToDelete(null);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -159,7 +175,7 @@ export function EmailTemplatesTab() {
                           variant="ghost"
                           size="sm"
                           className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                          onClick={() => handleDelete(template.id)}
+                          onClick={() => handleDeleteClick(template.id)}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -178,6 +194,15 @@ export function EmailTemplatesTab() {
         onOpenChange={setIsDialogOpen}
         template={selectedTemplate}
         workspaceId={workspace?.id || ''}
+      />
+      
+      <CustomDeleteDialog
+        isOpen={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        title="Delete Template"
+        description="Are you sure you want to delete this template? This action cannot be undone."
+        onConfirm={performDelete}
+        isDeleting={isDeleting}
       />
     </div>
   );

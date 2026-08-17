@@ -63,16 +63,26 @@ const getAllRoles = catchAsync(
       }
     } else {
       query = query
-        .order('hierarchy_level', { ascending: false })
-        .order('role_name', { ascending: true });
+        .order('hierarchy_level', { ascending: true })
+        .order('created_at', { ascending: true });
     }
 
-    const { data: roles, error } = await query;
+    const { data: rawRoles, error } = await query;
 
     if (error) {
       console.error('Get roles error:', error);
       throw error;
     }
+
+    const adminRoles = (rawRoles || []).filter((r: any) => r.role_key === 'admin');
+    const customRoles = (rawRoles || []).filter((r: any) => r.role_key !== 'admin');
+
+    const normalizedCustomRoles = customRoles.map((role: any, index: number) => ({
+      ...role,
+      hierarchy_level: role.hierarchy_level && role.hierarchy_level > 0 ? role.hierarchy_level : index + 1,
+    }));
+
+    const roles = [...adminRoles, ...normalizedCustomRoles];
 
     return successDataResponse('Roles retrieved successfully', roles);
   },
@@ -105,18 +115,20 @@ const createRole = catchAsync(
 
     // Check if role_key already exists for this product in this workspace
     const roleProductKey = product_key || 'sales';
-    const { data: existingRole, error: checkError } = await supabase
+    const { data: existingRoles, error: checkError } = await supabase
       .from('workspace_roles')
-      .select('id')
+      .select('id, role_key, hierarchy_level')
       .eq('workspace_id', workspaceId)
-      .eq('product_key', roleProductKey)
-      .eq('role_key', role_key)
-      .single();
+      .eq('product_key', roleProductKey);
 
-    if (checkError && checkError.code !== 'PGRST116') {
+    if (checkError) {
       console.error('Check role error:', checkError);
       throw checkError;
     }
+
+    const existingRole = (existingRoles || []).find(
+      (r: any) => r.role_key === role_key,
+    );
 
     if (existingRole) {
       return NextResponse.json(
@@ -125,6 +137,11 @@ const createRole = catchAsync(
       );
     }
 
+    const customRolesCount = (existingRoles || []).filter(
+      (r: any) => r.role_key !== 'admin',
+    ).length;
+    const nextHierarchyLevel = customRolesCount + 1;
+
     const { data: createdRole, error: createRoleError } = await supabase
       .from('workspace_roles')
       .insert({
@@ -132,7 +149,7 @@ const createRole = catchAsync(
         role_key,
         role_name,
         description,
-        hierarchy_level: 0,
+        hierarchy_level: nextHierarchyLevel,
         color,
         is_system: false,
         is_active: true,

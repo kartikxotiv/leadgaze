@@ -12,6 +12,7 @@ const INTERNAL_PACKAGES = [
   '@kit/next',
   '@kit/core',
   '@kit/service-cloud',
+  '@kit/sales',
 ];
 
 /** @type {import('next').NextConfig} */

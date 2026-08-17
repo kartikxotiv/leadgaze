@@ -48,7 +48,7 @@ export function UpdateMemberDialog({
   onSuccess,
   productKey,
 }: UpdateMemberDialogProps) {
-  const { currentWorkspace, canAccess } = useRBAC();
+  const { currentWorkspace, user, canAccess } = useRBAC();
   const queryClient = useQueryClient();
 
   const [formData, setFormData] = useState({
@@ -64,6 +64,16 @@ export function UpdateMemberDialog({
       });
     }
   }, [open, member]);
+
+  const isTargetOwner =
+    (currentWorkspace?.owner_id && member.user_id === currentWorkspace.owner_id) ||
+    member.role?.role_key === 'owner' ||
+    member.is_primary_contact === true;
+
+  const isCurrentUserOwner =
+    currentWorkspace?.owner_id && user?.id === currentWorkspace.owner_id;
+
+  const isEditDisabled = isTargetOwner && !isCurrentUserOwner;
 
   // Fetch roles
   const { data: roles = [], isLoading: rolesLoading } = useQuery({
@@ -96,20 +106,30 @@ export function UpdateMemberDialog({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isEditDisabled) {
+      toast.error('The workspace owner role cannot be modified by other team members.');
+      return;
+    }
     updateMutation.mutate();
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-[450px]">
-        <DialogHeader className="border-b p-6 pb-4">
+        <DialogHeader>
           <DialogTitle>Update Member</DialogTitle>
           <DialogDescription>
             Update the role and settings for this team member
           </DialogDescription>
         </DialogHeader>
 
-        <form id="dialog-form" onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+        <form id="dialog-form" onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-2 space-y-2">
+          {isEditDisabled && (
+            <div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive font-medium">
+              The workspace owner role cannot be modified by other team members.
+            </div>
+          )}
+
           <div className="space-y-2">
             <CustomInputForView
                                 label="Email"
@@ -128,7 +148,8 @@ export function UpdateMemberDialog({
               disabled={
                 rolesLoading ||
                 updateMutation.isPending ||
-                !canAccess('team_members', 'change_role')
+                !canAccess('team_members', 'change_role') ||
+                isEditDisabled
               }
             >
               <SelectTrigger id="role">
@@ -152,7 +173,7 @@ export function UpdateMemberDialog({
             </Select>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 pb-2">
             <Checkbox
               id="primary_contact"
               checked={formData.is_primary_contact}
@@ -162,7 +183,7 @@ export function UpdateMemberDialog({
                   is_primary_contact: checked === true,
                 })
               }
-              disabled={updateMutation.isPending}
+              disabled={updateMutation.isPending || isEditDisabled}
             />
             <Label htmlFor="primary_contact" className="cursor-pointer">
               Mark as primary contact
@@ -171,7 +192,7 @@ export function UpdateMemberDialog({
 
           
         </form>
-      <DialogFooter className="border-t p-2 mt-auto">
+      <DialogFooter>
             <Button
               type="button"
               variant="outline"
@@ -182,7 +203,7 @@ export function UpdateMemberDialog({
             </Button>
             <Button
               type="submit" form="dialog-form"
-              disabled={updateMutation.isPending}
+              disabled={updateMutation.isPending || isEditDisabled}
               className="gap-2"
             >
               {updateMutation.isPending && (

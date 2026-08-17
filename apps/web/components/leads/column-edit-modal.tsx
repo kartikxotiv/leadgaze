@@ -5,6 +5,7 @@ import React, { useEffect, useState } from 'react';
 import { Check, Shield, Trash2, User, Users, X } from 'lucide-react';
 
 import { Button } from '@kit/ui/button';
+import { CustomDeleteDialog } from '@kit/ui/custom-delete-dialog';
 import {
   Dialog,
   DialogContent,
@@ -151,6 +152,9 @@ export function ColumnEditModal({
   const showRoleSelection = accessType !== 'user_based';
   const showUserSelection = accessType !== 'role_based';
 
+  const [isConfirmDeleteDialogOpen, setIsConfirmDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   // Handle save
   const handleSave = () => {
     const memberPayload =
@@ -160,12 +164,24 @@ export function ColumnEditModal({
   };
 
   // Handle delete
-  const handleDelete = async () => {
-    if (onDelete) {
-      await deleteField.mutateAsync({ fieldId: field.id });
-      onDelete(field.id);
+  const handleDeleteClick = () => {
+    setIsConfirmDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    try {
+      setIsDeleting(true);
+      if (onDelete) {
+        await deleteField.mutateAsync({ fieldId: field.id });
+        onDelete(field.id);
+      }
+      setIsConfirmDeleteDialogOpen(false);
+      onOpenChange(false);
+    } catch (err) {
+      console.error('Failed to delete field:', err);
+    } finally {
+      setIsDeleting(false);
     }
-    onOpenChange(false);
   };
 
   return (
@@ -256,37 +272,13 @@ export function ColumnEditModal({
                             ))}
                         </SelectContent>
                       </Select>
-
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        {members
-                          .filter((m) => m.member_type === 'role')
-                          .map((member) => (
-                            <div
-                              key={member.member_id}
-                              className="bg-muted flex items-center gap-2 rounded-md px-2 py-1 text-sm"
-                            >
-                              <span>
-                                {getMemberName('role', member.member_id)}
-                              </span>
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  removeMember('role', member.member_id)
-                                }
-                                className="text-muted-foreground hover:text-foreground"
-                              >
-                                <X className="h-3 w-3" />
-                              </button>
-                            </div>
-                          ))}
-                      </div>
                     </div>
                   )}
 
                   {showUserSelection && (
                     <div className="space-y-2">
                       <Label className="flex items-center gap-2">
-                        <Users className="h-4 w-4" />
+                        <User className="h-4 w-4" />
                         Users with Access
                       </Label>
                       <Select
@@ -298,7 +290,9 @@ export function ColumnEditModal({
                         </SelectTrigger>
                         <SelectContent>
                           {teamMembers
-                            .filter((m) => !selectedUserIds.includes(m.user_id))
+                            .filter(
+                              (m) => !selectedUserIds.includes(m.user_id),
+                            )
                             .map((member) => (
                               <SelectItem
                                 key={member.user_id}
@@ -310,44 +304,20 @@ export function ColumnEditModal({
                             ))}
                         </SelectContent>
                       </Select>
-
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        {members
-                          .filter((m) => m.member_type === 'user')
-                          .map((member) => (
-                            <div
-                              key={member.member_id}
-                              className="bg-muted flex items-center gap-2 rounded-md px-2 py-1 text-sm"
-                            >
-                              <span>
-                                {getMemberName('user', member.member_id)}
-                              </span>
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  removeMember('user', member.member_id)
-                                }
-                                className="text-muted-foreground hover:text-foreground"
-                              >
-                                <X className="h-3 w-3" />
-                              </button>
-                            </div>
-                          ))}
-                      </div>
                     </div>
                   )}
                 </>
               )}
 
-              {/* Member Permissions */}
-              {members.length > 0 && accessType !== 'private' && (
-                <div className="space-y-2 border-t pt-4">
-                  <Label>Permissions</Label>
+              {/* Members List with Permissions */}
+              {members.length > 0 && (
+                <div className="space-y-2">
+                  <Label>Configured Access</Label>
                   <div className="space-y-2">
                     {members.map((member) => (
                       <div
                         key={`${member.member_type}-${member.member_id}`}
-                        className="bg-muted/50 flex items-center justify-between rounded-lg px-3 py-2"
+                        className="flex items-center justify-between rounded-lg border p-3"
                       >
                         <div className="flex items-center gap-2">
                           {member.member_type === 'role' ? (
@@ -361,9 +331,13 @@ export function ColumnEditModal({
                               member.member_id,
                             )}
                           </span>
+                          <span className="text-muted-foreground text-xs">
+                            ({member.member_type})
+                          </span>
                         </div>
+
                         <div className="flex items-center gap-4">
-                          <label className="flex cursor-pointer items-center gap-2 text-sm">
+                          <label className="flex items-center gap-2 text-xs">
                             <Switch
                               checked={member.can_view}
                               onCheckedChange={() =>
@@ -376,7 +350,8 @@ export function ColumnEditModal({
                             />
                             <span>View</span>
                           </label>
-                          <label className="flex cursor-pointer items-center gap-2 text-sm">
+
+                          <label className="flex items-center gap-2 text-xs">
                             <Switch
                               checked={member.can_edit}
                               onCheckedChange={() =>
@@ -405,7 +380,7 @@ export function ColumnEditModal({
                 variant="destructive"
                 size="sm"
                 className="flex items-center gap-2"
-                onClick={handleDelete}
+                onClick={handleDeleteClick}
               >
                 <Trash2 className="h-4 w-4" />
                 Delete Column
@@ -414,7 +389,7 @@ export function ColumnEditModal({
           )}
         </div>
 
-        <DialogFooter className="flex justify-between">
+        <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
@@ -423,6 +398,15 @@ export function ColumnEditModal({
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      <CustomDeleteDialog
+        isOpen={isConfirmDeleteDialogOpen}
+        onOpenChange={setIsConfirmDeleteDialogOpen}
+        title="Delete Column"
+        description={`Are you sure you want to delete the column "${field.field_label}"? This action cannot be undone and any data stored in this column will be permanently removed.`}
+        onConfirm={handleConfirmDelete}
+        isDeleting={isDeleting}
+      />
     </Dialog>
   );
 }

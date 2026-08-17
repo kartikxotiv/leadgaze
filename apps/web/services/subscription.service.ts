@@ -99,8 +99,9 @@ export interface WorkspaceSubscriptionStatus {
 export interface CheckoutPayload {
   workspaceId: string;
   productKey: string;
-  seats: number;
+  seats?: number;
   billingCycle?: 'monthly' | 'yearly';
+  returnUrl?: string;
 }
 
 export interface CheckoutItem {
@@ -111,7 +112,8 @@ export interface CheckoutItem {
 export interface MultiCheckoutPayload {
   workspaceId: string;
   items: CheckoutItem[];
-  billingCycle: 'monthly' | 'yearly';
+  billingCycle?: 'monthly' | 'yearly';
+  returnUrl?: string;
 }
 
 export interface CheckoutResponse {

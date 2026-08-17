@@ -13,7 +13,7 @@ export function CardWidgetList({
   ...props
 }: CardWidgetListProps) {
   return (
-    <div className={cn('flex flex-col gap-3', className)} {...props}>
+    <div className={cn('flex flex-col gap-2', className)} {...props}>
       {children}
     </div>
   );
@@ -37,6 +37,12 @@ export interface CardWidgetListItemProps
   metadata?: React.ReactNode;
   /** Optional action buttons visible on hover or always (e.g. edit, delete) */
   actions?: React.ReactNode;
+  /** How the hover actions are positioned and animated. Defaults to 'slide' */
+  actionStyle?: 'fixed' | 'floating' | 'slide';
+
+  titleClassFormat?: React.ReactNode;
+
+  isBadgeVerticalCenter?: boolean;
 }
 
 export function CardWidgetListItem({
@@ -48,7 +54,10 @@ export function CardWidgetListItem({
   content,
   metadata,
   actions,
+  actionStyle = 'fixed',
   className,
+  titleClassFormat,
+  isBadgeVerticalCenter = false,
   ...props
 }: CardWidgetListItemProps) {
   return (
@@ -68,15 +77,16 @@ export function CardWidgetListItem({
             {icon}
           </div>
         )}
-        <div className="flex min-w-0 flex-1 flex-col">
+        <div className={`flex min-w-0 flex-1 ${isBadgeVerticalCenter ? 'flex-row items-center': 'flex-col'}`}>
+          <div className="flex min-w-0 flex-1 flex-col">
           {(title || badge) && (
             <div className="flex items-center justify-between gap-2">
               {title && (
-                <div className="h-5 truncate text-sm leading-5 font-semibold text-gray-900 dark:text-zinc-100">
+                <div className={cn("h-5 truncate primary-text-medium leading-5 text-leadgaze-dark dark:text-white", titleClassFormat)}>
                   {title}
                 </div>
               )}
-              {badge && <div className="flex-shrink-0">{badge}</div>}
+              {(badge && !isBadgeVerticalCenter)  && <div className="flex-shrink-0">{badge}</div>}
             </div>
           )}
           {subtitle && (
@@ -85,7 +95,7 @@ export function CardWidgetListItem({
             </div>
           )}
           {content && (
-            <div className="mt-1.5 text-sm break-words whitespace-pre-wrap text-gray-700 dark:text-zinc-300">
+            <div className="mt-1 text-sm break-words whitespace-pre-wrap text-leadgaze-dark dark:text-white">
               {content}
             </div>
           )}
@@ -94,10 +104,19 @@ export function CardWidgetListItem({
               {metadata}
             </div>
           )}
+          </div>
+          {(badge && isBadgeVerticalCenter)  && <div className="flex-shrink-0">{badge}</div>}
         </div>
       </div>
       {actions && (
-        <div className="ml-3 flex flex-shrink-0 gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+        <div
+          className={cn(
+            "flex flex-shrink-0 gap-1 transition-all duration-300",
+            actionStyle === 'fixed' && "ml-3 opacity-0 group-hover:opacity-100",
+            actionStyle === 'floating' && "absolute right-2 top-2 opacity-0 group-hover:opacity-100 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-sm p-1 rounded-md",
+            actionStyle === 'slide' && "max-w-0 ml-0 overflow-hidden opacity-0 group-hover:max-w-[200px] group-hover:ml-3 group-hover:opacity-100"
+          )}
+        >
           {actions}
         </div>
       )}

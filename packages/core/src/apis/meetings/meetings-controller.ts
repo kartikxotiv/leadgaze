@@ -109,6 +109,10 @@ export const getMeetingsController = catchAsync(async ({ request }) => {
   const statuses = url.searchParams.get('statuses');
   const timeframe = url.searchParams.get('timeframe');
   const searchTerm = url.searchParams.get('searchTerm');
+  const pageParam = url.searchParams.get('page');
+  const limitParam = url.searchParams.get('limit');
+  const page = pageParam ? parseInt(pageParam, 10) : null;
+  const limit = limitParam ? parseInt(limitParam, 10) : null;
 
   if (!workspaceId) {
     return NextResponse.json(
@@ -331,33 +335,27 @@ export const getMeetingsController = catchAsync(async ({ request }) => {
     // Get relations and participants for each meeting
     let meetings = Array.isArray(data) ? data : [data];
 
-    // Filter out old meetings (more than 1 day past end time)
-    const now = new Date();
-    const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-
-    meetings = meetings.filter((meeting) => {
-      const endTime = new Date(meeting.actual_end || meeting.scheduled_end || meeting.end_time);
-      // Show if end time is in the future OR within last 1 day
-      return endTime >= oneDayAgo;
-    });
-
+    // Apply timeframe filtering if provided
     if (timeframe) {
       const timeframeList = timeframe.split(',').map((t) => t.trim()).filter(Boolean);
-      if (timeframeList.length > 0 && timeframeList.length < 2) {
+      if (timeframeList.length > 0) {
         const checkTime = new Date();
         meetings = meetings.filter((meeting) => {
-          const start = meeting.scheduled_start || meeting.actual_start || meeting.start_time;
-          if (!start) return timeframeList.includes('upcoming');
-          const meetingDate = new Date(start);
-          const isUpcoming =
-            meetingDate >= checkTime &&
-            meeting.status !== 'completed' &&
-            meeting.status !== 'cancelled';
+          const rawStart = meeting.scheduled_start || meeting.actual_start || meeting.start_time || meeting.start_date || meeting.created_at;
+          if (!rawStart) return true;
+          const meetingDate = new Date(rawStart);
+          const isUpcoming = meetingDate >= checkTime || ['scheduled', 'upcoming'].includes(meeting.status);
           if (timeframeList.includes('upcoming')) return isUpcoming;
           if (timeframeList.includes('past')) return !isUpcoming;
           return true;
         });
       }
+    }
+
+    const totalMeetingsCount = meetings.length;
+    if (page && limit && limit > 0) {
+      const offset = (page - 1) * limit;
+      meetings = meetings.slice(offset, offset + limit);
     }
 
     const meetingIdsToFetch = meetings.map((m: { id: string }) => m.id);
@@ -441,10 +439,36 @@ export const getMeetingsController = catchAsync(async ({ request }) => {
         })
       );
 
+      const resultData = Array.isArray(data) ? enrichedMeetings : (enrichedMeetings[0] ?? null);
+
+      if (pageParam || limitParam) {
+        return NextResponse.json({
+          success: true,
+          data: resultData,
+          count: totalMeetingsCount,
+          total: totalMeetingsCount,
+          page: page ?? 1,
+          limit: limit ?? totalMeetingsCount,
+          has_more: page && limit ? (page * limit) < totalMeetingsCount : false,
+        });
+      }
+
       return successDataResponse(
         'Meetings retrieved',
-        Array.isArray(data) ? enrichedMeetings : (enrichedMeetings[0] ?? null),
+        resultData,
       );
+    }
+
+    if (pageParam || limitParam) {
+      return NextResponse.json({
+        success: true,
+        data: [],
+        count: totalMeetingsCount,
+        total: totalMeetingsCount,
+        page: page ?? 1,
+        limit: limit ?? totalMeetingsCount,
+        has_more: false,
+      });
     }
 
     return successDataResponse('Meetings retrieved', data);
@@ -625,6 +649,65 @@ export const createMeetingController = catchAsync(async ({ request }) => {
           participantRows.length,
           'participants',
         );
+
+        // Send email invitations to external invitees asynchronously in background (non-blocking)
+        const externalParticipants = participantRows.filter(
+          (p: { participant_type?: string; external_email?: string | null }) =>
+            p.participant_type === 'EXTERNAL' && p.external_email,
+        );
+
+        if (externalParticipants.length > 0) {
+          (async () => {
+            try {
+              // @ts-ignore - dynamic import resolved at runtime within web application context
+              const { NotificationService } = await import(
+                '~/lib/cron/notification-service'
+              );
+
+              const { data: hostAcc } = await (supabase as any)
+                .from('accounts')
+                .select('name, email')
+                .eq('id', user.id)
+                .single();
+
+              for (const extP of externalParticipants) {
+                if (extP.external_email) {
+                  NotificationService.sendMeetingInvitationEmail({
+                    to: extP.external_email,
+                    meetingTitle: meeting.title,
+                    meetingDescription: meeting.description || undefined,
+                    startTime:
+                      meeting.scheduled_start ||
+                      meeting.actual_start ||
+                      new Date().toISOString(),
+                    endTime:
+                      meeting.scheduled_end ||
+                      meeting.actual_end ||
+                      new Date().toISOString(),
+                    location: meeting.location || undefined,
+                    meetingLink: meeting.meeting_url || undefined,
+                    hostName: hostAcc?.name || undefined,
+                    hostEmail: hostAcc?.email || undefined,
+                    workspaceId,
+                    recipientTz: meeting.timezone || 'UTC',
+                  }).catch((err: unknown) => {
+                    console.error(
+                      '[createMeeting] Error sending invitation email to ' +
+                        extP.external_email +
+                        ':',
+                      err,
+                    );
+                  });
+                }
+              }
+            } catch (emailErr) {
+              console.error(
+                '[createMeeting] Failed to trigger invitation emails:',
+                emailErr,
+              );
+            }
+          })();
+        }
       }
     } else {
       console.log(
@@ -641,7 +724,7 @@ export const createMeetingController = catchAsync(async ({ request }) => {
           (r: { offset_minutes: number; channel?: string }) => {
             const scheduledAt = new Date(
               new Date(meetingStartTime).getTime() -
-                r.offset_minutes * 60 * 1000,
+              r.offset_minutes * 60 * 1000,
             );
             return {
               workspace_id: workspaceId,
@@ -1049,7 +1132,7 @@ export const updateMeetingController = catchAsync(async ({ request }) => {
           (r: { offset_minutes: number; channel?: string }) => {
             const scheduledAt = new Date(
               new Date(resolvedStart).getTime() -
-                r.offset_minutes * 60 * 1000,
+              r.offset_minutes * 60 * 1000,
             );
             return {
               workspace_id: workspaceId,
@@ -1085,7 +1168,7 @@ export const updateMeetingController = catchAsync(async ({ request }) => {
           for (const rem of existingReminders) {
             const scheduledAt = new Date(
               new Date(resolvedStart).getTime() -
-                rem.offset_minutes * 60 * 1000,
+              rem.offset_minutes * 60 * 1000,
             );
             await (supabase as any)
               .schema('core')

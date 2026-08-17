@@ -53,7 +53,7 @@ export function PageMobileNavigation(
 
 export function PageDescription(props: React.PropsWithChildren) {
   return (
-    <div className={'flex h-6 items-center'}>
+    <div className={'flex items-center'}>
       <div className={'text-muted-foreground text-xs leading-none font-normal'}>
         {props.children}
       </div>

@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { DateTimePicker } from '@kit/ui/datetime-picker';
+import { AddColumnModal } from '@kit/ui/add-column-modal';
 import { format } from 'date-fns';
 import { useLocalization } from '@kit/shared/localization';
 import { Badge } from '@kit/ui/badge';
@@ -34,6 +35,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from '@kit/ui/dialog';
 import {
   DropdownMenu,
@@ -68,6 +70,8 @@ import { useColumnResize } from '@kit/ui/use-column-resize';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
 import { useDateRangeFilter } from '@kit/ui/use-date-range-filter';
 import { useTableSort } from '@kit/ui/use-table-sort';
+import { cn } from '@kit/ui/utils';
+import { CustomDeleteDialog } from '@kit/ui/custom-delete-dialog';
 
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { useDebounce } from '~/lib/hooks/use-debounce';
@@ -114,8 +118,16 @@ function RemindersPageSkeleton() {
                   <TableHead>Priority</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Entity</TableHead>
-                  <TableHead className="sticky right-0 text-right">
-                    Actions
+                  <TableHead className="sticky-right-header z-10 w-12 px-1 text-center">
+                    <Button
+                      type="button"
+                      size="icon"
+                      className="mx-auto flex h-5 w-5 items-center justify-center rounded-full bg-leadgaze-primary text-white hover:bg-leadgaze-primary/90 border-0 p-0 shadow-xs"
+                      onClick={() => setAddColumnModalOpen(true)}
+                      title="Toggle Columns"
+                    >
+                      <Plus className="h-3.5 w-3.5 stroke-[2.5]" />
+                    </Button>
                   </TableHead>
                 </TableRow>
               </TableHeader>
@@ -137,6 +149,7 @@ function RemindersPageSkeleton() {
 }
 
 export default function RemindersPage() {
+  const [addColumnModalOpen, setAddColumnModalOpen] = useState(false);
   const { currentWorkspace: workspace } = useRBAC();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
@@ -150,7 +163,7 @@ export default function RemindersPage() {
     to: undefined,
   });
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(15);
+  const [pageSize, setPageSize] = useState(25);
   const itemsPerPage = pageSize;
   const {
     dateRange: createdOnRange,
@@ -172,6 +185,10 @@ export default function RemindersPage() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingReminder, setEditingReminder] = useState<Reminder | null>(null);
+  
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [reminderToDelete, setReminderToDelete] = useState<string | null>(null);
+
   const { formatDate } = useLocalization();
   const [formData, setFormData] = useState({
     title: '',
@@ -216,10 +233,12 @@ export default function RemindersPage() {
 
   const { getHeaderProps, getResizeHandleProps } = useColumnResize('reminders');
 
-  const { data: reminders = [], isLoading } = useQuery({
+  const { data: remindersResponse, isLoading } = useQuery({
     queryKey: [
       'reminders',
       workspace?.id,
+      currentPage,
+      pageSize,
       statusFilter,
       priorityFilter,
       debouncedSearchTerm,
@@ -228,7 +247,7 @@ export default function RemindersPage() {
       computedUpdatedOnDates,
     ],
     queryFn: () => {
-      if (!workspace?.id) return [];
+      if (!workspace?.id) return { data: [], total: 0 };
       const apiStatus =
         statusFilter === 'completed'
           ? 'completed'
@@ -236,6 +255,8 @@ export default function RemindersPage() {
             ? 'active'
             : undefined;
       return getRemindersService(workspace.id, undefined, undefined, {
+        page: currentPage,
+        limit: pageSize,
         status: apiStatus,
         priority: priorityFilter === 'all' ? undefined : priorityFilter,
         searchTerm: debouncedSearchTerm || undefined,
@@ -248,6 +269,16 @@ export default function RemindersPage() {
     },
     enabled: !!workspace?.id,
   });
+
+  const reminders = useMemo(() => {
+    if (Array.isArray(remindersResponse)) return remindersResponse;
+    return remindersResponse?.data || [];
+  }, [remindersResponse]);
+
+  const totalCount = useMemo(() => {
+    if (Array.isArray(remindersResponse)) return remindersResponse.length;
+    return remindersResponse?.total ?? reminders.length;
+  }, [remindersResponse, reminders]);
 
   const { data: leads = [] } = useQuery({
     queryKey: ['leads', workspace?.id],
@@ -290,16 +321,16 @@ export default function RemindersPage() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (payload: any) =>
+    mutationFn: (data: typeof formData) =>
       createReminderService({
         workspace_id: workspace!.id,
-        entity_type: payload.entity_type,
-        entity_id: payload.entityId,
-        title: payload.title,
-        description: payload.description,
-        priority: payload.priority,
-        due_date: payload.due_date
-          ? new Date(payload.due_date).toISOString()
+        entity_type: data.entity_type,
+        entity_id: data.entityId,
+        title: data.title,
+        description: data.description,
+        priority: data.priority,
+        due_date: data.due_date
+          ? new Date(data.due_date).toISOString()
           : undefined,
       }),
     onSuccess: () => {
@@ -322,8 +353,8 @@ export default function RemindersPage() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: (payload: any) =>
-      updateReminderService(editingReminder!.id, payload),
+    mutationFn: ({ id, ...payload }: { id: string; [key: string]: any }) =>
+      updateReminderService(id, payload),
     onSuccess: () => {
       toast.success('Reminder updated');
       setIsEditDialogOpen(false);
@@ -337,7 +368,7 @@ export default function RemindersPage() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: deleteReminderService,
+    mutationFn: (id: string) => deleteReminderService(id),
     onSuccess: () => {
       toast.success('Reminder deleted');
       queryClient.invalidateQueries({ queryKey: ['reminders', workspace?.id] });
@@ -345,7 +376,6 @@ export default function RemindersPage() {
         queryKey: ['dashboard-metrics', workspace?.id],
       });
     },
-    onError: () => toast.error('Failed to delete reminder'),
   });
 
   useEffect(() => {
@@ -369,13 +399,9 @@ export default function RemindersPage() {
       onSortChange: () => setCurrentPage(1),
     });
 
-  const paginatedReminders = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage;
-    return sortedData.slice(start, start + itemsPerPage);
-  }, [sortedData, currentPage, itemsPerPage]);
+  const paginatedReminders = sortedData;
 
-  const totalPages = Math.ceil(filteredReminders.length / itemsPerPage);
-  const totalCount = filteredReminders.length;
+  const totalPages = Math.ceil(totalCount / itemsPerPage) || 1;
 
   const handleCreate = () => {
     if (!formData.title.trim() || !formData.entityId || !formData.due_date)
@@ -412,9 +438,8 @@ export default function RemindersPage() {
   };
 
   const handleDelete = (id: string) => {
-    if (confirm('Are you sure you want to delete this reminder?')) {
-      deleteMutation.mutate(id);
-    }
+    setReminderToDelete(id);
+    setIsDeleteDialogOpen(true);
   };
 
   const toggleCompletion = (reminder: Reminder) => {
@@ -666,16 +691,66 @@ export default function RemindersPage() {
     <>
       <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden">
         <PageHeader
-          title={`Reminders (${reminders.length})`}
-          description="Keep track of your important tasks and reminders"
-        />
+          title={`Reminders`}          
+        >
+          <Button
+            onClick={() => {
+              setFormData({
+                title: '',
+                description: '',
+                due_date: '',
+                priority: 'medium',
+                entity_type: 'lead',
+                entityId: '',
+              });
+              setIsCreateDialogOpen(true);
+            }}
+            className="secondary-text-small-bold gap-1.5 px-2 bg-leadgaze-primary hover:bg-leadgaze-primary text-white"
+          >
+            <Plus className="h-4 w-4" />
+            New Reminder
+          </Button>
+        </PageHeader>
       </div>
 
       {/* Full-width search / filter / actions toolbar */}
-      <div className="w-full max-w-full min-w-0 shrink-0 border-b pt-2 pb-2">
+      <div className="flex w-full max-w-full min-w-0 shrink-0 items-center justify-between border-top-bottom-gray">
+        <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide">
+          {[
+            { id: 'all', label: 'All Reminders' },
+            { id: 'pending', label: 'Pending' },
+            { id: 'completed', label: 'Completed' }
+          ].map((status) => {
+            const isSelected = statusFilter === status.id;
+            return (
+              <button
+                key={status.id}
+                onClick={() => {
+                  setStatusFilter(status.id);
+                  setCurrentPage(1);
+                }}
+                className={cn(
+                  "flex items-center gap-1 whitespace-nowrap border-b-2 px-3 py-1 primary-text-medium",
+                  isSelected
+                    ? "border-leadgaze-primary text-leadgaze-primary"
+                    : "border-transparent text-gray-500 hover:text-gray-700"
+                )}
+              >
+                {status.id === 'all' && (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                )}
+                {status.label}
+              </button>
+            );
+          })}
+        </div>
+
         <ListToolBar
+          align="right"
+          className="border-none bg-transparent p-0"
           showSearch
-          searchPlaceholder="Search by task title..."
+          expandableSearch
+          searchPlaceholder="Search"
           searchValue={searchTerm}
           onSearchChange={setSearchTerm}
           showFilter
@@ -683,26 +758,7 @@ export default function RemindersPage() {
           filterGroups={filterGroups}
           activeFilterCount={activeFilterCount}
           onClearFilters={handleClearFilters}
-          actions={[
-            {
-              key: 'add',
-              label: 'New Reminder',
-              icon: Plus,
-              onClick: () => {
-                setFormData({
-                  title: '',
-                  description: '',
-                  due_date: '',
-                  priority: 'medium',
-                  entity_type: 'lead',
-                  entityId: '',
-                });
-                setIsCreateDialogOpen(true);
-              },
-              show: true,
-              buttonVariant: 'default',
-            },
-          ]}
+          actions={[]}
           columnVisibilitySlot={
             <ColumnVisibilitySelector
               columns={reminderColumns}
@@ -919,7 +975,17 @@ export default function RemindersPage() {
                       />
                     </SortableTableHead>
                   )}
-                  <TableHead className="sticky-right-header">Actions</TableHead>
+                  <TableHead className="sticky-right-header z-10 w-12 px-1 text-center">
+                    <Button
+                      type="button"
+                      size="icon"
+                      className="mx-auto flex h-5 w-5 items-center justify-center rounded-full bg-leadgaze-primary text-white hover:bg-leadgaze-primary/90 border-0 p-0 shadow-xs"
+                      onClick={() => setAddColumnModalOpen(true)}
+                      title="Toggle Columns"
+                    >
+                      <Plus className="h-3.5 w-3.5 stroke-[2.5]" />
+                    </Button>
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -1076,16 +1142,25 @@ export default function RemindersPage() {
             </Table>
           </CustomTableContainer>
         </div>
+      
+      <AddColumnModal
+        open={addColumnModalOpen}
+        onOpenChange={setAddColumnModalOpen}
+        columns={reminderColumns}
+        visibility={visibility}
+        onToggleColumn={toggleVisibility}
+        onResetColumns={reset}
+      />
       </PageBody>
 
       {/* Create Dialog */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
         <DialogContent className="flex max-h-[90vh] max-w-[600px] flex-col p-0">
-          <DialogHeader className="border-b p-6 pb-4">
+          <DialogHeader>
             <DialogTitle>Add New Reminder</DialogTitle>
           </DialogHeader>
-          <div className="flex-1 space-y-4 overflow-y-auto px-6 py-4">
-            <div className="space-y-4">
+          <div className="flex-1 space-y-2 overflow-y-auto px-2">
+            <div className="space-y-2">
               <Label>Associate with</Label>
               <RadioGroup
                 value={formData.entity_type}
@@ -1098,7 +1173,7 @@ export default function RemindersPage() {
                   <RadioGroupItem value="lead" id="lead" />
                   <Label
                     htmlFor="lead"
-                    className="flex cursor-pointer items-center gap-1"
+                    className="!flex cursor-pointer items-center gap-1"
                   >
                     <User className="h-3 w-3" /> Lead
                   </Label>
@@ -1107,7 +1182,7 @@ export default function RemindersPage() {
                   <RadioGroupItem value="contact" id="contact" />
                   <Label
                     htmlFor="contact"
-                    className="flex cursor-pointer items-center gap-1"
+                    className="!flex cursor-pointer items-center gap-1"
                   >
                     <Users className="h-3 w-3" /> Contact
                   </Label>
@@ -1116,7 +1191,7 @@ export default function RemindersPage() {
                   <RadioGroupItem value="account" id="account" />
                   <Label
                     htmlFor="account"
-                    className="flex cursor-pointer items-center gap-1"
+                    className="!flex cursor-pointer items-center gap-1"
                   >
                     <Building2 className="h-3 w-3" /> Account
                   </Label>
@@ -1125,7 +1200,7 @@ export default function RemindersPage() {
                   <RadioGroupItem value="opportunity" id="opportunity" />
                   <Label
                     htmlFor="opportunity"
-                    className="flex cursor-pointer items-center gap-1"
+                    className="!flex cursor-pointer items-center gap-1"
                   >
                     <Briefcase className="h-3 w-3" /> Opportunity
                   </Label>
@@ -1220,7 +1295,14 @@ export default function RemindersPage() {
                 />
             </div>
           </div>
-          <div className="mt-auto border-t p-6">
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsCreateDialogOpen(false)}
+              disabled={createMutation.isPending}
+            >
+              Cancel
+            </Button>
             <Button
               onClick={handleCreate}
               disabled={
@@ -1229,26 +1311,24 @@ export default function RemindersPage() {
                 !formData.due_date ||
                 createMutation.isPending
               }
-              className="w-full"
             >
-              {createMutation.isPending ? (
+              {createMutation.isPending && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                'Save Reminder'
               )}
+              Save Reminder
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="flex max-h-[90vh] flex-col p-0">
-          <DialogHeader className="border-b p-6 pb-4">
+          <DialogHeader>
             <DialogTitle>Edit Reminder</DialogTitle>
           </DialogHeader>
-          <div className="flex-1 space-y-4 px-6 py-4">
-            <div className="space-y-2">
+          <div className="flex-1 space-y-2 px-2">
+            <div>
               <Label>Title</Label>
               <Input
                 value={formData.title}
@@ -1258,7 +1338,7 @@ export default function RemindersPage() {
                 placeholder="Call client..."
               />
             </div>
-            <div className="space-y-2">
+            <div>
               <Label>Description</Label>
               <Input
                 value={formData.description}
@@ -1268,7 +1348,7 @@ export default function RemindersPage() {
                 placeholder="Add more details..."
               />
             </div>
-            <div className="space-y-2">
+            <div>
               <Label>Priority</Label>
               <Select
                 value={formData.priority}
@@ -1286,7 +1366,7 @@ export default function RemindersPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
+            <div>
               <Label>Due Date</Label>
               <DateTimePicker
                   showTime
@@ -1296,6 +1376,15 @@ export default function RemindersPage() {
                   }
                 />
             </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsEditDialogOpen(false)}
+              disabled={updateMutation.isPending}
+            >
+              Cancel
+            </Button>
             <Button
               onClick={handleSave}
               disabled={
@@ -1303,17 +1392,28 @@ export default function RemindersPage() {
                 !formData.due_date ||
                 updateMutation.isPending
               }
-              className="w-full"
             >
-              {updateMutation.isPending ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                'Update Reminder'
+              {updateMutation.isPending && (
+                <Loader2 className="h-4 w-4 animate-spin" />
               )}
+              Update Reminder
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
+      
+      <CustomDeleteDialog
+        isOpen={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        title="Delete Reminder"
+        description="Are you sure you want to delete this reminder? This action cannot be undone."
+        onConfirm={() => {
+          if (reminderToDelete) {
+            deleteMutation.mutate(reminderToDelete);
+          }
+        }}
+        isDeleting={deleteMutation.isPending}
+      />
     </>
   );
 }

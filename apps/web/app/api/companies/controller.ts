@@ -7,7 +7,24 @@ export const createCompany = catchAsync(
   async ({ request }: { request: NextRequest }) => {
     const supabase = getSupabaseServerClient();
     const body = await request.json();
-    const { name, billing_country, logo_url, created_by, tax_id } = body;
+    const { 
+      name, 
+      billing_country, 
+      logo_url, 
+      created_by, 
+      tax_id,
+      email,
+      phone,
+      address,
+      postal_code,
+      country,
+      city,
+      state,
+      invoice_address,
+      invoice_city,
+      invoice_postal_code,
+      invoice_state
+    } = body;
 
     if (!name || !billing_country) {
       return NextResponse.json(
@@ -24,6 +41,17 @@ export const createCompany = catchAsync(
         logo_url,
         created_by,
         tax_id,
+        email,
+        phone,
+        address,
+        postal_code,
+        country,
+        city,
+        state,
+        invoice_address,
+        invoice_city,
+        invoice_postal_code,
+        invoice_state
       })
       .select()
       .single();

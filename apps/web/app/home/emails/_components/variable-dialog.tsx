@@ -78,12 +78,12 @@ export function VariableDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[90vh] flex-col p-0 max-w-md">
-        <DialogHeader className="border-b p-6 pb-4">
+        <DialogHeader>
           <DialogTitle>{variable ? 'Edit Variable' : 'Create New Variable'}</DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 space-y-4 px-6 py-4">
-          <div className="space-y-2">
+        <div className="flex-1 space-y-2 px-2">
+          <div>
             <Label htmlFor="key">Variable Key</Label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">{"{{"}</span>
@@ -101,7 +101,7 @@ export function VariableDialog({
             </p>
           </div>
 
-          <div className="space-y-2">
+          <div>
             <Label htmlFor="value">Variable Value</Label>
             <Input
               id="value"
@@ -113,15 +113,15 @@ export function VariableDialog({
         </div>
 
         
-      <DialogFooter className="border-t p-2 mt-auto">
+      <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSaving}>
             Cancel
           </Button>
           <Button onClick={handleSave} disabled={isSaving}>
             {isSaving ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              <Save className="mr-2 h-4 w-4" />
+              <Save className="h-4 w-4" />
             )}
             Save Variable
           </Button>

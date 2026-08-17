@@ -150,7 +150,7 @@ function ColumnEditModal({ columnId, isOpen, onClose }: { columnId: string; isOp
           <DialogTitle>Edit Column: {columnId}</DialogTitle>
         </DialogHeader>
         
-        <div className="space-y-4 py-4">
+        <div className="space-y-2 py-4">
           <div className="space-y-2">
             <Label>Access Type</Label>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-2">

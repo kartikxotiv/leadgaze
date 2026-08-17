@@ -4,7 +4,7 @@ import { useSupabase } from './use-supabase';
 
 /**
  * @name useSignOut
- * @description Use Supabase to sign out a user in a React component
+ * @description Use Supabase to sign out a user locally without invalidating other sessions
  */
 export function useSignOut() {
   const client = useSupabase();
@@ -16,7 +16,7 @@ export function useSignOut() {
       } catch {
         // ignore (e.g. private browsing mode)
       }
-      return client.auth.signOut();
+      return client.auth.signOut({ scope: 'local' });
     },
   });
 }

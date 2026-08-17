@@ -39,6 +39,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from '@kit/ui/dialog';
 import { Switch } from '@kit/ui/switch';
 import { Label } from '@kit/ui/label';
@@ -248,20 +249,20 @@ export function GoogleAdsSettingsPage({
           }
           description="Connect your Google Ads accounts to automatically capture leads from Lead Form Extensions."
         />
-        <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden py-4 pb-6 h-[calc(100vh-120px)]">
-          <div className="grid gap-6 lg:grid-cols-4 h-full min-h-0 flex-1 overflow-hidden">
-            <div className="space-y-6 lg:col-span-1 overflow-y-auto h-full pr-1 shrink-0">
+        <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden p-0 pt-2 h-[calc(100vh-120px)]">
+          <div className="grid gap-2 lg:grid-cols-4 h-full min-h-0 flex-1 overflow-hidden">
+            <div className="space-y-2 lg:col-span-1 overflow-y-auto h-full pr-1 shrink-0">
               <Card>
-                <CardHeader className="border-b pb-3">
-                  <CardTitle className="text-sm font-semibold">Connections</CardTitle>
+                <CardHeader className="border-b p-2">
+                  <CardTitle className="text-sm font-semibold text-leadgaze-dark dark:text-white">Connections</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4 pt-4">
+                <CardContent className="space-y-2 pt-4">
                   <Skeleton className="h-4 w-full" />
                   <Skeleton className="h-8 w-full" />
                 </CardContent>
               </Card>
             </div>
-            <div className="lg:col-span-3 space-y-4">
+            <div className="lg:col-span-3 space-y-2">
               <Skeleton className="h-10 w-96" />
               <Skeleton className="h-64 w-full" />
             </div>
@@ -278,7 +279,7 @@ export function GoogleAdsSettingsPage({
     <>
       <PageHeader
         title={
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-0">
             <Button
               variant="ghost"
               size="icon"
@@ -293,16 +294,16 @@ export function GoogleAdsSettingsPage({
         description="Connect your Google Ads accounts to automatically capture leads from Google Lead Form Extensions."
       />
 
-      <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden py-4 pb-6 h-[calc(100vh-120px)]">
-        <div className="grid gap-6 lg:grid-cols-4 h-full min-h-0 flex-1 overflow-hidden">
+      <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden p-0 pt-2 h-[calc(100vh-120px)]">
+        <div className="grid gap-2 lg:grid-cols-4 h-full min-h-0 flex-1 overflow-hidden">
 
           {/* ---- LEFT SIDEBAR: Connections List ---- */}
-          <div className="space-y-6 lg:col-span-1 overflow-y-auto h-full pr-1 shrink-0">
+          <div className="space-y-2 lg:col-span-1 overflow-y-auto h-full pr-1 shrink-0">
             <Card className="border shadow-sm">
-              <CardHeader className="border-b pb-3">
-                <CardTitle className="text-sm font-semibold">Connected Profiles</CardTitle>
+              <CardHeader className="border-b p-2">
+                <CardTitle className="text-sm font-semibold text-leadgaze-dark dark:text-white">Connected Profiles</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4 pt-4">
+              <CardContent className="space-y-2 p-2">
                 {googleAccounts.length === 0 ? (
                   <p className="text-xs text-muted-foreground">
                     No Google profiles connected for Ads lead forms.
@@ -313,7 +314,7 @@ export function GoogleAdsSettingsPage({
                       <div
                         key={acc.id}
                         onClick={() => setSelectedAccountId(acc.id)}
-                        className={`flex items-center justify-between p-2 rounded-md border text-xs cursor-pointer transition-colors ${
+                        className={`flex items-center justify-between p-2 rounded-md border text-xs cursor-pointer transition-colors h-[36px] ${
                           selectedAccountId === acc.id
                             ? 'border-primary bg-primary/5 font-medium'
                             : 'border-border bg-transparent hover:bg-accent/5'
@@ -339,7 +340,7 @@ export function GoogleAdsSettingsPage({
 
                 <Button
                   size="sm"
-                  className="w-full gap-1.5 text-xs"
+                  className="w-full secondary-text-small-bold text-white gap-1.5 px-2"
                   onClick={handleConnect}
                   disabled={isMutating}
                 >
@@ -356,32 +357,32 @@ export function GoogleAdsSettingsPage({
             {/* Stats */}
             {hasConnectedAccounts && (
               <Card className="border shadow-sm">
-                <CardHeader className="border-b pb-3">
-                  <CardTitle className="text-sm font-semibold">Overview</CardTitle>
+                <CardHeader className="border-b p-2">
+                  <CardTitle className="text-sm font-semibold text-leadgaze-dark dark:text-white">Overview</CardTitle>
                 </CardHeader>
-                <CardContent className="pt-4 space-y-3">
+                <CardContent className="space-y-2 p-2">
                   <div className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-2 text-muted-foreground">
+                    <div className="flex items-center gap-2 text-leadgaze-dark dark:text-white">
                       <Users className="h-3.5 w-3.5" />
-                      <span className="text-xs">Profiles Connected</span>
+                      <span className="primary-text-medium text-leadgaze-dark dark:text-white">Profiles Connected</span>
                     </div>
-                    <span className="text-xs font-semibold">{googleAccounts.length}</span>
+                    <span className="text-xs font-semibold dark:text-white">{googleAccounts.length}</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-2 text-muted-foreground">
+                    <div className="flex items-center gap-2 text-leadgaze-dark dark:text-white">
                       <FileText className="h-3.5 w-3.5" />
-                      <span className="text-xs">Active Forms</span>
+                      <span className="primary-text-medium text-leadgaze-dark dark:text-white">Active Forms</span>
                     </div>
-                    <span className="text-xs font-semibold">
+                    <span className="text-xs font-semibold dark:text-white">
                       {forms.filter((f) => f.is_active).length}
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-2 text-muted-foreground">
+                    <div className="flex items-center gap-2 text-leadgaze-dark dark:text-white">
                       <BarChart3 className="h-3.5 w-3.5" />
-                      <span className="text-xs">Leads Synced</span>
+                      <span className="primary-text-medium text-leadgaze-dark dark:text-white">Leads Synced</span>
                     </div>
-                    <span className="text-xs font-semibold">
+                    <span className="text-xs font-semibold dark:text-white">
                       {logs.filter((l) => l.status === 'success').length}
                     </span>
                   </div>
@@ -395,7 +396,7 @@ export function GoogleAdsSettingsPage({
             defaultValue="overview"
             className="lg:col-span-3 h-full min-h-0 flex flex-col overflow-hidden"
           >
-            <TabsList className="w-max bg-muted/40 p-1 rounded-lg shrink-0 mb-6">
+            <TabsList className="w-max bg-muted/40 p-1 rounded-lg shrink-0 mb-0">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="forms" disabled={!hasConnectedAccounts}>Lead Forms</TabsTrigger>
               <TabsTrigger value="field-mapping" disabled={!hasConnectedAccounts}>Field Mapping</TabsTrigger>
@@ -419,7 +420,7 @@ export function GoogleAdsSettingsPage({
                       />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-base">Connect Google Ads Profiles</h3>
+                      <h3 className="font-semibold text-base custom-sub-heading-dialog-form">Connect Google Ads Profiles</h3>
                       <p className="text-sm text-muted-foreground mt-1 max-w-sm">
                         Authorize Leadgaze to access your Google Ads profiles and automatically
                         capture leads from your Lead Form Extensions.
@@ -443,11 +444,11 @@ export function GoogleAdsSettingsPage({
                 <>
                   {/* Selected Profile Ad Accounts */}
                   <Card className="border shadow-sm">
-                    <CardHeader className="border-b pb-3 flex flex-row items-center justify-between">
+                    <CardHeader className="border-b p-2 flex flex-row items-center justify-between">
                       <div className="space-y-1">
-                        <CardTitle className="text-sm font-semibold">Ad Accounts</CardTitle>
+                        <CardTitle className="text-sm font-semibold text-leadgaze-dark dark:text-white">Ad Accounts</CardTitle>
                         <CardDescription className="text-xs">
-                          Ad accounts linked to: <span className="font-medium text-foreground">{googleAccounts.find(a => a.id === selectedAccountId)?.email}</span>
+                          Ad accounts linked to: <span className="font-medium text-leadgaze-dark dark:text-white">{googleAccounts.find(a => a.id === selectedAccountId)?.email}</span>
                         </CardDescription>
                       </div>
                       <Button
@@ -467,7 +468,7 @@ export function GoogleAdsSettingsPage({
                     </CardHeader>
                     <CardContent className="p-0">
                       {customerAccounts.length === 0 ? (
-                        <div className="py-10 text-center text-sm text-muted-foreground">
+                        <div className="p-6 text-center text-xs text-muted-foreground">
                           No accessible ad accounts found for this profile. Click &quot;Refresh Accounts&quot; to fetch.
                         </div>
                       ) : (
@@ -506,8 +507,8 @@ export function GoogleAdsSettingsPage({
                   {/* Configured Forms */}
                   {forms.length > 0 && (
                     <Card className="border shadow-sm">
-                      <CardHeader className="border-b pb-3">
-                        <CardTitle className="text-sm font-semibold">Configured Lead Forms</CardTitle>
+                      <CardHeader className="border-b p-2">
+                        <CardTitle className="text-sm font-semibold text-leadgaze-dark dark:text-white">Configured Lead Forms</CardTitle>
                         <CardDescription>
                           Forms currently configured to sync leads to Leadgaze CRM.
                         </CardDescription>
@@ -553,14 +554,14 @@ export function GoogleAdsSettingsPage({
             {/* ---- LEAD FORMS ---- */}
             <TabsContent value="forms" className="flex-1 overflow-y-auto min-h-0">
               <Card className="border shadow-sm">
-                <CardHeader className="border-b pb-3">
-                  <CardTitle className="text-sm font-semibold">Lead Form Selection</CardTitle>
+                <CardHeader className="border-b p-2">
+                  <CardTitle className="text-sm font-semibold text-leadgaze-dark dark:text-white mb-0">Lead Form Selection</CardTitle>
                   <CardDescription>
                     To configure a lead form, navigate to your Google Ads account and copy the
                     Form ID and Customer ID. Use the form below to add it to Leadgaze.
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="pt-6">
+                <CardContent className="p-2">
                   <div className="rounded-lg border border-dashed border-muted-foreground/30 p-8 text-center space-y-3">
                     <FileText className="h-8 w-8 mx-auto text-muted-foreground/50" />
                     <p className="text-sm font-medium">Manual Form Configuration</p>
@@ -617,8 +618,8 @@ export function GoogleAdsSettingsPage({
             {/* ---- FIELD MAPPING ---- */}
             <TabsContent value="field-mapping" className="flex-1 overflow-y-auto min-h-0">
               <Card className="border shadow-sm">
-                <CardHeader className="border-b pb-3">
-                  <CardTitle className="text-sm font-semibold">Field Mapping</CardTitle>
+                <CardHeader className="border-b p-2">
+                  <CardTitle className="text-sm font-semibold text-leadgaze-dark dark:text-white mb-0">Field Mapping</CardTitle>
                   <CardDescription>
                     Default mapping of Google Ads lead form fields to Leadgaze CRM fields.
                     Custom fields can be added via the Leadgaze field configuration.
@@ -628,14 +629,14 @@ export function GoogleAdsSettingsPage({
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="px-6 py-2.5 text-xs w-1/2">Google Ads Field</TableHead>
-                        <TableHead className="px-6 py-2.5 text-xs w-1/2">Leadgaze CRM Field</TableHead>
+                        <TableHead className="w-1/2">Google Ads Field</TableHead>
+                        <TableHead className="w-1/2">Leadgaze CRM Field</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {DEFAULT_FIELD_MAPPINGS.map((mapping) => (
                         <TableRow key={mapping.google_field} className="hover:bg-accent/5">
-                          <TableCell className="px-6 py-3">
+                          <TableCell className="py-1">
                             <div className="space-y-0.5">
                               <p className="text-xs font-semibold">{mapping.label}</p>
                               <p className="font-mono text-[10px] text-muted-foreground">
@@ -643,7 +644,7 @@ export function GoogleAdsSettingsPage({
                               </p>
                             </div>
                           </TableCell>
-                          <TableCell className="px-6 py-3">
+                          <TableCell className="py-1">
                             <div className="flex items-center gap-2">
                               <span className="inline-flex items-center rounded-md bg-primary/10 px-2 py-1 font-mono text-[11px] text-primary font-medium">
                                 {mapping.leadgaze_field}
@@ -666,9 +667,9 @@ export function GoogleAdsSettingsPage({
 
             {/* ---- SETUP GUIDE ---- */}
             <TabsContent value="setup" className="flex-1 overflow-y-auto min-h-0">
-              <Card className="border shadow-sm p-6 space-y-8">
+              <Card className="border shadow-sm p-2 space-y-2">
                 <div>
-                  <h3 className="text-base font-bold mb-1">Google Ads Lead Forms Integration Guide</h3>
+                  <h3 className="primary-heading text-leadgaze-dark dark:text-white	 mb-1 custom-sub-heading-dialog-form">Google Ads Lead Forms Integration Guide</h3>
                   <p className="text-sm text-muted-foreground">
                     Follow these steps to capture Google Ads leads automatically into Leadgaze CRM.
                   </p>
@@ -676,7 +677,7 @@ export function GoogleAdsSettingsPage({
 
                 {/* Step 1 */}
                 <div className="space-y-1.5 border-l-2 border-primary pl-4">
-                  <h4 className="text-sm font-semibold">1. Connect Your Google Ads Account</h4>
+                  <h4 className="text-sm font-semibold dark:text-white text-leadgaze-dark dark:text-white">1. Connect Your Google Ads Account</h4>
                   <p className="text-xs text-muted-foreground">
                     Click <strong>&quot;Link Google Profile&quot;</strong> from the side panel.
                     You will be redirected to Google&apos;s OAuth consent screen. Select your Google account and
@@ -690,7 +691,7 @@ export function GoogleAdsSettingsPage({
 
                 {/* Step 2 */}
                 <div className="space-y-1.5 border-l-2 border-primary pl-4">
-                  <h4 className="text-sm font-semibold">2. Verify Ad Accounts</h4>
+                  <h4 className="text-sm font-semibold text-leadgaze-dark dark:text-white">2. Verify Ad Accounts</h4>
                   <p className="text-xs text-muted-foreground">
                     After connecting, select the profile from the left sidebar. Go to <strong>Overview → Ad Accounts</strong>. Click <strong>Refresh Accounts</strong>
                     to fetch the list of Google Ads accounts linked to your Google profile.
@@ -699,7 +700,7 @@ export function GoogleAdsSettingsPage({
 
                 {/* Step 3 */}
                 <div className="space-y-1.5 border-l-2 border-primary pl-4">
-                  <h4 className="text-sm font-semibold">3. Enable Google Lead Form Extensions</h4>
+                  <h4 className="text-sm font-semibold text-leadgaze-dark dark:text-white">3. Enable Google Lead Form Extensions</h4>
                   <p className="text-xs text-muted-foreground">
                     Inside <strong>Google Ads Manager</strong>, create a Lead Form Extension on your campaign or ad group.
                     Copy the Form ID shown in the Google Ads URL or extension settings.
@@ -717,7 +718,7 @@ export function GoogleAdsSettingsPage({
 
                 {/* Step 4: Configure Webhook */}
                 <div className="space-y-2 border-l-2 border-primary pl-4">
-                  <h4 className="text-sm font-semibold">4. Configure Google Ads Webhook</h4>
+                  <h4 className="text-sm font-semibold text-leadgaze-dark dark:text-white">4. Configure Google Ads Webhook</h4>
                   <p className="text-xs text-muted-foreground">
                     In Google Ads Manager, navigate to your Lead Form and add a <strong>Webhook integration</strong>.
                     Provide the following Leadgaze endpoint:
@@ -740,7 +741,7 @@ Google Key: (leave empty)`}
 
                 {/* Step 5 */}
                 <div className="space-y-1.5 border-l-2 border-primary pl-4">
-                  <h4 className="text-sm font-semibold">5. Test the Integration</h4>
+                  <h4 className="text-sm font-semibold text-leadgaze-dark dark:text-white">5. Test the Integration</h4>
                   <p className="text-xs text-muted-foreground">
                     Inside Google Ads, use the <strong>&quot;Preview&quot;</strong> function on your Lead Form to submit a test lead.
                     Leadgaze will receive the webhook, fetch the lead data from Google&apos;s API, and create a CRM lead automatically.
@@ -752,7 +753,7 @@ Google Key: (leave empty)`}
 
                 {/* Step 6 */}
                 <div className="space-y-1.5 border-l-2 border-primary pl-4">
-                  <h4 className="text-sm font-semibold">6. Lead Routing & Attribution</h4>
+                  <h4 className="text-sm font-semibold text-leadgaze-dark dark:text-white">6. Lead Routing & Attribution</h4>
                   <p className="text-xs text-muted-foreground">
                     All leads synced from Google Ads will be tagged with the source <strong>&quot;Google Ads: [Form Name]&quot;</strong>
                     in Leadgaze CRM for accurate attribution reporting.
@@ -763,8 +764,8 @@ Google Key: (leave empty)`}
                 </div>
 
                 {/* Example webhook payload */}
-                <div className="space-y-2 border-t pt-6">
-                  <h4 className="text-sm font-semibold">Example Google Webhook Payload</h4>
+                <div className="space-y-2 border-t pt-2">
+                  <h4 className="text-sm font-semibold text-leadgaze-dark dark:text-white">Example Google Webhook Payload</h4>
                   <p className="text-xs text-muted-foreground">
                     This is the payload Google sends to Leadgaze&apos;s webhook endpoint:
                   </p>
@@ -781,8 +782,8 @@ Google Key: (leave empty)`}
                 </div>
 
                 {/* cURL test */}
-                <div className="space-y-2 border-t pt-6">
-                  <h4 className="text-sm font-semibold">Test the Webhook with cURL (for development)</h4>
+                <div className="space-y-2 border-t pt-2">
+                  <h4 className="text-sm font-semibold text-leadgaze-dark dark:text-white">Test the Webhook with cURL (for development)</h4>
                   <p className="text-xs text-muted-foreground">
                     You can simulate a Google webhook notification during development using this command:
                   </p>
@@ -804,8 +805,8 @@ Google Key: (leave empty)`}
             {/* ---- ACTIVITY LOGS ---- */}
             <TabsContent value="logs" className="flex-1 flex flex-col overflow-hidden min-h-0">
               <Card className="overflow-hidden border shadow-sm flex-1 flex flex-col min-h-0">
-                <CardHeader className="border-b pb-3 shrink-0">
-                  <CardTitle className="text-sm font-semibold">Activity Logs</CardTitle>
+                <CardHeader className="border-b p-2 shrink-0">
+                  <CardTitle className="text-sm font-semibold text-leadgaze-dark dark:text-white mb-0">Activity Logs</CardTitle>
                   <CardDescription>
                     Webhook events received from Google Ads and their sync status.
                   </CardDescription>
@@ -814,11 +815,11 @@ Google Key: (leave empty)`}
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="px-6 py-2.5 text-xs">Timestamp</TableHead>
-                        <TableHead className="px-6 py-2.5 text-xs">Form ID</TableHead>
-                        <TableHead className="px-6 py-2.5 text-xs">Lead ID</TableHead>
-                        <TableHead className="px-6 py-2.5 text-xs">Status</TableHead>
-                        <TableHead className="px-6 py-2.5 text-xs">Details</TableHead>
+                        <TableHead>Timestamp</TableHead>
+                        <TableHead>Form ID</TableHead>
+                        <TableHead>Lead ID</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Details</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -836,16 +837,16 @@ Google Key: (leave empty)`}
                           const badge = STATUS_BADGE[log.status] ?? { label: log.status, variant: 'outline' as const };
                           return (
                             <TableRow key={log.id} className="hover:bg-accent/5">
-                              <TableCell className="px-6 py-2.5 text-xs whitespace-nowrap">
+                              <TableCell className="py-1 text-xs whitespace-nowrap">
                                 {formatDateTime(log.created_at)}
                               </TableCell>
-                              <TableCell className="px-6 py-2.5 text-xs font-mono text-muted-foreground">
+                              <TableCell className="py-1 text-xs font-mono text-muted-foreground">
                                 {log.form_id}
                               </TableCell>
-                              <TableCell className="px-6 py-2.5 text-xs font-mono text-muted-foreground">
+                              <TableCell className="py-1 text-xs font-mono text-muted-foreground">
                                 {log.lead_id}
                               </TableCell>
-                              <TableCell className="px-6 py-2.5">
+                              <TableCell className="py-1">
                                 <Badge
                                   variant={badge.variant}
                                   className="text-[10px] px-1.5 py-0"
@@ -853,7 +854,7 @@ Google Key: (leave empty)`}
                                   {badge.label}
                                 </Badge>
                               </TableCell>
-                              <TableCell className="px-6 py-2.5 text-xs text-muted-foreground max-w-[240px] truncate">
+                              <TableCell className="py-1 text-xs text-muted-foreground max-w-[240px] truncate">
                                 {log.error_message ?? (log.crm_lead_id ? `CRM Lead: ${log.crm_lead_id}` : '—')}
                               </TableCell>
                             </TableRow>
@@ -873,12 +874,10 @@ Google Key: (leave empty)`}
       <Dialog open={showDisconnectDialog} onOpenChange={setShowDisconnectDialog}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Disconnect Google Ads Account</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to disconnect <span className="font-semibold text-foreground">{accountToDisconnect?.email}</span>?
-            </DialogDescription>
+            <DialogTitle>Disconnect Google Ads Account</DialogTitle>            
           </DialogHeader>
-          <div className="space-y-4 py-2">
+          <div className="space-y-2 px-2">
+            <p className="primary-text-regular text-leadgaze-dark dark:text-white">Are you sure you want to disconnect <span className="font-semibold">{accountToDisconnect?.email}</span>?</p>
             <div className="flex items-start gap-3 rounded-md bg-destructive/10 border border-destructive/20 p-3">
               <AlertTriangle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
               <div className="text-sm text-destructive space-y-1">
@@ -890,29 +889,29 @@ Google Key: (leave empty)`}
                 </ul>
               </div>
             </div>
-            <div className="flex gap-2 justify-end">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setShowDisconnectDialog(false);
-                  setAccountToDisconnect(null);
-                }}
-                disabled={isMutating}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={handleDisconnect}
-                disabled={isMutating}
-              >
-                {isMutating ? (
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                ) : null}
-                Disconnect
-              </Button>
-            </div>
           </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowDisconnectDialog(false);
+                setAccountToDisconnect(null);
+              }}
+              disabled={isMutating}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDisconnect}
+              disabled={isMutating}
+            >
+              {isMutating ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : null}
+              Disconnect
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>

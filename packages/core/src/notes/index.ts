@@ -1,1 +1,2 @@
-export { CoreEntityPanel, CoreNotesPage } from '../pages';
+export * from './notes.types';
+export * from './notes.service';

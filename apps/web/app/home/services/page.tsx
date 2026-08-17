@@ -35,10 +35,15 @@ function formatHours(seconds: number) {
   return `${Math.round((Number(seconds || 0) / 3600) * 10) / 10}h`;
 }
 
+import { PanelRightClose, PanelRightOpen } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@kit/ui/tooltip';
+import { Button } from '@kit/ui/button';
+
 export default function ServiceCloudDashboardRoute() {
   const { currentWorkspace, isLoading } = useRBAC();
   const { dateRange, setDateRange, computedDates } = useDateRangeFilter();
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isWidgetLibraryOpen, setIsWidgetLibraryOpen] = useState(false);
   const queryClient = useQueryClient();
 
   if (isLoading) {
@@ -276,12 +281,14 @@ export default function ServiceCloudDashboardRoute() {
     <>
       <PageHeader
         title="Service Cloud"
-        description="Support operations, tickets, customers, inboxes, and performance."
+        className="sticky top-[-8px] z-[4] bg-[#f0f2f5] dark:dark-black-light-bg py-1 -mx-2 pl-2"
+        // description="Support operations, tickets, customers, inboxes, and performance."
       >
         <PageHeaderActions>
           <DownloadReportButton 
             onDownload={handleDownload} 
             isGenerating={isGenerating} 
+            text="Download Report"
           />
           <ListToolBar
             className="border-none bg-transparent shadow-none p-0"
@@ -298,6 +305,23 @@ export default function ServiceCloudDashboardRoute() {
             activeFilterCount={dateRange ? 1 : 0}
             onClearFilters={() => setDateRange(null)}
           />
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                   variant="outline"
+                   size="icon"
+                   className="shrink-0"
+                   onClick={() => setIsWidgetLibraryOpen(!isWidgetLibraryOpen)}
+                >
+                   {isWidgetLibraryOpen ? <PanelRightClose className="h-4 w-4 text-slate-600 dark:text-zinc-300" /> : <PanelRightOpen className="h-4 w-4 text-slate-600 dark:text-zinc-300" />}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{isWidgetLibraryOpen ? 'Hide Widget' : 'Show Widget'}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </PageHeaderActions>
       </PageHeader>
       <PageBody>
@@ -305,6 +329,7 @@ export default function ServiceCloudDashboardRoute() {
           workspaceId={workspaceId}
           dateFilter={computedDates}
           dateRange={dateRange}
+          isWidgetLibraryOpen={isWidgetLibraryOpen}
         />
 
         {/* Hidden Icons for PDF Generation */}

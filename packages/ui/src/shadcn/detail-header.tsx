@@ -24,20 +24,20 @@ export function DetailHeader({
   return (
     <div
       className={cn(
-        'flex flex-col gap-4 rounded-none border border-leadgaze-border bg-card p-6 shadow-xs sm:flex-row sm:items-center sm:justify-between dark:bg-card/50',
+        'flex flex-col gap-2 rounded-none border border-leadgaze-border bg-card p-2 shadow-xs sm:flex-row sm:items-center sm:justify-between dark:bg-card/50 mb-2',
         className,
       )}
       {...props}
     >
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2">
         {avatar && (
           <div className="flex shrink-0 items-center justify-center">
             {avatar}
           </div>
         )}
-        <div className="space-y-1.5">
+        <div className="space-y-0.5">
           {typeof title === 'string' ? (
-            <h1 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl">
+            <h1 className="primary-heading text-leadgaze-dark dark:text-white">
               {title}
             </h1>
           ) : (
@@ -45,17 +45,17 @@ export function DetailHeader({
           )}
 
           {subtitle && (
-            <div className="text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+            <div className="text-muted-foreground flex flex-wrap items-center gap-x-2 gap-y-1 secondary-text-small">
               {subtitle}
             </div>
           )}
 
           {email && (
-            <div className="flex items-center gap-2 text-sm">
-              <Mail className="text-muted-foreground h-4 w-4" />
+            <div className="flex items-center gap-1.5 text-sm">
+              <Mail className="text-muted-foreground h-3.5 w-3.5" />
               <a
                 href={`mailto:${email}`}
-                className="text-blue-600 hover:underline dark:text-blue-400"
+                className="text-leadgaze-primary hover:underline primary-text-regular"
               >
                 {email}
               </a>

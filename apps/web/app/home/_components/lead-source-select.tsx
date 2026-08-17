@@ -133,8 +133,8 @@ export function LeadSourceSelect({
                             Create a new lead source for this workspace
                         </DialogDescription>
                     </DialogHeader>
-                    <div className="flex-1 space-y-4 px-6 py-4">
-                        <div className="space-y-2">
+                    <div className="flex-1 space-y-2 px-2">
+                        <div>
                             <Label htmlFor="source-name">Source Name</Label>
                             <Input
                                 id="source-name"
@@ -168,7 +168,7 @@ export function LeadSourceSelect({
                         >
                             {createMutation.isPending ? (
                                 <>
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    <Loader2 className="h-4 w-4 animate-spin" />
                                     Creating...
                                 </>
                             ) : (
