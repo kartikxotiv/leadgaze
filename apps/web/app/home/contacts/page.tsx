@@ -158,7 +158,7 @@ export default function ContactsPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [contactToDelete, setContactToDelete] = useState<Contact | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(15);
+  const [pageSize, setPageSize] = useState(25);
   const itemsPerPage = pageSize;
 
   // Row selection state (for CSV export)
@@ -236,6 +236,7 @@ export default function ContactsPage() {
     visibleCustomFields,
     ctx: _fieldPermissionCtx,
     isLoading: _fieldPermissionsLoading,
+    refetch: refetchPermissions,
   } = useFieldPermissions({
     entityType: 'contacts',
     workspaceId: workspace?.id,
@@ -463,6 +464,9 @@ export default function ContactsPage() {
   const handleDeleteField = async (fieldId: string) => {
     try {
       await deleteField.mutateAsync({ fieldId });
+      refetchEntityFields();
+      refetchPermissions?.();
+      refetch();
     } catch (error) {
       console.error('Error deleting field:', error);
     }
@@ -1127,13 +1131,15 @@ export default function ContactsPage() {
                       {customFields.map((field) =>
                         showColumn(field.field_key) ? (
                           <TableCell key={field.id}>
-                            {String(
-                              (
-                                contact as unknown as {
-                                  custom_fields?: Record<string, unknown>;
-                                }
-                              ).custom_fields?.[field.field_key] ?? '-',
-                            )}
+                            {(() => {
+                              const cf = (contact as any)?.custom_fields;
+                              if (!cf || typeof cf !== 'object') return '-';
+                              const val = cf[field.field_key] ?? (field.field_name ? cf[field.field_name] : undefined) ?? (field.id ? cf[field.id] : undefined) ?? (field.field_label ? cf[field.field_label] : undefined);
+                              if (val === null || val === undefined || val === '') return '-';
+                              if (typeof val === 'boolean') return val ? 'Yes' : 'No';
+                              if (typeof val === 'object') return JSON.stringify(val);
+                              return String(val);
+                            })()}
                           </TableCell>
                         ) : null,
                       )}

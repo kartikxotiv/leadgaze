@@ -324,7 +324,11 @@ export function useDynamicColumns({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ['entity-fields', workspaceId, entityType],
+        queryKey: ['entity-fields'],
+        exact: false,
+      });
+      ['leads-meta', 'opportunities-meta', 'contacts-meta', 'accounts-meta'].forEach((key) => {
+        queryClient.invalidateQueries({ queryKey: [key], exact: false });
       });
     },
   });
@@ -547,6 +551,15 @@ export function useCreateField() {
       queryClient.invalidateQueries({
         queryKey: ['entity-fields', variables.workspace_id, variables.entity_type],
       });
+      // Also invalidate the consolidated *-meta query used by sales entity pages
+      // (leads, contacts, accounts, opportunities). Without this, newly created
+      // columns only appear after a full page refresh because the meta cache
+      // supplies the field list for these entities, not entity-fields directly.
+      const metaKey = `${variables.entity_type}-meta`;
+      queryClient.invalidateQueries({
+        queryKey: [metaKey],
+        exact: false,
+      });
     },
   });
 }
@@ -583,6 +596,10 @@ export function useUpdateField() {
         queryKey: ['entity-fields'],
         exact: false,
       });
+      // Invalidate all meta queries for sales entities
+      ['leads-meta', 'opportunities-meta', 'contacts-meta', 'accounts-meta'].forEach((key) => {
+        queryClient.invalidateQueries({ queryKey: [key], exact: false });
+      });
     },
   });
 }
@@ -605,6 +622,11 @@ export function useDeleteField() {
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ['entity-fields'],
+        exact: false,
+      });
+      // Invalidate all meta queries for sales entities so deleted columns disappear in real time
+      ['leads-meta', 'opportunities-meta', 'contacts-meta', 'accounts-meta'].forEach((key) => {
+        queryClient.invalidateQueries({ queryKey: [key], exact: false });
       });
     },
   });

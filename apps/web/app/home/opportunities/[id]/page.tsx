@@ -49,6 +49,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@kit/ui/accordion';
+import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { Card, CardContent, CardHeader } from '@kit/ui/card';
 import { CardWidgetContainer } from '@kit/ui/card-widget-container';
@@ -743,7 +744,26 @@ export default function OpportunityDetailsPage() {
                   <FileText className="h-6 w-6 text-white" />
                 </div>
               }
-              title={opportunity.opportunity_name}
+              title={
+                <div className="flex items-center gap-2">
+                  <h1 className="primary-heading text-leadgaze-dark dark:text-white">
+                    {opportunity.opportunity_name}
+                  </h1>
+                  {opportunity.stage && (
+                    <Badge
+                      variant="outline"
+                      className="h-5 text-[10px] font-medium"
+                      style={{
+                        borderColor: opportunity.stage.color ? `${opportunity.stage.color}60` : undefined,
+                        color: opportunity.stage.color || undefined,
+                        backgroundColor: opportunity.stage.color ? `${opportunity.stage.color}15` : undefined,
+                      }}
+                    >
+                      {opportunity.stage.status_name}
+                    </Badge>
+                  )}
+                </div>
+              }
               subtitle={
                 <>
                   {opportunity.account && (
@@ -874,7 +894,7 @@ export default function OpportunityDetailsPage() {
               {canManageEmail && (
                 <TabsContent
                   value="email"
-                  className="max-h-[500px] overflow-y-auto"
+                  className="max-h-[500px] overflow-y-auto mb-2"
                 >
                   <EntityEmails
                     entityId={id}
@@ -887,42 +907,42 @@ export default function OpportunityDetailsPage() {
 
               <TabsContent
                 value="notes"
-                className="max-h-[500px] overflow-y-auto"
+                className="max-h-[500px] overflow-y-auto mb-2"
               >
                 <EntityNotes entityType="opportunity" entityId={id} />
               </TabsContent>
 
               <TabsContent
                 value="meetings"
-                className="max-h-[500px] overflow-y-auto"
+                className="max-h-[500px] overflow-y-auto mb-2"
               >
                 <EntityMeetings entityType="opportunity" entityId={id} />
               </TabsContent>
 
               <TabsContent
                 value="calls"
-                className="max-h-[500px] overflow-y-auto"
+                className="max-h-[500px] overflow-y-auto mb-2"
               >
                 <EntityCalls entityType="opportunity" entityId={id} />
               </TabsContent>
 
               <TabsContent
                 value="reminders"
-                className="max-h-[500px] overflow-y-auto"
+                className="max-h-[500px] overflow-y-auto mb-2"
               >
                 <EntityReminders entityType="opportunity" entityId={id} />
               </TabsContent>
 
               <TabsContent
                 value="documents"
-                className="max-h-[500px] overflow-y-auto"
+                className="max-h-[500px] overflow-y-auto mb-2"
               >
                 <EntityDocuments entityType="opportunity" entityId={id} />
               </TabsContent>
 
               <TabsContent
                 value="tasks"
-                className="max-h-[500px] overflow-y-auto"
+                className="max-h-[500px] overflow-y-auto mb-2"
               >
                 <EntityTasks entityType="opportunity" entityId={id} />
               </TabsContent>
@@ -956,7 +976,7 @@ export default function OpportunityDetailsPage() {
                                 !rbacCanAccess('opportunities', 'delete')
                               }
                               onClick={() => setDeleteDialogOpen(true)}
-                              className="secondary-text-small-bold"
+                              className="secondary-text-small-bold px-2"
                             >
                               <Trash2 className="mr-2 h-4 w-4" />
                               Delete Opportunity
@@ -1544,7 +1564,7 @@ export default function OpportunityDetailsPage() {
                                 !rbacCanAccess('opportunities', 'delete')
                               }
                               onClick={() => setDeleteDialogOpen(true)}
-                              className="secondary-text-small-bold"
+                              className="secondary-text-small-bold px-2"
                             >
                               <Trash2 className="mr-2 h-4 w-4" />
                               Delete Opportunity

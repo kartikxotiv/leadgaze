@@ -361,6 +361,7 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
               <CardWidgetListItem
                 key={task.id}
                 className="gap-2"
+                actionStyle="slide"
                 icon={
                   toggleMutation.isPending && toggleMutation.variables?.id === task.id ? (
                     <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
