@@ -281,7 +281,7 @@ export default function ServiceCloudDashboardRoute() {
     <>
       <PageHeader
         title="Service Cloud"
-        className="sticky top-[-8px] z-[60] bg-[#f0f2f5] dark:dark-black-light-bg py-1 -mx-2 pl-2"
+        className="sticky top-[-8px] z-[4] bg-[#f0f2f5] dark:dark-black-light-bg py-1 -mx-2 pl-2"
         // description="Support operations, tickets, customers, inboxes, and performance."
       >
         <PageHeaderActions>

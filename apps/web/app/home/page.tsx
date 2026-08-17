@@ -306,7 +306,7 @@ export default function HomePage() {
     <WorkspaceCheckWrapper>
       <PageHeader 
         title="Dashboard"
-        className="sticky top-[-8px] z-[60] bg-[#f0f2f5] dark:dark-black-light-bg py-1 -mx-2 pl-2"
+        className="sticky top-[-8px] z-[4] bg-[#f0f2f5] dark:dark-black-light-bg py-1 -mx-2 pl-2"
         // description="Your SaaS at a glance"
       >
         <PageHeaderActions>
