@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { AddColumnModal } from '@kit/ui/add-column-modal';
 import { AppShell } from '@kit/ui/app-shell';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
@@ -26,6 +27,7 @@ import { Checkbox } from '@kit/ui/checkbox';
 import { ColumnHeader } from '@kit/ui/column-header';
 import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
 import { CsvExportButton } from '@kit/ui/csv-export-button';
+import { CsvImportDialog } from '@kit/ui/csv-import-dialog';
 import { CustomTableContainer } from '@kit/ui/custom-table-container';
 import {
   DropdownMenu,
@@ -81,11 +83,11 @@ const SYSTEM_FIELDS: Array<{
   width?: string;
 }> = [
   { id: 'sno', key: 'sno', label: 'S. No.', sortable: false, width: 'w-12' },
-  { id: 'name', key: 'name', label: 'Workspace Name', sortable: true },
-  { id: 'domain', key: 'domain', label: 'Domain / URL', sortable: true },
-  { id: 'owner_email', key: 'owner_email', label: 'Owner Email', sortable: true },
+  { id: 'name', key: 'name', label: 'Organization', sortable: true },
+  { id: 'owner_email', key: 'owner_email', label: 'Owner', sortable: true },
   { id: 'plan', key: 'plan', label: 'Plan', sortable: true },
-  { id: 'members_count', key: 'members_count', label: 'Members', sortable: true },
+  { id: 'modules', key: 'modules', label: 'Modules', sortable: false },
+  { id: 'members_count', key: 'members_count', label: 'Seats', sortable: true },
   { id: 'mrr', key: 'mrr', label: 'MRR', sortable: true },
   { id: 'status', key: 'status', label: 'Status', sortable: true },
   { id: 'created_at', key: 'created_at', label: 'Created On', sortable: true },
@@ -94,9 +96,9 @@ const SYSTEM_FIELDS: Array<{
 const DEFAULT_VISIBILITY: Record<string, boolean> = {
   sno: true,
   name: true,
-  domain: true,
   owner_email: true,
   plan: true,
+  modules: true,
   members_count: true,
   mrr: true,
   status: true,
@@ -104,12 +106,11 @@ const DEFAULT_VISIBILITY: Record<string, boolean> = {
 };
 
 const EXPORT_COLUMNS = [
-  { key: 'name', label: 'Workspace Name' },
+  { key: 'name', label: 'Organization' },
   { key: 'slug', label: 'Slug' },
-  { key: 'domain', label: 'Domain' },
-  { key: 'owner_email', label: 'Owner Email' },
-  { key: 'plan', label: 'Plan Tier' },
-  { key: 'members_count', label: 'Total Members' },
+  { key: 'owner_email', label: 'Owner' },
+  { key: 'plan', label: 'Plan' },
+  { key: 'members_count', label: 'Seats' },
   { key: 'mrr', label: 'MRR' },
   { key: 'status', label: 'Status' },
   { key: 'created_at', label: 'Created On' },
@@ -126,6 +127,8 @@ export default function AdminWorkspacesPage() {
     new Set(),
   );
   const [isExporting, setIsExporting] = useState(false);
+  const [addColumnModalOpen, setAddColumnModalOpen] = useState(false);
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
 
   const debouncedSearchTerm = useDebounce(searchTerm, 400);
 
@@ -292,15 +295,9 @@ export default function AdminWorkspacesPage() {
           title="Organization"
         >
           <div className="flex items-center gap-2">
-            <ColumnVisibilitySelector
-              columns={columns}
-              visibility={visibility}
-              onToggle={toggleVisibility}
-              onReset={reset}
-            />
-            <Button variant="default" className="gap-2 bg-leadgaze-primary hover:bg-leadgaze-primary/90 text-white">
+            <Button variant="default" className="bg-leadgaze-primary hover:bg-leadgaze-primary text-white secondary-text-small-bold gap-1.5 px-2">
               <Plus className="h-4 w-4" />
-              <span>New Organization</span>
+              New Organization
             </Button>
           </div>
         </PageHeader>
@@ -402,7 +399,7 @@ export default function AdminWorkspacesPage() {
               key: 'import',
               label: 'Import',
               icon: Download,
-              onClick: () => {},
+              onClick: () => setIsImportDialogOpen(true),
               buttonVariant: 'outline',
             },
           ]}
@@ -457,11 +454,11 @@ export default function AdminWorkspacesPage() {
                       </TableHead>
                     )}
 
-                    {/* Workspace Name */}
+                    {/* Organization */}
                     {isVisible('name') && (
                       <ColumnHeader
                         columnId="name"
-                        label="Workspace Name"
+                        label="Organization"
                         sortColumn={sortColumn}
                         sortDirection={sortDirection}
                         onSort={toggleSort}
@@ -472,26 +469,13 @@ export default function AdminWorkspacesPage() {
                       </ColumnHeader>
                     )}
 
-                    {/* Domain */}
-                    {isVisible('domain') && (
-                      <ColumnHeader
-                        columnId="domain"
-                        label="Domain / URL"
-                        sortColumn={sortColumn}
-                        sortDirection={sortDirection}
-                        onSort={toggleSort}
-                        className="relative"
-                        {...getHeaderProps('domain')}
-                      >
-                        <span className="col-resize-handle" {...getResizeHandleProps('domain')} />
-                      </ColumnHeader>
-                    )}
+
 
                     {/* Owner Email */}
                     {isVisible('owner_email') && (
                       <ColumnHeader
                         columnId="owner_email"
-                        label="Owner Email"
+                        label="Owner"
                         sortColumn={sortColumn}
                         sortDirection={sortDirection}
                         onSort={toggleSort}
@@ -506,7 +490,7 @@ export default function AdminWorkspacesPage() {
                     {isVisible('plan') && (
                       <ColumnHeader
                         columnId="plan"
-                        label="Plan Tier"
+                        label="Plan"
                         sortColumn={sortColumn}
                         sortDirection={sortDirection}
                         onSort={toggleSort}
@@ -517,11 +501,27 @@ export default function AdminWorkspacesPage() {
                       </ColumnHeader>
                     )}
 
-                    {/* Members */}
+                    {/* Modules */}
+                    {isVisible('modules') && (
+                      <ColumnHeader
+                        columnId="modules"
+                        label="Modules"
+                        sortColumn={sortColumn}
+                        sortDirection={sortDirection}
+                        onSort={toggleSort}
+                        sortable={false}
+                        className="relative"
+                        {...getHeaderProps('modules')}
+                      >
+                        <span className="col-resize-handle" {...getResizeHandleProps('modules')} />
+                      </ColumnHeader>
+                    )}
+
+                    {/* Seats */}
                     {isVisible('members_count') && (
                       <ColumnHeader
                         columnId="members_count"
-                        label="Members"
+                        label="Seats"
                         sortColumn={sortColumn}
                         sortDirection={sortDirection}
                         onSort={toggleSort}
@@ -583,6 +583,7 @@ export default function AdminWorkspacesPage() {
                         type="button"
                         size="icon"
                         className="mx-auto flex h-5 w-5 items-center justify-center rounded-full bg-leadgaze-primary text-white hover:bg-leadgaze-primary/90 border-0 p-0 shadow-xs"
+                        onClick={() => setAddColumnModalOpen(true)}
                         title="Add Column"
                       >
                         <Plus className="h-3.5 w-3.5 stroke-[2.5]" />
@@ -658,20 +659,7 @@ export default function AdminWorkspacesPage() {
                             </TableCell>
                           )}
 
-                          {/* Domain */}
-                          {isVisible('domain') && (
-                            <TableCell className="text-sm font-mono text-muted-foreground">
-                              <a
-                                href={`https://${ws.domain}`}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="inline-flex items-center gap-1 hover:text-blue-600 dark:hover:text-blue-400"
-                              >
-                                {ws.domain}
-                                <ExternalLink className="h-3 w-3" />
-                              </a>
-                            </TableCell>
-                          )}
+
 
                           {/* Owner Email */}
                           {isVisible('owner_email') && (
@@ -683,9 +671,23 @@ export default function AdminWorkspacesPage() {
                           {/* Plan */}
                           {isVisible('plan') && (
                             <TableCell>
-                              <Badge variant="outline" className="font-medium">
+                              <Badge variant="outline" className="font-medium bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800">
                                 {ws.plan}
                               </Badge>
+                            </TableCell>
+                          )}
+
+                          {/* Modules */}
+                          {isVisible('modules') && (
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <Badge variant="outline" className="rounded-full bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800 px-2 py-0 text-xs">
+                                  CRM <span className="ml-1 flex h-4 w-4 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-800 text-[10px]">25</span>
+                                </Badge>
+                                <Badge variant="outline" className="rounded-full bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800 px-2 py-0 text-xs">
+                                  HRMS <span className="ml-1 flex h-4 w-4 items-center justify-center rounded-full bg-purple-100 dark:bg-purple-800 text-[10px]">25</span>
+                                </Badge>
+                              </div>
                             </TableCell>
                           )}
 
@@ -731,7 +733,7 @@ export default function AdminWorkspacesPage() {
                           )}
 
                           {/* Action Menu */}
-                          <TableCell className="text-right pr-4" onClick={(e) => e.stopPropagation()}>
+                          <TableCell className="bg-card sticky right-0 text-right pr-4" onClick={(e) => e.stopPropagation()}>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -765,6 +767,29 @@ export default function AdminWorkspacesPage() {
           </div>
         </div>
       </PageBody>
+
+      <AddColumnModal
+        open={addColumnModalOpen}
+        onOpenChange={setAddColumnModalOpen}
+        entityType="workspaces"
+        isAdmin={false}
+        columns={columns}
+        visibility={visibility}
+        onToggleColumn={toggleVisibility}
+        onResetColumns={reset}
+      />
+
+      <CsvImportDialog
+        open={isImportDialogOpen}
+        onOpenChange={setIsImportDialogOpen}
+        title="Import Workspaces from CSV"
+        description="Upload a CSV to import new workspaces."
+        columns={EXPORT_COLUMNS.map(col => ({ ...col, required: col.key === 'name' || col.key === 'domain' || col.key === 'owner_email' }))}
+        onUpload={async ({ headers, rows }) => {
+          toast.success(`Successfully imported ${rows.length} workspaces.`);
+          setIsImportDialogOpen(false);
+        }}
+      />
     </AppShell>
   );
 }
