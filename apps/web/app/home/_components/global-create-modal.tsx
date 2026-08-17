@@ -19,6 +19,9 @@ import { GlobalCreateReminderForm } from './global-create-reminder-form';
 import { GlobalCreateNoteForm } from './global-create-note-form';
 import { GlobalCreateTicketForm } from './global-create-ticket-form';
 import { GlobalCreateServiceResourceForm } from './global-create-service-resource-form';
+import { CreateMeetingDialog } from '../meetings/page';
+import { GlobalCreateDocumentForm } from './global-create-document-form';
+import { useRBAC } from '~/lib/rbac/rbac-provider';
 
 interface GlobalCreateModalProps {
   open: boolean;
@@ -26,6 +29,7 @@ interface GlobalCreateModalProps {
 }
 
 export function GlobalCreateModal({ open, onOpenChange }: GlobalCreateModalProps) {
+  const { currentWorkspace } = useRBAC();
   const queryClient = useQueryClient();
   const pathname = usePathname() || '';
   const isSalesModule = pathname.startsWith('/home/sales') || pathname === '/home';
@@ -39,8 +43,10 @@ export function GlobalCreateModal({ open, onOpenChange }: GlobalCreateModalProps
       { id: 'contact', label: 'New Contact' },
       { id: 'account', label: 'New Account' },
       { id: 'opportunity', label: 'New Opportunity' },
+      { id: 'meeting', label: 'New Meeting' },
       { id: 'reminder', label: 'New Reminder' },
       { id: 'note', label: 'New Note' },
+      { id: 'document', label: 'New Document' },
     ];
   } else if (isServiceModule) {
     tabs = [
@@ -149,6 +155,21 @@ export function GlobalCreateModal({ open, onOpenChange }: GlobalCreateModalProps
              )}
              {activeTab === 'note' && (
                 <GlobalCreateNoteForm
+                  onSuccess={handleSuccess}
+                  onCancel={() => onOpenChange(false)}
+                />
+             )}
+             {activeTab === 'meeting' && (
+                <CreateMeetingDialog
+                  open={true}
+                  onOpenChange={() => {}}
+                  workspaceId={currentWorkspace?.id || ''}
+                  onSuccess={handleSuccess}
+                  asFormOnly
+                />
+             )}
+             {activeTab === 'document' && (
+                <GlobalCreateDocumentForm
                   onSuccess={handleSuccess}
                   onCancel={() => onOpenChange(false)}
                 />
