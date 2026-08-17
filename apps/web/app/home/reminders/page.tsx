@@ -1327,8 +1327,8 @@ export default function RemindersPage() {
           <DialogHeader>
             <DialogTitle>Edit Reminder</DialogTitle>
           </DialogHeader>
-          <div className="flex-1 space-y-2 px-6 py-4">
-            <div className="space-y-2">
+          <div className="flex-1 space-y-2 px-2">
+            <div>
               <Label>Title</Label>
               <Input
                 value={formData.title}
@@ -1338,7 +1338,7 @@ export default function RemindersPage() {
                 placeholder="Call client..."
               />
             </div>
-            <div className="space-y-2">
+            <div>
               <Label>Description</Label>
               <Input
                 value={formData.description}
@@ -1348,7 +1348,7 @@ export default function RemindersPage() {
                 placeholder="Add more details..."
               />
             </div>
-            <div className="space-y-2">
+            <div>
               <Label>Priority</Label>
               <Select
                 value={formData.priority}
@@ -1366,7 +1366,7 @@ export default function RemindersPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
+            <div>
               <Label>Due Date</Label>
               <DateTimePicker
                   showTime
@@ -1394,7 +1394,7 @@ export default function RemindersPage() {
               }
             >
               {updateMutation.isPending && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className="h-4 w-4 animate-spin" />
               )}
               Update Reminder
             </Button>

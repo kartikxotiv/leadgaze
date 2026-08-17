@@ -331,14 +331,14 @@ export default function HomePage() {
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                {/* <Button 
+                <Button 
                    variant="outline"
                    size="icon"
                    className="shrink-0"
                    onClick={() => setIsWidgetLibraryOpen(!isWidgetLibraryOpen)}
                 >
                    {isWidgetLibraryOpen ? <PanelRightClose className="h-4 w-4 text-slate-600 dark:text-zinc-300" /> : <PanelRightOpen className="h-4 w-4 text-slate-600 dark:text-zinc-300" />}
-                </Button> */}
+                </Button>
               </TooltipTrigger>
               <TooltipContent>
                 <p>{isWidgetLibraryOpen ? 'Hide Widget' : 'Show Widget'}</p>

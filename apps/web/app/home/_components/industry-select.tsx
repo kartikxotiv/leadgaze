@@ -127,8 +127,8 @@ export function IndustrySelect({
                             Create a new industry for this workspace
                         </DialogDescription>
                     </DialogHeader>
-                    <div className="flex-1 space-y-2 px-6 py-4">
-                        <div className="space-y-2">
+                    <div className="flex-1 space-y-2 px-2">
+                        <div>
                             <Label htmlFor="industry-name">Industry Name</Label>
                             <Input
                                 id="industry-name"
@@ -163,7 +163,7 @@ export function IndustrySelect({
                         >
                             {createMutation.isPending ? (
                                 <>
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    <Loader2 className="h-4 w-4 animate-spin" />
                                     Creating...
                                 </>
                             ) : (

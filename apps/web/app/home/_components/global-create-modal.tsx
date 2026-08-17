@@ -82,7 +82,7 @@ export function GlobalCreateModal({ open, onOpenChange }: GlobalCreateModalProps
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[90vh] flex-col p-0 overflow-hidden border-gray-200 bg-white sm:max-w-[800px] dark:border-slate-800 dark:bg-slate-950 [&>button>svg]:!text-gray-500 dark:[&>button>svg]:!text-gray-400 [&>button]:top-5 [&>button]:right-5">
+      <DialogContent className="flex max-h-[90vh] flex-col p-0 overflow-hidden border-gray-200 bg-white sm:max-w-[800px] dark:border-slate-800 dark:bg-slate-950 [&>button>svg]:!text-gray-500 dark:[&>button>svg]:!text-gray-400 [&>button]:top-3 [&>button]:right-4">
         <div className="flex max-h-[90vh] flex-col">
           <DialogHeader className="border-b border-gray-200 bg-white p-0 dark:border-slate-800 dark:bg-slate-950">
             <DialogTitle className="sr-only">Create New Item</DialogTitle>
