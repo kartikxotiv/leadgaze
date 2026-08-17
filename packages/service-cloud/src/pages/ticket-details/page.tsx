@@ -1215,7 +1215,7 @@ export function ServiceCloudTicketDetailPage({
                   </div>
                 </TabsContent>
 
-                <TabsContent value="notes" className="max-h-[500px] overflow-y-auto">
+                <TabsContent value="notes" className="max-h-[500px] overflow-y-auto mb-2">
                   <CardWidgetContainer
                     title="Notes"
                     headerClassName="p-2 xl:p-2 2xl:p-2"
@@ -1284,7 +1284,7 @@ export function ServiceCloudTicketDetailPage({
                   </CardWidgetContainer>
                 </TabsContent>
 
-                <TabsContent value="documents" className="max-h-[500px] overflow-y-auto">
+                <TabsContent value="documents" className="max-h-[500px] overflow-y-auto mb-2">
                   <CardWidgetContainer
                     title="Document"
                     headerClassName="p-2 xl:p-2 2xl:p-2"
@@ -1352,7 +1352,7 @@ export function ServiceCloudTicketDetailPage({
                   </CardWidgetContainer>
                 </TabsContent>
 
-                <TabsContent value="activity" className="max-h-[500px] overflow-y-auto">
+                <TabsContent value="activity" className="max-h-[500px] overflow-y-auto mb-2">
                   <CardWidgetContainer
                     title="Ticket Activity"
                     headerClassName="p-2 xl:p-2 2xl:p-2"

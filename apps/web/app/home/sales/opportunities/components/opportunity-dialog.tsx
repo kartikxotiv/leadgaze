@@ -77,6 +77,7 @@ const formSchema = z.object({
 });
 
 interface OpportunityDialogProps {
+  asFormOnly?: boolean;
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
@@ -90,6 +91,7 @@ export function OpportunityDialog({
   onSuccess,
   opportunity,
   defaultAccountId,
+  asFormOnly = false
 }: OpportunityDialogProps) {
   const queryClient = useQueryClient();
   const { currentWorkspace } = useRBAC();
@@ -237,14 +239,15 @@ export function OpportunityDialog({
     mutation.mutate(values);
   }
 
-  return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-[600px]">
-        <DialogHeader>
-          <DialogTitle>
-            {isEditMode ? 'Edit Opportunity' : 'New Opportunity'}
-          </DialogTitle>
-        </DialogHeader>
+  const innerContent = (
+    <div className={asFormOnly ? "flex h-full flex-col overflow-auto" : ""}>
+        {!asFormOnly && (
+          <DialogHeader>
+            <DialogTitle>
+              {isEditMode ? 'Edit Opportunity' : 'New Opportunity'}
+            </DialogTitle>
+          </DialogHeader>
+        )}
         <Form {...form}>
           <form id="dialog-form" onSubmit={form.handleSubmit(onSubmit)} className="flex-1 overflow-y-auto px-2 space-y-2">
             <FormField
@@ -537,7 +540,7 @@ export function OpportunityDialog({
             
           </form>
         </Form>
-        <DialogFooter>
+        <DialogFooter className="p-4 bg-white dark:bg-slate-950 border-t border-gray-200 dark:border-slate-800">
               <Button
                 type="button"
                 variant="outline"
@@ -550,6 +553,17 @@ export function OpportunityDialog({
                 {mutation.isPending ? 'Saving...' : 'Save Changes'}
               </Button>
             </DialogFooter>
+    </div>
+  );
+
+  if (asFormOnly) {
+    return innerContent;
+  }
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-[600px]">
+        {innerContent}
       </DialogContent>
     </Dialog>
   );

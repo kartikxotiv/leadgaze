@@ -260,7 +260,7 @@ export function ServiceCloudResourcePage({
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(15);
+  const [pageSize, setPageSize] = useState(25);
   const { getHeaderProps, getResizeHandleProps } = useColumnResize(
     `sc-${resource}`,
   );

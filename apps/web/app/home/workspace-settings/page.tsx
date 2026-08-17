@@ -123,7 +123,7 @@ export default function WorkspaceSettingsPage() {
                 Subscription
               </TabsTrigger>
             )}
-            {canViewSubscription && (
+            {/* {canViewSubscription && (
               <TabsTrigger
                 value="invoice"
                 className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
@@ -131,7 +131,7 @@ export default function WorkspaceSettingsPage() {
                 <FileText className="mr-2 h-4 w-4" />
                 Invoice
               </TabsTrigger>
-            )}
+            )} */}
             {canViewSettings && (
               <TabsTrigger
                 value="integrations"

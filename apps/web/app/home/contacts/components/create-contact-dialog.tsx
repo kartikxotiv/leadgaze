@@ -39,6 +39,7 @@ interface CreateContactDialogProps {
   onOpenChange: (open: boolean) => void;
   onSuccess?: (contact: any) => void;
   defaultAccountId?: string;
+  asFormOnly?: boolean;
 }
 
 export function CreateContactDialog({
@@ -46,6 +47,7 @@ export function CreateContactDialog({
   onOpenChange,
   onSuccess,
   defaultAccountId,
+  asFormOnly = false,
 }: CreateContactDialogProps) {
   const { currentWorkspace: workspace } = useRBAC();
   const queryClient = useQueryClient();
@@ -118,19 +120,19 @@ export function CreateContactDialog({
     mutation.mutate(formData);
   };
 
-  return (
-    <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-[650px]">
-          <DialogHeader>
-            <DialogTitle>Create New Contact</DialogTitle>
-            <DialogDescription>
-              Add a new person to your workspace
-            </DialogDescription>
-          </DialogHeader>
+  const innerContent = (
+    <div className={asFormOnly ? "flex h-full flex-col overflow-auto" : "flex max-h-[90vh] flex-col"}>
+      {!asFormOnly && (
+        <DialogHeader>
+          <DialogTitle>Create New Contact</DialogTitle>
+          <DialogDescription>
+            Add a new person to your workspace
+          </DialogDescription>
+        </DialogHeader>
+      )}
 
-          <form id="dialog-form" onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-2 space-y-2">
-            <div className="space-y-2">
+      <form id="dialog-form" onSubmit={handleSubmit} className={`flex flex-col flex-1 overflow-y-auto px-2 space-y-2 ${asFormOnly && 'mb-2'}`}>
+            <div className={`space-y-2 ${asFormOnly && 'pt-2'}`}>
               <h3 className="primary-heading text-leadgaze-dark dark:text-white uppercase custom-sub-heading-dialog-form">
                 Personal Details
               </h3>              
@@ -276,8 +278,20 @@ export function CreateContactDialog({
                 Create Contact
               </Button>
             </DialogFooter>
-      </DialogContent>
-      </Dialog>
+    </div>
+  );
+
+  return (
+    <>
+      {!asFormOnly ? (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+          <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-[650px]">
+            {innerContent}
+          </DialogContent>
+        </Dialog>
+      ) : (
+        innerContent
+      )}
 
       {/* Nested Account Creation */}
       <CreateAccountDialog

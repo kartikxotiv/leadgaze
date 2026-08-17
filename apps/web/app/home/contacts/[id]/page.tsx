@@ -556,7 +556,7 @@ export default function ContactDetailsPage() {
               {canManageEmail && (
                 <TabsContent
                   value="email"
-                  className="max-h-[500px] overflow-y-auto"
+                  className="max-h-[500px] overflow-y-auto mb-2"
                 >
                   <EntityEmails
                     entityId={id}
@@ -589,42 +589,42 @@ export default function ContactDetailsPage() {
 
               <TabsContent
                 value="notes"
-                className="max-h-[500px] overflow-y-auto"
+                className="max-h-[500px] overflow-y-auto mb-2"
               >
                 <EntityNotes entityType="contact" entityId={id} />
               </TabsContent>
 
               <TabsContent
                 value="meetings"
-                className="max-h-[500px] overflow-y-auto"
+                className="max-h-[500px] overflow-y-auto mb-2"
               >
                 <EntityMeetings entityType="contact" entityId={id} />
               </TabsContent>
 
               <TabsContent
                 value="calls"
-                className="max-h-[500px] overflow-y-auto"
+                className="max-h-[500px] overflow-y-auto mb-2"
               >
                 <EntityCalls entityType="contact" entityId={id} />
               </TabsContent>
 
               <TabsContent
                 value="reminders"
-                className="max-h-[500px] overflow-y-auto"
+                className="max-h-[500px] overflow-y-auto mb-2"
               >
                 <EntityReminders entityType="contact" entityId={id} />
               </TabsContent>
 
               <TabsContent
                 value="documents"
-                className="max-h-[500px] overflow-y-auto"
+                className="max-h-[500px] overflow-y-auto mb-2"
               >
                 <EntityDocuments entityType="contact" entityId={id} />
               </TabsContent>
 
               <TabsContent
                 value="tasks"
-                className="max-h-[500px] overflow-y-auto"
+                className="max-h-[500px] overflow-y-auto mb-2"
               >
                 <EntityTasks entityType="contact" entityId={id} />
               </TabsContent>
@@ -656,7 +656,7 @@ export default function ContactDetailsPage() {
                               variant="destructive"
                               disabled={!canAccess('contacts', 'delete')}
                               onClick={() => setDeleteDialogOpen(true)}
-                              className="secondary-text-small-bold"
+                              className="secondary-text-small-bold px-2"
                             >
                               <Trash2 className="mr-2 h-4 w-4" />
                               Delete Contact
@@ -1201,7 +1201,7 @@ export default function ContactDetailsPage() {
                               variant="destructive"
                               disabled={!canAccess('contacts', 'delete')}
                               onClick={() => setDeleteDialogOpen(true)}
-                              className="secondary-text-small-bold"
+                              className="secondary-text-small-bold px-2"
                             >
                               <Trash2 className="mr-2 h-4 w-4" />
                               Delete Contact

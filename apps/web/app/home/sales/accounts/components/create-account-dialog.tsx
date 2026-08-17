@@ -35,6 +35,7 @@ import { IndustrySelect } from '../../../_components/industry-select';
 import { ManageableStatusSelect } from '../../../_components/manageable-status-select';
 
 interface CreateAccountDialogProps {
+  asFormOnly?: boolean;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: (account: any) => void;
@@ -44,6 +45,7 @@ export function CreateAccountDialog({
   open,
   onOpenChange,
   onSuccess,
+  asFormOnly = false
 }: CreateAccountDialogProps) {
   const { currentWorkspace: workspace } = useRBAC();
   const queryClient = useQueryClient();
@@ -111,15 +113,16 @@ export function CreateAccountDialog({
     mutation.mutate(payload);
   };
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[700px]">
-        <DialogHeader>
-          <DialogTitle>Create New Account</DialogTitle>
-          <DialogDescription>
-            Add a new business account to your workspace.
-          </DialogDescription>
-        </DialogHeader>
+  const innerContent = (
+    <div className={asFormOnly ? "flex h-full flex-col overflow-auto" : ""}>
+        {!asFormOnly && (
+          <DialogHeader>
+            <DialogTitle>Create New Account</DialogTitle>
+            <DialogDescription>
+              Add a new business account to your workspace.
+            </DialogDescription>
+          </DialogHeader>
+        )}
 
         <form
           onSubmit={handleSubmit}
@@ -299,24 +302,35 @@ export function CreateAccountDialog({
             />
           </div>
 
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" disabled={mutation.isPending}>
-              {mutation.isPending ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Plus className="mr-2 h-4 w-4" />
-              )}
-              Create Account
-            </Button>
-          </DialogFooter>
-        </form>
+          <DialogFooter className="sticky bottom-0 bg-white p-4 pt-4 dark:bg-slate-950 border-t border-gray-200 dark:border-slate-800">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+          >
+            Cancel
+          </Button>
+          <Button type="submit" disabled={mutation.isPending}>
+            {mutation.isPending ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Plus className="mr-2 h-4 w-4" />
+            )}
+            Create Account
+          </Button>
+        </DialogFooter>
+      </form>
+    </div>
+  );
+
+  if (asFormOnly) {
+    return innerContent;
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[700px]">
+        {innerContent}
       </DialogContent>
     </Dialog>
   );

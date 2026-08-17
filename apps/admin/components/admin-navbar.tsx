@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 
 import { Bell, Settings } from 'lucide-react';
@@ -16,13 +17,14 @@ function SuperAdminLogo() {
       href="/dashboard"
       className="flex items-center gap-2.5 font-semibold text-white"
     >
-      {/* Colorful 2×2 square grid logo matching the screenshot */}
-      <div className="grid h-7 w-7 grid-cols-2 gap-0.5 rounded-sm overflow-hidden shrink-0">
-        <div className="bg-red-500" />
-        <div className="bg-yellow-400" />
-        <div className="bg-blue-500" />
-        <div className="bg-green-500" />
-      </div>
+      <Image
+        src="/images/leadgaze-logo-mini.png"
+        height={32}
+        width={32}
+        alt="leadgaze"
+        className="h-8 w-auto object-contain"
+        priority
+      />
       <span className="text-sm font-bold tracking-tight">SuperAdmin</span>
     </Link>
   );
