@@ -622,13 +622,16 @@ const removeMember = catchAsync(
       member.role?.role_key === 'owner' ||
       member.is_primary_contact === true;
 
-    const isRequestingOwner =
-      currentUser.id === member.user_id ||
-      (workspace?.owner_id && currentUser.id === workspace.owner_id);
-
-    if (isTargetOwner && !isRequestingOwner) {
+    if (currentUser.id === member.user_id) {
       return NextResponse.json(
-        { message: 'The workspace owner cannot be removed by other team members' },
+        { message: 'You cannot remove yourself from the team' },
+        { status: 400 },
+      );
+    }
+
+    if (isTargetOwner) {
+      return NextResponse.json(
+        { message: 'The workspace owner cannot be removed' },
         { status: 403 },
       );
     }

@@ -94,7 +94,7 @@ export function OpportunityAssignees({
                         className="secondary-text-small-bold text-leadgaze-dark dark:text-white gap-1.5 px-2"
                     >
                         <Plus className="h-4 w-4" />
-                        Assign First Member
+                        Assign Member
                     </Button>
                 </div>
             ) : (
@@ -111,7 +111,7 @@ export function OpportunityAssignees({
                                         className="h-8 w-8 rounded-full object-cover"
                                     />
                                 ) : (
-                                    
+
                                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-leadgaze-primary text-sm font-semibold text-white">
                                         {(assignee.assignee_name?.trim() || '?').split(/\s+/).map((n, i) => i < 2 ? n[0] : '').join('').toUpperCase()}
                                     </div>
