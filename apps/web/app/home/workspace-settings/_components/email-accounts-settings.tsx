@@ -75,6 +75,7 @@ import {
   submitEmailAccountService,
   updateEmailAccountService,
 } from '~/services/email.service';
+import { useRBAC } from '~/lib/rbac/rbac-provider';
 
 import { EmailTemplatesTab } from '../../emails/_components/email-templates-tab';
 import { EmailVariablesTab } from '../../emails/_components/email-variables-tab';
@@ -120,7 +121,11 @@ export function EmailAccountsSettings({ workspace }: { workspace: any }) {
     null,
   );
   const [form, setForm] = useState<SmtpFormState>(emptySmtpForm);
-  const isAdmin = workspace?.role?.role_key === 'admin';
+  const { currentWorkspace } = useRBAC();
+  const isAdmin =
+    workspace?.role?.role_key === 'admin' ||
+    currentWorkspace?.currentRole?.role_key === 'admin' ||
+    (currentWorkspace?.currentRole?.hierarchy_level ?? 0) >= 100;
   const error = searchParams.get('error');
 
   const { getHeaderProps, getResizeHandleProps } = useColumnResize('workspace-email-accounts-table');
@@ -506,7 +511,7 @@ export function EmailAccountsSettings({ workspace }: { workspace: any }) {
                         </TableCell>
                         <TableCell>{account.from_name || '-'}</TableCell>
                         <TableCell>
-                          {isAdmin ? (
+                          {isAdmin || account.can_manage || account.can_change_access ? (
                             <Select
                               value={account.access_scope}
                               onValueChange={(value: EmailAccountAccessScope) =>
