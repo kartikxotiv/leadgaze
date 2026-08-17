@@ -96,6 +96,7 @@
     "./separator": "./src/shadcn/separator.tsx",
     "./input-otp": "./src/shadcn/input-otp.tsx",
     "./textarea": "./src/shadcn/textarea.tsx",
+    "./rich-text-editor": "./src/shadcn/rich-text-editor.tsx",
     "./switch": "./src/shadcn/switch.tsx",
     "./breadcrumb": "./src/shadcn/breadcrumb.tsx",
     "./chart": "./src/shadcn/chart.tsx",

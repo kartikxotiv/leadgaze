@@ -61,9 +61,34 @@ export const convertLead = catchAsync(
     const industryId = (lead as any).industry_id || null;
 
     const workspaceId = lead.workspace_id;
+
+    // Helper to get default status
+    const getDefaultStatusId = async () => {
+      const { data: status } = await supabase
+        .from('entity_statuses')
+        .select('id')
+        .eq('workspace_id', workspaceId)
+        .eq('is_default', true)
+        .eq('is_active', true)
+        .limit(1)
+        .maybeSingle();
+      if (status?.id) return status.id;
+
+      const { data: fallbackStatus } = await supabase
+        .from('entity_statuses')
+        .select('id')
+        .eq('workspace_id', workspaceId)
+        .eq('is_active', true)
+        .limit(1)
+        .maybeSingle();
+      return fallbackStatus?.id || null;
+    };
+
     let accountId = account.id;
     let contactId = contact.id;
     let opportunityId = null;
+
+    const fallbackStatusId = await getDefaultStatusId();
 
     // 3. Handle Account (Create or Use Existing)
     if (account.type === 'new') {
@@ -79,7 +104,7 @@ export const convertLead = catchAsync(
           annual_revenue: lead.annual_revenue,
           linkedin_url: lead.company_linkedin_url,
           description: lead.notes,
-          status_id: account.status_id, // Default status needed or passed from FE
+          status_id: account.status_id || fallbackStatusId, // Default status needed or passed from FE
           owner_id: user.id, // Assign to current user or lead owner
           created_by: user.id,
           created_from_lead_id: leadId,
@@ -109,7 +134,7 @@ export const convertLead = catchAsync(
           phone_number: contact.phone || lead.phone_number,
           job_title: lead.job_title,
           account_id: accountId,
-          status_id: contact.status_id,
+          status_id: contact.status_id || fallbackStatusId,
           owner_id: user.id,
           created_by: user.id,
           created_from_lead_id: leadId,
@@ -139,7 +164,7 @@ export const convertLead = catchAsync(
             opportunity_name: opportunity.name,
             account_id: accountId,
             primary_contact_id: contactId,
-            stage_id: opportunity.stage_id,
+            stage_id: opportunity.stage_id || fallbackStatusId,
             amount: opportunity.amount || 0,
             expected_close_date: opportunity.close_date,
             owner_id: user.id,
