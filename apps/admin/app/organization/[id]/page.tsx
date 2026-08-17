@@ -640,7 +640,7 @@ export default function WorkspaceDetailPage() {
       <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap sm:justify-between">
         <div className="flex items-center gap-2">
           <Button variant="ghost" asChild className="h-6 w-6 border border-leadgaze-border p-0">
-            <Link href="/workspaces"><ArrowLeft className="h-3 w-3" /></Link>
+            <Link href="/organization"><ArrowLeft className="h-3 w-3" /></Link>
           </Button>
           {/* Avatar */}
           <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-sm font-bold text-white ${WS.color}`}>

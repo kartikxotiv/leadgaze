@@ -6,8 +6,11 @@ import { useRouter } from 'next/navigation';
 
 import { useQuery } from '@tanstack/react-query';
 import {
+  Download,
   Edit,
   ExternalLink,
+  FileDown,
+  FileUp,
   MoreVertical,
   Plus,
   Shield,
@@ -48,6 +51,7 @@ import { useColumnVisibility } from '@kit/ui/use-column-visibility';
 import { useCsvExport } from '@kit/ui/use-csv-export';
 import { useDateRangeFilter } from '@kit/ui/use-date-range-filter';
 import { useTableSort } from '@kit/ui/use-table-sort';
+import { cn } from '@kit/ui/utils';
 
 import { AdminNavbar } from '~/components/admin-navbar';
 import { useDebounce } from '~/lib/hooks/use-debounce';
@@ -283,82 +287,138 @@ export default function AdminWorkspacesPage() {
 
   return (
     <AppShell navbar={<AdminNavbar />}>
-      <PageHeader
-        title={`Workspaces (${totalCount})`}
-        description="Manage platform tenant organizations, subscriptions, and access"
-      >
-        <PageHeaderActions>
-          <CsvExportButton
-            selectedCount={selectedWorkspaceIds.size}
-            onExportSelected={handleExportSelected}
-            onExportAll={handleExportAll}
-            isExporting={isExporting}
-          />
-          <ColumnVisibilitySelector
-            columns={columns}
-            visibility={visibility}
-            onToggle={toggleVisibility}
-            onReset={reset}
-          />
-          <Button variant="default" className="gap-2">
-            <Plus className="h-4 w-4" />
-            <span>Create Workspace</span>
-          </Button>
-        </PageHeaderActions>
-      </PageHeader>
+      <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden">
+        <PageHeader
+          title="Organization"
+        >
+          <div className="flex items-center gap-2">
+            <ColumnVisibilitySelector
+              columns={columns}
+              visibility={visibility}
+              onToggle={toggleVisibility}
+              onReset={reset}
+            />
+            <Button variant="default" className="gap-2 bg-leadgaze-primary hover:bg-leadgaze-primary/90 text-white">
+              <Plus className="h-4 w-4" />
+              <span>New Organization</span>
+            </Button>
+          </div>
+        </PageHeader>
+      </div>
 
-      <PageBody className="flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden">
-        <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col gap-4 pb-0">
-          {/* List Toolbar */}
-          <ListToolBar
-            className="border border-border bg-white dark:bg-zinc-900 rounded-lg p-3 shrink-0"
-            showSearch
-            searchValue={searchTerm}
-            onSearchChange={setSearchTerm}
-            searchPlaceholder="Search workspace name, domain, or owner..."
-            showFilter
-            filterGroups={[
-              {
-                key: 'plan',
-                label: 'Plan Tier',
-                options: [
-                  { value: 'Enterprise', label: 'Enterprise' },
-                  { value: 'Pro', label: 'Pro' },
-                  { value: 'Starter', label: 'Starter' },
-                  { value: 'Trial', label: 'Trial' },
-                ],
-                selectedValues: selectedPlans,
-                onSelectValues: setSelectedPlans,
-              },
-              {
-                key: 'status',
-                label: 'Status',
-                options: [
-                  { value: 'Active', label: 'Active' },
-                  { value: 'Trial', label: 'Trial' },
-                  { value: 'Suspended', label: 'Suspended' },
-                  { value: 'Cancelled', label: 'Cancelled' },
-                ],
-                selectedValues: selectedStatuses,
-                onSelectValues: setSelectedStatuses,
-              },
-              {
-                key: 'created_on',
-                label: 'Created On',
-                type: 'date',
-                dateValue: dateRange,
-                onDateChange: setDateRange,
-              },
-            ]}
-            activeFilterCount={activeFilterCount}
-            onClearFilters={() => {
-              setSelectedPlans([]);
+      <div className="flex w-full max-w-full min-w-0 shrink-0 items-center justify-between border-top-bottom-gray">
+        <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide">
+          <button
+            onClick={() => {
               setSelectedStatuses([]);
-              setDateRange(null);
-              setSearchTerm('');
+              setCurrentPage(1);
             }}
-          />
+            className={cn(
+              "flex items-center gap-1 whitespace-nowrap border-b-2 px-3 py-1 primary-text-medium",
+              selectedStatuses.length === 0
+                ? "border-leadgaze-primary text-leadgaze-primary"
+                : "border-transparent text-gray-500 hover:text-gray-700"
+            )}
+          >
+            <span className="flex items-center gap-1">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+              All Organization
+            </span>
+            <span className={cn(
+              "ml-1 rounded-full px-2 py-0.5 text-xs border",
+              selectedStatuses.length === 0 ? "border-blue-200 bg-blue-50 text-leadgaze-primary" : "border-gray-200 bg-gray-50 text-gray-600"
+            )}>
+              {totalCount}
+            </span>
+          </button>
 
+          {['Active', 'Trial', 'Suspended'].map((statusLabel) => {
+            const isSelected = selectedStatuses.length === 1 && selectedStatuses.includes(statusLabel);
+            return (
+              <button
+                key={statusLabel}
+                onClick={() => {
+                  setSelectedStatuses([statusLabel]);
+                  setCurrentPage(1);
+                }}
+                className={cn(
+                  "flex items-center gap-1 whitespace-nowrap border-b-2 px-3 py-1 primary-text-regular",
+                  isSelected
+                    ? "border-leadgaze-primary text-leadgaze-primary"
+                    : "border-transparent text-gray-500 hover:text-gray-700"
+                )}
+              >
+                {statusLabel}
+                <span className={cn(
+                  "ml-1 rounded-full px-2 py-0.5 text-xs border",
+                  isSelected ? "border-blue-200 bg-blue-50 text-leadgaze-primary" : "border-gray-200 bg-gray-50 text-gray-600"
+                )}>
+                  0
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        <ListToolBar
+          align="right"
+          className="border-none bg-transparent p-0"
+          showSearch
+          expandableSearch
+          searchPlaceholder="Search"
+          searchValue={searchTerm}
+          onSearchChange={setSearchTerm}
+          showFilter
+          filterGroups={[
+            {
+              key: 'plan',
+              label: 'Plan Tier',
+              options: [
+                { value: 'Enterprise', label: 'Enterprise' },
+                { value: 'Pro', label: 'Pro' },
+                { value: 'Starter', label: 'Starter' },
+                { value: 'Trial', label: 'Trial' },
+              ],
+              selectedValues: selectedPlans,
+              onSelectValues: setSelectedPlans,
+            },
+            {
+              key: 'created_on',
+              label: 'Created On',
+              type: 'date',
+              dateValue: dateRange,
+              onDateChange: setDateRange,
+            },
+          ]}
+          activeFilterCount={activeFilterCount}
+          onClearFilters={() => {
+            setSelectedPlans([]);
+            setSelectedStatuses([]);
+            setDateRange(null);
+            setSearchTerm('');
+          }}
+          actions={[
+            {
+              key: 'import',
+              label: 'Import',
+              icon: Download,
+              onClick: () => {},
+              buttonVariant: 'outline',
+            },
+          ]}
+          exportSlot={
+            <CsvExportButton
+              selectedCount={selectedWorkspaceIds.size}
+              onExportSelected={handleExportSelected}
+              onExportAll={handleExportAll}
+              isExporting={isExporting}
+            />
+          }
+        />
+      </div>
+
+      <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden">
+        <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col gap-0 pb-0">
           {/* Custom Table Container with Sticky Pagination */}
           <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 gap-0">
             <CustomTableContainer
@@ -518,7 +578,16 @@ export default function AdminWorkspacesPage() {
                     )}
 
                     {/* Actions Column */}
-                    <TableHead className="w-12 text-right pr-4">Actions</TableHead>
+                    <TableHead className="sticky-right-header z-10 w-12 px-1 text-center">
+                      <Button
+                        type="button"
+                        size="icon"
+                        className="mx-auto flex h-5 w-5 items-center justify-center rounded-full bg-leadgaze-primary text-white hover:bg-leadgaze-primary/90 border-0 p-0 shadow-xs"
+                        title="Add Column"
+                      >
+                        <Plus className="h-3.5 w-3.5 stroke-[2.5]" />
+                      </Button>
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
 
@@ -552,7 +621,7 @@ export default function AdminWorkspacesPage() {
                           key={ws.id}
                           data-state={isSelected ? 'selected' : undefined}
                           className="group cursor-pointer hover:bg-muted/50"
-                          onClick={() => router.push(`/workspaces/${ws.id}`)}
+                          onClick={() => router.push(`/organization/${ws.id}`)}
                         >
                           {/* Checkbox */}
                           <TableCell className="pl-4" onClick={(e) => e.stopPropagation()}>
