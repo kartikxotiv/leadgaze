@@ -200,7 +200,7 @@ export default function OpportunitiesPage() {
   const [editingField, setEditingField] = useState<EntityField | null>(null);
   const [addColumnModalOpen, setAddColumnModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(15);
+  const [pageSize, setPageSize] = useState(25);
   const itemsPerPage = pageSize;
 
   // Row selection state (for CSV export)

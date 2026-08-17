@@ -146,6 +146,10 @@ export const getDashboardMetrics = catchAsync(
       opportunities: rpcData.opportunities,
       pipeline: rpcData.pipeline,
       upcomingTasks,
+      latestLeads: rpcData.latestLeads,
+      latestAccounts: rpcData.latestAccounts,
+      recentActions: rpcData.recentActions,
+      revenueChart: rpcData.revenueChart,
     });
   },
 );

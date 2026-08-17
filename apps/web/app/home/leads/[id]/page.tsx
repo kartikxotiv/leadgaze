@@ -792,7 +792,7 @@ export default function LeadDetailsPage() {
               {canManageEmail && (
                 <TabsContent
                   value="email"
-                  className="max-h-[500px] overflow-y-auto"
+                  className="max-h-[500px] overflow-y-auto mb-2"
                 >
                   <EntityEmails
                     entityId={leadId}
@@ -805,42 +805,42 @@ export default function LeadDetailsPage() {
 
               <TabsContent
                 value="notes"
-                className="max-h-[500px] overflow-y-auto"
+                className="max-h-[500px] overflow-y-auto mb-2"
               >
                 <EntityNotes entityType="lead" entityId={leadId} />
               </TabsContent>
 
               <TabsContent
                 value="meetings"
-                className="max-h-[500px] overflow-y-auto"
+                className="max-h-[500px] overflow-y-auto mb-2"
               >
                 <EntityMeetings entityType="lead" entityId={leadId} />
               </TabsContent>
 
               <TabsContent
                 value="calls"
-                className="max-h-[500px] overflow-y-auto"
+                className="max-h-[500px] overflow-y-auto mb-2"
               >
                 <EntityCalls entityType="lead" entityId={leadId} />
               </TabsContent>
 
               <TabsContent
                 value="reminders"
-                className="max-h-[500px] overflow-y-auto"
+                className="max-h-[500px] overflow-y-auto mb-2"
               >
                 <EntityReminders entityType="lead" entityId={leadId} />
               </TabsContent>
 
               <TabsContent
                 value="documents"
-                className="max-h-[500px] overflow-y-auto"
+                className="max-h-[500px] overflow-y-auto mb-2"
               >
                 <EntityDocuments entityType="lead" entityId={leadId} />
               </TabsContent>
 
               <TabsContent
                 value="tasks"
-                className="max-h-[500px] overflow-y-auto"
+                className="max-h-[500px] overflow-y-auto mb-2"
               >
                 <EntityTasks entityType="lead" entityId={leadId} />
               </TabsContent>
@@ -870,7 +870,7 @@ export default function LeadDetailsPage() {
                               variant="destructive"
                               disabled={!canAccess('leads', 'delete')}
                               onClick={() => setDeleteDialogOpen(true)}
-                              className="secondary-text-small-bold"
+                              className="secondary-text-small-bold px-2"
                             >
                               <Trash2 className="mr-2 h-4 w-4" />
                               Delete Lead
@@ -1400,7 +1400,7 @@ export default function LeadDetailsPage() {
                               variant="destructive"
                               disabled={!canAccess('leads', 'delete')}
                               onClick={() => setDeleteDialogOpen(true)}
-                              className="secondary-text-small-bold"
+                              className="secondary-text-small-bold px-2"
                             >
                               <Trash2 className="mr-2 h-4 w-4" />
                               Delete Lead

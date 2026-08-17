@@ -155,7 +155,7 @@ export default function NotesPage() {
   );
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(15);
+  const [pageSize, setPageSize] = useState(25);
   const itemsPerPage = pageSize;
   const {
     dateRange: createdOnRange,
@@ -973,7 +973,7 @@ export default function NotesPage() {
                   <RadioGroupItem value="lead" id="lead" />
                   <Label
                     htmlFor="lead"
-                    className="flex cursor-pointer items-center gap-1"
+                    className="!flex cursor-pointer items-center gap-1"
                   >
                     <User className="h-3 w-3" /> Lead
                   </Label>
@@ -982,7 +982,7 @@ export default function NotesPage() {
                   <RadioGroupItem value="contact" id="contact" />
                   <Label
                     htmlFor="contact"
-                    className="flex cursor-pointer items-center gap-1"
+                    className="!flex cursor-pointer items-center gap-1"
                   >
                     <Users className="h-3 w-3" /> Contact
                   </Label>
@@ -991,7 +991,7 @@ export default function NotesPage() {
                   <RadioGroupItem value="account" id="account" />
                   <Label
                     htmlFor="account"
-                    className="flex cursor-pointer items-center gap-1"
+                    className="!flex cursor-pointer items-center gap-1"
                   >
                     <Building2 className="h-3 w-3" /> Account
                   </Label>
@@ -1000,7 +1000,7 @@ export default function NotesPage() {
                   <RadioGroupItem value="opportunity" id="opportunity" />
                   <Label
                     htmlFor="opportunity"
-                    className="flex cursor-pointer items-center gap-1"
+                    className="!flex cursor-pointer items-center gap-1"
                   >
                     <Briefcase className="h-3 w-3" /> Opportunity
                   </Label>

@@ -82,6 +82,7 @@ interface OpportunityDialogProps {
   onSuccess?: () => void;
   opportunity?: any;
   defaultAccountId?: string;
+  asFormOnly?: boolean;
   defaultStageId?: string;
 }
 
@@ -91,6 +92,7 @@ export function OpportunityDialog({
   onSuccess,
   opportunity,
   defaultAccountId,
+  asFormOnly = false,
   defaultStageId,
 }: OpportunityDialogProps) {
   const queryClient = useQueryClient();
@@ -234,16 +236,17 @@ export function OpportunityDialog({
     mutation.mutate(values);
   }
 
-  return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-[600px]">
+  const innerContent = (
+    <div className={asFormOnly ? "flex h-full flex-col overflow-auto" : "flex max-h-[90vh] flex-col"}>
+      {!asFormOnly && (
         <DialogHeader>
           <DialogTitle>
             {isEditMode ? 'Edit Opportunity' : 'New Opportunity'}
           </DialogTitle>
         </DialogHeader>
-        <Form {...form}>
-          <form id="dialog-form" onSubmit={form.handleSubmit(onSubmit)} className="flex-1 overflow-y-auto px-2 space-y-2">
+      )}
+      <Form {...form}>
+        <form id="dialog-form" onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1 overflow-y-auto px-2 space-y-2 mb-2">
             <FormField
               control={form.control}
               name="opportunity_name"              
@@ -538,6 +541,17 @@ export function OpportunityDialog({
             {mutation.isPending ? 'Saving...' : 'Save Changes'}
           </Button>
         </DialogFooter>
+    </div>
+  );
+
+  if (asFormOnly) {
+    return innerContent;
+  }
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-[600px]">
+        {innerContent}
       </DialogContent>
     </Dialog>
   );
