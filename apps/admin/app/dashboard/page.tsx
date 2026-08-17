@@ -373,11 +373,15 @@ function ModuleAdoption() {
         {MODULE_ADOPTION.map((mod) => (
           <div key={mod.name}>
             <div className="mb-2 flex items-center justify-between gap-4">
-              <div className="flex items-center gap-1.5 text-sm">
-                <span className="secondary-text-small-semibold text-leadgaze-dark dark:text-white">
+              <div className="flex items-center gap-3 text-sm">
+                <span className={`secondary-text-small-semibold px-2 py-0.5 rounded-[4px] ${
+                  mod.name.toLowerCase() === 'crm' ? "bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20" :
+                  mod.name.toLowerCase() === 'hrms' ? "bg-purple-50 text-purple-600 border border-purple-200 dark:bg-purple-500/10 dark:text-purple-400 dark:border-purple-500/20" :
+                  mod.name.toLowerCase() === 'inventory' ? "bg-orange-50 text-orange-600 border border-orange-200 dark:bg-orange-500/10 dark:text-orange-400 dark:border-orange-500/20" :
+                  "bg-gray-50 text-gray-600 border border-gray-200 dark:bg-gray-500/10 dark:text-gray-400 dark:border-gray-500/20"
+                }`}>
                   {mod.name}
                 </span>
-                <span className="text-muted-foreground text-xs">•</span>
                 <span className="text-muted-foreground text-xs">
                   {mod.workspaces} workspaces · {mod.seats.toLocaleString()} seats
                 </span>
