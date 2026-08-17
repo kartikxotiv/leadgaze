@@ -476,6 +476,7 @@ export interface CreateMeetingDialogProps {
   onSuccess: () => void;
   initialEntityType?: string;
   initialEntityId?: string;
+  asFormOnly?: boolean;
 }
 
 export function CreateMeetingDialog({
@@ -491,6 +492,7 @@ export function CreateMeetingDialog({
   onSuccess,
   initialEntityType,
   initialEntityId,
+  asFormOnly,
 }: CreateMeetingDialogProps) {
   // Query internal values if props not provided or empty
   const { data: fetchedIntegrationAccounts = [] } = useQuery({
@@ -855,9 +857,9 @@ export function CreateMeetingDialog({
     isCreatingGoogleMeeting ||
     isCreatingZoomMeeting;
 
-  return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="flex max-h-[90vh] flex-col p-0 overflow-hidden border-gray-200 bg-white sm:max-w-[800px] dark:border-slate-800 dark:bg-slate-950">
+  const FormContent = (
+    <>
+      {!asFormOnly && (
         <DialogHeader>
           <DialogTitle>
             Schedule Meeting
@@ -866,11 +868,11 @@ export function CreateMeetingDialog({
             Setup a new engagement with your lead
           </DialogDescription>
         </DialogHeader>
+      )}
 
-
-        <div className="flex-1 overflow-y-auto space-y-2 px-2">
+      <div className="flex-1 overflow-y-auto space-y-2 px-2">
           {/* Meeting Type */}
-          <div className="space-y-2">
+          <div>
             <Label className="text-xs font-semibold text-leadgaze-dark tracking-wider uppercase">
               Meeting Type
             </Label>
@@ -878,7 +880,7 @@ export function CreateMeetingDialog({
           </div>
 
           {/* Provider Selection */}
-          <div className="space-y-2">
+          <div>
             <Label className="text-xs font-semibold tracking-wider text-leadgaze-dark uppercase">
               Meeting Provider
             </Label>
@@ -893,7 +895,7 @@ export function CreateMeetingDialog({
 
           {/* Account Selection */}
           {meetingType === 'scheduled' && provider === 'GOOGLE' && (
-            <div className="space-y-2">
+            <div>
               <Label className="text-xs font-semibold tracking-wider text-gray-500 uppercase">
                 Connect As
               </Label>
@@ -929,7 +931,7 @@ export function CreateMeetingDialog({
             </div>
           )}
           {meetingType === 'scheduled' && provider === 'ZOOM' && (
-            <div className="space-y-2">
+            <div>
               <Label className="text-xs font-semibold tracking-wider text-gray-500 uppercase">
                 Connect As
               </Label>
@@ -966,7 +968,7 @@ export function CreateMeetingDialog({
           )}
 
           {/* Title */}
-          <div className="space-y-2">
+          <div>
             <Label className="font-medium">
               Title <span className="text-red-500">*</span>
             </Label>
@@ -978,7 +980,7 @@ export function CreateMeetingDialog({
           </div>
 
           {/* Description */}
-          <div className="space-y-2">
+          <div>
             <Label className="font-medium">Description</Label>
             <Textarea
               value={description}
@@ -991,7 +993,7 @@ export function CreateMeetingDialog({
           {/* Time Selection */}
           {meetingType === 'scheduled' ? (
             <div className="grid gap-2 md:grid-cols-2">
-              <div className="space-y-2">
+              <div>
                 <Label className="font-medium">
                   Meeting Date & Time <span className="text-red-500">*</span>
                 </Label>
@@ -1008,7 +1010,7 @@ export function CreateMeetingDialog({
                   className="w-full"
                 />
               </div>
-              <div className="space-y-2">
+              <div>
                 <Label className="font-medium">Duration</Label>
                 <Select
                   value={String(duration)}
@@ -1029,7 +1031,7 @@ export function CreateMeetingDialog({
             </div>
           ) : (
             <div className="grid gap-2 md:grid-cols-2">
-              <div className="space-y-2">
+              <div>
                 <Label className="font-medium">
                   Actual Start <span className="text-red-500">*</span>
                 </Label>
@@ -1045,7 +1047,7 @@ export function CreateMeetingDialog({
                   className="w-full"
                 />
               </div>
-              <div className="space-y-2">
+              <div>
                 <Label className="font-medium">
                   Actual End <span className="text-red-500">*</span>
                 </Label>
@@ -1066,7 +1068,7 @@ export function CreateMeetingDialog({
 
           {/* Timezone + Location/URL */}
           <div className="grid gap-2 md:grid-cols-2">
-            <div className="space-y-2">
+            <div>
               <Label className="font-medium">Timezone</Label>
               <Select value={timezone} onValueChange={setTimezone}>
                 <SelectTrigger>
@@ -1082,7 +1084,7 @@ export function CreateMeetingDialog({
               </Select>
             </div>
             {provider === 'MANUAL' ? (
-              <div className="space-y-2">
+              <div>
                 <Label className="font-medium">Meeting URL</Label>
                 <Input
                   value={meetingUrl}
@@ -1091,7 +1093,7 @@ export function CreateMeetingDialog({
                 />
               </div>
             ) : (
-              <div className="space-y-2">
+              <div>
                 <Label className="font-medium">Location</Label>
                 <div className="relative">
                   <MapPin className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
@@ -1108,7 +1110,7 @@ export function CreateMeetingDialog({
 
           {/* Meeting URL for logged meetings (optional) */}
           {meetingType === 'logged' && provider !== 'MANUAL' && (
-            <div className="space-y-2">
+            <div>
               <Label className="font-medium">Meeting URL (Optional)</Label>
               <Input
                 value={meetingUrl}
@@ -1120,7 +1122,7 @@ export function CreateMeetingDialog({
 
           {/* External Invitees */}
           {meetingType === 'scheduled' && (
-            <div className="space-y-2">
+            <div>
               <Label className="font-medium">External Invitees</Label>
               <div className="flex gap-2">
                 <Input
@@ -1167,7 +1169,7 @@ export function CreateMeetingDialog({
 
           {/* Reminders */}
           {meetingType === 'scheduled' && (
-            <div className="space-y-2">
+            <div>
               <Label className="font-medium">Reminders</Label>
               <div className="flex flex-wrap gap-2">
                 {REMINDER_OPTIONS.map((opt) => (
@@ -1195,7 +1197,7 @@ export function CreateMeetingDialog({
           {/* Related Entity */}
           {!initialEntityId && (
             <div className="grid gap-2 md:grid-cols-2 mb-2">
-              <div className="space-y-2">
+              <div>
                 <Label className="font-medium">Related To</Label>
                 <Select value={entityType} onValueChange={setEntityType}>
                   <SelectTrigger>
@@ -1209,7 +1211,7 @@ export function CreateMeetingDialog({
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2">
+              <div>
                 <Label className="font-medium">Entity</Label>
                 <Select
                   value={entityId || undefined}
@@ -1258,31 +1260,42 @@ export function CreateMeetingDialog({
               </div>
             </div>
           )}
-        </div>
+        </div>        
+          <DialogFooter className="bg-background sticky bottom-0 z-10">
+            <Button variant="outline" onClick={handleClose}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSubmit}
+              disabled={
+                isBusy ||
+                (meetingType === 'scheduled' &&
+                  provider === 'GOOGLE' &&
+                  googleAccounts.length === 0)
+              }
+            >
+              {isBusy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isCreatingGoogleMeeting
+                ? 'Creating Google Meeting...'
+                : isCreatingZoomMeeting
+                  ? 'Creating Zoom Meeting...'
+                  : meetingType === 'logged'
+                    ? 'Log Meeting'
+                    : 'Create Meeting'}
+            </Button>
+          </DialogFooter>
+        
+    </>
+  );
 
-        <DialogFooter className="bg-background sticky bottom-0 z-10">
-          <Button variant="outline" onClick={handleClose}>
-            Cancel
-          </Button>
-          <Button
-            onClick={handleSubmit}
-            disabled={
-              isBusy ||
-              (meetingType === 'scheduled' &&
-                provider === 'GOOGLE' &&
-                googleAccounts.length === 0)
-            }
-          >
-            {isBusy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {isCreatingGoogleMeeting
-              ? 'Creating Google Meeting...'
-              : isCreatingZoomMeeting
-                ? 'Creating Zoom Meeting...'
-                : meetingType === 'logged'
-                  ? 'Log Meeting'
-                  : 'Create Meeting'}
-          </Button>
-        </DialogFooter>
+  if (asFormOnly) {
+    return FormContent;
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={handleClose}>
+      <DialogContent className="flex max-h-[90vh] flex-col p-0 overflow-hidden border-gray-200 bg-white sm:max-w-[800px] dark:border-slate-800 dark:bg-slate-950">
+        {FormContent}
       </DialogContent>
     </Dialog>
   );
@@ -1341,6 +1354,7 @@ export function EditMeetingDialog({
   const [duration, setDuration] = useState(30);
   const [timezone, setTimezone] = useState('UTC');
   const [location, setLocation] = useState('');
+  const [meetingUrl, setMeetingUrl] = useState('');
   const [status, setStatus] = useState<MeetingStatus>('scheduled');
   const [externalEmails, setExternalEmails] = useState<string[]>([]);
   const [newEmail, setNewEmail] = useState('');
@@ -1368,6 +1382,7 @@ export function EditMeetingDialog({
         setDuration(30);
       }
       setLocation(meeting.location || '');
+      setMeetingUrl(meeting.meeting_url || '');
       setStatus(meeting.status || 'scheduled');
       setSelectedAccountId(meeting.meeting_host_email_account_id || '');
       setExternalEmails(
@@ -1403,6 +1418,7 @@ export function EditMeetingDialog({
     setDuration(30);
     setTimezone('UTC');
     setLocation('');
+    setMeetingUrl('');
     setStatus('scheduled');
     setExternalEmails([]);
     setNewEmail('');
@@ -1446,6 +1462,7 @@ export function EditMeetingDialog({
         scheduled_end: utcScheduledEnd,
         timezone,
         location: location || undefined,
+        meeting_url: meetingUrl || undefined,
         participants: externalEmails.map((email) => ({
           participant_type: 'EXTERNAL' as const,
           external_email: email,
@@ -1501,7 +1518,7 @@ export function EditMeetingDialog({
           </DialogTitle>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto space-y-2 px-2">
-          <div className="space-y-2">
+          <div>
             <Label className="font-medium">
               Title <span className="text-red-500">*</span>
             </Label>
@@ -1511,7 +1528,7 @@ export function EditMeetingDialog({
               placeholder="Meeting title"
             />
           </div>
-          <div className="space-y-2">
+          <div>
             <Label className="font-medium">Description</Label>
             <Textarea
               value={description}
@@ -1520,7 +1537,7 @@ export function EditMeetingDialog({
               rows={3}
             />
           </div>
-          <div className="space-y-2">
+          <div>
             <Label className="font-medium">Status</Label>
             <div className="flex flex-wrap gap-2">
               {(Object.keys(STATUS_CONFIG) as MeetingStatus[]).map((s) => {
@@ -1549,7 +1566,7 @@ export function EditMeetingDialog({
             </div>
           </div>
           <div className="grid gap-2 md:grid-cols-2">
-            <div className="space-y-2">
+            <div>
               <Label className="font-medium">Meeting Date & Time</Label>
               <DateTimePicker
                 value={scheduledStart ? new Date(scheduledStart) : undefined}
@@ -1564,7 +1581,7 @@ export function EditMeetingDialog({
                 className="w-full"
               />
             </div>
-            <div className="space-y-2">
+            <div>
               <Label className="font-medium">Duration</Label>
               <Select
                 value={String(duration)}
@@ -1584,7 +1601,7 @@ export function EditMeetingDialog({
             </div>
           </div>
           <div className="grid gap-2 md:grid-cols-2">
-            <div className="space-y-2">
+            <div>
               <Label className="font-medium">Timezone</Label>
               <Select value={timezone} onValueChange={setTimezone}>
                 <SelectTrigger>
@@ -1599,7 +1616,7 @@ export function EditMeetingDialog({
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
+            <div>
               <Label className="font-medium">Location</Label>
               <div className="relative">
                 <MapPin className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
@@ -1612,8 +1629,20 @@ export function EditMeetingDialog({
               </div>
             </div>
           </div>
+          <div>
+            <Label className="font-medium">Meeting Link / URL</Label>
+            <div className="relative">
+              <Link2 className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <Input
+                value={meetingUrl}
+                onChange={(e) => setMeetingUrl(e.target.value)}
+                placeholder="https://..."
+                className="pl-10"
+              />
+            </div>
+          </div>
           {meeting.provider === 'GOOGLE' && googleAccounts.length > 0 && (
-            <div className="space-y-2">
+            <div>
               <Label className="font-medium">Google Account</Label>
               <Select
                 value={selectedAccountId}
@@ -1636,7 +1665,7 @@ export function EditMeetingDialog({
             </div>
           )}
           {meeting.provider === 'ZOOM' && zoomAccounts.length > 0 && (
-            <div className="space-y-2">
+            <div>
               <Label className="font-medium">Zoom Account</Label>
               <Select
                 value={selectedAccountId}
@@ -1658,7 +1687,7 @@ export function EditMeetingDialog({
               </p>
             </div>
           )}
-          <div className="space-y-2">
+          <div>
             <Label className="font-medium">External Invitees</Label>
             <div className="flex gap-2">
               <Input
@@ -1699,7 +1728,7 @@ export function EditMeetingDialog({
           </div>
 
           {/* Reminders */}
-          <div className="space-y-2">
+          <div>
             <Label className="font-medium">Reminders</Label>
             <div className="flex flex-wrap gap-2">
               {REMINDER_OPTIONS.map((opt) => (
@@ -2059,7 +2088,7 @@ export default function MeetingsPage() {
     [],
   );
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(15);
+  const [pageSize, setPageSize] = useState(25);
   const [viewFilter, setViewFilter] = useState<'my' | 'team'>('my');
   const {
     dateRange: createdOnRange,

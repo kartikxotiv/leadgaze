@@ -29,7 +29,7 @@ export function useEmployeesPage() {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(15);
+  const [pageSize, setPageSize] = useState(25);
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   const [isFiltersVisible, setIsFiltersVisible] = useState(false);
   const [statusFilter, setStatusFilter] =

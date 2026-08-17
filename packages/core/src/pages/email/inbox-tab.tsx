@@ -441,6 +441,7 @@ export function CoreInboxTab({
         open={isDetailOpen}
         onOpenChange={setIsDetailOpen}
         email={selectedEmail}
+        allEmails={emails}
         canReply={canReply}
         actions={selectedEmail ? renderEmailActions?.(selectedEmail) : null}
         onReply={(email) => {

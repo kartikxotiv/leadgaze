@@ -71,8 +71,7 @@ export function UpdateMemberDialog({
     member.is_primary_contact === true;
 
   const isCurrentUserOwner =
-    (currentWorkspace?.owner_id && user?.id === currentWorkspace.owner_id) ||
-    (user?.id && member.user_id && user.id === member.user_id);
+    currentWorkspace?.owner_id && user?.id === currentWorkspace.owner_id;
 
   const isEditDisabled = isTargetOwner && !isCurrentUserOwner;
 

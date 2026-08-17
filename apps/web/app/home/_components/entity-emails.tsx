@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
-import { Clock, Download, FileText, Loader2, Mail, Paperclip, Plus, Trash2 } from 'lucide-react';
+import { Clock, Download, FileText, Loader2, Mail, MessageSquare, Paperclip, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { useSupabase } from '@kit/supabase/hooks/use-supabase';
@@ -112,7 +112,56 @@ export function EntityEmails({
     enabled: canManageEmail && !!workspace?.id,
   });
 
-  const combinedItems = response?.data || [];
+  const rawEmails = useMemo(() => response?.data || [], [response]);
+
+  // Group emails by thread, keeping one card per conversation thread (including direct emails from lead or outbound threads)
+  const conversationThreads = useMemo(() => {
+    const threadMap = new Map<string, { latestEmail: any; threadCount: number; allEmails: any[] }>();
+
+    rawEmails.forEach((email: any) => {
+      // Find or assign thread identifier
+      const threadKey =
+        email.thread_key ||
+        email.thread_id ||
+        email.in_reply_to ||
+        email.internet_message_id ||
+        email.id;
+
+      const existing = threadMap.get(threadKey);
+      if (!existing) {
+        threadMap.set(threadKey, {
+          latestEmail: email,
+          threadCount: 1,
+          allEmails: [email],
+        });
+      } else {
+        existing.threadCount += 1;
+        existing.allEmails.push(email);
+
+        const existingDate = new Date(
+          existing.latestEmail.received_at ||
+          existing.latestEmail.sent_at ||
+          existing.latestEmail.created_at ||
+          0
+        ).getTime();
+        const incomingDate = new Date(
+          email.received_at ||
+          email.sent_at ||
+          email.created_at ||
+          0
+        ).getTime();
+
+        if (incomingDate > existingDate) {
+          existing.latestEmail = email;
+        }
+      }
+    });
+
+    return Array.from(threadMap.values()).map((entry) => ({
+      ...entry.latestEmail,
+      threadCount: entry.threadCount,
+    }));
+  }, [rawEmails]);
 
   // Handle delete
   const handleDelete = async (e: React.MouseEvent, id: string) => {
@@ -184,7 +233,7 @@ export function EntityEmails({
         }
       >
         <div className="px-2">
-          {combinedItems.length === 0 ? (
+          {conversationThreads.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-8 text-center">
               <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#F0F3FF]">
                 <Mail className="h-6 w-6 text-blue-500" />
@@ -194,17 +243,17 @@ export function EntityEmails({
           ) : (
             <div className="max-h-[280px] overflow-y-auto mb-2">
               <CardWidgetList>
-                {combinedItems.map(
+                {conversationThreads.map(
                   (
                     item: any, // eslint-disable-line @typescript-eslint/no-explicit-any
                   ) => (
                     <CardWidgetListItem
                       key={item.id}
-                      className={cn(
-                        item.status !== 'sent'
-                          ? 'cursor-pointer'
-                          : 'cursor-default',
-                      )}
+                      onClick={() => {
+                        setSelectedEmail(item);
+                        setIsDetailOpen(true);
+                      }}
+                      className="cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/60 transition-colors"
                       icon={
                         <div
                           className={cn(
@@ -231,57 +280,47 @@ export function EntityEmails({
                       }
                       iconAlignTop={true}
                       title={
-                        <span
-                          onClick={() => {
-                            setSelectedEmail(item);
-                            setIsDetailOpen(true);
-                          }}
-                        >
-                          {item.subject || '(No Subject)'}
-                        </span>
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span className="truncate">{item.subject || '(No Subject)'}</span>
+                          {item.threadCount > 1 && (
+                            <Badge variant="secondary" className="h-4 px-1.5 text-[9px] font-normal gap-1 shrink-0">
+                              <MessageSquare className="h-2.5 w-2.5" />
+                              <span>{item.threadCount}</span>
+                            </Badge>
+                          )}
+                        </div>
                       }
                       badge={
-                        <span
-                          onClick={() => {
-                            setSelectedEmail(item);
-                            setIsDetailOpen(true);
-                          }}
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            'h-4 px-3 py-2.5 text-[10px]',
+                            item.direction === 'inbound'
+                              ? 'border-purple-200 bg-purple-50 text-purple-600'
+                              : item.status === 'sent'
+                                ? 'border-green-200 bg-green-50 text-green-600'
+                                : item.status === 'scheduled'
+                                  ? 'border-blue-200 bg-blue-50 text-blue-600'
+                                  : 'border-amber-200 bg-amber-50 text-amber-600',
+                          )}
                         >
-                          <Badge
-                            variant="outline"
-                            className={cn(
-                              'h-4 px-3 py-2.5 text-[10px]',
-                              item.direction === 'inbound'
-                                ? 'border-purple-200 bg-purple-50 text-purple-600'
-                                : item.status === 'sent'
-                                  ? 'border-green-200 bg-green-50 text-green-600'
-                                  : item.status === 'scheduled'
-                                    ? 'border-blue-200 bg-blue-50 text-blue-600'
-                                    : 'border-amber-200 bg-amber-50 text-amber-600',
-                            )}
-                          >
-                            {item.direction === 'inbound'
-                              ? 'Inbound'
-                              : item.status.charAt(0).toUpperCase() +
-                              item.status.slice(1)}
-                          </Badge>
-                          {item.direction !== 'inbound' &&
-                            item.status !== 'sent' && (
-                              <span className="ml-1 text-[10px] text-blue-500 italic opacity-0 transition-opacity group-hover:opacity-100">
-                                • Click to Edit
-                              </span>
-                            )}
-                        </span>
+                          {item.direction === 'inbound'
+                            ? 'Inbound'
+                            : item.status.charAt(0).toUpperCase() +
+                            item.status.slice(1)}
+                        </Badge>
                       }
                       content={
-                        <span
-                          onClick={() => {
-                            setSelectedEmail(item);
-                            setIsDetailOpen(true);
-                          }}
-                          className="line-clamp-2 text-leadgaze-dark dark:text-white"
-                          dangerouslySetInnerHTML={{ __html: item.html_body }}
-                        />
+                        <p className="line-clamp-2 text-xs text-zinc-600 dark:text-zinc-400 break-words">
+                          {item.snippet ||
+                            (item.html_body || item.body || item.text_body || '')
+                              .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+                              .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+                              .replace(/<[^>]+>/g, ' ')
+                              .replace(/\s+/g, ' ')
+                              .trim() ||
+                            'No content.'}
+                        </p>
                       }
                       metadata={
                         <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[10px] text-leadgaze-dark dark:text-white">
@@ -373,6 +412,7 @@ export function EntityEmails({
         open={isDetailOpen}
         onOpenChange={setIsDetailOpen}
         email={selectedEmail}
+        allEmails={rawEmails}
         onReply={(email) => {
           setSelectedEmail(email);
           setIsDetailOpen(false);
@@ -398,6 +438,8 @@ export function EntityEmails({
         workspaceId={workspace?.id || ''}
         accounts={coreEmailAccounts}
         email={selectedEmail}
+        entityType={entityType}
+        entityId={entityId}
         templateContext={{
           entity_name: entityName,
           entity_email: entityEmail,

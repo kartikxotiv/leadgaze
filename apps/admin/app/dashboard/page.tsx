@@ -23,6 +23,7 @@ import {
 
 import { AppShell } from '@kit/ui/app-shell';
 import { Badge } from '@kit/ui/badge';
+import { CardWidgetList, CardWidgetListItem } from '@kit/ui/card-widget-list';
 import { Button } from '@kit/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@kit/ui/card';
 import { CardWidgetContainer } from '@kit/ui/card-widget-container';
@@ -222,15 +223,15 @@ function StatCard({
   iconBg,
 }: (typeof STAT_CARDS)[number]) {
   return (
-    <Card className="h-32 xl:h-28 2xl:h-32 flex flex-col justify-between">
+    <Card className="flex min-h-32 flex-col justify-between xl:h-28 2xl:h-32">
       <CardHeader className="flex flex-row items-start justify-between space-y-0 xl:p-3 xl:pb-0 2xl:p-5 2xl:pb-0">
         <div className="space-y-1">
-          <CardTitle className="secondary-text-small text-leadgaze-muted dark:text-white">
+          <CardTitle className="secondary-text-small-semibold text-leadgaze-dark dark:text-white">
             {label}
           </CardTitle>
-          <p className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">
+          <div className="primary-heading-number text-leadgaze-dark dark:text-zinc-100">
             {value}
-          </p>
+          </div>
         </div>
         <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded ${iconBg}`}>
           <Icon className={`h-4 w-4 ${iconColor}`} />
@@ -265,13 +266,14 @@ function MonthlyRevenueChart() {
   return (
     <CardWidgetContainer
       title="Monthly Revenue"
+      headerClassName="p-2 xl:p-2 2xl:p-2"
       icon2={
         <span className="flex items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
           <TrendingUp className="h-3.5 w-3.5" />
           12.4% YoY
         </span>
       }
-      contentClassName="px-4 pb-4"
+      contentClassName="px-2 py-2"
     >
       <ChartContainer config={chartConfig} className="h-52 w-full">
         <BarChart data={MONTHLY_REVENUE} barCategoryGap="20%">
@@ -327,6 +329,7 @@ function RecentActivity() {
   return (
     <CardWidgetContainer
       title="Recent Activity"
+      headerClassName="p-2 xl:p-2 2xl:p-2"
       icon2={
         <Button
           variant="ghost"
@@ -337,29 +340,24 @@ function RecentActivity() {
           <Link href="/audit-logs">View all</Link>
         </Button>
       }
-      contentClassName="px-0 pb-0"
     >
-      <div className="flex flex-col divide-y divide-zinc-100 dark:divide-zinc-800">
-        {RECENT_ACTIVITY.map((item) => (
-          <div
-            key={item.id}
-            className="flex items-start gap-3 px-4 py-3 transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
-          >
-            <div
-              className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm ${item.iconBg}`}
-            >
-              {item.icon}
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="primary-text-medium text-leadgaze-dark dark:text-white leading-snug">
-                {item.text}
-              </p>
-              <p className="mt-0.5 text-xs text-leadgaze-muted dark:text-zinc-500">
-                {item.time}
-              </p>
-            </div>
-          </div>
-        ))}
+      <div className="py-0 overflow-auto">
+        <CardWidgetList className="gap-0 mb-1">
+          {RECENT_ACTIVITY.map((item) => (
+            <CardWidgetListItem
+              key={item.id}
+              icon={
+                <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm ${item.iconBg}`}>
+                  {item.icon}
+                </div>
+              }
+              title={item.text}
+              subtitle={item.time}
+              className="gap-0 border-l-0 border-r-0 border-t-0 rounded-none"
+              titleClassFormat="primary-text-medium text-leadgaze-dark dark:text-white leading-snug"
+            />
+          ))}
+        </CardWidgetList>
       </div>
     </CardWidgetContainer>
   );
@@ -367,24 +365,32 @@ function RecentActivity() {
 
 function ModuleAdoption() {
   return (
-    <CardWidgetContainer title="Module Adoption">
-      <div className="flex flex-col gap-4 p-6 xl:p-4 2xl:p-6">
+    <CardWidgetContainer 
+      title="Module Adoption"
+      headerClassName="p-2 xl:p-2 2xl:p-2"
+    >
+      <div className="space-y-4 px-2 py-2 max-h-[280px] overflow-auto">
         {MODULE_ADOPTION.map((mod) => (
-          <div key={mod.name} className="flex flex-col gap-1.5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="primary-text-medium text-blue-600 dark:text-blue-400">
+          <div key={mod.name}>
+            <div className="mb-2 flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3 text-sm">
+                <span className={`secondary-text-small-semibold px-2 py-0.5 rounded-[4px] ${
+                  mod.name.toLowerCase() === 'crm' ? "bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20" :
+                  mod.name.toLowerCase() === 'hrms' ? "bg-purple-50 text-purple-600 border border-purple-200 dark:bg-purple-500/10 dark:text-purple-400 dark:border-purple-500/20" :
+                  mod.name.toLowerCase() === 'inventory' ? "bg-orange-50 text-orange-600 border border-orange-200 dark:bg-orange-500/10 dark:text-orange-400 dark:border-orange-500/20" :
+                  "bg-gray-50 text-gray-600 border border-gray-200 dark:bg-gray-500/10 dark:text-gray-400 dark:border-gray-500/20"
+                }`}>
                   {mod.name}
                 </span>
-                <span className="primary-text-regular text-leadgaze-muted">
+                <span className="text-muted-foreground text-xs">
                   {mod.workspaces} workspaces · {mod.seats.toLocaleString()} seats
                 </span>
               </div>
-              <span className="primary-text-medium text-leadgaze-dark dark:text-zinc-100">
+              <div className="secondary-text-small-semibold font-bold text-leadgaze-dark dark:text-white">
                 {mod.mrr}
-              </span>
+              </div>
             </div>
-            <div className="bar-bg h-2 w-full overflow-hidden rounded-full">
+            <div className="bar-bg h-2 w-full overflow-hidden rounded-full bg-[#EDEEF0]">
               <div
                 className={`h-full rounded-full transition-all duration-500 ${mod.color}`}
                 style={{ width: `${mod.pct}%` }}
@@ -399,26 +405,28 @@ function ModuleAdoption() {
 
 function SubscriptionBreakdown() {
   return (
-    <CardWidgetContainer title="Subscription Breakdown">
-      <div className="flex flex-col gap-4 p-6 xl:p-4 2xl:p-6">
+    <CardWidgetContainer 
+      title="Subscription Breakdown"
+      headerClassName="p-2 xl:p-2 2xl:p-2"
+    >
+      <div className="space-y-4 px-2 py-2 max-h-[280px] overflow-auto">
         {SUBSCRIPTION_BREAKDOWN.map((sub) => (
-          <div key={sub.plan} className="flex flex-col gap-1.5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="primary-text-medium text-leadgaze-dark dark:text-zinc-200">
+          <div key={sub.plan}>
+            <div className="mb-2 flex items-center justify-between gap-4">
+              <div className="flex items-center gap-1.5 text-sm">
+                <span className="secondary-text-small-semibold text-leadgaze-dark dark:text-white">
                   {sub.plan}
                 </span>
-                <span className="primary-text-regular text-leadgaze-muted">
-                  · {sub.count}
-                </span>
+                <span className="text-muted-foreground text-xs">•</span>
+                <span className="text-muted-foreground text-xs">{sub.count}</span>
               </div>
-              <span className="primary-text-medium text-leadgaze-dark dark:text-zinc-100">
+              <div className="secondary-text-small-semibold font-bold text-leadgaze-dark dark:text-white">
                 {sub.mrr}
-              </span>
+              </div>
             </div>
-            <div className="bar-bg h-1.5 w-full overflow-hidden rounded-full">
+            <div className="bar-bg h-2 w-full overflow-hidden rounded-full bg-[#EDEEF0]">
               <div
-                className={`h-full rounded-full ${sub.color}`}
+                className={`h-full rounded-full transition-all duration-500 ${sub.color}`}
                 style={{ width: `${sub.pct}%` }}
               />
             </div>
@@ -433,6 +441,7 @@ function TopWorkspacesByMRR() {
   return (
     <CardWidgetContainer
       title="Top Workspaces by MRR"
+      headerClassName="p-2 xl:p-2 2xl:p-2"
       icon2={
         <Button
           variant="ghost"
@@ -443,44 +452,51 @@ function TopWorkspacesByMRR() {
           <Link href="/workspaces">View all</Link>
         </Button>
       }
-      contentClassName="px-4 pb-2"
     >
-      <div className="flex flex-col divide-y divide-zinc-100 dark:divide-zinc-800">
-        {TOP_WORKSPACES.map((ws) => (
-          <div key={ws.rank} className="flex items-center gap-3 py-3">
-            <span className="w-4 shrink-0 text-center primary-text-regular text-leadgaze-muted">
-              {ws.rank}
-            </span>
-            <div
-              className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-xs font-bold text-white ${ws.color}`}
-            >
-              {ws.initials}
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center justify-between">
-                <span className="primary-text-medium text-leadgaze-dark dark:text-zinc-100">
-                  {ws.name}
-                </span>
-                <span className="primary-text-medium text-leadgaze-dark dark:text-zinc-100 ml-2 shrink-0">
-                  {ws.mrr}
-                </span>
-              </div>
-              <div className="mt-1.5 flex items-center gap-2">
-                <div className="bar-bg h-1 flex-1 overflow-hidden rounded-full">
+      <div className="py-0 overflow-auto">
+        <CardWidgetList className="gap-0 mb-1">
+          {TOP_WORKSPACES.map((ws) => (
+            <CardWidgetListItem
+              key={ws.rank}
+              icon={
+                <div className="flex items-center gap-3 pl-1">
+                  <span className="w-5 text-center text-sm text-leadgaze-muted">
+                    {ws.rank}
+                  </span>
                   <div
-                    className="h-full rounded-full bg-blue-600"
-                    style={{ width: `${ws.barPct}%` }}
-                  />
+                    className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-none text-xs font-bold text-white ${ws.color}`}
+                  >
+                    {ws.initials}
+                  </div>
                 </div>
-                <Badge
-                  className={`shrink-0 rounded border-0 px-1.5 py-0 text-[10px] font-semibold ${PLAN_BADGE_COLORS[ws.plan] ?? ''}`}
-                >
-                  {ws.plan}
-                </Badge>
-              </div>
-            </div>
-          </div>
-        ))}
+              }
+              title={ws.name}
+              titleClassFormat="primary-text-medium text-leadgaze-dark dark:text-zinc-100"
+              badge={
+                <div className="flex flex-col items-end gap-1">
+                  <span className="secondary-text-small-bold text-leadgaze-dark dark:text-white">
+                    {ws.mrr}
+                  </span>
+                  <Badge className={`shrink-0 rounded-full border-0 px-2 py-0 text-[10px] font-semibold ${PLAN_BADGE_COLORS[ws.plan] ?? ''}`}>
+                    {ws.plan}
+                  </Badge>
+                </div>
+              }
+              className="gap-0 border-l-0 border-r-0 border-t-0 rounded-none py-3"
+              isBadgeVerticalCenter={true}
+              subtitle={
+                <div className="mt-2 flex items-center w-full pr-8">
+                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
+                    <div
+                      className="h-full rounded-full bg-[#2563EB]"
+                      style={{ width: `${ws.barPct}%` }}
+                    />
+                  </div>
+                </div>
+              }
+            />
+          ))}
+        </CardWidgetList>
       </div>
     </CardWidgetContainer>
   );
@@ -495,23 +511,23 @@ export default function AdminDashboardPage() {
       <PageHeader title="Super Admin Dashboard" />
 
       <PageBody>
-        <div className="flex flex-col pb-4">
+        <div className="flex flex-col space-y-2 pb-4">
           {/* ── Row 1: 4 workspace stat cards ── */}
-          <div className="grid grid-cols-1 gap-4 pb-6 md:grid-cols-2 xl:grid-cols-4 xl:gap-3 xl:pb-4 2xl:grid-cols-4 2xl:gap-4 2xl:pb-6">
+          <div className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-4">
             {STAT_CARDS.slice(0, 4).map((card) => (
               <StatCard key={card.label} {...card} />
             ))}
           </div>
 
           {/* ── Row 2: 4 revenue/metric stat cards ── */}
-          <div className="grid grid-cols-1 gap-4 pb-6 md:grid-cols-2 xl:grid-cols-4 xl:gap-3 xl:pb-4 2xl:grid-cols-4 2xl:gap-4 2xl:pb-6">
+          <div className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-4">
             {STAT_CARDS.slice(4).map((card) => (
               <StatCard key={card.label} {...card} />
             ))}
           </div>
 
           {/* ── Row 3: Revenue chart (2/3) + Recent Activity (1/3) ── */}
-          <div className="grid grid-cols-1 gap-4 pb-6 lg:grid-cols-3 xl:gap-4 xl:pb-4 2xl:gap-4 2xl:pb-6">
+          <div className="grid grid-cols-1 gap-2 lg:grid-cols-3">
             <div className="lg:col-span-2">
               <MonthlyRevenueChart />
             </div>
@@ -519,7 +535,7 @@ export default function AdminDashboardPage() {
           </div>
 
           {/* ── Row 4: Module Adoption + Subscription Breakdown + Top Workspaces ── */}
-          <div className="grid grid-cols-1 gap-4 pb-4 lg:grid-cols-3 xl:gap-4 2xl:gap-4">
+          <div className="grid grid-cols-1 gap-2 lg:grid-cols-3">
             <ModuleAdoption />
             <SubscriptionBreakdown />
             <TopWorkspacesByMRR />

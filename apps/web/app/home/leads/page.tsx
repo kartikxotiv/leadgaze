@@ -184,6 +184,23 @@ const DEFAULT_VISIBILITY: Record<string, boolean> = {
   updated_by: true,
 };
 
+function getCustomFieldValue(
+  customFieldsObj: any,
+  field: { field_key: string; field_name?: string; id?: string; field_label?: string },
+): string {
+  if (!customFieldsObj || typeof customFieldsObj !== 'object') return '-';
+  const val =
+    customFieldsObj[field.field_key] ??
+    (field.field_name ? customFieldsObj[field.field_name] : undefined) ??
+    (field.id ? customFieldsObj[field.id] : undefined) ??
+    (field.field_label ? customFieldsObj[field.field_label] : undefined);
+
+  if (val === null || val === undefined || val === '') return '-';
+  if (typeof val === 'boolean') return val ? 'Yes' : 'No';
+  if (typeof val === 'object') return JSON.stringify(val);
+  return String(val);
+}
+
 // ---------------------------------------------------------------------------
 // Export column definitions — ALL fields, regardless of visibility
 // ---------------------------------------------------------------------------
@@ -230,6 +247,7 @@ export default function LeadsPage() {
     [],
   );
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [createLeadDefaultStatusId, setCreateLeadDefaultStatusId] = useState<string | undefined>(undefined);
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const { preloadLeadDetail } = usePreloadStrategies();
   const { handleMouseEnter, handleMouseLeave } = usePreloadHoverHandlers();
@@ -237,7 +255,7 @@ export default function LeadsPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [leadToDelete, setLeadToDelete] = useState<Lead | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(15);
+  const [pageSize, setPageSize] = useState(25);
   const [addColumnModalOpen, setAddColumnModalOpen] = useState(false);
 
   // Row selection state (for CSV export)
@@ -313,6 +331,7 @@ export default function LeadsPage() {
     visibleCustomFields,
     ctx: fieldPermissionCtx,
     isLoading: fieldPermissionsLoading,
+    refetch: refetchPermissions,
   } = useFieldPermissions({
     entityType: 'leads',
     workspaceId: workspace?.id,
@@ -1001,6 +1020,9 @@ export default function LeadsPage() {
   const handleDeleteField = async (fieldId: string) => {
     try {
       await deleteField.mutateAsync({ fieldId });
+      refetchEntityFields();
+      refetchPermissions?.();
+      refetch();
     } catch (error) {
       console.error('Error deleting field:', error);
     }
@@ -1241,7 +1263,10 @@ export default function LeadsPage() {
                 setDeleteDialogOpen(true);
               }}
               onStatusChange={handleKanbanStatusChange}
-              onCreateLead={() => setIsCreateDialogOpen(true)}
+              onCreateLead={(statusId) => {
+                setCreateLeadDefaultStatusId(statusId);
+                setIsCreateDialogOpen(true);
+              }}
             />
           </div>
         ) : (
@@ -1605,8 +1630,7 @@ export default function LeadsPage() {
                         {customFields.map((field) =>
                           showColumn(field.field_key) ? (
                             <TableCell key={field.id}>
-                              {(lead as any).custom_fields?.[field.field_key] ??
-                                '-'}
+                              {getCustomFieldValue((lead as any).custom_fields, field)}
                             </TableCell>
                           ) : null,
                         )}
@@ -1637,7 +1661,13 @@ export default function LeadsPage() {
         {/* Create Lead Dialog */}
         <CreateLeadDialog
           open={isCreateDialogOpen}
-          onOpenChange={setIsCreateDialogOpen}
+          onOpenChange={(open) => {
+            setIsCreateDialogOpen(open);
+            if (!open) {
+              setCreateLeadDefaultStatusId(undefined);
+            }
+          }}
+          defaultStatusId={createLeadDefaultStatusId}
           onSuccess={handleCreateSuccess}
         />
 
@@ -1740,12 +1770,7 @@ export default function LeadsPage() {
               setEditingField(null);
             }}
             onDelete={
-              !editingField.is_system
-                ? () => {
-                  handleDeleteField(editingField.id);
-                  setEditingField(null);
-                }
-                : undefined
+              !editingField.is_system ? handleDeleteField : undefined
             }
           />
         )}

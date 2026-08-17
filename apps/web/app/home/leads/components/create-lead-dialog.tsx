@@ -44,6 +44,8 @@ interface CreateLeadDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
+  asFormOnly?: boolean;
+  defaultStatusId?: string;
 }
 
 const COMPANY_SIZES = [
@@ -82,6 +84,8 @@ export default function CreateLeadDialog({
   open,
   onOpenChange,
   onSuccess,
+  asFormOnly = false,
+  defaultStatusId,
 }: CreateLeadDialogProps) {
   const { currentWorkspace: workspace } = useRBAC();
   const {
@@ -136,7 +140,11 @@ export default function CreateLeadDialog({
     enabled: !!workspace,
   });
 
-  useEffect(() => {}, [workspace]);
+  useEffect(() => {
+    if (open && defaultStatusId) {
+      setFormData((prev) => ({ ...prev, status_id: defaultStatusId }));
+    }
+  }, [open, defaultStatusId]);
 
   const handleInputChange = useCallback(
     (field: keyof FormDataState, value: string) => {
@@ -322,21 +330,21 @@ export default function CreateLeadDialog({
     onOpenChange(newOpen);
   };
 
-  return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="flex max-h-[90vh] flex-col p-0 overflow-hidden border-gray-200 bg-white sm:max-w-[800px] dark:border-slate-800 dark:bg-slate-950">
-        <div className="flex max-h-[90vh] flex-col">
-          <DialogHeader>
-            <DialogTitle>
-              Add New Lead
-            </DialogTitle>
-            <DialogDescription>
-              Fill in the lead information. Required fields are marked with{' '}
-              <span className="text-red-500">*</span>
-            </DialogDescription>
-          </DialogHeader>
+  const innerContent = (
+    <div className={asFormOnly ? "flex h-full flex-col overflow-auto" : "flex max-h-[90vh] flex-col"}>
+      {!asFormOnly && (
+        <DialogHeader>
+          <DialogTitle>
+            Add New Lead
+          </DialogTitle>
+          <DialogDescription>
+            Fill in the lead information. Required fields are marked with{' '}
+            <span className="text-red-500">*</span>
+          </DialogDescription>
+        </DialogHeader>
+      )}
 
-          <form id="dialog-form"
+      <form id="dialog-form"
             onSubmit={handleSubmit}
             className="flex flex-col flex-1 overflow-y-auto p-2 gap-2"
           >
@@ -786,6 +794,16 @@ export default function CreateLeadDialog({
             </Button>
           </DialogFooter>
         </div>
+  );
+
+  if (asFormOnly) {
+    return innerContent;
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent className="flex max-h-[90vh] flex-col p-0 overflow-hidden border-gray-200 bg-white sm:max-w-[800px] dark:border-slate-800 dark:bg-slate-950">
+        {innerContent}
       </DialogContent>
     </Dialog>
   );

@@ -52,8 +52,8 @@ export function AppNavbar({
       )}
     >
       {/* Left section: Logo, Module/Workspace Switcher & Navigation Items */}
-      <div className="flex min-w-0 flex-1 items-center space-x-3 overflow-hidden md:space-x-4 lg:space-x-6">
-        {logo && <div className="flex shrink-0 items-center">{logo}</div>}
+      <div className="flex min-w-0 flex-1 items-center space-x-3 overflow-hidden md:space-x-4">
+        {logo && <div className="flex shrink-0 items-center space-x-2 md:space-x-3">{logo}</div>}
 
         {moduleSwitcher && (
           <div className="hidden shrink-0 lg:block">{moduleSwitcher}</div>
@@ -84,7 +84,7 @@ export function AppNavbar({
                   key={item.path || item.label}
                   href={item.path || '#'}
                   className={cn(
-                    'flex items-center gap-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+                    'flex items-center gap-1 px-3 py-1.5 transition-colors secondary-text-small-bold 2xl:primary-text-medium',
                     active
                       ? 'bg-header-primary !text-white'
                       : '!text-blue-100 hover:bg-white/10 hover:text-white',
@@ -100,7 +100,7 @@ export function AppNavbar({
             {moreItems.length > 0 && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="flex cursor-pointer items-center gap-1 rounded-md px-3 py-1.5 text-sm font-medium text-blue-100 transition-colors hover:bg-white/10 hover:text-white">
+                  <button className="flex cursor-pointer items-center gap-1 px-3 py-1.5 text-blue-100 transition-colors hover:bg-white/10 hover:text-white secondary-text-small-bold 2xl:primary-text-medium">
                     <span>More</span>
                     <ChevronDown className="h-3.5 w-3.5 opacity-70" />
                   </button>
@@ -110,7 +110,7 @@ export function AppNavbar({
                     <DropdownMenuItem key={item.path || item.label} asChild>
                       <Link
                         href={item.path || '#'}
-                        className="w-full cursor-pointer px-3 py-2 text-sm"
+                        className="w-full cursor-pointer px-3 py-1 secondary-text-small-bold 2xl:primary-text-medium"
                       >
                         {item.label}
                       </Link>
@@ -124,7 +124,7 @@ export function AppNavbar({
       </div>
 
       {/* Right side: Mobile Menu trigger, Custom Actions, Profile Dropdown */}
-      <div className="flex shrink-0 items-center space-x-2 md:space-x-3 lg:space-x-4">
+      <div className="flex shrink-0 items-center space-x-2 md:space-x-3">
         {/* Mobile Navigation Dropdown for small screens */}
         {items.length > 0 && (
           <DropdownMenu>
@@ -143,7 +143,7 @@ export function AppNavbar({
                     <Link
                       href={item.path || '#'}
                       className={cn(
-                        'flex w-full cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm',
+                        'flex w-full cursor-pointer items-center gap-2 rounded-md px-3 py-2',
                         isActive ? 'bg-header-primary font-semibold text-white' : '',
                       )}
                     >

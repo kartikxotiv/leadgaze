@@ -65,7 +65,7 @@ const ALL_SENTINEL = 'all';
  *
  * Usage:
  * ```tsx
- * const [pageSize, setPageSize] = useState(15);
+ * const [pageSize, setPageSize] = useState(25);
  *
  * <PageSizeSelector value={pageSize} onChange={setPageSize} />
  * ```

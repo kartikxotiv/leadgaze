@@ -38,12 +38,14 @@ interface CreateAccountDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: (account: any) => void;
+  asFormOnly?: boolean;
 }
 
 export function CreateAccountDialog({
   open,
   onOpenChange,
   onSuccess,
+  asFormOnly = false,
 }: CreateAccountDialogProps) {
   const { currentWorkspace: workspace } = useRBAC();
   const queryClient = useQueryClient();
@@ -111,27 +113,28 @@ export function CreateAccountDialog({
     mutation.mutate(payload);
   };
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-[700px]">
+  const innerContent = (
+    <div className={asFormOnly ? "flex h-full flex-col overflow-auto" : "flex max-h-[90vh] flex-col"}>
+      {!asFormOnly && (
         <DialogHeader>
           <DialogTitle>Create New Account</DialogTitle>
           <DialogDescription>
             Add a new business account to your workspace
           </DialogDescription>
         </DialogHeader>
+      )}
 
-        <form
-          id="create-account-form"
-          onSubmit={handleSubmit}
-          className="flex-1 space-y-2 overflow-y-auto px-2"
-        >
-          <div className="space-y-2">
+      <form
+        id="create-account-form"
+        onSubmit={handleSubmit}
+        className={`flex flex-col flex-1 space-y-2 overflow-y-auto px-2 ${asFormOnly && 'mb-2'}`}
+      >
+          <div className={`space-y-2 ${asFormOnly && 'pt-2'}`}>
             <h3 className="primary-heading text-leadgaze-dark uppercase dark:text-white custom-sub-heading-dialog-form">
               Basic Information
             </h3>            
             <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-2">
+              <div>
                 <Label htmlFor="account_name">Account Name *</Label>
                 <Input
                   id="account_name"
@@ -143,7 +146,7 @@ export function CreateAccountDialog({
                   required
                 />
               </div>
-              <div className="space-y-2">
+              <div>
                 <Label htmlFor="website">Website</Label>
                 <Input
                   id="website"
@@ -157,7 +160,7 @@ export function CreateAccountDialog({
             </div>
 
             <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-2">
+              <div>
                 <Label htmlFor="phone_number">Phone Number</Label>
                 <Input
                   id="phone_number"
@@ -171,7 +174,7 @@ export function CreateAccountDialog({
             </div>
 
             <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-2">
+              <div>
                 <Label htmlFor="industry_id">Industry</Label>
                 <IndustrySelect
                   value={formData.industry_id}
@@ -180,7 +183,7 @@ export function CreateAccountDialog({
                   }
                 />
               </div>
-              <div className="space-y-2">
+              <div>
                 <Label htmlFor="company_size">Company Size</Label>
                 <Select
                   value={formData.company_size}
@@ -203,7 +206,7 @@ export function CreateAccountDialog({
             </div>
 
             <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-2">
+              <div>
                 <Label htmlFor="account_type">Account Type</Label>
                 <ManageableStatusSelect
                   moduleKey="accounts"
@@ -222,7 +225,7 @@ export function CreateAccountDialog({
             <h3 className="primary-heading text-leadgaze-dark uppercase dark:text-white custom-sub-heading-dialog-form">
               Address Information
             </h3>            
-            <div className="space-y-2">
+            <div>
               <Label htmlFor="billing_street">Street Address</Label>
               <Input
                 id="billing_street"
@@ -234,7 +237,7 @@ export function CreateAccountDialog({
               />
             </div>
             <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-2">
+              <div>
                 <Label htmlFor="billing_city">City</Label>
                 <Input
                   id="billing_city"
@@ -244,7 +247,7 @@ export function CreateAccountDialog({
                   }
                 />
               </div>
-              <div className="space-y-2">
+              <div>
                 <Label htmlFor="billing_state">State/Province</Label>
                 <Input
                   id="billing_state"
@@ -256,7 +259,7 @@ export function CreateAccountDialog({
               </div>
             </div>
             <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-2">
+              <div>
                 <Label htmlFor="billing_postal_code">Postal Code</Label>
                 <Input
                   id="billing_postal_code"
@@ -269,7 +272,7 @@ export function CreateAccountDialog({
                   }
                 />
               </div>
-              <div className="space-y-2">
+              <div>
                 <Label htmlFor="billing_country">Country</Label>
                 <Input
                   id="billing_country"
@@ -285,7 +288,7 @@ export function CreateAccountDialog({
             </div>
           </div>
 
-          <div className="space-y-2 pb-1">
+          <div className="pb-1">
             <Label htmlFor="description">Description</Label>
             <Textarea
               id="description"
@@ -320,6 +323,17 @@ export function CreateAccountDialog({
             Create Account
           </Button>
         </DialogFooter>
+      </div>
+  );
+
+  if (asFormOnly) {
+    return innerContent;
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-[700px]">
+        {innerContent}
       </DialogContent>
     </Dialog>
   );

@@ -9,7 +9,8 @@ import { useQuery } from '@tanstack/react-query';
 import { useUser } from '@kit/supabase/hooks/use-user';
 
 import { getModuleKeyFromPath } from './route-module-map';
-import { 
+import { getRolesService } from '~/services/roles.service';
+import {
   initializeWorkspaceSessionService,
   transformWorkspaceForLegacyRBAC,
   hasPermission,
@@ -43,6 +44,8 @@ interface RBACContextType {
   isInitialized: boolean;
   reinitialize: () => void;
   userPreferences?: any;
+  teamMembers: any[];
+  allRoles: WorkspaceRole[];
 }
 
 const RBACContext = createContext<RBACContextType | undefined>(undefined);
@@ -54,7 +57,7 @@ export function RBACProvider({ children }: { children: ReactNode }) {
   const [currentWorkspaceId, setCurrentWorkspaceId] = React.useState<
     string | null
   >(null);
-  
+
   // Initialize currentProductKey from pathname on mount
   const pathProductKey = getModuleKeyFromPath(pathname);
   const [currentProductKey, setCurrentProductKey] = React.useState<
@@ -70,10 +73,10 @@ export function RBACProvider({ children }: { children: ReactNode }) {
   } = useQuery({
     queryKey: ['workspace-init', user?.id, currentProductKey],
     queryFn: () => {
-      const storedWorkspaceId = typeof window !== 'undefined' 
-        ? localStorage.getItem('currentWorkspaceId') 
+      const storedWorkspaceId = typeof window !== 'undefined'
+        ? localStorage.getItem('currentWorkspaceId')
         : null;
-      
+
       return initializeWorkspaceSessionService(
         currentWorkspaceId || storedWorkspaceId
       );
@@ -148,11 +151,11 @@ export function RBACProvider({ children }: { children: ReactNode }) {
     ) {
       const autoSelectedWorkspace = workspaces[0];
       setCurrentWorkspaceId(autoSelectedWorkspace.id);
-      
+
       if (typeof window !== 'undefined') {
         localStorage.setItem('currentWorkspaceId', autoSelectedWorkspace.id);
       }
-      
+
       console.log('[RBAC] Auto-selected workspace:', autoSelectedWorkspace.name);
     }
   }, [isLoading, workspaces, currentWorkspaceId, initData]);
@@ -234,7 +237,7 @@ export function RBACProvider({ children }: { children: ReactNode }) {
   }, [currentWorkspace]);
 
   const canAccessCallback = React.useCallback((
-    module: string, 
+    module: string,
     feature: string = 'view'
   ): boolean => {
     if (!currentWorkspace || !user?.id) return false;
@@ -244,13 +247,13 @@ export function RBACProvider({ children }: { children: ReactNode }) {
   const selectWorkspace = React.useCallback((workspaceId: string) => {
     if (workspaces.find((w) => w.id === workspaceId)) {
       setCurrentWorkspaceId(workspaceId);
-      
+
       if (typeof window !== 'undefined') {
         localStorage.setItem('currentWorkspaceId', workspaceId);
         // Reset to default module when switching workspace
         localStorage.removeItem('currentProductKey');
       }
-      
+
       setCurrentProductKey(null);
       console.log('[RBAC] Workspace selected:', workspaceId);
     }
@@ -261,7 +264,7 @@ export function RBACProvider({ children }: { children: ReactNode }) {
     if (isInitialized && initData?.session_metadata) {
       const initTime = Date.now() - (initData.session_metadata.initialized_at * 1000);
       console.log(`[RBAC] Initialization completed in ${initTime.toFixed(0)}ms`);
-      
+
       // Cache workspace initialization data in sessionStorage for optimized hooks
       if (currentWorkspace?.id && typeof window !== 'undefined') {
         try {
@@ -277,6 +280,45 @@ export function RBACProvider({ children }: { children: ReactNode }) {
     }
   }, [isInitialized, initData, currentWorkspace?.id]);
 
+  // Extract team members and all unique workspace roles from init data (in-memory)
+  const teamMembers = React.useMemo(() => {
+    return initData?.current_workspace?.team_members || [];
+  }, [initData?.current_workspace?.team_members]);
+
+  const allRoles = React.useMemo(() => {
+    const rolesMap = new Map<string, WorkspaceRole>();
+
+    // 1. Roles from user's workspace roles
+    if (currentWorkspace?.roles) {
+      Object.values(currentWorkspace.roles).forEach((role) => {
+        if (role?.id) {
+          rolesMap.set(role.id, role);
+        }
+      });
+    }
+
+    // 2. Roles from all team members in current workspace
+    if (initData?.current_workspace?.team_members) {
+      initData.current_workspace.team_members.forEach((member: any) => {
+        if (member?.role?.id && !rolesMap.has(member.role.id)) {
+          rolesMap.set(member.role.id, {
+            id: member.role.id,
+            workspace_id: currentWorkspace?.id || '',
+            role_key: member.role.role_key,
+            role_name: member.role.role_name,
+            color: member.role.color || null,
+            hierarchy_level: member.role.hierarchy_level || 0,
+            product_key: member.role.product_key || null,
+            is_system: false,
+            permissions: [],
+          });
+        }
+      });
+    }
+
+    return Array.from(rolesMap.values());
+  }, [currentWorkspace?.roles, currentWorkspace?.id, initData?.current_workspace?.team_members]);
+
   return (
     <RBACContext.Provider
       value={{
@@ -284,6 +326,8 @@ export function RBACProvider({ children }: { children: ReactNode }) {
         currentWorkspace,
         user: user ? { ...user, id: (user as { id?: string; sub?: string }).id ?? (user as { sub?: string }).sub ?? '' } : user,
         userPreferences: initData?.user_preferences,
+        teamMembers,
+        allRoles,
         selectWorkspace,
         selectModule,
         hasPermission: hasPermissionCallback,
@@ -307,37 +351,57 @@ export function useRBAC() {
   return context;
 }
 
-// Hook to fetch all workspace roles (for role-based field access)
+// Hook to fetch all workspace roles (cached with React Query with 5m staleTime)
 export function useWorkspaceRoles() {
-  const { currentWorkspace } = useRBAC();
+  const { currentWorkspace, allRoles } = useRBAC();
 
-  // **OPTIMIZED: Extract roles from workspace init data instead of separate query**
+  const { data: roles = [], isLoading, error } = useQuery({
+    queryKey: ['workspaceRoles', currentWorkspace?.id],
+    queryFn: async () => {
+      if (!currentWorkspace?.id) return [];
+      const res = await getRolesService(currentWorkspace.id);
+      return res?.data || [];
+    },
+    enabled: !!currentWorkspace?.id,
+    staleTime: 5 * 60 * 1000, // 5 minutes cache to reduce DB calls
+    placeholderData: allRoles.length > 0 ? allRoles : undefined,
+  });
+
   return {
-    data: currentWorkspace ? Object.values(currentWorkspace.roles) : [],
-    isLoading: false,
-    error: null,
+    data: roles,
+    isLoading,
+    error,
   };
 }
 
 // Fetch workspace roles scoped to a product (sales, service_cloud, hrms, etc.).
-// Used for field-level access control selectors so only roles from the current
-// product module are shown — not roles from other products in the workspace.
+// Used for field-level access control selectors so all roles from the current
+// product module are shown with zero redundant DB calls.
 export function useModuleRoles(rawProductKey: string) {
   const productKey = rawProductKey === 'service-cloud' ? 'service_cloud' : rawProductKey;
-  const { currentWorkspace } = useRBAC();
+  const { currentWorkspace, allRoles } = useRBAC();
 
-  // **OPTIMIZED: Filter roles from workspace init data**
-  const moduleRoles = React.useMemo(() => {
-    if (!currentWorkspace?.roles) return [];
-    
-    return Object.values(currentWorkspace.roles).filter(
-      role => role.product_key === productKey || role.product_key === null
+  const inMemoryModuleRoles = React.useMemo(() => {
+    return allRoles.filter(
+      (role) => role.product_key === productKey || role.product_key === null || !role.product_key
     );
-  }, [currentWorkspace?.roles, productKey]);
+  }, [allRoles, productKey]);
+
+  const { data: roles = [], isLoading, error } = useQuery({
+    queryKey: ['workspaceRoles', currentWorkspace?.id, productKey],
+    queryFn: async () => {
+      if (!currentWorkspace?.id) return [];
+      const res = await getRolesService(currentWorkspace.id, productKey);
+      return res?.data || [];
+    },
+    enabled: !!currentWorkspace?.id,
+    staleTime: 5 * 60 * 1000, // 5 minutes cache to reduce DB calls
+    placeholderData: inMemoryModuleRoles.length > 0 ? inMemoryModuleRoles : undefined,
+  });
 
   return {
-    data: moduleRoles,
-    isLoading: false,
-    error: null,
+    data: roles,
+    isLoading,
+    error,
   };
 }

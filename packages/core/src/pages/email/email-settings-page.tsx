@@ -632,7 +632,7 @@ export function CoreEmailSettingsPage({
                               </TableCell>
                               <TableCell>{account.from_name || '-'}</TableCell>
                               <TableCell>
-                                {isAdmin ? (
+                                {isAdmin || account.can_manage ? (
                                   <Select
                                     value={account.access_scope}
                                     disabled={updatingAccountId === account.id}

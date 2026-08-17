@@ -28,7 +28,7 @@ type Invoice = {
 
 export function WorkspaceInvoiceSettings() {
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(15);
+  const [pageSize, setPageSize] = useState(25);
   const [isLoading, setIsLoading] = useState(false); // Can be toggled when hooked up to API
 
   // Placeholder data to match screenshot

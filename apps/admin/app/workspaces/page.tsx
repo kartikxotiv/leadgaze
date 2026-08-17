@@ -117,7 +117,7 @@ export default function AdminWorkspacesPage() {
   const [selectedPlans, setSelectedPlans] = useState<string[]>([]);
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(15);
+  const [pageSize, setPageSize] = useState(25);
   const [selectedWorkspaceIds, setSelectedWorkspaceIds] = useState<Set<string>>(
     new Set(),
   );

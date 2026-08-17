@@ -35,6 +35,7 @@ import { createContactService } from '~/services/contacts.service';
 import { CreateAccountDialog } from '../../accounts/components/create-account-dialog';
 
 interface CreateContactDialogProps {
+  asFormOnly?: boolean;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: (contact: any) => void;
@@ -46,6 +47,7 @@ export function CreateContactDialog({
   onOpenChange,
   onSuccess,
   defaultAccountId,
+  asFormOnly = false
 }: CreateContactDialogProps) {
   const { currentWorkspace: workspace } = useRBAC();
   const queryClient = useQueryClient();
@@ -118,16 +120,16 @@ export function CreateContactDialog({
     mutation.mutate(formData);
   };
 
-  return (
-    <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-[650px]">
-          <DialogHeader>
-            <DialogTitle>Create New Contact</DialogTitle>
-            <DialogDescription>
-              Add a new person to your workspace
-            </DialogDescription>
-          </DialogHeader>
+  const innerContent = (
+    <div className={asFormOnly ? "flex h-full flex-col overflow-auto" : ""}>
+          {!asFormOnly && (
+            <DialogHeader>
+              <DialogTitle>Create New Contact</DialogTitle>
+              <DialogDescription>
+                Add a new person to your workspace
+              </DialogDescription>
+            </DialogHeader>
+          )}
 
           <form id="dialog-form" onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-2 space-y-6 py-4">
             <div className="space-y-2">
@@ -261,7 +263,7 @@ export function CreateContactDialog({
 
             
           </form>
-        <DialogFooter>
+        <DialogFooter className="p-4 bg-white dark:bg-slate-950 border-t border-gray-200 dark:border-slate-800">
               <Button
                 type="button"
                 variant="outline"
@@ -278,7 +280,32 @@ export function CreateContactDialog({
                 Create Contact
               </Button>
             </DialogFooter>
-      </DialogContent>
+    </div>
+  );
+
+  if (asFormOnly) {
+    return (
+      <>
+        {innerContent}
+        {/* Nested Account Creation */}
+        <CreateAccountDialog
+          open={createAccountOpen}
+          onOpenChange={setCreateAccountOpen}
+          onSuccess={(newAccount) => {
+            refetchAccounts();
+            setFormData((prev) => ({ ...prev, account_id: newAccount.id }));
+          }}
+        />
+      </>
+    );
+  }
+
+  return (
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-[650px]">
+          {innerContent}
+        </DialogContent>
       </Dialog>
 
       {/* Nested Account Creation */}

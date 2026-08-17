@@ -48,6 +48,12 @@ import { Badge } from '@kit/ui/badge';
 import { Textarea } from '@kit/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@kit/ui/tabs';
 import { CustomDeleteDialog } from '@kit/ui/custom-delete-dialog';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@kit/ui/tooltip';
 
 import { useLocalization } from '~/lib/localization/localization-provider';
 import { useHasPermission } from '~/lib/permissions/use-permissions';
@@ -268,7 +274,7 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
       });
       toast.success(
         reminder.is_completed
-          ? 'Reminder marked as active'
+          ? 'Reminder marked as pending'
           : 'Reminder marked as completed',
       );
     });
@@ -393,7 +399,7 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
                 : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
             }`}
           >
-            Active
+            Pending
           </button>
           <button
             onClick={() => setReminderTab('sent')}
@@ -403,7 +409,7 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
                 : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
             }`}
           >
-            Sent
+            Completed
           </button>
         </div>
 
@@ -417,15 +423,25 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
               <CardWidgetListItem
                 key={reminder.id}
                 icon={
-                  <div
-                    className={`h-2 w-2 cursor-pointer rounded-full ${reminder.is_completed ? 'bg-green-500' : 'bg-amber-500'}`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleCompletion(reminder);
-                    }}
-                  />
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div
+                          className={`h-2 w-2 cursor-pointer rounded-full transition-transform hover:scale-125 ${reminder.is_completed ? 'bg-green-500' : 'bg-amber-500'}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleCompletion(reminder);
+                          }}
+                        />
+                      </TooltipTrigger>
+                      <TooltipContent side="top">
+                        <p>{reminder.is_completed ? 'Mark as pending' : 'Mark as completed'}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 }
                 iconAlignTop={true}
+                actionStyle="slide"
                 title={
                   <span
                     onClick={() => openEditDialog(reminder)}
@@ -724,6 +740,7 @@ export function EntityMeetings({ entityType, entityId }: EntityActivityProps) {
           {items.map((meeting: CoreMeeting) => (
           <CardWidgetListItem
             key={meeting.id}
+            actionStyle="slide"
             title={
               <div className="flex items-center gap-2">
                 <span
@@ -1090,6 +1107,7 @@ export function EntityDocuments({ entityType, entityId }: EntityActivityProps) {
             {documents.map((doc: any) => (
               <CardWidgetListItem
                 key={doc.id}
+                actionStyle="slide"
                 icon={
                   <div className="rounded border border-gray-200/50 bg-white p-2 dark:bg-slate-800">
                     <File className="h-4 w-4 text-blue-500" />
