@@ -68,8 +68,8 @@ export function GlobalCreateNoteForm({ onSuccess, onCancel }: Props) {
   return (
     <div className="flex h-full flex-col overflow-auto">
       
-      <div className="flex-1 space-y-4 overflow-y-auto px-6">
-        <div className="space-y-3">
+      <div className="flex-1 space-y-2 overflow-y-auto px-2">
+        <div className="space-y-2">
           <Label>Associate with</Label>
           <RadioGroup
             value={formData.entity_type}
@@ -105,7 +105,7 @@ export function GlobalCreateNoteForm({ onSuccess, onCancel }: Props) {
           </Select>
         </div>
 
-        <div className="space-y-2 pt-2">
+        <div>
           <Label>Note Content</Label>
           <Textarea 
             rows={5}
@@ -116,10 +116,10 @@ export function GlobalCreateNoteForm({ onSuccess, onCancel }: Props) {
         </div>
       </div>
       
-      <DialogFooter className="p-4 bg-white dark:bg-slate-950 border-t border-gray-200 dark:border-slate-800 mt-4">
+      <DialogFooter className="mt-2">
         <Button variant="outline" onClick={onCancel} disabled={mutation.isPending}>Cancel</Button>
         <Button onClick={() => mutation.mutate()} disabled={mutation.isPending}>
-          {mutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
+          {mutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
           Add Note
         </Button>
       </DialogFooter>
