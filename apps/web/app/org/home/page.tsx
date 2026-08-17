@@ -453,7 +453,7 @@ function ModuleSelectorPage() {
       {/* Module grid */}
       <div className="py-1">
         <div className="mb-1 flex items-center justify-between">
-          <h2 className="primary-heading text-foreground">Available Modules</h2>
+          <h2 className="primary-heading-extra text-leadgaze-dark dark:text-white">Available Modules</h2>
           <Button
             variant="ghost"
             size="sm"
@@ -544,7 +544,7 @@ function ModuleCard({
         )}
       />
 
-      <CardContent className="p-5">
+      <CardContent className="p-2">
         {/* Header */}
         <div className="flex items-start justify-between">
           <div
@@ -562,8 +562,8 @@ function ModuleCard({
         </div>
 
         {/* Module info */}
-        <div className="mt-4">
-          <h3 className="primary-heading text-foreground">{mod.module_name}</h3>
+        <div className="mt-2">
+          <h3 className="primary-heading text-leadgaze-dark dark:text-white">{mod.module_name}</h3>
           <p className="secondary-text-small text-muted-foreground mt-1">
             {meta.description}
           </p>
@@ -584,7 +584,7 @@ function ModuleCard({
         )}
 
         {/* Seat usage */}
-        <div className="mt-4 space-y-2">
+        <div className="mt-3 space-y-2">
           <div className="flex items-center justify-between">
             <span className="secondary-text-small text-muted-foreground">
               Seat usage
@@ -610,7 +610,7 @@ function ModuleCard({
       </CardContent>
 
       {/* Footer */}
-      <div className="border-border bg-muted/30 group-hover:bg-muted/50 flex items-center justify-between border-t px-5 py-3 transition-colors">
+      <div className="border-border bg-muted/30 group-hover:bg-muted/50 flex items-center justify-between border-t px-2 py-2 transition-colors">
         <span className="primary-text-medium text-primary">
           Open {meta.stat}
         </span>

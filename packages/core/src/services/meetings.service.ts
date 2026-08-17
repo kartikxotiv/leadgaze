@@ -113,6 +113,8 @@ export const getMeetingsService = asyncHandlerClient(
     participantUserId?: string,
     view?: string,
     params?: {
+      page?: number;
+      limit?: number;
       createdAtFrom?: string;
       createdAtTo?: string;
       updatedAtFrom?: string;
@@ -130,6 +132,12 @@ export const getMeetingsService = asyncHandlerClient(
     if (includeParticipantMeetings) url += `&includeParticipantMeetings=true`;
     if (participantUserId) url += `&participantUserId=${participantUserId}`;
     if (view) url += `&view=${view}`;
+    if (params?.page) {
+      url += `&page=${params.page}`;
+    }
+    if (params?.limit) {
+      url += `&limit=${params.limit}`;
+    }
     if (params?.createdAtFrom) {
       url += `&createdAtFrom=${params.createdAtFrom}`;
     }
@@ -156,6 +164,9 @@ export const getMeetingsService = asyncHandlerClient(
       url += `&searchTerm=${encodeURIComponent(params.searchTerm)}`;
     }
     const res = await CoreApiClient.get(url);
+    if (res?.data?.total !== undefined && (params?.page || params?.limit)) {
+      return res.data;
+    }
     return (res?.data?.data ?? []) as CoreMeeting[];
   },
 );

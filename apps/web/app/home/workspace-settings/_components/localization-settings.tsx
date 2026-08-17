@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Globe, Loader2, Save } from 'lucide-react';
+import { CalendarClock, CircleDollarSign, Loader2, Save } from 'lucide-react';
 
 import {
   type WorkspaceLocalizationPreferences,
@@ -39,6 +39,7 @@ import {
   updateWorkspaceCurrencyService,
   deleteWorkspaceCurrencyService,
 } from '~/services/workspace-currencies.service';
+import { Label } from '@kit/ui/label';
 
 // =====================================================
 // CONSTANTS
@@ -60,13 +61,13 @@ const TIME_FORMAT_OPTIONS = [
 
 const COMMON_CURRENCIES = [
   { code: 'USD', symbol: '$', label: 'USD - US Dollar' },
-  { code: 'EUR', symbol: '\u20ac', label: 'EUR - Euro' },
-  { code: 'GBP', symbol: '\u00a3', label: 'GBP - British Pound' },
-  { code: 'INR', symbol: '\u20b9', label: 'INR - Indian Rupee' },
+  { code: 'EUR', symbol: '€', label: 'EUR - Euro' },
+  { code: 'GBP', symbol: '£', label: 'GBP - British Pound' },
+  { code: 'INR', symbol: '₹', label: 'INR - Indian Rupee' },
   { code: 'AED', symbol: 'AED', label: 'AED - UAE Dirham' },
   { code: 'CAD', symbol: 'CA$', label: 'CAD - Canadian Dollar' },
   { code: 'AUD', symbol: 'A$', label: 'AUD - Australian Dollar' },
-  { code: 'JPY', symbol: '\u00a5', label: 'JPY - Japanese Yen' },
+  { code: 'JPY', symbol: '¥', label: 'JPY - Japanese Yen' },
   { code: 'SGD', symbol: 'S$', label: 'SGD - Singapore Dollar' },
   { code: 'CHF', symbol: 'CHF', label: 'CHF - Swiss Franc' },
 ];
@@ -89,27 +90,6 @@ const COMMON_TIMEZONES = (() => {
     'Australia/Sydney',
     'Pacific/Auckland',
   ];
-  try {
-    return Intl.supportedValuesOf('timeZone');
-  } catch {
-    // Fallback for environments that don't support Intl.supportedValuesOf
-    return [
-      'UTC',
-      'America/New_York',
-      'America/Chicago',
-      'America/Denver',
-      'America/Los_Angeles',
-      'Europe/London',
-      'Europe/Paris',
-      'Europe/Berlin',
-      'Asia/Kolkata',
-      'Asia/Dubai',
-      'Asia/Singapore',
-      'Asia/Tokyo',
-      'Australia/Sydney',
-      'Pacific/Auckland',
-    ];
-  }
 })();
 
 // =====================================================
@@ -131,8 +111,6 @@ export function WorkspaceLocalizationSettings({
     enabledCurrencies: ['USD'],
   });
 
-  const [isDirty, setIsDirty] = useState(false);
-
   // Fetch current preferences
   const { data: preferences, isLoading } = useQuery({
     queryKey: ['workspace-preferences-settings', workspaceId],
@@ -147,8 +125,7 @@ export function WorkspaceLocalizationSettings({
     enabled: !!workspaceId,
   });
 
-  // Sync form with fetched data
-  useEffect(() => {
+  const resetForm = () => {
     if (preferences) {
       setForm({
         timezone: preferences.timezone,
@@ -158,7 +135,22 @@ export function WorkspaceLocalizationSettings({
         enabledCurrencies: preferences.enabledCurrencies || ['USD'],
       });
     }
+  };
+
+  // Sync form with fetched data
+  useEffect(() => {
+    resetForm();
   }, [preferences]);
+
+  const isDateTimeDirty = preferences && (
+    form.timezone !== preferences.timezone ||
+    form.dateFormat !== preferences.date_format ||
+    form.timeFormat !== preferences.time_format
+  );
+
+  const isCurrencyDirty = preferences && (
+    form.defaultCurrency !== preferences.default_currency
+  );
 
   // Get list of currencies added to workspace for the default currency dropdown
   const addedCurrencies = currenciesData?.map((c) => {
@@ -184,7 +176,6 @@ export function WorkspaceLocalizationSettings({
       queryClient.invalidateQueries({
         queryKey: ['workspace-currencies', workspaceId],
       });
-      setIsDirty(false);
       toast.success('Preferences saved', {
         description: 'Localization settings have been updated.',
       });
@@ -249,7 +240,6 @@ export function WorkspaceLocalizationSettings({
     value: string,
   ) => {
     setForm((prev) => ({ ...prev, [field]: value }));
-    setIsDirty(true);
   };
 
   const handleAddCurrency = (currencyCode: string) => {
@@ -280,6 +270,26 @@ export function WorkspaceLocalizationSettings({
     });
   };
 
+  const handleCancelDateTime = () => {
+    if (preferences) {
+      setForm(prev => ({
+        ...prev,
+        timezone: preferences.timezone,
+        dateFormat: preferences.date_format,
+        timeFormat: preferences.time_format,
+      }));
+    }
+  };
+
+  const handleCancelCurrency = () => {
+    if (preferences) {
+      setForm(prev => ({
+        ...prev,
+        defaultCurrency: preferences.default_currency,
+      }));
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="text-muted-foreground flex items-center gap-2 p-6 text-sm">
@@ -300,109 +310,139 @@ export function WorkspaceLocalizationSettings({
     <div className="space-y-6">
       {/* Date & Time Settings */}
       <Card>
-        <CardHeader className="p-4 pb-3">
-          <CardTitle className="mb-0 flex items-center gap-2 text-base">
-            <Globe className="h-4 w-4" />
-            Date &amp; Time
-          </CardTitle>
-          <CardDescription>
-            Configure how dates and times are displayed across the workspace.
-          </CardDescription>
+        <CardHeader className="flex flex-row items-center justify-between p-2 border-b border-slate-200">
+          <div className="mb-0">
+            <CardTitle className="mb-0 flex items-center gap-2 primary-text-big-regular">
+              <CalendarClock className="h-4 w-4" />
+              Date &amp; Time
+            </CardTitle>
+            <CardDescription>
+              Configure how dates and times are displayed across the workspace.
+            </CardDescription>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={handleCancelDateTime}
+              disabled={!isDateTimeDirty || updateMutation.isPending}
+              className="secondary-text-small-bold gap-1.5 px-2 dark:text-white"
+            >
+              Cancel
+            </Button>
+            <Button
+              
+              onClick={handleSave}
+              disabled={!isDateTimeDirty || updateMutation.isPending}
+              className="bg-leadgaze-primary hover:bg-leadgaze-primary text-white secondary-text-small-bold gap-1.5 px-2"
+            >
+              {updateMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+              Save Changes
+            </Button>
+          </div>
         </CardHeader>
-        <CardContent className="space-y-4 p-4 pt-0">
-          {/* Timezone */}
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium">Timezone</label>
-            <Select
-              value={form.timezone}
-              onValueChange={(v) => handleChange('timezone', v)}
-            >
-              <SelectTrigger className="w-full max-w-sm">
-                <SelectValue placeholder="Select timezone" />
-              </SelectTrigger>
-              <SelectContent>
-                {COMMON_TIMEZONES.map((tz) => (
-                  <SelectItem key={tz} value={tz}>
-                    {tz.replace(/_/g, ' ')}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+        <CardContent className="space-y-2 p-2 main-dialog">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+            {/* Timezone */}
+            <div>
+              <Label>Timezone</Label>
+              <Select
+                value={form.timezone}
+                onValueChange={(v) => handleChange('timezone', v)}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select timezone" />
+                </SelectTrigger>
+                <SelectContent>
+                  {COMMON_TIMEZONES.map((tz) => (
+                    <SelectItem key={tz} value={tz}>
+                      {tz.replace(/_/g, ' ')}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-          {/* Date Format */}
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium">Date Format</label>
-            <Select
-              value={form.dateFormat}
-              onValueChange={(v) => handleChange('dateFormat', v)}
-            >
-              <SelectTrigger className="w-full max-w-sm">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {DATE_FORMAT_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
-                    <span className="text-muted-foreground ml-2 text-xs">
-                      (e.g. {opt.example})
-                    </span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {selectedDateFormat && (
-              <p className="text-muted-foreground text-xs">
-                Example: {selectedDateFormat.example}
-              </p>
-            )}
-          </div>
+            {/* Date Format */}
+            <div>
+              <Label>Date Format</Label>
+              <Select
+                value={form.dateFormat}
+                onValueChange={(v) => handleChange('dateFormat', v)}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {DATE_FORMAT_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-          {/* Time Format */}
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium">Time Format</label>
-            <Select
-              value={form.timeFormat}
-              onValueChange={(v) =>
-                handleChange('timeFormat', v as '12h' | '24h')
-              }
-            >
-              <SelectTrigger className="w-full max-w-sm">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {TIME_FORMAT_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
-                    <span className="text-muted-foreground ml-2 text-xs">
-                      (e.g. {opt.example})
-                    </span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {selectedTimeFormat && (
-              <p className="text-muted-foreground text-xs">
-                Example: {selectedTimeFormat.example}
-              </p>
-            )}
+            {/* Time Format */}
+            <div>
+              <Label>Time Format</Label>
+              <Select
+                value={form.timeFormat}
+                onValueChange={(v) =>
+                  handleChange('timeFormat', v as '12h' | '24h')
+                }
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {TIME_FORMAT_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </CardContent>
       </Card>
 
       {/* Currency Settings */}
       <Card>
-        <CardHeader className="p-4 pb-3">
-          <CardTitle className="mb-0 text-base">Currencies</CardTitle>
-          <CardDescription>
-            Manage currencies enabled for this workspace.
-          </CardDescription>
+        <CardHeader className="flex flex-row items-center justify-between p-2 border-b border-slate-200">
+          <div className='mb-0'>
+            <CardTitle className="mb-0 flex items-center gap-2 primary-text-big-regular">
+              <CircleDollarSign className="h-4 w-4" />
+              Currencies
+            </CardTitle>
+            <CardDescription>
+              Manage currencies enabled for this workspace.
+            </CardDescription>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={handleCancelCurrency}
+              disabled={!isCurrencyDirty || updateMutation.isPending}
+              className="secondary-text-small-bold gap-1.5 px-2 dark:text-white"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSave}
+              disabled={!isCurrencyDirty || updateMutation.isPending}
+              className="bg-leadgaze-primary hover:bg-leadgaze-primary text-white secondary-text-small-bold gap-1.5 px-2"
+            >
+              {updateMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+              Save Changes
+            </Button>
+          </div>
         </CardHeader>
-        <CardContent className="space-y-4 p-4 pt-0">
-          <div className="grid gap-4 sm:grid-cols-2">
+        <CardContent className="space-y-2 p-2">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2 main-dialog">
             {/* Default Currency */}
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium">Default Currency</label>
+            <div>
+              <Label>Default Currency</Label>
               <Select
                 value={form.defaultCurrency}
                 onValueChange={(v) => handleChange('defaultCurrency', v)}
@@ -427,15 +467,15 @@ export function WorkspaceLocalizationSettings({
             </div>
 
             {/* Add Currency */}
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium">Add Currency</label>
+            <div>
+              <Label>Add Currency</Label>
               <Select
                 onValueChange={(v) => handleAddCurrency(v)}
                 disabled={addCurrencyMutation.isPending}
                 value=""
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select a currency to add" />
+                  <SelectValue placeholder="Select a currency add" />
                 </SelectTrigger>
                 <SelectContent>
                   {COMMON_CURRENCIES.map((cur) => {
@@ -456,11 +496,23 @@ export function WorkspaceLocalizationSettings({
                 </SelectContent>
               </Select>
             </div>
+            
+            {/* Display Enable Currencies */}
+            <div>
+              <Label>Enable Currencies</Label>
+              <Select disabled value={form.defaultCurrency}>
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={form.defaultCurrency}>{form.defaultCurrency}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           {/* Enabled Currencies List */}
-          <div className="space-y-2 pt-2">
-            <label className="text-sm font-medium">Enabled Currencies</label>
+          <div className="space-y-2">
             {isCurrenciesLoading ? (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -477,14 +529,14 @@ export function WorkspaceLocalizationSettings({
                     <Badge
                       key={currency.id}
                       variant={isDefault ? 'default' : 'secondary'}
-                      className="flex items-center gap-1.5 py-1.5 px-3 text-sm font-normal animate-in fade-in-50 duration-200"
+                      className="flex items-center gap-1.5 py-1.5 px-2 text-sm font-normal animate-in fade-in-50 duration-200 h-8"
                     >
                       <span className="font-semibold">{currency.currency_code}</span>
-                      <span className="text-muted-foreground/80 text-xs">
+                      <span>
                         ({currencyInfo?.symbol || currency.currency_code})
                       </span>
                       {isDefault ? (
-                        <span className="bg-primary-foreground text-primary ml-1 rounded-full px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider">
+                        <span className="bg-primary-foreground text-primary ml-1 rounded-full px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider pt-1">
                           Default
                         </span>
                       ) : deleteCurrencyMutation.isPending && deleteCurrencyMutation.variables === currency.id ? (
@@ -511,24 +563,6 @@ export function WorkspaceLocalizationSettings({
           </div>
         </CardContent>
       </Card>
-
-      {/* Save Button */}
-      {isDirty && (
-        <div className="flex justify-end">
-          <Button
-            onClick={handleSave}
-            disabled={updateMutation.isPending}
-            className="gap-2"
-          >
-            {updateMutation.isPending ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Save className="h-4 w-4" />
-            )}
-            Save Preferences
-          </Button>
-        </div>
-      )}
     </div>
   );
 }

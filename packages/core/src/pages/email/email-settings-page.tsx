@@ -316,6 +316,7 @@ export function CoreEmailSettingsPage({
               >
                 <CardWidgetContainer
                   className="flex-1 min-h-0"
+                  headerClassName="p-2 xl:p-2 2xl:p-2"
                   title="Email Accounts"
                   desc="Connect Gmail or SMTP/IMAP accounts for Core email." icon2={<Dialog
                       open={isConnectDialogOpen}
@@ -325,17 +326,17 @@ export function CoreEmailSettingsPage({
                       }}
                     >
                       <DialogTrigger asChild>
-                        <Button variant="outline" size="icon">
-                          <Plus className="h-4 w-4" />
+                        <Button className="bg-leadgaze-primary hover:bg-leadgaze-primary text-white secondary-text-small-bold gap-1.5 px-2">
+                          <Plus className="h-4 w-4" /> Add
                         </Button>
                       </DialogTrigger>
                       <DialogContent className="max-h-[90vh] overflow-hidden border-gray-200 bg-white p-0 sm:max-w-[540px] dark:border-slate-800 dark:bg-slate-950">
                         <div className="flex max-h-[90vh] flex-col">
-                        <DialogHeader className="border-b border-gray-200 bg-white p-6 pb-4 dark:border-slate-800 dark:bg-slate-950">
+                        <DialogHeader>
                           <DialogTitle>Connect Email Account</DialogTitle>
                         </DialogHeader>
                         <Tabs value={connectTab} onValueChange={(v) => setConnectTab(v as 'google' | 'smtp')} className="flex flex-1 flex-col overflow-hidden">
-                          <div className="shrink-0 px-6 pt-4">
+                          <div className="shrink-0 p-2">
                           <TabsList className="grid w-full grid-cols-2">
                             <TabsTrigger value="google">
                               Google / Gmail
@@ -343,10 +344,10 @@ export function CoreEmailSettingsPage({
                             <TabsTrigger value="smtp">SMTP / IMAP</TabsTrigger>
                           </TabsList>
                           </div>
-                          <div className="flex-1 overflow-y-auto p-6">
+                          <div className="flex-1 overflow-y-auto p-2 pt-0">
                           <TabsContent
                             value="google"
-                            className="space-y-4 pt-4"
+                            className="space-y-2 pt-0 mt-0"
                           >
                             <div className="rounded-md bg-blue-50 p-4 text-sm text-blue-800 dark:bg-blue-950 dark:text-blue-200">
                               Connect Gmail or Google Workspace for sending and
@@ -354,14 +355,14 @@ export function CoreEmailSettingsPage({
                             </div>
                             <Button
                               onClick={handleGoogleConnect}
-                              className="w-full"
+                              className="w-full secondary-text-small-bold text-leadgaze-dark dark:text-white gap-1.5 px-2"
                               variant="outline"
                             >
                               <Mail className="mr-2 h-4 w-4" />
                               Connect with Google
                             </Button>
                           </TabsContent>
-                          <TabsContent value="smtp" className="space-y-4 pt-4">
+                          <TabsContent value="smtp" className="space-y-2 pt-0 mt-0">
                             <SmtpField
                               label="From Name"
                               value={form.from_name}
@@ -376,7 +377,7 @@ export function CoreEmailSettingsPage({
                                 setForm((prev) => ({ ...prev, email }))
                               }
                             />
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-2 gap-2">
                               <SmtpField
                                 label="SMTP Host"
                                 value={form.host}
@@ -419,7 +420,7 @@ export function CoreEmailSettingsPage({
                             <div className="text-sm font-medium">
                               IMAP Settings for Inbox Sync
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-2 gap-2">
                               <SmtpField
                                 label="IMAP Host"
                                 value={form.imap_host}
@@ -474,14 +475,14 @@ export function CoreEmailSettingsPage({
                           </div>
                         </Tabs>
                         {connectTab === 'smtp' ? (
-                        <DialogFooter className="border-t border-gray-200 bg-white p-2 dark:border-slate-800 dark:bg-slate-950">
+                        <DialogFooter>
                           <Button
                             onClick={handleSubmitSmtp}
-                            disabled={isSubmitting}
-                            className="w-full"
+                            disabled={isSubmitting}                            
+                            className="gap-1.5 px-2"
                           >
                             {isSubmitting ? (
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              <Loader2 className="h-4 w-4 animate-spin" />
                             ) : null}
                             Connect SMTP Account
                           </Button>
@@ -604,6 +605,7 @@ export function CoreEmailSettingsPage({
                             <TableRow key={account.id}>
                               <TableCell>
                                 <Badge
+                                  className="text-leadgaze-dark dark:text-white"
                                   variant={
                                     account.provider === 'google'
                                       ? 'secondary'
@@ -630,7 +632,7 @@ export function CoreEmailSettingsPage({
                               </TableCell>
                               <TableCell>{account.from_name || '-'}</TableCell>
                               <TableCell>
-                                {isAdmin ? (
+                                {isAdmin || account.can_manage ? (
                                   <Select
                                     value={account.access_scope}
                                     disabled={updatingAccountId === account.id}
@@ -651,13 +653,13 @@ export function CoreEmailSettingsPage({
                                     </SelectContent>
                                   </Select>
                                 ) : (
-                                  <Badge
+                                  <Badge                                  
                                     variant={
                                       account.access_scope === 'workspace'
                                         ? 'secondary'
                                         : 'outline'
                                     }
-                                    className="gap-1"
+                                    className="gap-1 text-leadgaze-dark dark:text-white"
                                   >
                                     {account.access_scope === 'workspace' ? (
                                       <Globe2 className="h-3 w-3" />

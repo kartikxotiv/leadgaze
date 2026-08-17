@@ -5,7 +5,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { FileDown, FileUp, Plus } from 'lucide-react';
+import { Download, FileDown, FileUp, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@kit/ui/button';
@@ -56,6 +56,7 @@ import { useLocalization } from '~/lib/localization/localization-provider';
 import { ModuleGuard } from '~/lib/rbac/module-guard';
 import { useModuleRoles, useRBAC } from '~/lib/rbac/rbac-provider';
 import { useTeamMembers } from '~/lib/hooks/use-team-members';
+import { usePreloadStrategies, usePreloadHoverHandlers } from '~/lib/hooks/use-preload-strategies';
 import { Contact, getContactsService, importContactsService } from '~/services/contacts.service';
 
 import { DeleteEntityDialog } from '../_components/delete-entity-dialog';
@@ -146,6 +147,8 @@ export default function ContactsPage() {
   const queryClient = useQueryClient();
   const { currentWorkspace: workspace, canAccess, user } = useRBAC();
   const { formatDate } = useLocalization();
+  const { preloadContactDetail } = usePreloadStrategies();
+  const { handleMouseEnter, handleMouseLeave } = usePreloadHoverHandlers();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCreatedByIds, setSelectedCreatedByIds] = useState<string[]>(
     [],
@@ -155,7 +158,7 @@ export default function ContactsPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [contactToDelete, setContactToDelete] = useState<Contact | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(15);
+  const [pageSize, setPageSize] = useState(25);
   const itemsPerPage = pageSize;
 
   // Row selection state (for CSV export)
@@ -233,6 +236,7 @@ export default function ContactsPage() {
     visibleCustomFields,
     ctx: _fieldPermissionCtx,
     isLoading: _fieldPermissionsLoading,
+    refetch: refetchPermissions,
   } = useFieldPermissions({
     entityType: 'contacts',
     workspaceId: workspace?.id,
@@ -460,6 +464,9 @@ export default function ContactsPage() {
   const handleDeleteField = async (fieldId: string) => {
     try {
       await deleteField.mutateAsync({ fieldId });
+      refetchEntityFields();
+      refetchPermissions?.();
+      refetch();
     } catch (error) {
       console.error('Error deleting field:', error);
     }
@@ -761,18 +768,17 @@ export default function ContactsPage() {
 
   return (
     <ModuleGuard module="contacts">
-      <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden">
+      <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden border-top-bottom-gray">
         <PageHeader
-          title={`Contacts (${totalCount})`}
-          description="Manage your contacts (People)"
-        />
-      </div>
-
-      {/* Full-width search / filter / actions toolbar */}
-      <div className="w-full max-w-full min-w-0 shrink-0 border-b pt-2 pb-2">
-        <ListToolBar
-          showSearch
-          searchPlaceholder="Search by name, email, or account..."
+          title={`Contacts`}          
+        >
+          <div className="p-[2px]">
+            <ListToolBar
+              align="right"
+            className="border-none bg-transparent p-0"
+            showSearch
+            expandableSearch
+            searchPlaceholder="Search"
           searchValue={searchTerm}
           onSearchChange={setSearchTerm}
           showFilter
@@ -836,7 +842,7 @@ export default function ContactsPage() {
             {
               key: 'import',
               label: 'Import',
-              icon: FileUp,
+              icon: Download,
               onClick: () => setIsImportDialogOpen(true),
               show: canAccess('contacts', 'import'),
               buttonVariant: 'outline',
@@ -860,15 +866,9 @@ export default function ContactsPage() {
               />
             ) : null
           }
-          columnVisibilitySlot={
-            <ColumnVisibilitySelector
-              columns={columns}
-              visibility={visibility}
-              onToggle={toggleVisibility}
-              onReset={reset}
-            />
-          }
         />
+          </div>
+        </PageHeader>
       </div>
 
       <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden">
@@ -974,19 +974,19 @@ export default function ContactsPage() {
                   })}
 
                   {canAddColumn ? (
-                    <TableHead className="sticky-right-header bg-background z-10 w-12 px-1 text-center">
+                    <TableHead className="sticky-right-header z-10 w-12 px-1 text-center">
                       <Button
-                        variant="outline"
+                        type="button"
                         size="icon"
-                        className="h-8 w-8 mx-auto flex items-center justify-center border-dashed"
+                        className="mx-auto flex h-5 w-5 items-center justify-center rounded-full bg-leadgaze-primary text-white hover:bg-leadgaze-primary/90 border-0 p-0 shadow-xs"
                         onClick={() => setAddColumnModalOpen(true)}
                         title="Add Column"
                       >
-                        <Plus className="h-4 w-4" />
+                        <Plus className="h-3.5 w-3.5 stroke-[2.5]" />
                       </Button>
                     </TableHead>
                   ) : (
-                    <TableHead className="sticky-right-header bg-background z-10 w-12" />
+                    <TableHead className="sticky-right-header z-10 w-12" />
                   )}
                 </TableRow>
               </TableHeader>
@@ -1036,6 +1036,12 @@ export default function ContactsPage() {
                       onClick={() =>
                         router.push(`/home/sales/contacts/${contact.id}`)
                       }
+                      onMouseEnter={() =>
+                        handleMouseEnter(() =>
+                          preloadContactDetail(workspace?.id || '', contact)
+                        )
+                      }
+                      onMouseLeave={handleMouseLeave}
                     >
                       {/* Checkbox */}
                       <TableCell
@@ -1125,17 +1131,19 @@ export default function ContactsPage() {
                       {customFields.map((field) =>
                         showColumn(field.field_key) ? (
                           <TableCell key={field.id}>
-                            {String(
-                              (
-                                contact as unknown as {
-                                  custom_fields?: Record<string, unknown>;
-                                }
-                              ).custom_fields?.[field.field_key] ?? '-',
-                            )}
+                            {(() => {
+                              const cf = (contact as any)?.custom_fields;
+                              if (!cf || typeof cf !== 'object') return '-';
+                              const val = cf[field.field_key] ?? (field.field_name ? cf[field.field_name] : undefined) ?? (field.id ? cf[field.id] : undefined) ?? (field.field_label ? cf[field.field_label] : undefined);
+                              if (val === null || val === undefined || val === '') return '-';
+                              if (typeof val === 'boolean') return val ? 'Yes' : 'No';
+                              if (typeof val === 'object') return JSON.stringify(val);
+                              return String(val);
+                            })()}
                           </TableCell>
                         ) : null,
                       )}
-                      <TableCell className="bg-card group sticky right-0 px-4 text-right">
+                      <TableCell className="group sticky right-0 px-4 text-right">
                         <div className="flex items-center justify-end gap-2">
                           <EntityActionsDropdown
                             id={contact.id}
@@ -1211,6 +1219,10 @@ export default function ContactsPage() {
           teamMembers={teamMembersForModal}
           isAdmin={canAddColumn}
           isSubmitting={createField.isPending}
+          columns={columns}
+          visibility={visibility}
+          onToggleColumn={toggleVisibility}
+          onResetColumns={reset}
           onSubmit={async (payload) => {
             await createField.mutateAsync({
               ...payload,

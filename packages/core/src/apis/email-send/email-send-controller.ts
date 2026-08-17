@@ -306,6 +306,32 @@ export const sendCoreEmailController = catchAsync(async ({ request }) => {
         entity_id: entityId,
         relation_type: body.relationType ?? body.relation_type ?? 'related',
       });
+
+    if (
+      entityType === 'service_cloud_ticket' ||
+      entityType === 'service_cloud_tickets' ||
+      entityType === 'ticket' ||
+      entityType === 'tickets'
+    ) {
+      try {
+        await (supabase as any)
+          .schema('service_cloud')
+          .from('ticket_emails')
+          .upsert({
+            workspace_id: workspaceId,
+            ticket_id: entityId,
+            email_id: email.id,
+            message_id: email.provider_message_id ?? email.gmail_message_id ?? email.id,
+            subject: email.subject,
+            snippet: email.text_body?.slice(0, 200) ?? null,
+            from_email: email.from_email,
+            to_emails: email.to_emails,
+            created_at: email.created_at || new Date().toISOString(),
+          });
+      } catch (tcErr) {
+        console.error('Error linking sent email to service_cloud.ticket_emails:', tcErr);
+      }
+    }
   }
 
   await (supabase as any)

@@ -42,116 +42,147 @@ function getAssigneeInitials(assignee: any) {
 
 export const LeadAssignees = forwardRef<LeadAssigneesHandle, LeadAssigneesProps>(
   function LeadAssignees({ leadId, workspaceId, embedded = false }, ref) {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const queryClient = useQueryClient();
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const queryClient = useQueryClient();
 
-  useImperativeHandle(ref, () => ({
-    triggerAssignModal: () => setIsModalOpen(true),
-  }));
+    useImperativeHandle(ref, () => ({
+      triggerAssignModal: () => setIsModalOpen(true),
+    }));
 
-  const { data: assignees = [], isLoading } = useQuery({
-    queryKey: ['lead-assignees', leadId],
-    queryFn: async () => {
-      const res = await getLeadAssignees(leadId);
-      return res?.data;
-    },
-  });
+    const { data: assignees = [], isLoading } = useQuery({
+      queryKey: ['lead-assignees', leadId],
+      queryFn: async () => {
+        const res = await getLeadAssignees(leadId);
+        return res?.data;
+      },
+    });
 
-  const assignMutation = useMutation({
-    mutationFn: (userId: string) =>
-      assignLeadToUser(leadId, { assigned_to_user_id: userId }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['lead-assignees', leadId] });
-      toast.success('User assigned to lead');
-      setIsModalOpen(false);
-    },
-    onError: (error: any) => {
-      const message = error?.response?.data?.message || 'Failed to assign user';
-      toast.error(message);
-    },
-  });
+    const assignMutation = useMutation({
+      mutationFn: (userId: string) =>
+        assignLeadToUser(leadId, { assigned_to_user_id: userId }),
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['lead-assignees', leadId] });
+        toast.success('User assigned to lead');
+        setIsModalOpen(false);
+      },
+      onError: (error: any) => {
+        const message = error?.response?.data?.message || 'Failed to assign user';
+        toast.error(message);
+      },
+    });
 
-  const unassignMutation = useMutation({
-    mutationFn: (assigneeId: string) =>
-      unassignLeadFromUser(leadId, assigneeId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['lead-assignees', leadId] });
-      toast.success('User unassigned from lead');
-    },
-    onError: (error: any) => {
-      const message =
-        error?.response?.data?.message || 'Failed to unassign user';
-      toast.error(message);
-    },
-  });
+    const unassignMutation = useMutation({
+      mutationFn: (assigneeId: string) =>
+        unassignLeadFromUser(leadId, assigneeId),
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['lead-assignees', leadId] });
+        toast.success('User unassigned from lead');
+      },
+      onError: (error: any) => {
+        const message =
+          error?.response?.data?.message || 'Failed to unassign user';
+        toast.error(message);
+      },
+    });
 
-  const content = (
-    <div className={embedded ? '' : 'px-6 py-4'}>
-      {isLoading ? (
-        <div className="text-muted-foreground py-8 text-center text-sm">
-          Loading assignees...
-        </div>
-      ) : assignees.length === 0 ? (
-        <div className="py-8 text-center">
-          <p className="text-muted-foreground mb-4 text-sm">
-            No team members assigned yet
-          </p>
+    const content = (
+      <div className={embedded ? '' : 'px-6 py-4'}>
+        {isLoading ? (
+          <div className="text-muted-foreground py-8 text-center text-sm">
+            Loading assignees...
+          </div>
+        ) : assignees.length === 0 ? (
+          <div className="py-8 text-center">
+            <p className="secondary-text-small-bold text-muted-foreground mb-2">
+              No team members assigned yet
+            </p>
+            <Button
+              variant="outline"
+              onClick={() => setIsModalOpen(true)}
+              className="secondary-text-small-bold text-leadgaze-dark dark:text-white gap-1.5 px-2"
+            >
+              <Plus className="h-4 w-4" />
+              Assign Member
+            </Button>
+          </div>
+        ) : (
+          <CardWidgetList>
+            {assignees?.map((assignee: any) => (
+              <CardWidgetListItem
+                key={assignee.id}
+                className="p-2 !border-x-0 !border-t-0 !border-b !rounded-none border-b-accordion"
+                icon={
+                  assignee.assignee_picture ? (
+                    <img
+                      src={assignee.assignee_picture}
+                      alt={assignee.assignee_name || 'User'}
+                      className="h-8 w-8 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-leadgaze-primary text-sm font-semibold text-white">
+                      {getAssigneeInitials(assignee)}
+                    </div>
+                  )
+                }
+                title={assignee.assignee_name || 'Unknown'}
+                subtitle={assignee.assignee_email}
+                badge={
+                  assignee.is_primary_assignee ? (
+                    <Badge variant="default">Primary</Badge>
+                  ) : null
+                }
+                actions={
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => unassignMutation.mutate(assignee.id)}
+                    disabled={unassignMutation.isPending}
+                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                }
+              />
+            ))}
+          </CardWidgetList>
+        )}
+      </div>
+    );
+
+    if (embedded) {
+      return (
+        <>
+          {content}
+          <AssignUserModal
+            isOpen={isModalOpen}
+            onOpenChange={setIsModalOpen}
+            leadId={leadId}
+            workspaceId={workspaceId}
+            currentAssignees={assignees}
+            onAssign={(userId) => assignMutation.mutate(userId)}
+            isLoading={assignMutation.isPending}
+          />
+        </>
+      );
+    }
+
+    return (
+      <CardWidgetContainer
+        className="mt-4"
+        title="Assigned Team Members"
+        icon={<Users className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
+        icon2={
           <Button
             size="sm"
-            variant="outline"
             onClick={() => setIsModalOpen(true)}
             className="gap-2"
+            disabled={assignMutation.isPending}
           >
             <Plus className="h-4 w-4" />
-            Assign First Member
+            Assign Member
           </Button>
-        </div>
-      ) : (
-        <CardWidgetList>
-          {assignees?.map((assignee: any) => (
-            <CardWidgetListItem
-              key={assignee.id}
-              icon={
-                assignee.assignee_picture ? (
-                  <img
-                    src={assignee.assignee_picture}
-                    alt={assignee.assignee_name || 'User'}
-                    className="h-8 w-8 rounded-full object-cover"
-                  />
-                ) : (
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-semibold text-white">
-                    {getAssigneeInitials(assignee)}
-                  </div>
-                )
-              }
-              title={assignee.assignee_name || 'Unknown'}
-              subtitle={assignee.assignee_email}
-              badge={
-                assignee.is_primary_assignee ? (
-                  <Badge variant="default">Primary</Badge>
-                ) : null
-              }
-              actions={
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => unassignMutation.mutate(assignee.id)}
-                  disabled={unassignMutation.isPending}
-                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              }
-            />
-          ))}
-        </CardWidgetList>
-      )}
-    </div>
-  );
-
-  if (embedded) {
-    return (
-      <>
+        }
+      >
         {content}
         <AssignUserModal
           isOpen={isModalOpen}
@@ -162,37 +193,6 @@ export const LeadAssignees = forwardRef<LeadAssigneesHandle, LeadAssigneesProps>
           onAssign={(userId) => assignMutation.mutate(userId)}
           isLoading={assignMutation.isPending}
         />
-      </>
+      </CardWidgetContainer>
     );
-  }
-
-  return (
-    <CardWidgetContainer
-      className="mt-4"
-      title="Assigned Team Members"
-      icon={<Users className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
-      icon2={
-        <Button
-          size="sm"
-          onClick={() => setIsModalOpen(true)}
-          className="gap-2"
-          disabled={assignMutation.isPending}
-        >
-          <Plus className="h-4 w-4" />
-          Assign Member
-        </Button>
-      }
-    >
-      {content}
-      <AssignUserModal
-        isOpen={isModalOpen}
-        onOpenChange={setIsModalOpen}
-        leadId={leadId}
-        workspaceId={workspaceId}
-        currentAssignees={assignees}
-        onAssign={(userId) => assignMutation.mutate(userId)}
-        isLoading={assignMutation.isPending}
-      />
-    </CardWidgetContainer>
-  );
-});
+  });

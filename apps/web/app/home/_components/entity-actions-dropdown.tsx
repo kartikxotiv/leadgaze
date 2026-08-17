@@ -29,7 +29,7 @@ export function EntityActionsDropdown({
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
-          className="h-8 w-8 border-0 p-0 opacity-0 transition-opacity group-hover:opacity-100"
+          className="h-8 w-8 border-0 p-0 transition-opacity group-hover:opacity-100"
           onClick={(e) => e.stopPropagation()}
         >
           <span className="sr-only">Open menu</span>

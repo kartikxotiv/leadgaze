@@ -206,6 +206,16 @@ const importOpportunitiesService = asyncHandlerClient(
   },
 );
 
+const getOpportunitiesMetaService = asyncHandlerClient(
+  async (params: { workspaceId: string; userId: string; productKey?: string }) => {
+    const { workspaceId, userId, productKey = 'sales' } = params;
+    const response = await ApiClient.get(
+      `/opportunities/meta?workspaceId=${workspaceId}&userId=${userId}&productKey=${productKey}`
+    );
+    return response.data;
+  }
+);
+
 export {
   getOpportunitiesService,
   getOpportunityByIdService,
@@ -220,4 +230,5 @@ export {
   reorderOpportunityStagesService,
   deleteOpportunityService,
   importOpportunitiesService,
+  getOpportunitiesMetaService,
 };

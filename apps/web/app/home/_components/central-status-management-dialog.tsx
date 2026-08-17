@@ -119,9 +119,9 @@ export function CentralStatusManagementDialog({
 
   // Derive stable string keys so the effects only fire when data actually changes,
   // not on every render when React Query returns a new array reference.
-  const leadStatusesKey = leadStatuses.map((s) => `${s.id}:${s.sort_order}:${s.is_active}`).join(',');
-  const opportunityStagesKey = opportunityStages.map((s) => `${s.id}:${s.sort_order}:${s.is_active}`).join(',');
-  const accountTypesKey = accountTypes.map((s) => `${s.id}:${s.sort_order}:${s.is_active}`).join(',');
+  const leadStatusesKey = leadStatuses.map((s) => `${s.id}:${s.sort_order}:${s.is_active}:${s.status_name}:${s.color}:${s.is_closed}`).join(',');
+  const opportunityStagesKey = opportunityStages.map((s) => `${s.id}:${s.sort_order}:${s.is_active}:${s.status_name}:${s.color}:${s.is_closed}`).join(',');
+  const accountTypesKey = accountTypes.map((s) => `${s.id}:${s.sort_order}:${s.is_active}:${s.status_name}:${s.color}:${s.is_closed}`).join(',');
 
   // Sync fetched data into local ordered state (only when actual data changes)
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -147,12 +147,23 @@ export function CentralStatusManagementDialog({
     if (activeTab === 'leads') {
       refetchLeads();
       queryClient.invalidateQueries({ queryKey: ['lead-statuses', workspaceId] });
+      queryClient.invalidateQueries({ queryKey: ['lead-statuses-mgmt', workspaceId] });
+      queryClient.invalidateQueries({ queryKey: ['leads'] });
+      queryClient.invalidateQueries({ queryKey: ['leads-kanban'] });
+      queryClient.invalidateQueries({ queryKey: ['lead'] });
     } else if (activeTab === 'opportunities') {
       refetchOpportunities();
       queryClient.invalidateQueries({ queryKey: ['opportunity-stages', workspaceId] });
+      queryClient.invalidateQueries({ queryKey: ['opportunity-stages-mgmt', workspaceId] });
+      queryClient.invalidateQueries({ queryKey: ['opportunities'] });
+      queryClient.invalidateQueries({ queryKey: ['opportunities-kanban'] });
+      queryClient.invalidateQueries({ queryKey: ['opportunity'] });
     } else {
       refetchAccountTypes();
       queryClient.invalidateQueries({ queryKey: ['account-types', workspaceId] });
+      queryClient.invalidateQueries({ queryKey: ['account-types-mgmt', workspaceId] });
+      queryClient.invalidateQueries({ queryKey: ['accounts'] });
+      queryClient.invalidateQueries({ queryKey: ['account'] });
     }
   };
 
@@ -326,9 +337,9 @@ export function CentralStatusManagementDialog({
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="p-0 sm:max-w-[620px] flex flex-col max-h-[620px] gap-0 pb-1">
-          <DialogHeader className="border-b px-6 py-4 shrink-0">
+          <DialogHeader>
             <div className="flex items-center gap-2">
-              <Settings className="h-5 w-5 text-muted-foreground" />
+              <Settings className="h-5 w-5 text-white" />
               <DialogTitle>Manage Workspace Statuses</DialogTitle>
             </div>
             <DialogDescription>
@@ -341,14 +352,14 @@ export function CentralStatusManagementDialog({
             onValueChange={(val) => setActiveTab(val as StatusModuleKey)}
             className="flex-1 flex flex-col overflow-hidden"
           >
-            <div className="border-b px-6 flex items-center justify-between py-3 shrink-0">
-              <TabsList className="grid grid-cols-3 w-[400px]">
-                <TabsTrigger value="leads">Leads</TabsTrigger>
-                <TabsTrigger value="opportunities">Opportunities</TabsTrigger>
-                <TabsTrigger value="accounts">Account Types</TabsTrigger>
+            <div className="border-b px-2 flex items-center justify-between py-2 shrink-0">
+              <TabsList className="grid grid-cols-3 w-[400px] h-[32px]">
+                <TabsTrigger value="leads" className="h-[24px]">Leads</TabsTrigger>
+                <TabsTrigger value="opportunities" className="h-[24px]">Opportunities</TabsTrigger>
+                <TabsTrigger value="accounts" className="h-[24px]">Account Types</TabsTrigger>
               </TabsList>
 
-              <Button size="sm" onClick={openCreate} className="gap-1 bg-[#0b57d0] text-white hover:bg-[#0b57d0]/90 dark:bg-[#0b57d0] dark:hover:bg-[#0b57d0]/90">
+              <Button onClick={openCreate} className="secondary-text-small-bold bg-leadgaze-primary hover:bg-leadgaze-primary text-white gap-1.5 px-2">
                 <Plus className="h-4 w-4" />
                 Add {addLabel}
               </Button>
@@ -560,7 +571,7 @@ function StatusRowDisplay({
   return (
     <div
       {...dragHandleProps}
-      className={`flex items-center justify-between px-6 py-2.5 transition-colors group cursor-grab active:cursor-grabbing touch-none select-none ${
+      className={`flex items-center justify-between px-2 py-1.5 transition-colors group cursor-grab active:cursor-grabbing touch-none select-none ${
         isOverlay
           ? 'bg-background shadow-lg border rounded-md opacity-95'
           : 'hover:bg-slate-50/50 dark:hover:bg-slate-900/10'

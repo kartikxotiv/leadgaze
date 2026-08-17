@@ -30,6 +30,8 @@ interface ManageableStatusSelectProps {
   /** Passed through to the SelectTrigger className */
   triggerClassName?: string;
   filter?: (statuses: StatusItem[]) => StatusItem[];
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 export function ManageableStatusSelect({
@@ -41,9 +43,13 @@ export function ManageableStatusSelect({
   placeholder,
   triggerClassName,
   filter,
+  open,
+  onOpenChange,
 }: ManageableStatusSelectProps) {
   const [mgmtOpen, setMgmtOpen] = useState(false);
-  const [selectOpen, setSelectOpen] = useState(false);
+  const [internalSelectOpen, setInternalSelectOpen] = useState(false);
+  const selectOpen = open ?? internalSelectOpen;
+  const setSelectOpen = onOpenChange ?? setInternalSelectOpen;
 
   const queryKey =
     moduleKey === 'leads'
@@ -90,7 +96,7 @@ export function ManageableStatusSelect({
         onValueChange={onValueChange}
         disabled={disabled}
         open={selectOpen}
-        onOpenChange={setSelectOpen}
+        onOpenChange={setSelectOpen}        
       >
         <SelectTrigger className={triggerClassName}>
           <SelectValue placeholder={defaultPlaceholder}>

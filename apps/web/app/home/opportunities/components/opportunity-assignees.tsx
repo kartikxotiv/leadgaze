@@ -85,17 +85,16 @@ export function OpportunityAssignees({
                 </div>
             ) : assignees.length === 0 ? (
                 <div className="py-8 text-center">
-                    <p className="text-muted-foreground mb-4 text-sm">
+                    <p className="secondary-text-small-bold text-muted-foreground mb-2">
                         No team members assigned yet
                     </p>
                     <Button
-                        size="sm"
                         variant="outline"
                         onClick={() => setIsModalOpen(true)}
-                        className="gap-2"
+                        className="secondary-text-small-bold text-leadgaze-dark dark:text-white gap-1.5 px-2"
                     >
                         <Plus className="h-4 w-4" />
-                        Assign First Member
+                        Assign Member
                     </Button>
                 </div>
             ) : (
@@ -103,6 +102,7 @@ export function OpportunityAssignees({
                     {assignees?.map((assignee) => (
                         <CardWidgetListItem
                             key={assignee.id}
+                            className="p-2 !border-x-0 !border-t-0 !border-b !rounded-none border-b-accordion"
                             icon={
                                 assignee.assignee_picture ? (
                                     <img
@@ -111,7 +111,8 @@ export function OpportunityAssignees({
                                         className="h-8 w-8 rounded-full object-cover"
                                     />
                                 ) : (
-                                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-semibold text-white">
+
+                                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-leadgaze-primary text-sm font-semibold text-white">
                                         {(assignee.assignee_name?.trim() || '?').split(/\s+/).map((n, i) => i < 2 ? n[0] : '').join('').toUpperCase()}
                                     </div>
                                 )

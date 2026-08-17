@@ -279,6 +279,9 @@ importers:
       '@kit/next':
         specifier: workspace:*
         version: link:../../packages/next
+      '@kit/sales':
+        specifier: workspace:*
+        version: link:../../packages/sales
       '@kit/service-cloud':
         specifier: workspace:*
         version: link:../../packages/service-cloud
@@ -1241,6 +1244,25 @@ importers:
       zod:
         specifier: ^3.25.32
         version: 3.25.76
+
+  packages/sales:
+    dependencies:
+      '@kit/supabase':
+        specifier: workspace:*
+        version: link:../supabase
+      '@supabase/supabase-js':
+        specifier: 2.75.0
+        version: 2.75.0
+    devDependencies:
+      '@kit/eslint-config':
+        specifier: workspace:*
+        version: link:../../tooling/eslint
+      '@kit/prettier-config':
+        specifier: workspace:*
+        version: link:../../tooling/prettier
+      '@kit/tsconfig':
+        specifier: workspace:*
+        version: link:../../tooling/typescript
 
   packages/service-cloud:
     dependencies:

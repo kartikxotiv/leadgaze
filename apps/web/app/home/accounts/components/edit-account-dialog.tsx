@@ -199,6 +199,7 @@ export function EditAccountDialog({
     onSuccess: () => {
       toast.success('Account updated successfully');
       queryClient.invalidateQueries({ queryKey: ['account', account.id] });
+      queryClient.invalidateQueries({ queryKey: ['accounts'] });
       onOpenChange(false);
     },
     onError: () => toast.error('Failed to update account'),
@@ -227,27 +228,27 @@ export function EditAccountDialog({
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-[700px]">
-        <DialogHeader className="border-b p-6 pb-4">
+        <DialogHeader>
           <DialogTitle>Edit Account</DialogTitle>
           <DialogDescription>
-            Update the information for this account.
+            Update the information for this account
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form
             id="dialog-form"
             onSubmit={form.handleSubmit(onSubmit)}
-            className="flex-1 space-y-4 overflow-y-auto px-6 py-4"
+            className="flex-1 space-y-2 overflow-y-auto px-2"
           >
             <Tabs defaultValue="general" className="w-full">
-              <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="general">General</TabsTrigger>
-                <TabsTrigger value="details">Details</TabsTrigger>
-                <TabsTrigger value="address">Address</TabsTrigger>
-                <TabsTrigger value="social">Social</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-4  h-9">
+                <TabsTrigger value="general" className="py-1">General</TabsTrigger>
+                <TabsTrigger value="details" className="py-1">Details</TabsTrigger>
+                <TabsTrigger value="address" className="py-1">Address</TabsTrigger>
+                <TabsTrigger value="social" className="py-1">Social</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="general" className="space-y-4 pt-4">
+              <TabsContent value="general" className="space-y-2">
                 <FieldGuard fieldKey="account_name" canEdit={canEdit}>
                   <FormField
                     control={form.control}
@@ -263,7 +264,7 @@ export function EditAccountDialog({
                     )}
                   />
                 </FieldGuard>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-2">
                   <FieldGuard fieldKey="website" canEdit={canEdit}>
                     <FormField
                       control={form.control}
@@ -353,8 +354,8 @@ export function EditAccountDialog({
                 </FieldGuard>
               </TabsContent>
 
-              <TabsContent value="details" className="space-y-4 pt-4">
-                <div className="grid grid-cols-2 gap-4">
+              <TabsContent value="details" className="space-y-2">
+                <div className="grid grid-cols-2 gap-2">
                   <FieldGuard fieldKey="annual_revenue" canEdit={canEdit}>
                     <FormField
                       control={form.control}
@@ -403,9 +404,9 @@ export function EditAccountDialog({
                 </FieldGuard>
               </TabsContent>
 
-              <TabsContent value="address" className="space-y-4 pt-4">
-                <div className="space-y-4">
-                  <h4 className="text-primary text-sm font-medium">
+              <TabsContent value="address" className="space-y-2">
+                <div className="space-y-2">
+                  <h4 className="primary-text-medium text-leadgaze-dark dark:text-white">
                     Billing Address
                   </h4>
                   <FieldGuard fieldKey="billing_street" canEdit={canEdit}>
@@ -477,8 +478,8 @@ export function EditAccountDialog({
                   </div>
                 </div>
 
-                <div className="space-y-4 border-t pt-4">
-                  <h4 className="text-primary text-sm font-medium">
+                <div className="space-y-2 border-t pt-2">
+                  <h4 className="primary-text-medium text-leadgaze-dark dark:text-white">
                     Shipping Address
                   </h4>
                   <FieldGuard fieldKey="shipping_street" canEdit={canEdit}>
@@ -551,7 +552,7 @@ export function EditAccountDialog({
                 </div>
               </TabsContent>
 
-              <TabsContent value="social" className="space-y-4 pt-4">
+              <TabsContent value="social" className="space-y-2">
                 <FieldGuard fieldKey="linkedin" canEdit={canEdit}>
                   <FormField
                     control={form.control}
@@ -583,36 +584,35 @@ export function EditAccountDialog({
                   />
                 </FieldGuard>
               </TabsContent>
-            </Tabs>
-
-            <div className="border-t pt-4">
-              <LeadCustomFieldInputs
-                fields={visibleCustomFields}
-                values={customFields}
-                onChange={(key, val) =>
-                  setCustomFields((prev) => ({ ...prev, [key]: val }))
-                }
-                canEdit={canEdit}
-                canView={canView}
-              />
-            </div>
+            </Tabs>            
+            {visibleCustomFields.length > 0 && (
+              <div className="border-t pt-4">
+                <LeadCustomFieldInputs
+                  fields={visibleCustomFields}
+                  values={customFields}
+                  onChange={(key, val) =>
+                    setCustomFields((prev) => ({ ...prev, [key]: val }))
+                  }
+                  canEdit={canEdit}
+                  canView={canView}
+                />
+              </div>
+            )}
           </form>
         </Form>
-        <DialogFooter className="mt-auto border-t p-6">
+        <DialogFooter>
           <Button
             type="button"
             variant="outline"
             onClick={() => onOpenChange(false)}
-            disabled={updateMutation.isPending}
-            className="mb-2"
+            disabled={updateMutation.isPending}            
           >
             Cancel
           </Button>
           <Button
             type="submit"
             form="dialog-form"
-            disabled={updateMutation.isPending}
-            className="mb-2"
+            disabled={updateMutation.isPending}            
           >
             {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
           </Button>

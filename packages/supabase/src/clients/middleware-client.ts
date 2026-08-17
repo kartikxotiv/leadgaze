@@ -19,7 +19,10 @@ export function createMiddlewareClient<GenericSchema = Database>(
 ) {
   const keys = getSupabaseClientKeys();
 
+  const cookieName = process.env.NEXT_PUBLIC_SUPABASE_COOKIE_NAME;
+
   return createServerClient<GenericSchema>(keys.url, keys.anonKey, {
+    ...(cookieName ? { cookieOptions: { name: cookieName } } : {}),
     cookies: {
       getAll() {
         return request.cookies.getAll();

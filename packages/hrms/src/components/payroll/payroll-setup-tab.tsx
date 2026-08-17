@@ -84,7 +84,7 @@ export function PayrollSetupTab(props: {
                           label={component.is_active ? 'Live' : 'Inactive'}
                         />
                       </TableCell>
-                      <TableCell className="sticky right-0 px-4 text-right">
+                      <TableCell className="bg-card sticky right-0 px-4 text-right">
                         {props.canEdit && (
                           <div className="flex justify-end gap-1">
                             <Button
@@ -161,7 +161,7 @@ export function PayrollSetupTab(props: {
                         label={item.is_active ? 'Live' : 'Inactive'}
                       />
                     </TableCell>
-                    <TableCell className="sticky right-0 px-4 text-right">
+                    <TableCell className="bg-card sticky right-0 px-4 text-right">
                       {props.canEdit && (
                         <div className="flex justify-end gap-1">
                           <Button

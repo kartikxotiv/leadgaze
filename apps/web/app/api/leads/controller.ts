@@ -194,120 +194,48 @@ const getLeads = catchAsync(
     };
     /* eslint-enable @typescript-eslint/no-explicit-any */
 
-    // Build main query
-    let mainQuery = applyAccessFilter(
-      adminClient
-        .from('crm_leads')
-        .select(
-          `
-            *,
-            status:entity_statuses(id, status_name, status_key, color, icon),
-            source:lead_sources(id, source_name, source_key, color, icon),
-            owner:accounts!crm_leads_owner_id_fkey(id, email, name),
-            created_by_account:accounts!crm_leads_created_by_fkey(id, email, name),
-            updated_by_account:accounts!crm_leads_updated_by_fkey(id, email, name),
-            industry:crm_industries(id, industry_name)
-          `,
-          { count: 'exact' },
-        )
-        .eq('workspace_id', workspaceId)
-        .eq('is_deleted', false),
-    );
+    // Instantiate LeadsService from the new @kit/sales package
+    const { LeadsService } = await import('@kit/sales');
+    const leadsService = new LeadsService(adminClient);
 
-    if (statusId && statusId !== 'all') {
-      const statusIds = statusId.split(',').map((s) => s.trim()).filter(Boolean);
-      if (statusIds.length === 1) {
-        mainQuery = mainQuery.eq('status_id', statusIds[0]);
-      } else if (statusIds.length > 1) {
-        mainQuery = mainQuery.in('status_id', statusIds);
-      }
-    }
+    const sortDir = sortDirection === 'asc' ? 'asc' : 'desc';
 
-    if (searchTerm) {
-      mainQuery = mainQuery.or(buildSearchOrFilter());
-    }
-
-    if (createdAtFrom) mainQuery = mainQuery.gte('created_at', (createdAtFrom.includes('T') ? createdAtFrom : `${createdAtFrom}T00:00:00.000Z`));
-    if (createdAtTo) mainQuery = mainQuery.lte('created_at', (createdAtTo.includes('T') ? createdAtTo : `${createdAtTo}T23:59:59.999Z`));
-    if (updatedAtFrom) mainQuery = mainQuery.gte('updated_at', (updatedAtFrom.includes('T') ? updatedAtFrom : `${updatedAtFrom}T00:00:00.000Z`));
-    if (updatedAtTo) mainQuery = mainQuery.lte('updated_at', (updatedAtTo.includes('T') ? updatedAtTo : `${updatedAtTo}T23:59:59.999Z`));
-
-    // Pagination
-    const from = (page - 1) * limit;
-    const to = from + limit - 1;
-
-    // Build breakdown query (no status filter, no pagination)
-    let breakdownQuery = applyAccessFilter(
-      adminClient
-        .from('crm_leads')
-        .select('status_id')
-        .eq('workspace_id', workspaceId)
-        .eq('is_deleted', false),
-    );
-
-    if (searchTerm) {
-      breakdownQuery = breakdownQuery.or(buildSearchOrFilter());
-    }
-
-    if (createdAtFrom) breakdownQuery = breakdownQuery.gte('created_at', (createdAtFrom.includes('T') ? createdAtFrom : `${createdAtFrom}T00:00:00.000Z`));
-    if (createdAtTo) breakdownQuery = breakdownQuery.lte('created_at', (createdAtTo.includes('T') ? createdAtTo : `${createdAtTo}T23:59:59.999Z`));
-    if (updatedAtFrom) breakdownQuery = breakdownQuery.gte('updated_at', (updatedAtFrom.includes('T') ? updatedAtFrom : `${updatedAtFrom}T00:00:00.000Z`));
-    if (updatedAtTo) breakdownQuery = breakdownQuery.lte('updated_at', (updatedAtTo.includes('T') ? updatedAtTo : `${updatedAtTo}T23:59:59.999Z`));
-
-    // Run main + breakdown queries in parallel
-    console.log(
-      `[LEADS API] Executing parallel queries for user ${user.id} in workspace ${workspaceId}`,
-    );
-
-    const isRelationalSort = !!LEAD_RELATIONAL_SORT_COLUMNS[sortColumn];
-    const isDirectSort = !!LEAD_DIRECT_SORT_COLUMNS[sortColumn];
-
-    // For relational sorts: fetch ALL matching rows (no .range()), sort in Node.js,
-    // then slice. Supabase's foreignTable in .order() only sorts nested children
-    // — it does NOT sort the parent crm_leads rows.
-    // For direct sorts: apply .order() + .range() at DB level (efficient).
-    // For no sort: use default created_at DESC + .range().
-    let finalMainQuery;
-    if (isDirectSort) {
-      finalMainQuery = mainQuery
-        .order(LEAD_DIRECT_SORT_COLUMNS[sortColumn]!, {
-          ascending: sortDirection === 'asc',
-          nullsFirst: false,
-        })
-        .range(from, to);
-    } else if (isRelationalSort) {
-      // No .range() — we need all rows to sort correctly, then slice in Node
-      finalMainQuery = mainQuery.order('created_at', { ascending: false });
-    } else {
-      finalMainQuery = mainQuery
-        .order('created_at', { ascending: false })
-        .range(from, to);
-    }
-
-    const [mainResult, breakdownResult] = await Promise.all([
-      finalMainQuery,
-      breakdownQuery,
+    // Execute list query and breakdown query concurrently using the service
+    const [mainResult, breakdownData] = await Promise.all([
+      leadsService.getLeadsList({
+        workspaceId,
+        page,
+        limit,
+        searchTerm,
+        statusId: statusId && statusId !== 'all' ? statusId : undefined,
+        sortColumn: LEAD_DIRECT_SORT_COLUMNS[sortColumn] || LEAD_RELATIONAL_SORT_COLUMNS[sortColumn] || 'created_at',
+        sortDirection: sortDir,
+        createdAtFrom,
+        createdAtTo,
+        updatedAtFrom,
+        updatedAtTo,
+        isOwner,
+        visibleUserIds: visibleUserIds || [],
+        assignedLeadIds,
+      }),
+      leadsService.getLeadsBreakdown({
+        workspaceId,
+        searchTerm,
+        createdAtFrom,
+        createdAtTo,
+        updatedAtFrom,
+        updatedAtTo,
+        isOwner,
+        visibleUserIds: visibleUserIds || [],
+        assignedLeadIds,
+      })
     ]);
 
-    const { data: leadsRaw, error, count } = mainResult;
-    if (error) {
-      console.error('Get leads error:', error);
-      throw error;
-    }
-
-    const { data: breakdownData, error: breakdownError } = breakdownResult;
-    if (breakdownError) {
-      console.error('Get status breakdown error:', breakdownError);
-      throw breakdownError;
-    }
+    const { data: leadsRaw, count } = mainResult;
 
     const statusBreakdownMap: Record<string, { count: number }> = {};
-    (breakdownData || []).forEach((lead: { status_id: string }) => {
-      const sid = lead.status_id;
-      if (!statusBreakdownMap[sid]) {
-        statusBreakdownMap[sid] = { count: 0 };
-      }
-      statusBreakdownMap[sid].count += 1;
+    (breakdownData || []).forEach((item: { status_id: string, count: number }) => {
+      statusBreakdownMap[item.status_id] = { count: item.count };
     });
 
     const fieldCtx = await loadFieldPermissionContext(supabase, {
@@ -318,22 +246,8 @@ const getLeads = catchAsync(
       moduleKey: 'leads',
     });
 
-    // For relational sorts: sort in Node.js and slice for current page
-    /* eslint-disable @typescript-eslint/no-explicit-any */
-    let sortedLeads: any[] = leadsRaw || [];
-    if (isRelationalSort && LEAD_RELATIONAL_SORT_COLUMNS[sortColumn]) {
-      const accessor = LEAD_RELATIONAL_SORT_COLUMNS[sortColumn]!;
-      const ascending = sortDirection === 'asc';
-      sortedLeads = [...sortedLeads].sort((a, b) => {
-        const aVal = getNestedValue(a, accessor);
-        const bVal = getNestedValue(b, accessor);
-        if (aVal < bVal) return ascending ? -1 : 1;
-        if (aVal > bVal) return ascending ? 1 : -1;
-        return 0;
-      });
-      sortedLeads = sortedLeads.slice(from, to + 1);
-    }
-    /* eslint-enable @typescript-eslint/no-explicit-any */
+    // We no longer sort in Node.js because LeadsService uses a view that supports relational sorting and pagination at DB layer
+    let sortedLeads = leadsRaw || [];
 
     const filteredLeads = filterLeadsForRead(sortedLeads, fieldCtx);
 

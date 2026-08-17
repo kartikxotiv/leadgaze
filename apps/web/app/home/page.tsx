@@ -10,7 +10,9 @@ import { PageHeaderActions } from '@kit/ui/page';
 import { ListToolBar } from '@kit/ui/list-toolbar';
 import { useDateRangeFilter } from '@kit/ui/use-date-range-filter';
 import { DownloadReportButton } from '@kit/ui/download-report-button';
-import { Users, File, Building2, Target, Info } from 'lucide-react';
+import { Button } from '@kit/ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@kit/ui/tooltip';
+import { Users, File, Building2, Target, Info, PanelRightClose, PanelRightOpen } from 'lucide-react';
 
 import { convertFromUSD, findLatestRateToUsd } from '@kit/shared/currency';
 import type { ExchangeRateRecord } from '@kit/shared/currency';
@@ -41,6 +43,7 @@ export default function HomePage() {
   const workspaceId = currentWorkspace?.id;
   const { dateRange, setDateRange, computedDates } = useDateRangeFilter();
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isWidgetLibraryOpen, setIsWidgetLibraryOpen] = useState(false);
   const queryClient = useQueryClient();
   const supabase = useSupabase();
   const { formatCurrency } = useLocalization();
@@ -62,20 +65,13 @@ export default function HomePage() {
         return;
       }
 
-      // Fetch workspace currency & exchange rates for pipeline value conversion
-      const { data: currenciesData } = await supabase
-        .schema('core')
-        .from('workspace_currencies')
-        .select('currency_code, is_default')
-        .eq('workspace_id', workspaceId)
-        .eq('is_active', true)
-        .order('is_default', { ascending: false });
-
-      const { data: exchangeRates = [] } = await supabase
-        .schema('core')
-        .from('currency_exchange_rates')
-        .select('*')
-        .eq('base_currency', 'USD');
+      // Use workspace currency & exchange rates from initialized context
+      const currenciesData = [{
+        currency_code: currentWorkspace?.localization?.default_currency || 'USD',
+        is_default: true
+      }];
+      
+      const exchangeRates = currentWorkspace?.localization?.exchange_rates || [];
 
       const workspaceCurrency = currenciesData?.find((c: any) => c.is_default)?.currency_code || 'USD';
       const pipelineValueUsd = metrics?.opportunities?.totalAmount ?? 0;
@@ -308,11 +304,16 @@ export default function HomePage() {
 
   return (
     <WorkspaceCheckWrapper>
-      <PageHeader title="Dashboard" description="Your SaaS at a glance">
+      <PageHeader 
+        title="Dashboard"
+        className="sticky top-[-8px] z-[4] bg-[#f0f2f5] dark:dark-black-light-bg py-1 -mx-2 pl-2"
+        // description="Your SaaS at a glance"
+      >
         <PageHeaderActions>
           <DownloadReportButton 
             onDownload={handleDownload} 
             isGenerating={isGenerating} 
+            text="Download Report"
           />
           <ListToolBar
             className="border-none bg-transparent shadow-none p-0"
@@ -329,11 +330,28 @@ export default function HomePage() {
             activeFilterCount={dateRange ? 1 : 0}
             onClearFilters={() => setDateRange(null)}
           />
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                   variant="outline"
+                   size="icon"
+                   className="shrink-0"
+                   onClick={() => setIsWidgetLibraryOpen(!isWidgetLibraryOpen)}
+                >
+                   {isWidgetLibraryOpen ? <PanelRightClose className="h-4 w-4 text-slate-600 dark:text-zinc-300" /> : <PanelRightOpen className="h-4 w-4 text-slate-600 dark:text-zinc-300" />}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{isWidgetLibraryOpen ? 'Hide Widget' : 'Show Widget'}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
           <ModuleSwitcher value="leadgaze" />
         </PageHeaderActions>
       </PageHeader>
       <PageBody>
-        <DashboardDemo dateFilter={computedDates} dateRange={dateRange} />
+        <DashboardDemo dateFilter={computedDates} dateRange={dateRange} isWidgetLibraryOpen={isWidgetLibraryOpen} />
       </PageBody>
 
       {/* Hidden icons for PDF generation matching dashboard cards */}

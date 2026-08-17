@@ -53,8 +53,6 @@ export function EntityActivityLogs({ entityType, entityId }: EntityActivityLogsP
     enabled: !!workspace?.id && !!entityId,
   });
 
-  const logs = data?.logs || [];
-
   const getModuleIcon = (moduleName: string) => {
     switch (moduleName) {
       case 'leads':
@@ -143,18 +141,57 @@ export function EntityActivityLogs({ entityType, entityId }: EntityActivityLogsP
     return map[moduleName] || moduleName;
   };
 
-  const formatEntityName = (name: string | null) => {
+  const formatEntityName = (name: string | null, moduleName?: string) => {
     if (!name) return '';
     const uuidRegex = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
-    const cleaned = name.replace(uuidRegex, '').replace(/^#\s*/, '').replace(/\s+Task\s*$/i, '').trim();
+    let cleaned = name.replace(uuidRegex, '').replace(/^#\s*/, '').replace(/\s+Task\s*$/i, '').trim();
     if (cleaned.startsWith('Task #') || cleaned === 'Task' || cleaned === 'Time log:') return name.replace(uuidRegex, '').trim();
+
+    if (moduleName) {
+      const label = getModuleLabel(moduleName);
+      const prefixRegex = new RegExp(`^(${label}|Note|Task|Meeting|Reminder|Document|Email|Call):\\s*`, 'i');
+      cleaned = cleaned.replace(prefixRegex, '').trim();
+    } else {
+      cleaned = cleaned.replace(/^(Note|Task|Meeting|Reminder|Document|Email|Call):\s*/i, '').trim();
+    }
+
     return cleaned;
   };
+
+  const rawLogs = data?.logs || [];
+  const logs = React.useMemo(() => {
+    const result: typeof rawLogs = [];
+    for (const log of rawLogs) {
+      const logTime = new Date(log.created_at).getTime();
+      const normModule = getModuleLabel(log.module);
+      const normName = formatEntityName(log.entity_name, log.module);
+
+      const isDuplicate = result.some((prev) => {
+        const prevTime = new Date(prev.created_at).getTime();
+        const timeDiff = Math.abs(logTime - prevTime);
+        const prevModule = getModuleLabel(prev.module);
+        const prevName = formatEntityName(prev.entity_name, prev.module);
+
+        return (
+          prev.action === log.action &&
+          prevModule === normModule &&
+          prevName === normName &&
+          (prev.actor_id === log.actor_id || prev.actor?.email === log.actor?.email) &&
+          timeDiff <= 3000
+        );
+      });
+
+      if (!isDuplicate) {
+        result.push(log);
+      }
+    }
+    return result;
+  }, [rawLogs]);
 
   return (
     <CardWidgetContainer
       title="Activity"
-      hideHeaderBorder={true}
+      headerClassName="p-2 xl:p-2 2xl:p-2"
       icon={<Clock className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
       icon2={
         <Button
@@ -170,15 +207,15 @@ export function EntityActivityLogs({ entityType, entityId }: EntityActivityLogsP
         </Button>
       }
     >
-      <div className="px-6 py-2">
+      <div className="px-0 mb-2">
         {isLoading ? (
           <div className="flex justify-center py-4">
             <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
           </div>
         ) : logs.length > 0 ? (
-          <div className="max-h-[350px] overflow-y-auto divide-y divide-gray-100 rounded-lg border border-gray-200 bg-white dark:divide-gray-800/60 dark:border-gray-800 dark:bg-slate-950">
+          <div className="max-h-[350px] overflow-y-auto divide-y divide-gray-100 border border-gray-200 bg-white dark:divide-gray-800/60 dark:border-gray-800 dark:bg-slate-950">
             {logs.map((log: any) => {
-              const formattedName = formatEntityName(log.entity_name);
+              const formattedName = formatEntityName(log.entity_name, log.module);
 
               return (
                 <div
@@ -190,7 +227,7 @@ export function EntityActivityLogs({ entityType, entityId }: EntityActivityLogsP
                     <div className="shrink-0">
                       {getModuleIcon(log.module)}
                     </div>
-                    <span className="font-semibold text-gray-900 shrink-0 dark:text-gray-100 text-xs">
+                    <span className="font-semibold text-leadgaze-dark shrink-0 dark:text-white text-xs">
                       {getModuleLabel(log.module)}
                     </span>
                     {getActionBadge(log.action)}
@@ -212,8 +249,11 @@ export function EntityActivityLogs({ entityType, entityId }: EntityActivityLogsP
             })}
           </div>
         ) : (
-          <div className="py-4 text-center text-xs text-gray-500">
-            No activity logs recorded yet
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#F0F3FF]">
+              <Clock className="h-6 w-6 text-blue-500" />
+            </div>
+            <p className="mt-4 text-sm text-gray-500">No activity logs recorded yet</p>
           </div>
         )}
       </div>

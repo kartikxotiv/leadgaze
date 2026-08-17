@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import React from 'react';
 
 import Link from 'next/link';
@@ -10,6 +10,9 @@ import {
   Activity,
   ArrowLeft,
   Building2,
+  Globe,
+  Factory,
+  Phone,
   CalendarDays,
   Clock,
   Clock3,
@@ -25,6 +28,12 @@ import {
   Trash2,
   UserCheck,
   UserRound,
+  Edit2,
+  Plus,
+  Download,
+  CloudUpload,
+  UserPlus,
+  RefreshCw,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { DateTimePicker } from '@kit/ui/datetime-picker';
@@ -34,7 +43,7 @@ import {
   CoreEmailReplyDialog,
   CoreEntityPanel,
 } from '@kit/core/pages';
-import { getCoreEmailAccountsService } from '@kit/core/services';
+import { useSupabase } from '@kit/supabase/hooks/use-supabase';
 import { useLocalization } from '@kit/shared/localization';
 import {
   Accordion,
@@ -42,6 +51,9 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@kit/ui/accordion';
+import { DetailHeader } from '@kit/ui/detail-header';
+import { DetailInfoList, DetailInfoRow } from '@kit/ui/detail-info-row';
+import { CustomTimeLog, type TimeLogValue } from '@kit/ui/custom-time-log';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -54,6 +66,10 @@ import {
 } from '@kit/ui/alert-dialog';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
+import { ColumnHeader } from '@kit/ui/column-header';
+import { TablePagination } from '@kit/ui/table-pagination';
+import { useTableSort } from '@kit/ui/use-table-sort';
+import { Checkbox } from '@kit/ui/checkbox';
 import { Calendar } from '@kit/ui/calendar';
 import {
   Card,
@@ -67,6 +83,7 @@ import CustomTableContainer from '@kit/ui/custom-table-container';
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@kit/ui/dialog';
@@ -103,6 +120,15 @@ import {
   logServiceCloudTicketTimeService,
   updateServiceCloudResourceService,
 } from '../../services';
+import {
+  getNotesService,
+  createNoteService,
+  updateNoteService,
+  deleteNoteService,
+  getDocumentsService,
+  uploadDocumentService,
+  deleteDocumentService,
+} from '@kit/core/services';
 import { LeadCustomFieldInputs } from '~/components/leads/lead-custom-field-inputs';
 import {
   SERVICE_CLOUD_FEATURE_KEYS,
@@ -190,16 +216,17 @@ function TicketCustomFieldsSection({
   return (
     <AccordionItem
       value="custom-fields"
-      className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
+      className="overflow-hidden border bg-white dark:bg-zinc-900"
     >
-      <AccordionTrigger className="px-4 py-3 hover:no-underline">
-        <span className="primary-heading text-leadgaze-dark flex items-center gap-2 dark:text-white">
+      <AccordionTrigger className="px-2 pb-2 border-b border-b-accordion hover:no-underline py-3">
+        <span className="primary-text-big-regular text-leadgaze-dark flex items-center gap-2 dark:text-white">
+
           <Settings className="text-leadgaze-dark h-5 w-5 dark:text-white" />
           Additional Data
         </span>
       </AccordionTrigger>
-      <AccordionContent className="px-4 pb-4">
-        <div className="space-y-4 pt-2">
+      <AccordionContent className="px-2 pb-2">
+        
           <LeadCustomFieldInputs
             fields={fields}
             values={values}
@@ -223,11 +250,66 @@ function TicketCustomFieldsSection({
                 Save Changes
               </Button>
             </div>
-          )}
-        </div>
+          )}        
       </AccordionContent>
     </AccordionItem>
   );
+}
+
+function getActionBadge(action: string, color: string) {
+  switch (color) {
+    case 'emerald':
+      return (
+        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold tracking-wide bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800">
+          {action}
+        </span>
+      );
+    case 'blue':
+      return (
+        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold tracking-wide bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800">
+          {action}
+        </span>
+      );
+    case 'rose':
+      return (
+        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold tracking-wide bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800">
+          {action}
+        </span>
+      );
+    default:
+      return (
+        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold tracking-wide bg-gray-100 text-gray-700 border border-gray-200 dark:bg-gray-800 dark:text-gray-300">
+          {action}
+        </span>
+      );
+  }
+}
+
+function getActivityUIDetails(activity: any) {
+  switch (activity.event_type) {
+    case 'created':
+      return { icon: <Activity className="h-3.5 w-3.5 text-gray-500" />, module: 'Ticket', action: 'CREATED', color: 'emerald' };
+    case 'status_changed':
+      return { icon: <Activity className="h-3.5 w-3.5 text-blue-500" />, module: 'Status', action: 'UPDATED', color: 'blue' };
+    case 'priority_changed':
+      return { icon: <Flag className="h-3.5 w-3.5 text-orange-500" />, module: 'Priority', action: 'UPDATED', color: 'blue' };
+    case 'assigned':
+      return { icon: <UserPlus className="h-3.5 w-3.5 text-indigo-500" />, module: 'Assignment', action: 'UPDATED', color: 'blue' };
+    case 'email_sent':
+      return { icon: <Mail className="h-3.5 w-3.5 text-blue-500" />, module: 'Conversation', action: 'SENT', color: 'blue' };
+    case 'email_received':
+      return { icon: <Mail className="h-3.5 w-3.5 text-purple-500" />, module: 'Conversation', action: 'RECEIVED', color: 'blue' };
+    case 'time_logged':
+      return { icon: <Clock3 className="h-3.5 w-3.5 text-sky-500" />, module: 'Time Log', action: 'CREATED', color: 'emerald' };
+    case 'note_added':
+      return { icon: <FileText className="h-3.5 w-3.5 text-purple-500" />, module: 'Note', action: 'CREATED', color: 'emerald' };
+    case 'document_uploaded':
+      return { icon: <FileText className="h-3.5 w-3.5 text-gray-500" />, module: 'Document', action: 'UPLOADED', color: 'emerald' };
+    case 'deleted':
+      return { icon: <Trash2 className="h-3.5 w-3.5 text-red-500" />, module: 'Ticket', action: 'DELETED', color: 'rose' };
+    default:
+      return { icon: <Clock className="h-3.5 w-3.5 text-gray-400" />, module: 'Activity', action: String(activity.event_type || 'UPDATE').toUpperCase(), color: 'gray' };
+  }
 }
 
 function eventLabel(eventType?: string | null) {
@@ -235,6 +317,13 @@ function eventLabel(eventType?: string | null) {
     .split('_')
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(' ');
+}
+
+function formatFileSize(size?: number) {
+  if (!size) return '';
+  if (size < 1024) return `${size} B`;
+  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 export function ServiceCloudTicketDetailPage({
@@ -252,7 +341,41 @@ export function ServiceCloudTicketDetailPage({
   canEditField?: (fieldKey: string) => boolean;
   customFieldsList?: any[];
 }) {
+  const supabase = useSupabase();
   const { formatDate, formatDateOnly, formatDateTime } = useLocalization();
+
+  const handleDownloadAttachment = async (e: React.MouseEvent, attachment: any) => {
+    e.stopPropagation();
+    try {
+      const path = attachment.path || attachment.url;
+      if (!path) return;
+
+      if (path.startsWith('http://') || path.startsWith('https://')) {
+        window.open(path, '_blank');
+        return;
+      }
+
+      const { data, error } = await supabase.storage
+        .from('email_attachments')
+        .createSignedUrl(path, 300);
+
+      if (error || !data?.signedUrl) {
+        toast.error('Failed to download attachment');
+        return;
+      }
+
+      const a = document.createElement('a');
+      a.href = data.signedUrl;
+      a.download = attachment.name || attachment.fileName || 'attachment';
+      a.target = '_blank';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch (err) {
+      console.error('Download error:', err);
+      toast.error('Failed to download attachment');
+    }
+  };
   const queryClient = useQueryClient();
   const { canAccess, isLoading: permissionsLoading } =
     useServiceCloudPermissions(workspaceId);
@@ -261,13 +384,7 @@ export function ServiceCloudTicketDetailPage({
     SERVICE_CLOUD_FEATURE_KEYS.manageInbox,
   );
   const queryKey = ['service-cloud', 'ticket-detail', workspaceId, ticketId];
-  const [timeForm, setTimeForm] = useState({
-    hours: '',
-    minutes: '',
-    description: '',
-    activities: '',
-    logged_date: todayLocalDate(),
-  });
+
   const [editingLogId, setEditingLogId] = useState<string | null>(null);
   const [deletingLogId, setDeletingLogId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({
@@ -279,15 +396,26 @@ export function ServiceCloudTicketDetailPage({
   });
   const [replyEmail, setReplyEmail] = useState<any | null>(null);
   const [isComposeOpen, setIsComposeOpen] = useState(false);
-  const [openAccordion, setOpenAccordion] = useState<string | undefined>(
+  const [openAccordions, setOpenAccordions] = useState<string[]>([
     'ticket-properties',
-  );
+    'sla-snapshot',
+  ]);
+  const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
+  const [editingNote, setEditingNote] = useState<any>(null);
+  const [noteContent, setNoteContent] = useState('');
+  const [deletingNoteId, setDeletingNoteId] = useState<string | null>(null);
+
+  const [isTimeLogOpen, setIsTimeLogOpen] = useState(false);
+
+  const [isDocumentModalOpen, setIsDocumentModalOpen] = useState(false);
+  const [documentForm, setDocumentForm] = useState({ name: '', file: null as File | null, file_url: '', category: '', description: '' });
+  const [deletingDocumentId, setDeletingDocumentId] = useState<string | null>(null);
 
   const { getHeaderProps, getResizeHandleProps } = useColumnResize(
     'sc-ticket-details-time-entries',
   );
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, refetch: refetchTicketDetail, isFetching: isFetchingTicketDetail } = useQuery({
     queryKey,
     queryFn: () => getServiceCloudTicketDetailService(workspaceId, ticketId),
     enabled: Boolean(workspaceId && ticketId),
@@ -298,6 +426,26 @@ export function ServiceCloudTicketDetailPage({
     queryFn: () => getCoreEmailAccountsService(workspaceId),
     enabled: Boolean(workspaceId && canManageInbox),
   });
+
+  const rawTimeEntries = data?.timeEntries ?? [];
+  const [timePage, setTimePage] = useState(1);
+  const [timePageSize, setTimePageSize] = useState(10);
+  
+  const {
+    sortColumn: timeSortColumn,
+    sortDirection: timeSortDirection,
+    toggleSort: timeToggleSort,
+    sortedData: sortedTimeEntries
+  } = useTableSort<any>('sc-time-entries', rawTimeEntries, {
+    defaultSortColumn: 'logged_date',
+    defaultSortDirection: 'desc'
+  });
+
+  const paginatedTimeEntries = useMemo(() => {
+    const startIndex = (timePage - 1) * timePageSize;
+    return sortedTimeEntries.slice(startIndex, startIndex + timePageSize);
+  }, [sortedTimeEntries, timePage, timePageSize]);
+
 
   const updateMutation = useMutation({
     mutationFn: (payload: Record<string, unknown>) =>
@@ -315,26 +463,17 @@ export function ServiceCloudTicketDetailPage({
   });
 
   const timeMutation = useMutation({
-    mutationFn: () => {
-      const durationSeconds =
-        Number(timeForm.hours || 0) * 3600 + Number(timeForm.minutes || 0) * 60;
-
+    mutationFn: (value: TimeLogValue) => {
       return logServiceCloudTicketTimeService(workspaceId, ticketId, {
-        durationSeconds,
-        description: timeForm.description,
-        activities: timeForm.activities,
-        logged_date: timeForm.logged_date,
+        durationSeconds: value.durationMinutes * 60,
+        description: value.description,
+        activities: value.activities ?? '',
+        logged_date: value.dateTime.split('T')[0],
       });
     },
     onSuccess: async () => {
       toast.success('Time logged');
-      setTimeForm({
-        hours: '',
-        minutes: '',
-        description: '',
-        activities: '',
-        logged_date: todayLocalDate(),
-      });
+      setIsTimeLogOpen(false);
       await queryClient.invalidateQueries({ queryKey });
     },
     onError: (error: any) => toast.error(error.message || 'Failed to log time'),
@@ -353,17 +492,19 @@ export function ServiceCloudTicketDetailPage({
   });
 
   const updateTimeMutation = useMutation({
-    mutationFn: () => {
-      const durationSeconds =
-        Number(editForm.hours || 0) * 3600 + Number(editForm.minutes || 0) * 60;
-
+    mutationFn: (data: {
+      duration_seconds: number;
+      description: string;
+      activities?: string;
+      logged_date: string;
+    }) => {
       return updateServiceCloudResourceService('time-entries', {
         id: editingLogId,
         workspace_id: workspaceId,
-        duration_seconds: durationSeconds,
-        description: editForm.description,
-        activities: editForm.activities,
-        logged_date: editForm.logged_date,
+        duration_seconds: data.duration_seconds,
+        description: data.description,
+        activities: data.activities,
+        logged_date: data.logged_date,
       });
     },
     onSuccess: async () => {
@@ -422,6 +563,120 @@ export function ServiceCloudTicketDetailPage({
     onError: (error: any) =>
       toast.error(error.message || 'Failed to update assignees'),
   });
+
+  const notesQueryKey = ['service-cloud', 'ticket-notes', workspaceId, ticketId];
+  const { data: notes = [], isLoading: notesLoading } = useQuery({
+    queryKey: notesQueryKey,
+    queryFn: () => getNotesService(workspaceId, 'service_cloud_ticket', ticketId),
+    enabled: Boolean(workspaceId && ticketId),
+  });
+
+  const createNoteMutation = useMutation({
+    mutationFn: (content: string) =>
+      createNoteService({
+        workspace_id: workspaceId,
+        entity_type: 'service_cloud_ticket',
+        entity_id: ticketId,
+        note: content,
+      }),
+    onSuccess: () => {
+      toast.success('Note added');
+      setIsNoteModalOpen(false);
+      setNoteContent('');
+      queryClient.invalidateQueries({ queryKey: notesQueryKey });
+    },
+    onError: () => toast.error('Failed to add note'),
+  });
+
+  const updateNoteMutation = useMutation({
+    mutationFn: (payload: { id: string; note: string }) =>
+      updateNoteService({ id: payload.id, workspace_id: workspaceId, note: payload.note }),
+    onSuccess: () => {
+      toast.success('Note updated');
+      setIsNoteModalOpen(false);
+      setEditingNote(null);
+      setNoteContent('');
+      queryClient.invalidateQueries({ queryKey: notesQueryKey });
+    },
+    onError: () => toast.error('Failed to update note'),
+  });
+
+  const deleteNoteMutation = useMutation({
+    mutationFn: (id: string) => deleteNoteService(workspaceId, id),
+    onSuccess: () => {
+      toast.success('Note deleted');
+      setDeletingNoteId(null);
+      queryClient.invalidateQueries({ queryKey: notesQueryKey });
+    },
+    onError: () => toast.error('Failed to delete note'),
+  });
+
+  const handleSaveNote = () => {
+    if (!noteContent.trim()) return;
+    if (editingNote) {
+      updateNoteMutation.mutate({ id: editingNote.id, note: noteContent });
+    } else {
+      createNoteMutation.mutate(noteContent);
+    }
+  };
+
+  const openEditNoteDialog = (note: any) => {
+    setEditingNote(note);
+    setNoteContent(note.note || note.content || '');
+    setIsNoteModalOpen(true);
+  };
+
+  const documentsQueryKey = ['service-cloud', 'ticket-documents', workspaceId, ticketId];
+  const { data: documents = [], isLoading: documentsLoading } = useQuery({
+    queryKey: documentsQueryKey,
+    queryFn: () => getDocumentsService(workspaceId, 'service_cloud_ticket', ticketId),
+    enabled: Boolean(workspaceId && ticketId),
+  });
+
+  const uploadDocumentMutation = useMutation({
+    mutationFn: (payload: FormData) => uploadDocumentService(payload),
+    onSuccess: () => {
+      toast.success('Document added');
+      setIsDocumentModalOpen(false);
+      setDocumentForm({ name: '', file: null, file_url: '', category: '', description: '' });
+      queryClient.invalidateQueries({ queryKey: documentsQueryKey });
+    },
+    onError: () => toast.error('Failed to add document'),
+  });
+
+  const deleteDocumentMutation = useMutation({
+    mutationFn: (id: string) => deleteDocumentService(workspaceId, id),
+    onSuccess: () => {
+      toast.success('Document deleted');
+      setDeletingDocumentId(null);
+      queryClient.invalidateQueries({ queryKey: documentsQueryKey });
+    },
+    onError: () => toast.error('Failed to delete document'),
+  });
+
+  const handleSaveDocument = () => {
+    const { name, category, description, file_url, file } = documentForm;
+    if (!name.trim()) {
+      toast.error('Document Name is required');
+      return;
+    }
+    if (!file && !file_url.trim()) {
+      toast.error('Either File or External URL is required');
+      return;
+    }
+
+    const payload = new FormData();
+    payload.set('workspace_id', workspaceId);
+    payload.set('entity_type', 'service_cloud_ticket');
+    payload.set('entity_id', ticketId);
+    payload.set('name', name);
+    if (category) payload.set('category', category);
+    if (description) payload.set('description', description);
+    if (file_url) payload.set('file_url', file_url);
+    if (file) payload.set('file', file);
+    
+    uploadDocumentMutation.mutate(payload);
+  };
 
   if (isLoading || permissionsLoading) {
     return <ServiceCloudTicketDetailSkeleton />;
@@ -486,8 +741,7 @@ export function ServiceCloudTicketDetailPage({
     (sum: number, entry: any) => sum + Number(entry.duration_seconds ?? 0),
     0,
   );
-  const canLogTime =
-    Number(timeForm.hours || 0) > 0 || Number(timeForm.minutes || 0) > 0;
+
   const isUpdating = updateMutation.isPending;
   const dueValue =
     ticket.due_date ??
@@ -511,211 +765,157 @@ export function ServiceCloudTicketDetailPage({
     updateMutation.mutate(payload);
 
   return (
-    <div className="mt-2 space-y-4">
-      <section className="overflow-hidden rounded-none border bg-[radial-gradient(circle_at_top_left,_rgba(14,165,233,0.18),_transparent_34%),linear-gradient(135deg,_#0f172a,_#164e63_52%,_#0f172a)] p-6 text-white shadow-xl">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-          <div className="max-w-4xl space-y-5">
-            <Button
-              asChild
-              variant="secondary"
-              size="sm"
-              className="w-fit bg-white/10 text-white hover:bg-white/20"
-            >
-              <Link href="/home/services/tickets">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to tickets
-              </Link>
-            </Button>
-
-            <div className="space-y-2">
-              <div className="flex flex-wrap items-center gap-2">
-                <Badge className="border-white/20 bg-white/15 text-white hover:bg-white/20">
-                  #{ticket.ticket_number}
-                </Badge>
-                <Badge
-                  className="flex items-center gap-1.5 font-medium"
-                  style={
-                    ticket.status?.color
-                      ? {
-                        backgroundColor: `${ticket.status.color}20`,
-                        borderColor: `${ticket.status.color}40`,
-                        color: ticket.status.color,
-                      }
-                      : undefined
-                  }
-                >
-                  {ticket.status?.color ? (
-                    <span
-                      className="h-2 w-2 shrink-0 animate-pulse rounded-full"
-                      style={{ backgroundColor: ticket.status.color }}
-                    />
-                  ) : null}
-                  {ticket.status?.name ?? 'Open'}
-                </Badge>
-                {ticket.priority?.name ? (
-                  <Badge
-                    className="flex items-center gap-1.5 font-medium"
-                    style={
-                      ticket.priority?.color
-                        ? {
-                          backgroundColor: `${ticket.priority.color}20`,
-                          borderColor: `${ticket.priority.color}40`,
-                          color: ticket.priority.color,
-                        }
-                        : undefined
-                    }
-                  >
-                    {ticket.priority?.color ? (
-                      <span
-                        className="h-2 w-2 shrink-0 rounded-full"
-                        style={{ backgroundColor: ticket.priority.color }}
-                      />
-                    ) : null}
-                    {ticket.priority.name}
-                  </Badge>
-                ) : null}
-                <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs text-white/75">
-                  Created by {ticket.created_by_account?.name || 'Unknown'} on{' '}
-                  {formatDate(ticket.created_at)}
-                </span>
-                {ticket.updated_by && (
-                  <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs text-white/75">
-                    Updated by {ticket.updated_by_account?.name || 'Unknown'} on{' '}
-                    {formatDate(ticket.updated_at)}
-                  </span>
-                )}
-                {ticket.priority?.resolution_due_minutes ? (
-                  <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs text-white/75">
-                    SLA: {ticket.priority.resolution_due_minutes} mins
-                  </span>
-                ) : null}
-              </div>
-              <div>
-                <h1 className="text-3xl font-semibold tracking-tight lg:text-4xl">
-                  {ticket.subject}
-                </h1>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid gap-3 rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur md:min-w-[360px]">
-            {(!canViewField || canViewField('customer')) && (
-              <Metric
-                label="Customer"
-                value={ticket.customer?.name ?? '-'}
-                muted
-              />
-            )}
-            {(!canViewField || canViewField('assigned_agent_id')) && (
-              <Metric
-                label="Primary owner"
-                value={optionLabel(assignedAgent)}
-                muted
-              />
-            )}
-            {(!canViewField || canViewField('due_at')) && (
-              <Metric label="Due date" value={formatDate(dueValue)} muted />
-            )}
-            <Metric
-              label="Logged"
-              value={formatDuration(totalLoggedSeconds)}
-              muted
-            />
-          </div>
-        </div>
-      </section>
-
-      <div className="flex w-full flex-col gap-4 lg:flex-row">
-        <div className="w-full space-y-4 lg:w-[65%]">
-          <CardWidgetContainer
-            title="Ticket Workspace"
-            description="Customer conversation, internal work, attachments, and service timeline."
-            icon={<Inbox className="h-5 w-5 text-cyan-600" />}
-            icon2={
-              <div className="flex flex-wrap gap-2">
-                {canManageInbox && latestThreadEmail ? (
+    <>
+      {/* Top Header */}
+      <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap sm:justify-between">
+        <div className="flex items-center gap-2">
                   <Button
-                    size="sm"
-                    onClick={() => setReplyEmail(latestThreadEmail)}
+                    variant="ghost"
+                    asChild
+                    className="w-6 h-6 border-leadgaze-border border p-0"
                   >
-                    <Mail className="mr-2 h-4 w-4" />
-                    Reply in thread
+                    <Link href="/home/services/tickets">
+                      <ArrowLeft className="h-3 w-3" />
+                    </Link>
                   </Button>
-                ) : null}
-                {canManageInbox && !latestThreadEmail ? (
-                  <Button size="sm" onClick={() => setIsComposeOpen(true)}>
-                    <Mail className="mr-2 h-4 w-4" />
-                    Send Email
-                  </Button>
-                ) : null}
-                <StatusPill label={ticket.source ?? 'manual'} />
-                {canManageInbox ? (
-                  <StatusPill label={`${emails.length} emails`} />
-                ) : null}
-                <StatusPill label={formatDuration(totalLoggedSeconds)} />
+                  <h1 className="primary-heading-extra text-leadgaze-dark dark:text-white">
+                    Ticket Detail
+                  </h1>
+        </div>        
+        
+        <div className="flex items-center gap-2">
+          <Button variant="outline" className="secondary-text-small-bold text-leadgaze-dark dark:text-white gap-1.5 px-2">
+            <span className="font-medium text-gray-700 dark:text-white">Logged:</span>
+            <span className="text-gray-500 dark:text-white">{formatDuration(totalLoggedSeconds)}</span>
+          </Button>
+          <Button variant="default" className="secondary-text-small-bold bg-leadgaze-primary hover:bg-leadgaze-primary text-white gap-1.5 px-2" onClick={() => setIsTimeLogOpen(true)}>
+            <Edit2 className="h-4 w-4" />
+                      <span className="hidden sm:inline">Add Time</span>
+          </Button>          
+        </div>
+      </div>
+
+      <div className="flex w-full flex-col gap-2 lg:min-h-0 lg:flex-1 lg:flex-row">
+        <div className="w-full space-y-4 lg:w-[65%] lg:overflow-y-auto">
+          {/* Left Column Header Info */}
+          <DetailHeader
+            title={ticket.subject}
+            subtitle={
+              <div className="flex flex-col">
+                <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-white">
+                  <span>
+                    Created by <span className="font-bold">{ticket.created_by_account?.name || 'Unknown'}</span> on {formatDate(ticket.created_at)} | {ticket.created_at && new Date(ticket.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                  </span>
+                </div>                
+                <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-1 dark:text-white">
+                  <span>
+                    Assigned to <span className="font-bold">{assignedAgent?.name || 'Unassigned'}</span> on {ticket.updated_at ? formatDate(ticket.updated_at) : formatDate(ticket.created_at)} | {ticket.updated_at ? new Date(ticket.updated_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : new Date(ticket.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                  </span>
+                </div>
               </div>
             }
-          >
-            <div className="px-6 py-4">
-              <Tabs
-                defaultValue={canManageInbox ? 'conversation' : 'work'}
-                className="space-y-5"
-              >
-                <TabsList className="mb-2 h-auto w-full justify-start gap-3 overflow-x-auto rounded-none border-b bg-transparent p-0 [-ms-overflow-style:none] [scrollbar-width:none] sm:gap-6 [&::-webkit-scrollbar]:hidden">
-                  {canManageInbox ? (
-                    <TabsTrigger
-                      value="conversation"
-                      className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
-                    >
-                      <Mail className="mr-2 h-4 w-4" />
-                      Conversation
-                    </TabsTrigger>
-                  ) : null}
-                  <TabsTrigger
-                    value="work"
-                    className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
-                  >
-                    <Clock3 className="mr-2 h-4 w-4" />
-                    Time Log
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="notes"
-                    className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
-                  >
-                    <FileText className="mr-2 h-4 w-4" />
-                    Notes
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="documents"
-                    className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
-                  >
-                    <Paperclip className="mr-2 h-4 w-4" />
-                    Documents
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="activity"
-                    className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
-                  >
-                    <Activity className="mr-2 h-4 w-4" />
-                    Activity
-                  </TabsTrigger>
-                </TabsList>
-
+            right={
+              <div className="mx-auto flex flex-col items-center gap-1 lg:mx-0">
+                <span className="text-[10px] font-medium text-leadgaze-dark dark:text-white uppercase tracking-wider">
+                  SLA
+                </span>
+                <div className="flex items-center justify-center rounded-full border-2 border-red-500 bg-white h-[42px] w-[42px]">
+                  <span className="text-[11px] sm:text-xs font-bold text-gray-900 text-center leading-tight">
+                    {ticket.priority?.resolution_due_minutes
+                      ? (() => {
+                          const mins = ticket.priority.resolution_due_minutes;
+                          const h = Math.floor(mins / 60);
+                          const m = mins % 60;
+                          if (h > 0 && m > 0) return `${h}h\n${m}m`;
+                          if (h > 0) return `${h}h`;
+                          return `${m}m`;
+                        })()
+                      : 'N/A'}
+                  </span>
+                </div>
+              </div>
+            }
+          />
+          
+          
+            <Tabs
+              defaultValue={canManageInbox ? 'conversation' : 'work'}
+              className="space-y-4 mb-2"
+            >
+              <TabsList className="mb-0 h-auto w-full justify-start gap-3 overflow-x-auto rounded-none border-b bg-transparent p-0 [-ms-overflow-style:none] [scrollbar-width:none] sm:gap-6 [&::-webkit-scrollbar]:hidden">
                 {canManageInbox ? (
-                  <TabsContent value="conversation" className="space-y-4">
-                    {emails.length === 0 ? (
-                      <EmptyState
-                        title="No emails linked yet"
-                        description="Emails converted into this ticket will appear here."
-                      />
-                    ) : (
-                      <div className="scrollbar-thin h-[calc(100vh-420px)] min-h-[350px] space-y-4 overflow-y-auto pr-2">
-                        {emails.map((item: any) => {
+                  <TabsTrigger
+                    value="conversation"
+                    className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
+                  >
+                    <Mail className="mr-2 h-4 w-4" />
+                    Conversation
+                  </TabsTrigger>
+                ) : null}
+                <TabsTrigger
+                  value="work"
+                  className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
+                >
+                  <Clock3 className="mr-2 h-4 w-4" />
+                  Time loged
+                </TabsTrigger>
+                <TabsTrigger
+                  value="notes"
+                  className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
+                >
+                  <FileText className="mr-2 h-4 w-4" />
+                  Notes
+                </TabsTrigger>
+                <TabsTrigger
+                  value="documents"
+                  className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
+                >
+                  <Paperclip className="mr-2 h-4 w-4" />
+                  Document
+                </TabsTrigger>
+                <TabsTrigger
+                  value="activity"
+                  className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
+                >
+                  <Clock className="mr-2 h-4 w-4" />
+                  Activity
+                </TabsTrigger>
+              </TabsList>
+
+              {canManageInbox ? (
+                <TabsContent value="conversation" className="max-h-[500px] overflow-y-auto mb-2">
+                  <CardWidgetContainer
+                    title="Conversation"
+                    headerClassName="p-2 xl:p-2 2xl:p-2"
+                    icon={<Mail className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
+                    icon2={
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="gap-2 text-sm text-blue-500 hover:text-blue-600"
+                        onClick={() => setIsComposeOpen(true)}
+                      >
+                        <Plus className="h-4 w-4" />
+                        Send Mail
+                      </Button>
+                    }
+                  >
+                    <div className="px-2">
+                      {emails.length === 0 ? (
+                        <div className="flex items-center justify-center py-8 text-center flex-col">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#F0F3FF]">
+                            <Mail className="mx-auto mb-2 h-6 w-6 text-blue-500 pt-1" />
+                            </div>                          
+                          <p className="text-sm text-gray-500 mt-4">No Conversation activity yet</p>
+                        </div>
+                      ) : (
+                        <div className="scrollbar-thin max-h-[350px] space-y-2 overflow-y-auto pr-2">
+                          {emails.map((item: any) => {
                           const email = item.email;
                           return (
                             <article
                               key={item.id}
-                              className="overflow-hidden rounded-2xl border bg-white shadow-sm dark:bg-zinc-950"
+                              className="overflow-hidden border bg-white shadow-sm dark:bg-zinc-950"
                             >
                               <div className="border-b bg-slate-50 p-4 dark:bg-slate-900/60">
                                 <div className="flex flex-wrap items-start justify-between gap-3">
@@ -757,7 +957,7 @@ export function ServiceCloudTicketDetailPage({
                                 </div>
                               </div>
                               <div className="p-5">
-                                <div className="prose prose-sm dark:prose-invert max-w-none">
+                                <div className="prose prose-sm max-w-none dark:bg-white dark:text-leadgaze-dark dark:px-4">
                                   {email?.html_body || email?.body ? (
                                     <div
                                       dangerouslySetInnerHTML={{
@@ -772,125 +972,108 @@ export function ServiceCloudTicketDetailPage({
                                     </p>
                                   )}
                                 </div>
+
+                                {Array.isArray(email?.attachments) && email.attachments.length > 0 && (
+                                  <div className="mt-4 border-t pt-3">
+                                    <div className="flex items-center gap-1.5 text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-2">
+                                      <Paperclip className="h-3.5 w-3.5 text-blue-500" />
+                                      <span>Attachments ({email.attachments.length})</span>
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                      {email.attachments.map((att: any, attIdx: number) => {
+                                        const name = att.name || att.fileName || `Attachment ${attIdx + 1}`;
+                                        const sizeStr = formatFileSize(att.size);
+                                        return (
+                                          <div
+                                            key={attIdx}
+                                            className="flex items-center justify-between gap-2 rounded-md border border-zinc-200 bg-zinc-50/70 p-2 transition-colors hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900/60"
+                                          >
+                                            <div className="flex items-center gap-2 min-w-0 flex-1">
+                                              <Paperclip className="h-3.5 w-3.5 text-blue-500 shrink-0" />
+                                              <div className="min-w-0 flex-1">
+                                                <p className="truncate text-xs font-medium text-zinc-900 dark:text-zinc-100" title={name}>
+                                                  {name}
+                                                </p>
+                                                {sizeStr && (
+                                                  <p className="text-[10px] text-zinc-500 dark:text-zinc-400">{sizeStr}</p>
+                                                )}
+                                              </div>
+                                            </div>
+                                            <Button
+                                              type="button"
+                                              variant="ghost"
+                                              size="sm"
+                                              className="h-7 gap-1 px-2 text-xs text-blue-600 hover:bg-blue-50 dark:text-blue-400 shrink-0"
+                                              onClick={(e) => handleDownloadAttachment(e, att)}
+                                              title={`Download ${name}`}
+                                            >
+                                              <Download className="h-3.5 w-3.5" />
+                                              <span>Download</span>
+                                            </Button>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                )}
                               </div>
                             </article>
                           );
                         })}
-                      </div>
-                    )}
-                  </TabsContent>
+                        </div>
+                      )}
+                    </div>
+                  </CardWidgetContainer>
+                </TabsContent>
                 ) : null}
 
-                <TabsContent value="work" className="space-y-4">
-                  <div className="grid gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
+                <TabsContent value="work" className="mt-0 flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col data-[state=active]:flex data-[state=active]:flex-1 data-[state=active]:flex-col data-[state=active]:min-h-0 gap-2">
+                  <div className="flex min-h-0 flex-1 flex-col w-full">
                     <CardWidgetContainer
-                      title="Log Time"
-                      description="Track work directly against this ticket."
-                      icon={<Timer className="h-4 w-4" />}
-                      hideHeaderBorder={true}
-                    >
-                      <div className="space-y-4 px-6 pb-4">
-                        <Field label="Date">
-                          <DateTimePicker
-                            mode="date"
-                            placeholder="Pick a date"
-                            value={
-                              timeForm.logged_date
-                                ? new Date(
-                                  timeForm.logged_date + 'T00:00:00',
-                                )
-                                : undefined
-                            }
-                            onChange={(date) =>
-                              setTimeForm((prev) => ({
-                                ...prev,
-                                logged_date: date
-                                  ? toLocalDateString(date)
-                                  : prev.logged_date,
-                              }))
-                            }
-                          />
-                        </Field>
-                        <div className="grid grid-cols-2 gap-3">
-                          <Field label="Hours">
-                            <Input
-                              type="number"
-                              min="0"
-                              value={timeForm.hours}
-                              onChange={(event) =>
-                                setTimeForm((prev) => ({
-                                  ...prev,
-                                  hours: event.target.value,
-                                }))
-                              }
-                            />
-                          </Field>
-                          <Field label="Minutes">
-                            <Input
-                              type="number"
-                              min="0"
-                              value={timeForm.minutes}
-                              onChange={(event) =>
-                                setTimeForm((prev) => ({
-                                  ...prev,
-                                  minutes: event.target.value,
-                                }))
-                              }
-                            />
-                          </Field>
-                        </div>
-                        <Field label="Activities">
-                          <Input
-                            value={timeForm.activities}
-                            onChange={(event) =>
-                              setTimeForm((prev) => ({
-                                ...prev,
-                                activities: event.target.value,
-                              }))
-                            }
-                            placeholder="What activities did you perform?"
-                          />
-                        </Field>
-                        <Field label="Description">
-                          <Textarea
-                            value={timeForm.description}
-                            onChange={(event) =>
-                              setTimeForm((prev) => ({
-                                ...prev,
-                                description: event.target.value,
-                              }))
-                            }
-                            placeholder="What did you work on?"
-                          />
-                        </Field>
+                      title="Time loged"
+                      className="flex min-h-0 flex-1 flex-col"
+                      contentClassName="flex min-h-0 flex-1 flex-col p-0"
+                      headerClassName="p-2 xl:p-2 2xl:p-2 mb-1"
+                      icon={<Clock3 className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
+                      icon2={
                         <Button
-                          className="w-full"
-                          disabled={!canLogTime || timeMutation.isPending}
-                          onClick={() => timeMutation.mutate()}
+                          size="sm"
+                          variant="ghost"
+                          className="gap-2 text-sm text-blue-500 hover:text-blue-600"
+                          onClick={() => setIsTimeLogOpen(true)}
                         >
-                          <Clock3 className="mr-2 h-4 w-4" />
-                          Log Time
+                          <Plus className="h-4 w-4" />
+                          Add Time
                         </Button>
-                      </div>
-                    </CardWidgetContainer>
-
-                    <CardWidgetContainer
-                      title="Time Entries"
-                      description={`Total logged: ${formatDuration(totalLoggedSeconds)}`}
-                      hideHeaderBorder={true}
+                      }
                     >
-                      <div className="space-y-3 px-6 pb-4">
+                      <div className="flex flex-col min-h-0 flex-1">
                         {timeEntries.length === 0 ? (
-                          <EmptyState
-                            title="No time logged"
-                            description="Add time entries as agents work this ticket."
-                            compact
-                          />
+                          <div className="flex flex-col items-center justify-center py-8 text-center">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#F0F3FF]">
+                              <Clock3 className="h-6 w-6 text-blue-500" />
+                            </div>
+                            <p className="mt-4 text-sm text-gray-500">No Time loged yet</p>
+                          </div>
                         ) : (
                           <PageBody className="sticky flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col overflow-hidden">
                             <div className="flex min-h-0 w-full min-w-0 max-w-full flex-1 gap-0">
-                              <CustomTableContainer>
-                                <div className="scrollbar-thin max-h-[295px] overflow-y-auto">
+                              <CustomTableContainer
+                                pagination={
+                                  <TablePagination
+                                    currentPage={timePage}
+                                    totalPages={Math.ceil(timeEntries.length / timePageSize)}
+                                    totalCount={timeEntries.length}
+                                    pageSize={timePageSize}
+                                    onPageChange={setTimePage}
+                                    onPageSizeChange={(val) => {
+                                      setTimePageSize(val);
+                                      setTimePage(1);
+                                    }}
+                                  />
+                                }
+                              >
+                                <div className="scrollbar-thin flex-1 overflow-y-auto">
                                   <Table>
                                     <TableHeader>
                                       <TableRow>
@@ -898,7 +1081,7 @@ export function ServiceCloudTicketDetailPage({
                                           className="relative w-[80px]"
                                           {...getHeaderProps('s_no')}
                                         >
-                                          S. No.
+                                          <ColumnHeader columnId="s_no" sortColumn={timeSortColumn} sortDirection={timeSortDirection} onSort={() => {}} label="S. No." sortable={false} />
                                           <span
                                             className="col-resize-handle"
                                             {...getResizeHandleProps('s_no')}
@@ -908,7 +1091,7 @@ export function ServiceCloudTicketDetailPage({
                                           className="relative max-w-[150px]"
                                           {...getHeaderProps('activities')}
                                         >
-                                          Activities
+                                          <ColumnHeader columnId="activities" sortColumn={timeSortColumn} sortDirection={timeSortDirection} onSort={timeToggleSort} label="Activities" />
                                           <span
                                             className="col-resize-handle"
                                             {...getResizeHandleProps(
@@ -920,7 +1103,7 @@ export function ServiceCloudTicketDetailPage({
                                           className="relative max-w-[200px]"
                                           {...getHeaderProps('description')}
                                         >
-                                          Description
+                                          <ColumnHeader columnId="description" sortColumn={timeSortColumn} sortDirection={timeSortDirection} onSort={timeToggleSort} label="Description" />
                                           <span
                                             className="col-resize-handle"
                                             {...getResizeHandleProps(
@@ -932,7 +1115,7 @@ export function ServiceCloudTicketDetailPage({
                                           className="relative w-[150px]"
                                           {...getHeaderProps('author')}
                                         >
-                                          Author
+                                          <ColumnHeader columnId="author" sortColumn={timeSortColumn} sortDirection={timeSortDirection} onSort={timeToggleSort} label="Author" />
                                           <span
                                             className="col-resize-handle"
                                             {...getResizeHandleProps('author')}
@@ -940,24 +1123,24 @@ export function ServiceCloudTicketDetailPage({
                                         </TableHead>
                                         <TableHead
                                           className="relative w-[180px]"
-                                          {...getHeaderProps('date_time')}
+                                          {...getHeaderProps('logged_date')}
                                         >
-                                          Date &amp; Time Log
+                                          <ColumnHeader columnId="logged_date" sortColumn={timeSortColumn} sortDirection={timeSortDirection} onSort={timeToggleSort} label="Date & Time Log" />
                                           <span
                                             className="col-resize-handle"
                                             {...getResizeHandleProps(
-                                              'date_time',
+                                              'logged_date',
                                             )}
                                           />
                                         </TableHead>
-                                        <TableHead className="w-[100px] text-center"></TableHead>
+                                        <TableHead className="w-[100px] text-center">Actions</TableHead>
                                       </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                      {timeEntries.map(
+                                      {paginatedTimeEntries.map(
                                         (entry: any, index: number) => (
                                           <TableRow key={entry.id}>
-                                            <TableCell>{index + 1}</TableCell>
+                                            <TableCell>{(timePage - 1) * timePageSize + index + 1}</TableCell>
                                             <TableCell
                                               className="max-w-[150px] truncate"
                                               title={entry.activities || ''}
@@ -991,14 +1174,7 @@ export function ServiceCloudTicketDetailPage({
                                                     entry.logged_date,
                                                   )}
                                                 </span>
-                                                <Badge
-                                                  variant="secondary"
-                                                  className="whitespace-nowrap"
-                                                >
-                                                  {formatDuration(
-                                                    entry.duration_seconds,
-                                                  )}
-                                                </Badge>
+                                                <span className="text-gray-400 whitespace-nowrap">({formatDuration(entry.duration_seconds)})</span>
                                               </div>
                                             </TableCell>
                                             <TableCell className="w-[100px] text-center">
@@ -1039,126 +1215,239 @@ export function ServiceCloudTicketDetailPage({
                   </div>
                 </TabsContent>
 
-                <TabsContent value="notes">
+                <TabsContent value="notes" className="max-h-[500px] overflow-y-auto mb-2">
                   <CardWidgetContainer
                     title="Notes"
-                    description="Internal notes attached to this ticket."
-                    icon={<Paperclip className="h-4 w-4" />}
-                    hideHeaderBorder={true}
+                    headerClassName="p-2 xl:p-2 2xl:p-2"
+                    icon={<Clock className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
+                    icon2={
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="gap-2 text-sm text-blue-500 hover:text-blue-600"
+                        onClick={() => {
+                          setEditingNote(null);
+                          setNoteContent('');
+                          setIsNoteModalOpen(true);
+                        }}
+                      >
+                        <Plus className="h-4 w-4" />
+                        Add Note
+                      </Button>
+                    }
                   >
-                    <div className="px-6 pb-4">
-                      <CoreEntityPanel
-                        workspaceId={workspaceId}
-                        entityType="service_cloud_ticket"
-                        entityId={ticketId}
-                        capabilities={['notes']}
-                      />
-                    </div>
-                  </CardWidgetContainer>
-                </TabsContent>
-
-                <TabsContent value="documents">
-                  <CardWidgetContainer
-                    title="Documents"
-                    description="Attachments and files uploaded to this ticket."
-                    icon={<Paperclip className="h-4 w-4" />}
-                    hideHeaderBorder={true}
-                  >
-                    <div className="px-6 pb-4">
-                      <CoreEntityPanel
-                        workspaceId={workspaceId}
-                        entityType="service_cloud_ticket"
-                        entityId={ticketId}
-                        capabilities={['documents']}
-                      />
-                    </div>
-                  </CardWidgetContainer>
-                </TabsContent>
-
-                <TabsContent value="activity">
-                  <CardWidgetContainer
-                    title="Ticket Activity"
-                    description="Status, priority, assignment, email, and time-log history for this ticket."
-                    hideHeaderBorder={true}
-                  >
-                    <div className="scrollbar-thin max-h-[400px] min-h-[300px] space-y-3 overflow-y-auto px-6 pb-4 pr-2">
-                      {(data.activities ?? []).length === 0 ? (
-                        <EmptyState
-                          title="No activity yet"
-                          description="Ticket changes will be captured here."
-                          compact
-                        />
+                    <div className="px-2 pb-2 pt-2">
+                      {notesLoading ? (
+                        <div className="flex justify-center py-4">
+                          <Skeleton className="h-8 w-8 rounded-full" />
+                        </div>
+                      ) : notes.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-8 text-center">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#F0F3FF] dark:bg-slate-900">
+                            <Clock className="h-6 w-6 text-gray-500" />
+                          </div>
+                          <p className="mt-4 text-sm font-medium text-gray-700 dark:text-gray-300">No Notes write yet</p>
+                        </div>
                       ) : (
-                        data.activities.map((activity: any) => (
-                          <div
-                            key={activity.id}
-                            className="relative rounded-xl border bg-white p-4 shadow-sm dark:bg-zinc-950"
-                          >
-                            <div className="flex flex-wrap items-start justify-between gap-3">
-                              <div className="space-y-1">
-                                <div className="flex flex-wrap items-center gap-2">
-                                  <Badge variant="outline">
-                                    {eventLabel(activity.event_type)}
-                                  </Badge>
-                                  <span className="text-muted-foreground text-xs">
-                                    by {actorLabel(activity)}
-                                  </span>
+                        <div className="space-y-2">
+                          {notes.map((n: any) => (
+                            <div key={n.id} className="border border-gray-200 dark:border-slate-800 p-2 mb-2 flex justify-between items-start bg-white dark:bg-zinc-950">
+                              <div>
+                                <div className="primary-text-big-regular text-leadgaze-dark dark:text-white !font-normal">{n.note || n.content}</div>
+                                <div className="secondary-text-small-regular text-leadgaze-muted dark:text-white">
+                                  Created on {formatDateOnly(n.created_at)} | {new Date(n.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                 </div>
-                                <div className="font-medium">
-                                  {activity.summary ||
-                                    eventLabel(activity.event_type)}
-                                </div>
-                                {activity.from_value?.label ||
-                                  activity.to_value?.label ? (
-                                  <div className="text-muted-foreground text-xs">
-                                    {activity.from_value?.label ?? 'None'} -&gt;{' '}
-                                    {activity.to_value?.label ?? 'None'}
-                                  </div>
-                                ) : null}
                               </div>
-                              <div className="text-muted-foreground text-right text-xs">
-                                {formatDateTime(activity.created_at)}
+                              <div className="flex gap-1 shrink-0 ml-4">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                                  onClick={() => openEditNoteDialog(n)}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/50"
+                                  onClick={() => setDeletingNoteId(n.id)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
                               </div>
                             </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </CardWidgetContainer>
+                </TabsContent>
+
+                <TabsContent value="documents" className="max-h-[500px] overflow-y-auto mb-2">
+                  <CardWidgetContainer
+                    title="Document"
+                    headerClassName="p-2 xl:p-2 2xl:p-2"
+                    icon={<FileText className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
+                    icon2={
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="gap-2 text-sm text-blue-500 hover:text-blue-600"
+                        onClick={() => {
+                          setDocumentForm({ name: '', file: null, file_url: '', category: '', description: '' });
+                          setIsDocumentModalOpen(true);
+                        }}
+                      >
+                        <Plus className="h-4 w-4" />
+                        Add Document
+                      </Button>
+                    }
+                  >
+                    <div className="px-2 pb-2 pt-2">
+                      {documentsLoading ? (
+                        <div className="flex justify-center py-4">
+                          <Skeleton className="h-8 w-8 rounded-full" />
+                        </div>
+                      ) : documents.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-8 text-center">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#F0F3FF] dark:bg-slate-900">
+                            <Mail className="h-6 w-6 text-gray-400" />
                           </div>
-                        ))
+                          <p className="mt-4 text-sm font-medium text-gray-700 dark:text-gray-300">No Document added yet</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          {documents.map((d: any) => (
+                            <div key={d.id} className="border border-gray-200 dark:border-slate-800 p-2 mb-2 flex justify-between items-start bg-white dark:bg-zinc-950">
+                              <div>
+                                <div className="primary-text-big-regular text-leadgaze-dark dark:text-white !font-normal">
+                                  {d.file_url || d.file_path ? (
+                                    <a className="primary-text-big-regular underline-offset-4 hover:underline text-blue-600" href={d.file_url ?? d.file_path} target="_blank" rel="noreferrer">
+                                      {d.name}
+                                    </a>
+                                  ) : d.name}
+                                  {d.category && <Badge variant="outline" className="ml-2 font-normal text-xs">{d.category}</Badge>}
+                                </div>
+                                {d.description && <div className="secondary-text-small-regular text-leadgaze-muted dark:text-gray-400">{d.description}</div>}
+                                <div className="secondary-text-small-regular text-leadgaze-muted dark:text-white">
+                                  Added on {formatDateOnly(d.created_at)} | {new Date(d.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </div>
+                              </div>
+                              <div className="flex gap-1 shrink-0 ml-4">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/50"
+                                  onClick={() => setDeletingDocumentId(d.id)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </CardWidgetContainer>
+                </TabsContent>
+
+                <TabsContent value="activity" className="max-h-[500px] overflow-y-auto mb-2">
+                  <CardWidgetContainer
+                    title="Ticket Activity"
+                    headerClassName="p-2 xl:p-2 2xl:p-2"
+                    icon={<Clock className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
+                    icon2={
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => refetchTicketDetail()}
+                        disabled={isFetchingTicketDetail}
+                        className="h-7 gap-1 px-2 text-xs text-blue-500 hover:text-blue-600"
+                        title="Refresh activity logs"
+                      >
+                        <RefreshCw className={cn('h-3.5 w-3.5', isFetchingTicketDetail && 'animate-spin')} />
+                        <span>Refresh</span>
+                      </Button>
+                    }
+                  >
+                    <div className="px-0 mb-2">
+                      {(data.activities ?? []).length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-8 text-center">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#F0F3FF] dark:bg-slate-900">
+                            <Clock className="h-6 w-6 text-gray-500" />
+                          </div>
+                          <p className="mt-4 text-sm font-medium text-gray-700 dark:text-gray-300">No Activity yet</p>
+                        </div>
+                      ) : (
+                        <div className="max-h-[350px] overflow-y-auto divide-y divide-gray-100 border border-gray-200 bg-white dark:divide-gray-800/60 dark:border-gray-800 dark:bg-slate-950">
+                          {data.activities.map((activity: any) => {
+                            const details = getActivityUIDetails(activity);
+                            const name = activity.summary || eventLabel(activity.event_type);
+                            
+                            return (
+                              <div
+                                key={activity.id}
+                                className="flex flex-col justify-center gap-1.5 px-3 py-1.5 text-xs transition-colors hover:bg-slate-50/80 dark:hover:bg-slate-900/60"
+                              >
+                                <div className="flex items-center justify-between gap-1.5">
+                                  <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                                    <div className="shrink-0">{details.icon}</div>
+                                    <span className="font-semibold text-leadgaze-dark shrink-0 dark:text-white text-xs">
+                                      {details.module}
+                                    </span>
+                                    {(activity.from_value?.label || activity.to_value?.label) && (
+                                      <span className="text-muted-foreground text-xs shrink-0">
+                                        {activity.from_value?.label ?? 'None'} &rarr; {activity.to_value?.label ?? 'None'}
+                                      </span>
+                                    )}
+                                    {getActionBadge(details.action, details.color)}
+                                    {name && (
+                                      <span className="font-medium text-gray-800 truncate dark:text-gray-200 text-xs">
+                                        {name}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-2 shrink-0 text-xs text-gray-500 dark:text-gray-400">
+                                    <span>by {actorLabel(activity)}</span>
+                                    <span className="hidden sm:inline">•</span>
+                                    <span className="whitespace-nowrap">{formatDateOnly(activity.created_at)} | {new Date(activity.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
                       )}
                     </div>
                   </CardWidgetContainer>
                 </TabsContent>
               </Tabs>
-            </div>
-          </CardWidgetContainer>
+          
         </div>
 
         <div className="w-full space-y-4 lg:w-[35%] lg:overflow-y-auto">
           <Accordion
-            type="single"
-            collapsible
+            type="multiple"
             className="space-y-2"
-            value={openAccordion}
-            onValueChange={setOpenAccordion}
+            value={openAccordions}
+            onValueChange={setOpenAccordions}
           >
             <AccordionItem
               value="ticket-properties"
-              className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
+              className="overflow-hidden border bg-white dark:bg-zinc-900"
             >
-              <AccordionTrigger className="px-4 py-3 hover:no-underline">
-                <div className="flex flex-col items-start gap-1">
-                  <span className="primary-heading text-leadgaze-dark flex items-center gap-2 dark:text-white">
-                    <Settings className="text-leadgaze-dark h-5 w-5 dark:text-white" />
-                    Ticket Properties
-                  </span>
-                  <span className="text-muted-foreground text-xs font-normal">
-                    Operational fields agents update while working the case.
-                  </span>
-                </div>
+              <AccordionTrigger className="px-2 pb-2 border-b border-b-accordion hover:no-underline py-3">
+                <span className="primary-text-big-regular text-leadgaze-dark flex items-center gap-2 dark:text-white">
+                  <Settings className="text-leadgaze-dark h-5 w-5 dark:text-white" />
+                  Ticket Properties
+                </span>
               </AccordionTrigger>
-              <AccordionContent className="px-4 pb-4">
-                <div className="space-y-4 pt-2">
+              <AccordionContent className="px-2 pb-2">
+                <DetailInfoList>
                   {(!canViewField || canViewField('status_id')) && (
                     <EditableSelect
-                      icon={<Flag className="h-4 w-4" />}
+                      icon={<Flag className="h-5 w-5" />}
                       label="Status"
                       value={ticket.status_id}
                       options={statuses}
@@ -1172,7 +1461,7 @@ export function ServiceCloudTicketDetailPage({
                   )}
                   {(!canViewField || canViewField('priority_id')) && (
                     <EditableSelect
-                      icon={<Flag className="h-4 w-4" />}
+                      icon={<Flag className="h-5 w-5" />}
                       label="Priority"
                       value={ticket.priority_id}
                       options={priorities}
@@ -1187,7 +1476,7 @@ export function ServiceCloudTicketDetailPage({
                   )}
                   {(!canViewField || canViewField('category_id')) && (
                     <EditableSelect
-                      icon={<Tag className="h-4 w-4" />}
+                      icon={<Tag className="h-5 w-5" />}
                       label="Category"
                       value={ticket.category_id}
                       options={categories}
@@ -1201,7 +1490,7 @@ export function ServiceCloudTicketDetailPage({
                   )}
                   {(!canViewField || canViewField('assigned_agent_id')) && (
                     <EditableSelect
-                      icon={<UserCheck className="h-4 w-4" />}
+                      icon={<UserCheck className="h-5 w-5" />}
                       label="Primary owner"
                       value={ticket.assigned_agent_id}
                       options={members}
@@ -1216,12 +1505,15 @@ export function ServiceCloudTicketDetailPage({
                     />
                   )}
                   {(!canViewField || canViewField('due_at')) && (
-                    <Field label="Due date">
+                    <div className="flex items-center justify-between gap-2 h-[35px]">
                       <div className="flex items-center gap-2">
-                        <CalendarDays className="text-muted-foreground h-4 w-4" />
-                        <DateTimePicker
-                          mode="date"
-                          placeholder="Select date"
+                        <CalendarDays className="text-muted-foreground h-5 w-5 shrink-0" />
+                        <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
+                          Due date
+                        </span>
+                      </div>
+                      <div className="min-w-0 flex-1 text-right">
+                        <EditableDate
                           value={dueValue ? new Date(dueValue) : undefined}
                           disabled={
                             isUpdating ||
@@ -1234,184 +1526,216 @@ export function ServiceCloudTicketDetailPage({
                           }
                         />
                       </div>
-                    </Field>
+                    </div>
                   )}
-                  {(!canViewField || canViewField('assignees')) && (
-                    <>
-                      <Separator />
-                      <TicketAssignees
-                        members={members}
-                        assignees={assignees}
-                        disabled={
-                          assigneeMutation.isPending ||
-                          (canEditField ? !canEditField('assignees') : false)
-                        }
-                        onToggle={(member, assignee) =>
-                          assigneeMutation.mutate({
-                            accountId: member.id,
-                            assigneeId: assignee?.id,
-                            action: assignee ? 'remove' : 'add',
-                          })
-                        }
-                      />
-                    </>
-                  )}
-                </div>
+                </DetailInfoList>
+                {(!canViewField || canViewField('assignees')) && (
+                  <div className="pt-0">
+                    <Separator className="mb-2" />
+                    <TicketAssignees
+                      members={members}
+                      assignees={assignees}
+                      disabled={
+                        assigneeMutation.isPending ||
+                        (canEditField ? !canEditField('assignees') : false)
+                      }
+                      onToggle={(member, assignee) =>
+                        assigneeMutation.mutate({
+                          accountId: member.id,
+                          assigneeId: assignee?.id,
+                          action: assignee ? 'remove' : 'add',
+                        })
+                      }
+                    />
+                  </div>
+                )}
               </AccordionContent>
             </AccordionItem>
 
             <AccordionItem
               value="sla-snapshot"
-              className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
-              style={
-                ticket.priority?.color
-                  ? {
-                    backgroundColor: `${ticket.priority.color}15`,
-                    borderColor: `${ticket.priority.color}50`,
-                  }
-                  : undefined
-              }
+              className="overflow-hidden border bg-white dark:bg-zinc-900"
             >
-              <AccordionTrigger className="px-4 py-3 hover:no-underline">
-                <div className="flex w-full items-center justify-between gap-4 pr-4">
-                  <span className="primary-heading text-leadgaze-dark flex items-center gap-2 dark:text-white">
-                    <Timer className="text-leadgaze-dark h-5 w-5 dark:text-white" />
-                    SLA Snapshot
-                  </span>
-                  {ticket.priority?.name ? (
-                    <div className="text-muted-foreground flex items-center gap-2 text-sm">
-                      <span>Priority:</span>
-                      <Badge
-                        className="flex items-center gap-1.5 font-medium"
-                        style={
-                          ticket.priority?.color
-                            ? {
-                              backgroundColor: `${ticket.priority.color}20`,
-                              borderColor: `${ticket.priority.color}40`,
-                              color: ticket.priority.color,
-                            }
-                            : undefined
-                        }
-                      >
-                        {ticket.priority?.color ? (
-                          <span
-                            className="h-2 w-2 shrink-0 rounded-full"
-                            style={{ backgroundColor: ticket.priority.color }}
-                          />
-                        ) : null}
-                        {ticket.priority.name}
-                      </Badge>
-                    </div>
-                  ) : null}
-                </div>
+              <AccordionTrigger className="px-2 pb-2 border-b border-b-accordion hover:no-underline py-3">
+                <span className="primary-text-big-regular text-leadgaze-dark flex items-center gap-2 dark:text-white">
+                  <Timer className="text-leadgaze-dark h-5 w-5 dark:text-white" />
+                  SLA Snapshot
+                </span>
               </AccordionTrigger>
-              <AccordionContent className="px-4 pb-4">
-                <div className="space-y-3 pt-2 text-sm">
+              <AccordionContent className="px-2 pb-2">
+                <DetailInfoList>
                   {(!canViewField || canViewField('priority_id')) && (
-                    <Metric
-                      label="Priority"
-                      value={ticket.priority?.name ?? 'Not set'}
-                    />
+                    <div className="flex items-center justify-between gap-2 h-[35px]">
+                      <div className="flex items-center gap-2">
+                        <Flag className="text-muted-foreground h-5 w-5 shrink-0" />
+                        <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">Priority</span>
+                      </div>
+                      <div className="min-w-0 flex-1 text-right">
+                        <span className="primary-text-regular text-leadgaze-dark dark:text-white">{ticket.priority?.name ?? 'Not set'}</span>
+                      </div>
+                    </div>
                   )}
                   {(!canViewField || canViewField('due_at')) && (
                     <>
-                      <Metric
-                        label="Response due"
-                        value={formatDateTime(responseDueAt)}
-                      />
-                      <Metric
-                        label="Resolution due"
-                        value={formatDateOnly(dueValue)}
-                      />
+                      <div className="flex items-center justify-between gap-2 h-[35px]">
+                        <div className="flex items-center gap-2">
+                          <Timer className="text-muted-foreground h-5 w-5 shrink-0" />
+                          <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">Response due</span>
+                        </div>
+                        <div className="min-w-0 flex-1 text-right">
+                          <span className="primary-text-regular text-leadgaze-dark dark:text-white">{responseDueAt ? formatDateTime(responseDueAt) : '-'}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between gap-2 h-[35px] border-b border-b-accordion">
+                        <div className="flex items-center gap-2">
+                          <CalendarDays className="text-muted-foreground h-5 w-5 shrink-0" />
+                          <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">Resolution due</span>
+                        </div>
+                        <div className="min-w-0 flex-1 text-right">
+                          <span className="primary-text-regular text-leadgaze-dark dark:text-white">{dueValue ? formatDateOnly(dueValue) : '-'}</span>
+                        </div>
+                      </div>
                     </>
                   )}
-                </div>
+                </DetailInfoList>
               </AccordionContent>
             </AccordionItem>
 
             <AccordionItem
               value="customer-details"
-              className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
+              className="overflow-hidden border bg-white dark:bg-zinc-900"
             >
-              <AccordionTrigger className="px-4 py-3 hover:no-underline">
-                <span className="primary-heading text-leadgaze-dark flex items-center gap-2 dark:text-white">
+              <AccordionTrigger className="px-2 pb-2 border-b border-b-accordion hover:no-underline py-3">
+                <span className="primary-text-big-regular text-leadgaze-dark flex items-center gap-2 dark:text-white">
                   <UserRound className="text-leadgaze-dark h-5 w-5 dark:text-white" />
                   Customer Details
                 </span>
               </AccordionTrigger>
-              <AccordionContent className="px-4 pb-4">
-                <div className="space-y-3 pt-2 text-sm">
+              <AccordionContent className="px-2 pb-2">
+                <DetailInfoList>
                   {(!canViewField || canViewField('customer')) && (
                     <>
-                      <Metric
-                        label="Name"
-                        value={ticket.customer?.name ?? '-'}
-                      />
-                      <Metric
-                        label="Email"
-                        value={ticket.customer?.email ?? '-'}
-                      />
-                      <Metric
-                        label="Phone"
-                        value={ticket.customer?.phone ?? '-'}
-                      />
+                      <div className="flex items-center justify-between gap-2 h-[35px]">
+                        <div className="flex items-center gap-2">
+                          <UserRound className="text-muted-foreground h-5 w-5 shrink-0" />
+                          <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">Name</span>
+                        </div>
+                        <div className="min-w-0 flex-1 text-right">
+                          <span className="primary-text-regular text-leadgaze-dark dark:text-white">{ticket.customer?.name ?? '-'}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between gap-2 h-[35px]">
+                        <div className="flex items-center gap-2">
+                          <Mail className="text-muted-foreground h-5 w-5 shrink-0" />
+                          <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">Email</span>
+                        </div>
+                        <div className="min-w-0 flex-1 text-right">
+                          <span className="text-sm text-blue-600 dark:text-blue-400 font-medium truncate block">{ticket.customer?.email ?? '-'}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between gap-2 h-[35px]">
+                        <div className="flex items-center gap-2">
+                          <Phone className="text-muted-foreground h-5 w-5 shrink-0" />
+                          <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">Phone</span>
+                        </div>
+                        <div className="min-w-0 flex-1 text-right">
+                          <span className="primary-text-regular text-leadgaze-dark dark:text-white">{ticket.customer?.phone ?? '-'}</span>
+                        </div>
+                      </div>
                     </>
                   )}
                   {(!canViewField || canViewField('organization')) && (
                     <>
-                      <Separator />
-                      <Metric
-                        label="Company"
-                        value={ticket.organization?.name ?? '-'}
-                      />
-                      <Metric
-                        label="Industry"
-                        value={ticket.organization?.industry ?? '-'}
-                      />
-                      <Metric
-                        label="Website"
-                        value={ticket.organization?.website ?? '-'}
-                      />
+                      <div className="flex items-center justify-between gap-2 h-[35px]">
+                        <div className="flex items-center gap-2">
+                          <Building2 className="text-muted-foreground h-5 w-5 shrink-0" />
+                          <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">Company</span>
+                        </div>
+                        <div className="min-w-0 flex-1 text-right">
+                          <span className="primary-text-regular text-leadgaze-dark dark:text-white">{ticket.organization?.name ?? '-'}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between gap-2 h-[35px]">
+                        <div className="flex items-center gap-2">
+                          <Factory className="text-muted-foreground h-5 w-5 shrink-0" />
+                          <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">Industry</span>
+                        </div>
+                        <div className="min-w-0 flex-1 text-right">
+                          <span className="primary-text-regular text-leadgaze-dark dark:text-white">{ticket.organization?.industry ?? '-'}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between gap-2 h-[35px] border-b border-b-accordion">
+                        <div className="flex items-center gap-2">
+                          <Globe className="text-muted-foreground h-5 w-5 shrink-0" />
+                          <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">Website</span>
+                        </div>
+                        <div className="min-w-0 flex-1 text-right">
+                          <span className="text-sm text-blue-600 dark:text-blue-400 font-medium truncate block">{ticket.organization?.website ?? '-'}</span>
+                        </div>
+                      </div>
                     </>
                   )}
-                </div>
+                </DetailInfoList>
               </AccordionContent>
             </AccordionItem>
 
             <AccordionItem
               value="record-details"
-              className="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900"
+              className="overflow-hidden border bg-white dark:bg-zinc-900"
             >
-              <AccordionTrigger className="px-4 py-3 hover:no-underline">
-                <span className="primary-heading text-leadgaze-dark flex items-center gap-2 dark:text-white">
+              <AccordionTrigger className="px-2 pb-2 border-b border-b-accordion hover:no-underline py-3">
+                <span className="primary-text-big-regular text-leadgaze-dark flex items-center gap-2 dark:text-white">
                   <Building2 className="text-leadgaze-dark h-5 w-5 dark:text-white" />
                   Record Details
                 </span>
               </AccordionTrigger>
-              <AccordionContent className="px-4 pb-4">
-                <div className="space-y-3 pt-2 text-sm">
-                  <Metric label="Source" value={ticket.source ?? '-'} />
-                  <Metric
-                    label="Last response"
-                    value={
-                      ticket.last_agent_response_at
-                        ? formatDateTime(ticket.last_agent_response_at)
-                        : 'No response yet'
-                    }
-                  />
-                  <Metric
-                    label="Last customer reply"
-                    value={
-                      ticket.last_customer_response_at
-                        ? formatDateTime(ticket.last_customer_response_at)
-                        : 'Customer has not responded yet'
-                    }
-                  />
-                  <Metric
-                    label="Updated"
-                    value={formatDateTime(ticket.updated_at)}
-                  />
-                </div>
+              <AccordionContent className="px-2 pb-2">
+                <DetailInfoList>
+                  <div className="flex items-center justify-between gap-2 h-[35px]">
+                    <div className="flex items-center gap-2">
+                      <Inbox className="text-muted-foreground h-5 w-5 shrink-0" />
+                      <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">Source</span>
+                    </div>
+                    <div className="min-w-0 flex-1 text-right">
+                      <span className="primary-text-regular text-leadgaze-dark dark:text-white">{ticket.source ?? '-'}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between gap-2 h-[35px]">
+                    <div className="flex items-center gap-2">
+                      <Clock3 className="text-muted-foreground h-5 w-5 shrink-0" />
+                      <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">Last response</span>
+                    </div>
+                    <div className="min-w-0 flex-1 text-right">
+                      <span className="primary-text-regular text-leadgaze-dark dark:text-white">
+                        {ticket.last_agent_response_at
+                          ? formatDateTime(ticket.last_agent_response_at)
+                          : 'No response yet'}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between gap-2 h-[35px]">
+                    <div className="flex items-center gap-2">
+                      <Clock className="text-muted-foreground h-5 w-5 shrink-0" />
+                      <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">Last reply</span>
+                    </div>
+                    <div className="min-w-0 flex-1 text-right">
+                      <span className="primary-text-regular text-leadgaze-dark dark:text-white">
+                        {ticket.last_customer_response_at
+                          ? formatDateTime(ticket.last_customer_response_at)
+                          : 'Customer has not responded yet'}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between gap-2 h-[35px] border-b border-b-accordion">
+                    <div className="flex items-center gap-2">
+                      <Timer className="text-muted-foreground h-5 w-5 shrink-0" />
+                      <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">Updated</span>
+                    </div>
+                    <div className="min-w-0 flex-1 text-right">
+                      <span className="primary-text-regular text-leadgaze-dark dark:text-white">{formatDateTime(ticket.updated_at)}</span>
+                    </div>
+                  </div>
+                </DetailInfoList>
               </AccordionContent>
             </AccordionItem>
 
@@ -1446,6 +1770,8 @@ export function ServiceCloudTicketDetailPage({
             workspaceId={workspaceId}
             email={replyEmail}
             accounts={emailAccounts}
+            entityType="service_cloud_ticket"
+            entityId={ticketId}
             templateContext={ticketTemplateContext}
           />
           <CoreEmailComposeDialog
@@ -1466,117 +1792,45 @@ export function ServiceCloudTicketDetailPage({
         </>
       ) : null}
 
-      <Dialog
+      <CustomTimeLog
+        open={isTimeLogOpen}
+        onOpenChange={setIsTimeLogOpen}
+        title="Time Log on Task"
+        showActivities={true}
+        onSave={(val) => timeMutation.mutate(val)}
+        isSaving={timeMutation.isPending}
+      />
+
+      <CustomTimeLog
         open={Boolean(editingLogId)}
         onOpenChange={(open) => {
           if (!open) setEditingLogId(null);
         }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Time Entry</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <Field label="Date">
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      'w-full justify-start text-left font-normal',
-                      !editForm.logged_date && 'text-muted-foreground',
-                    )}
-                  >
-                    <CalendarDays className="mr-2 h-4 w-4" />
-                    {editForm.logged_date
-                      ? formatDateOnly(editForm.logged_date)
-                      : 'Pick a date'}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={
-                      editForm.logged_date
-                        ? new Date(editForm.logged_date + 'T00:00:00')
-                        : undefined
-                    }
-                    onSelect={(date) =>
-                      setEditForm((prev) => ({
-                        ...prev,
-                        logged_date: date
-                          ? toLocalDateString(date)
-                          : prev.logged_date,
-                      }))
-                    }
-                    captionLayout="dropdown"
-                  />
-                </PopoverContent>
-              </Popover>
-            </Field>
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="Hours">
-                <Input
-                  type="number"
-                  min="0"
-                  value={editForm.hours}
-                  onChange={(event) =>
-                    setEditForm((prev) => ({
-                      ...prev,
-                      hours: event.target.value,
-                    }))
-                  }
-                />
-              </Field>
-              <Field label="Minutes">
-                <Input
-                  type="number"
-                  min="0"
-                  value={editForm.minutes}
-                  onChange={(event) =>
-                    setEditForm((prev) => ({
-                      ...prev,
-                      minutes: event.target.value,
-                    }))
-                  }
-                />
-              </Field>
-            </div>
-            <Field label="Activities">
-              <Input
-                value={editForm.activities}
-                onChange={(event) =>
-                  setEditForm((prev) => ({
-                    ...prev,
-                    activities: event.target.value,
-                  }))
-                }
-                placeholder="What activities did you perform?"
-              />
-            </Field>
-            <Field label="Description">
-              <Textarea
-                value={editForm.description}
-                onChange={(event) =>
-                  setEditForm((prev) => ({
-                    ...prev,
-                    description: event.target.value,
-                  }))
-                }
-                placeholder="What did you work on?"
-              />
-            </Field>
-            <Button
-              className="w-full"
-              disabled={updateTimeMutation.isPending}
-              onClick={() => updateTimeMutation.mutate()}
-            >
-              <Clock3 className="mr-2 h-4 w-4" />
-              Save Changes
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+        title="Edit Time Entry"
+        showActivities={true}
+        initialDuration={(() => {
+          const parts = [];
+          if (editForm.hours) parts.push(`${editForm.hours}h`);
+          if (editForm.minutes) parts.push(`${editForm.minutes}m`);
+          return parts.join(' ');
+        })()}
+        initialDate={
+          editForm.logged_date
+            ? new Date(editForm.logged_date + 'T00:00:00')
+            : undefined
+        }
+        initialDescription={editForm.description}
+        initialActivities={editForm.activities}
+        onSave={(val) => {
+          updateTimeMutation.mutate({
+            duration_seconds: val.durationMinutes * 60,
+            description: val.description,
+            activities: val.activities,
+            logged_date: val.dateTime.split('T')[0] as string,
+          });
+        }}
+        isSaving={updateTimeMutation.isPending}
+      />
 
       <AlertDialog
         open={Boolean(deletingLogId)}
@@ -1605,7 +1859,208 @@ export function ServiceCloudTicketDetailPage({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+
+      <Dialog
+        open={isNoteModalOpen}
+        onOpenChange={(open) => !open && setIsNoteModalOpen(false)}
+      >
+        <DialogContent className="sm:max-w-[500px] flex max-h-[90vh] flex-col p-0 overflow-hidden border-gray-200 bg-white dark:border-slate-800 dark:bg-slate-950">
+          
+            <DialogHeader>
+                        <DialogTitle>
+                          {editingNote ? 'Edit Note' : 'Add Note'}
+                        </DialogTitle>
+              </DialogHeader>          
+          <div className="p-2 pt-0">
+            <Label htmlFor="note_content" className="text-sm font-medium">Write Note</Label>
+            <Textarea
+              id="note_content"
+              placeholder="Write Note"
+              value={noteContent}
+              onChange={(e) => setNoteContent(e.target.value)}
+              className="min-h-[120px] resize-none border-gray-300 dark:border-slate-700"
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsNoteModalOpen(false)}
+              disabled={createNoteMutation.isPending || updateNoteMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              className="secondary-text-small-bold !text-white gap-1.5 px-2"
+              onClick={handleSaveNote}
+              disabled={createNoteMutation.isPending || updateNoteMutation.isPending || !noteContent.trim()}
+            >
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog
+        open={Boolean(deletingNoteId)}
+        onOpenChange={(open) => !open && setDeletingNoteId(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the note. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (deletingNoteId) {
+                  deleteNoteMutation.mutate(deletingNoteId);
+                }
+              }}
+            >
+              Yes, delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <Dialog
+        open={isDocumentModalOpen}
+        onOpenChange={(open) => !open && setIsDocumentModalOpen(false)}
+      >
+        <DialogContent className="sm:max-w-[600px] flex max-h-[90vh] flex-col p-0 overflow-hidden border-gray-200 bg-white dark:border-slate-800 dark:bg-slate-950">
+          <DialogHeader>
+            <DialogTitle>Add Document</DialogTitle>
+          </DialogHeader>          
+          <div className="p-2 pt-0 space-y-2 overflow-y-auto">
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <Label htmlFor="doc_name" className="text-sm font-medium text-gray-700 dark:text-gray-300">Document Name</Label>
+                <Input
+                  id="doc_name"
+                  placeholder="Document Name"
+                  value={documentForm.name}
+                  onChange={(e) => setDocumentForm(prev => ({ ...prev, name: e.target.value }))}
+                />
+              </div>
+              <div>
+                <Label htmlFor="doc_category" className="text-sm font-medium text-gray-700 dark:text-gray-300">Category</Label>
+                <Input
+                  id="doc_category"
+                  placeholder="Category"
+                  value={documentForm.category}
+                  onChange={(e) => setDocumentForm(prev => ({ ...prev, category: e.target.value }))}
+                />
+              </div>
+            </div>
+
+            <div className="relative rounded-md border border-dashed border-gray-300 dark:border-slate-700 p-6 flex flex-col items-center justify-center bg-gray-50/50 dark:bg-slate-900/50 text-center">
+              <input 
+                type="file" 
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" 
+                onChange={(e) => {
+                  const file = e.target.files?.[0] ?? null;
+                  setDocumentForm(prev => ({ 
+                    ...prev, 
+                    file, 
+                    name: prev.name || file?.name || '' 
+                  }));
+                }} 
+              />
+              <div className="flex h-10 w-10 items-center justify-center shadow-sm mb-3 rounded-full border border-gray-100 bg-white dark:bg-slate-800 dark:border-slate-700">
+                <CloudUpload className="h-5 w-5 text-gray-600 dark:text-gray-300" />
+              </div>
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Drag and drop files here
+              </p>
+              <p className="text-sm text-gray-500 mt-1">
+                or <span className="text-[#0052CC] cursor-pointer font-bold">Browse files</span>
+              </p>
+              {documentForm.file && (
+                <p className="text-xs text-green-600 mt-2 font-medium bg-green-50 dark:bg-green-950/30 px-2 py-1 rounded-md">{documentForm.file.name}</p>
+              )}
+            </div>
+
+            <div className="relative flex items-center">
+              <div className="flex-grow border-t border-gray-200 dark:border-slate-800"></div>
+              <span className="mx-4 flex-shrink-0 text-xs font-semibold uppercase text-gray-400">Or provide a link</span>
+              <div className="flex-grow border-t border-gray-200 dark:border-slate-800"></div>
+            </div>
+
+            <div>
+              <Label htmlFor="doc_url" className="text-sm font-medium text-gray-700 dark:text-gray-300">External URL</Label>
+              <Input
+                id="doc_url"
+                placeholder="https://"
+                value={documentForm.file_url}
+                onChange={(e) => setDocumentForm(prev => ({ ...prev, file_url: e.target.value }))}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="doc_desc" className="text-sm font-medium text-gray-700 dark:text-gray-300">Description</Label>
+              <Textarea
+                id="doc_desc"
+                placeholder="Write your message"
+                value={documentForm.description}
+                onChange={(e) => setDocumentForm(prev => ({ ...prev, description: e.target.value }))}
+                className="min-h-[80px] resize-none"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsDocumentModalOpen(false)}
+              disabled={uploadDocumentMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              className="secondary-text-small-bold !text-white gap-1.5 px-2"
+              onClick={handleSaveDocument}
+              disabled={uploadDocumentMutation.isPending || !documentForm.name.trim() || (!documentForm.file && !documentForm.file_url.trim())}
+            >
+              Add Document
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog
+        open={Boolean(deletingDocumentId)}
+        onOpenChange={(open) => !open && setDeletingDocumentId(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the document. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (deletingDocumentId) {
+                  deleteDocumentMutation.mutate(deletingDocumentId);
+                }
+              }}
+            >
+              Yes, delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
 
@@ -1641,71 +2096,179 @@ function EditableSelect({
   disabled?: boolean;
   allowNone?: boolean;
   onChange: (value: string | null) => void;
-  /** All available options (including restricted ones) for looking up current value */
   allOptions?: LookupOption[];
 }) {
-  // Use allOptions for lookup if provided, otherwise use options
+  const [isEditing, setIsEditing] = useState(false);
   const allOptsForLookup = allOptions || options;
   const selectedOption = allOptsForLookup.find((opt) => opt.id === value);
-  const selectedColor = selectedOption?.color;
 
   return (
-    <Field label={label}>
+    <div className="flex items-center justify-between gap-2 h-[35px]">
       <div className="flex items-center gap-2">
         <span
-          style={selectedColor ? { color: selectedColor } : undefined}
+          style={selectedOption?.color ? { color: selectedOption.color } : undefined}
           className={cn(
-            'text-muted-foreground shrink-0',
-            selectedColor && 'transition-colors',
+            'text-muted-foreground shrink-0 flex h-5 w-5 items-center justify-center',
+            selectedOption?.color && 'transition-colors',
           )}
         >
           {icon}
         </span>
-        <Select
-          value={value ?? 'none'}
-          disabled={disabled || (!allowNone && options.length === 0)}
-          onValueChange={(nextValue) =>
-            onChange(nextValue === 'none' ? null : nextValue)
-          }
-        >
-          <SelectTrigger className="w-full">
-            <div className="flex items-center gap-2">
-              {selectedOption?.color ? (
-                <span
-                  className="h-2.5 w-2.5 shrink-0 rounded-full border border-black/10 dark:border-white/10"
-                  style={{ backgroundColor: selectedOption.color }}
-                />
-              ) : null}
-              <span className="truncate">
-                {selectedOption
-                  ? optionLabel(selectedOption)
-                  : `Select ${label.toLowerCase()}`}
-              </span>
-            </div>
-          </SelectTrigger>
-          <SelectContent>
-            {allowNone ? (
-              <SelectItem value="none">
-                <span>Unassigned</span>
-              </SelectItem>
-            ) : null}
-            {options.map((option) => (
-              <SelectItem key={option.id} value={option.id}>
-                <div className="flex items-center gap-2">
-                  {option.color ? (
-                    <span
-                      className="h-2 w-2 shrink-0 rounded-full border border-black/10 dark:border-white/10"
-                      style={{ backgroundColor: option.color }}
-                    />
-                  ) : null}
-                  <span>{optionLabel(option)}</span>
-                </div>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <span className="primary-text-medium text-leadgaze-dark w-26 shrink-0 dark:text-white">
+          {label}
+        </span>
       </div>
-    </Field>
+
+      <div className="min-w-0 flex-1 text-right">
+        {isEditing ? (
+          <Select
+            value={value ?? 'none'}
+            onValueChange={(nextValue) => {
+              onChange(nextValue === 'none' ? null : nextValue);
+              setIsEditing(false);
+            }}
+            open={isEditing}
+            onOpenChange={(open) => {
+              if (!open) setIsEditing(false);
+            }}
+            disabled={disabled || (!allowNone && options.length === 0)}
+          >
+            <SelectTrigger className="ml-auto w-[220px] justify-end text-right">
+              <div className="flex items-center gap-2 justify-end">
+                {selectedOption?.color ? (
+                  <span
+                    className="h-2.5 w-2.5 shrink-0 rounded-full border border-black/10 dark:border-white/10"
+                    style={{ backgroundColor: selectedOption.color }}
+                  />
+                ) : null}
+                <span className="truncate">
+                  {selectedOption
+                    ? optionLabel(selectedOption)
+                    : `Select ${label.toLowerCase()}`}
+                </span>
+              </div>
+            </SelectTrigger>
+            <SelectContent align="end">
+              {allowNone ? (
+                <SelectItem value="none">
+                  <span>Unassigned</span>
+                </SelectItem>
+              ) : null}
+              {options.map((option) => (
+                <SelectItem key={option.id} value={option.id}>
+                  <div className="flex items-center gap-2">
+                    {option.color ? (
+                      <span
+                        className="h-2 w-2 shrink-0 rounded-full border border-black/10 dark:border-white/10"
+                        style={{ backgroundColor: option.color }}
+                      />
+                    ) : null}
+                    <span>{optionLabel(option)}</span>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : (
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={() => setIsEditing(true)}
+            className={cn(
+              'group inline-flex w-full min-h-[34px] py-1 px-2 items-center justify-end rounded-[4px] text-right outline-none transition-colors',
+              {
+                'cursor-text': !disabled,
+                'text-muted-foreground': !value,
+                'hover:bg-accent/20': !disabled,
+              },
+            )}
+          >
+            <div className="flex w-full items-center justify-end gap-2 text-right">
+              {selectedOption ? (
+                selectedOption.color ? (
+                  <Badge
+                    className="font-medium shadow-none px-2 py-0.5 border-transparent hover:opacity-90"
+                    style={{
+                      backgroundColor: selectedOption.color,
+                      color: '#ffffff',
+                    }}
+                  >
+                    {optionLabel(selectedOption)}
+                  </Badge>
+                ) : (
+                  <span className="block truncate text-sm text-gray-900 dark:text-white transition-colors group-hover:text-foreground">
+                    {optionLabel(selectedOption)}
+                  </span>
+                )
+              ) : (
+                <span className="block truncate text-sm text-gray-900 dark:text-white transition-colors group-hover:text-foreground">
+                  -
+                </span>
+              )}
+            </div>
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function EditableDate({
+  value,
+  disabled,
+  onChange,
+}: {
+  value: Date | undefined;
+  disabled?: boolean;
+  onChange: (date: Date | undefined) => void;
+}) {
+  const [isEditing, setIsEditing] = useState(false);
+
+  return (
+    <div className="flex w-full items-center justify-end">
+      {isEditing ? (
+        <Popover open={isEditing} onOpenChange={setIsEditing}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              className="w-[220px] justify-start text-left font-normal"
+            >
+              <CalendarDays className="mr-2 h-4 w-4" />
+              {value ? format(value, 'PP') : 'Pick a date'}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="end">
+            <Calendar
+              mode="single"
+              selected={value}
+              onSelect={(date) => {
+                onChange(date);
+                setIsEditing(false);
+              }}
+              initialFocus
+            />
+          </PopoverContent>
+        </Popover>
+      ) : (
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => setIsEditing(true)}
+          className={cn(
+            'group inline-flex w-full min-h-[34px] py-1 px-2 items-center justify-end rounded-[4px] text-right outline-none transition-colors',
+            {
+              'cursor-text': !disabled,
+              'text-muted-foreground': !value,
+              'hover:bg-accent/20': !disabled,
+            },
+          )}
+        >
+          <span className="block truncate text-sm text-gray-900 dark:text-white transition-colors group-hover:text-foreground">
+            {value ? format(value, 'PP') : '-'}
+          </span>
+        </button>
+      )}
+    </div>
   );
 }
 
@@ -1723,8 +2286,8 @@ function TicketAssignees({
   return (
     <div className="space-y-2">
       <div>
-        <div className="text-sm font-medium">Additional assignees</div>
-        <p className="text-muted-foreground text-xs">
+        <div className="primary-text-medium text-leadgaze-dark dark:text-white">Additional assignees</div>
+        <p className="text-muted-foreground text-xs pt-1">
           Add multiple agents when this ticket needs shared ownership.
         </p>
       </div>
@@ -1743,10 +2306,10 @@ function TicketAssignees({
             return (
               <div
                 key={member.id}
-                className="flex items-center justify-between gap-3 rounded-xl border p-3"
+                className="flex items-center justify-between gap-2 border p-2"
               >
                 <div className="min-w-0">
-                  <div className="truncate text-sm font-medium">
+                  <div className="truncate text-sm font-medium text-leadgaze-dark dark:text-white">
                     {optionLabel(member)}
                   </div>
                   {member.email ? (
@@ -1757,9 +2320,9 @@ function TicketAssignees({
                 </div>
                 <Button
                   variant={selected ? 'secondary' : 'outline'}
-                  size="sm"
                   disabled={disabled}
                   onClick={() => onToggle(member, assignee)}
+                  className="secondary-text-small-bold text-leadgaze-dark dark:text-white gap-1.5 px-2"
                 >
                   {selected ? 'Remove' : 'Add'}
                 </Button>
@@ -1822,222 +2385,74 @@ function EmptyState({
 
 function ServiceCloudTicketDetailSkeleton() {
   return (
-    <div className="mt-2 space-y-4">
-      {/* ── Hero banner skeleton ── */}
-      <section className="overflow-hidden rounded-none border bg-[radial-gradient(circle_at_top_left,_rgba(14,165,233,0.18),_transparent_34%),linear-gradient(135deg,_#0f172a,_#164e63_52%,_#0f172a)] p-6 shadow-xl">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-          <div className="max-w-4xl space-y-5">
-            {/* Back button */}
-            <Skeleton className="h-8 w-32 rounded-md bg-white/20" />
-            <div className="space-y-3">
-              {/* Badges row */}
-              <div className="flex flex-wrap items-center gap-2">
-                <Skeleton className="h-5 w-14 rounded-full bg-white/20" />
-                <Skeleton className="h-5 w-16 rounded-full bg-white/20" />
-                <Skeleton className="h-5 w-14 rounded-full bg-white/20" />
-                <Skeleton className="h-5 w-40 rounded-full bg-white/15" />
-              </div>
-              {/* Title + description */}
-              <div className="space-y-2">
-                <Skeleton className="h-9 w-3/4 bg-white/20" />
-                <Skeleton className="h-4 w-full bg-white/15" />
-                <Skeleton className="h-4 w-5/6 bg-white/15" />
-              </div>
-            </div>
-          </div>
-          {/* Metrics panel */}
-          <div className="grid gap-3 rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur md:min-w-[360px]">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="flex items-center justify-between gap-4">
-                <Skeleton className="h-4 w-24 bg-white/20" />
-                <Skeleton className="h-4 w-20 bg-white/20" />
-              </div>
-            ))}
-          </div>
+    <div className="flex flex-1 flex-col min-h-0 px-2 gap-2">
+      {/* Top Header */}
+      <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap sm:justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-6 w-6 border-leadgaze-border border" />
+          <Skeleton className="h-6 w-32" />
         </div>
-      </section>
-
-      {/* ── Body grid skeleton ── */}
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_390px]">
-        {/* Left — Ticket Workspace */}
-        <div className="space-y-4">
-          <Card>
-            {/* Card header */}
-            <CardHeader className="flex flex-row items-start justify-between gap-4 border-b">
-              <div className="space-y-1.5">
-                <Skeleton className="h-5 w-40" />
-                <Skeleton className="h-3 w-64" />
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <Skeleton className="h-8 w-32 rounded-md" />
-                <Skeleton className="h-7 w-20 rounded-full" />
-                <Skeleton className="h-7 w-20 rounded-full" />
-                <Skeleton className="h-7 w-16 rounded-full" />
-              </div>
-            </CardHeader>
-            <div className="space-y-5 px-6 py-4">
-              {/* Tab bar */}
-              <div className="flex w-fit gap-2 rounded-2xl bg-slate-100 p-1 dark:bg-slate-900">
-                {['Conversation', 'Work', 'Notes & Files', 'Activity'].map(
-                  (tab) => (
-                    <Skeleton key={tab} className="h-8 w-24 rounded-xl" />
-                  ),
-                )}
-              </div>
-              {/* Email cards */}
-              {[1, 2, 3].map((i) => (
-                <div
-                  key={i}
-                  className="overflow-hidden rounded-2xl border shadow-sm"
-                >
-                  {/* Email header */}
-                  <div className="border-b bg-slate-50 p-4 dark:bg-slate-900/60">
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div className="min-w-0 space-y-1.5">
-                        <Skeleton className="h-4 w-56" />
-                        <Skeleton className="h-3 w-40" />
-                      </div>
-                      <div className="flex flex-col items-end gap-2">
-                        <Skeleton className="h-5 w-16 rounded-full" />
-                        <Skeleton className="h-7 w-16 rounded-md" />
-                        <Skeleton className="h-3 w-28" />
-                      </div>
-                    </div>
-                  </div>
-                  {/* Email body */}
-                  <div className="space-y-2 p-5">
-                    <Skeleton className="h-3 w-full" />
-                    <Skeleton className="h-3 w-11/12" />
-                    <Skeleton className="h-3 w-4/5" />
-                    {i === 1 && <Skeleton className="h-3 w-3/4" />}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </Card>
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-8 w-24" />
+          <Skeleton className="h-8 w-24" />
         </div>
+      </div>
 
-        {/* Right — aside cards */}
-        <aside className="space-y-4">
-          {/* Ticket Properties */}
-          <Card>
-            <CardHeader>
-              <Skeleton className="h-5 w-36" />
-              <Skeleton className="mt-1 h-3 w-52" />
-            </CardHeader>
-            <div className="space-y-4 px-6 py-4">
-              {/* Select rows */}
-              {['Status', 'Priority', 'Category', 'Primary owner'].map(
-                (label) => (
-                  <div key={label} className="grid gap-2">
-                    <Skeleton className="h-3 w-20" />
-                    <div className="flex items-center gap-2">
-                      <Skeleton className="h-4 w-4 rounded" />
-                      <Skeleton className="h-9 flex-1 rounded-md" />
-                    </div>
-                  </div>
-                ),
-              )}
-              {/* Due date */}
-              <div className="grid gap-2">
-                <Skeleton className="h-3 w-16" />
-                <div className="flex items-center gap-2">
-                  <Skeleton className="h-4 w-4 rounded" />
-                  <Skeleton className="h-9 flex-1 rounded-md" />
-                </div>
+      <div className="flex w-full flex-col gap-2 lg:min-h-0 lg:flex-1 lg:flex-row">
+        <div className="w-full space-y-4 lg:w-[65%] lg:overflow-y-auto">
+          {/* DetailHeader Skeleton */}
+          <div className="border border-gray-200 bg-white p-5 shadow-sm">
+             <div className="flex flex-col gap-2">
+               <Skeleton className="h-6 w-1/3" />
+               <Skeleton className="h-4 w-1/4" />
+               <Skeleton className="h-4 w-1/4" />
+             </div>
+          </div>
+
+          <div className="w-full">
+            {/* Tabs List */}
+            <div className="mb-4 flex gap-6 border-b border-gray-200 pb-2">
+              <Skeleton className="h-5 w-24" />
+              <Skeleton className="h-5 w-24" />
+              <Skeleton className="h-5 w-20" />
+              <Skeleton className="h-5 w-24" />
+            </div>
+
+            {/* Content Card Skeleton */}
+            <div className="border border-gray-200 bg-white">
+              <div className="flex items-center justify-between border-b border-gray-200 p-4">
+                <Skeleton className="h-5 w-32" />
+                <Skeleton className="h-8 w-24" />
               </div>
-              <Skeleton className="h-px w-full" />
-              {/* Assignees section */}
-              <div className="space-y-3">
-                <div className="space-y-1">
-                  <Skeleton className="h-4 w-36" />
-                  <Skeleton className="h-3 w-52" />
-                </div>
+              <div className="p-4 space-y-4">
                 {[1, 2, 3].map((i) => (
-                  <div
-                    key={i}
-                    className="flex items-center justify-between gap-3 rounded-xl border p-3"
-                  >
-                    <div className="min-w-0 space-y-1">
-                      <Skeleton className="h-3.5 w-28" />
-                      <Skeleton className="h-3 w-36" />
+                  <div key={i} className="flex gap-4">
+                    <Skeleton className="h-10 w-10 rounded-full shrink-0" />
+                    <div className="space-y-2 flex-1">
+                      <Skeleton className="h-4 w-1/4" />
+                      <Skeleton className="h-4 w-3/4" />
+                      <Skeleton className="h-4 w-1/2" />
                     </div>
-                    <Skeleton className="h-8 w-14 rounded-md" />
                   </div>
                 ))}
               </div>
             </div>
-          </Card>
+          </div>
+        </div>
 
-          {/* SLA Snapshot */}
-          <Card>
-            <CardHeader>
-              <Skeleton className="h-5 w-28" />
-            </CardHeader>
-            <div className="space-y-3 px-6 py-4">
-              {[1, 2, 3].map((i) => (
-                <div
-                  key={i}
-                  className="flex items-center justify-between gap-4"
-                >
-                  <Skeleton className="h-4 w-24" />
-                  <Skeleton className="h-4 w-20" />
-                </div>
-              ))}
+        {/* Right side accordions */}
+        <div className="w-full space-y-4 lg:w-[35%] lg:overflow-y-auto">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="border border-gray-200 bg-white p-4">
+              <Skeleton className="h-5 w-32 mb-4" />
+              <div className="space-y-3">
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-3/4" />
+              </div>
             </div>
-          </Card>
-
-          {/* Customer Context */}
-          <Card>
-            <CardHeader>
-              <Skeleton className="h-5 w-36" />
-            </CardHeader>
-            <div className="space-y-3 px-6 py-4">
-              {['Name', 'Email', 'Phone'].map((field) => (
-                <div
-                  key={field}
-                  className="flex items-center justify-between gap-4"
-                >
-                  <Skeleton className="h-4 w-12" />
-                  <Skeleton className="h-4 w-32" />
-                </div>
-              ))}
-              <Skeleton className="h-px w-full" />
-              {['Company', 'Industry', 'Website'].map((field) => (
-                <div
-                  key={field}
-                  className="flex items-center justify-between gap-4"
-                >
-                  <Skeleton className="h-4 w-16" />
-                  <Skeleton className="h-4 w-28" />
-                </div>
-              ))}
-            </div>
-          </Card>
-
-          {/* Record Details */}
-          <Card>
-            <CardHeader>
-              <Skeleton className="h-5 w-32" />
-            </CardHeader>
-            <div className="space-y-3 px-6 py-4">
-              {[
-                'Source',
-                'Last response',
-                'Last customer reply',
-                'Updated',
-              ].map((field) => (
-                <div
-                  key={field}
-                  className="flex items-center justify-between gap-4"
-                >
-                  <Skeleton className="h-4 w-24" />
-                  <Skeleton className="h-4 w-32" />
-                </div>
-              ))}
-            </div>
-          </Card>
-        </aside>
+          ))}
+        </div>
       </div>
     </div>
   );

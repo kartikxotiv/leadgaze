@@ -7,26 +7,61 @@ import { Skeleton } from '@kit/ui/skeleton';
 
 function DashboardFallback() {
   return (
-    <div className="flex flex-col gap-4 pb-4">
-      <div className="grid grid-cols-1 gap-4 pb-6 md:grid-cols-2 xl:grid-cols-4 xl:gap-3 xl:pb-4 2xl:grid-cols-4 2xl:gap-4 2xl:pb-6">
-        {[1, 2, 3, 4].map((i) => (
-          <Card key={i} className="h-32 xl:h-28 2xl:h-32 flex flex-col justify-between">
-            <CardHeader className="flex flex-row items-start justify-between space-y-0 xl:p-3 xl:pb-0 2xl:p-5 2xl:pb-0">
-              <div className="space-y-2">
-                <Skeleton className="h-3 w-24" />
-                <Skeleton className="h-7 w-16" />
-              </div>
-              <Skeleton className="h-8 w-8 rounded" />
-            </CardHeader>
-            <CardContent className="xl:p-3 xl:pt-2 2xl:p-5 2xl:pt-2">
-              <Skeleton className="h-3 w-36" />
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 xl:gap-4 2xl:gap-8">
-        <Card><div className="h-64 p-6 space-y-6">{[1,2,3,4,5].map(i => <Skeleton key={i} className="h-4 w-full rounded-full" />)}</div></Card>
-        <Card><div className="h-64 p-6 space-y-6">{[1,2,3].map(i => <Skeleton key={i} className="h-10 w-full rounded-lg" />)}</div></Card>
+    <div className="flex flex-col pb-4 w-full relative">
+      <div className="flex w-full gap-2 items-start">
+        <div className="flex flex-col w-full">
+          {/* 4 stat cards */}
+          <div className="grid grid-cols-1 gap-2 pb-0 md:grid-cols-2 xl:grid-cols-4 xl:gap-2 xl:pb-0 2xl:grid-cols-4 2xl:gap-2 2xl:pb-0">
+            {[1, 2, 3, 4].map((i) => (
+              <Card key={i} className="h-32 xl:h-28 2xl:h-32 flex flex-col justify-between">
+                <CardHeader className="flex flex-row items-start justify-between space-y-0 xl:p-3 xl:pb-0 2xl:p-5 2xl:pb-0">
+                  <div className="space-y-2">
+                    <Skeleton className="h-3 w-24" />
+                    <Skeleton className="h-7 w-16" />
+                  </div>
+                  <Skeleton className="h-8 w-8 rounded" />
+                </CardHeader>
+                <CardContent className="xl:p-3 xl:pt-2 2xl:p-5 2xl:pt-2">
+                  <Skeleton className="h-3 w-36" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* 6 widgets (2 columns) */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 mt-2">
+            {[1, 2, 3, 4, 5, 6].map((i) => {
+              const isSecondLayer = i === 3 || i === 4;
+              const heightClass = isSecondLayer ? 'h-[200px]' : 'h-[320px]';
+              
+              return (
+                <Card key={i} className={`${heightClass} flex flex-col overflow-hidden`}>
+                  <CardHeader className="border-b p-2 xl:p-2 2xl:p-2 flex flex-row items-center justify-between space-y-0">
+                    <Skeleton className="h-4 w-32" />
+                    {i % 2 === 0 && <Skeleton className="h-4 w-4 rounded" />}
+                  </CardHeader>
+                  <div className="p-4 flex flex-col gap-4 flex-1">
+                    {isSecondLayer ? (
+                      <>
+                        <Skeleton className="h-10 w-full" />
+                        <Skeleton className="h-10 w-full" />
+                        <Skeleton className="h-10 w-full" />
+                      </>
+                    ) : (
+                      <>
+                        <Skeleton className="h-4 w-full" />
+                        <Skeleton className="h-32 w-full flex-1" />
+                        <Skeleton className="h-4 w-3/4" />
+                      </>
+                    )}
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+
+
       </div>
     </div>
   );

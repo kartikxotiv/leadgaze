@@ -63,6 +63,28 @@ function extractBody(payload: any): { html?: string; text?: string } {
   return result;
 }
 
+function extractAttachments(payload: any): any[] {
+  const attachments: any[] = [];
+
+  const visit = (part: any) => {
+    if (part.filename && part.filename.length > 0 && part.body?.attachmentId) {
+      attachments.push({
+        name: part.filename,
+        size: part.body.size || 0,
+        type: part.mimeType,
+        provider_attachment_id: part.body.attachmentId,
+      });
+    }
+
+    if (Array.isArray(part.parts)) {
+      part.parts.forEach(visit);
+    }
+  };
+
+  visit(payload);
+  return attachments;
+}
+
 function positiveInteger(value: string | undefined, fallback: number) {
   const parsed = Number(value);
 
@@ -262,6 +284,7 @@ export class CoreGmailSyncService {
       ? new Date(headerValue(headers, 'Date')).toISOString()
       : new Date(Number(gmailMessage.internalDate ?? Date.now())).toISOString();
     const body = extractBody(payload);
+    const attachments = extractAttachments(payload);
     const direction =
       fromEmail === this.options.email.toLowerCase() ? 'outbound' : 'inbound';
     const targetEmail = direction === 'inbound' ? fromEmail : toEmails[0];
@@ -291,6 +314,7 @@ export class CoreGmailSyncService {
       html_body: body.html || null,
       text_body: body.text || null,
       snippet: gmailMessage.snippet ?? body.text?.slice(0, 200) ?? '',
+      attachments,
       raw_headers: Object.fromEntries(
         headers.map((header: any) => [header.name, header.value]),
       ),
