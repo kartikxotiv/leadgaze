@@ -37,6 +37,7 @@ export function PersonalAccountDropdown({
   paths,
   features,
   account,
+  appVersion,
 }: {
   user: JwtPayload;
 
@@ -61,9 +62,19 @@ export function PersonalAccountDropdown({
   showProfileName?: boolean;
 
   className?: string;
+
+  appVersion?: {
+    name?: string;
+    version?: string;
+    build?: string;
+  };
 }) {
   const personalAccountData = usePersonalAccountData(user.id, account);
 
+  const appName =
+    appVersion?.name ?? 'Leadgaze';
+  const appVersionNumber =
+    appVersion?.version ?? '2.1.0';
   const signedInAsLabel = useMemo(() => {
     const email = user?.email ?? undefined;
     const phone = user?.phone ?? undefined;
@@ -234,6 +245,17 @@ export function PersonalAccountDropdown({
                 </span>
               </span>
             </DropdownMenuItem>
+
+            <DropdownMenuSeparator />
+
+            <div className={'flex justify-center px-2 gap-1 text-left select-none'}>
+              <span className={'text-[11px] text-muted-foreground'}>
+                {appName}
+              </span>
+              <span className={'text-[11px] text-muted-foreground'}>
+                v{appVersionNumber.replace(/^v/, '')}
+              </span>
+            </div>
           </DropdownMenuContent>
         </DropdownMenu>
       </Tooltip>

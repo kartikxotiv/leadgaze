@@ -304,9 +304,11 @@ export default function HomePage() {
 
   return (
     <WorkspaceCheckWrapper>
-      <PageHeader title="Dashboard"
-      //  description="Your SaaS at a glance"
-       >
+      <PageHeader 
+        title="Dashboard"
+        className="sticky top-[-8px] z-[4] bg-[#f0f2f5] dark:dark-black-light-bg py-1 -mx-2 pl-2"
+        // description="Your SaaS at a glance"
+      >
         <PageHeaderActions>
           <DownloadReportButton 
             onDownload={handleDownload} 
@@ -331,14 +333,14 @@ export default function HomePage() {
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                {/* <Button 
+                <Button 
                    variant="outline"
                    size="icon"
                    className="shrink-0"
                    onClick={() => setIsWidgetLibraryOpen(!isWidgetLibraryOpen)}
                 >
                    {isWidgetLibraryOpen ? <PanelRightClose className="h-4 w-4 text-slate-600 dark:text-zinc-300" /> : <PanelRightOpen className="h-4 w-4 text-slate-600 dark:text-zinc-300" />}
-                </Button> */}
+                </Button>
               </TooltipTrigger>
               <TooltipContent>
                 <p>{isWidgetLibraryOpen ? 'Hide Widget' : 'Show Widget'}</p>

@@ -333,7 +333,7 @@ export default function DashboardDemo({
 
   return (
     <div className="animate-in fade-in flex flex-col pb-4 duration-500 w-full relative">
-      <div className="flex w-full gap-2 items-start">
+      <div className={`flex w-full items-start ${isWidgetLibraryOpen ? 'gap-2' : ''}`}>
         <div className={`flex flex-col transition-all duration-300 ${isWidgetLibraryOpen ? 'w-[calc(100%-300px)] xl:w-[calc(100%-320px)]' : 'w-full'}`}>
           <DndContext id="kpi-dnd" sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleKpiDragEnd}>
             <SortableContext items={activeKpiCards} strategy={rectSortingStrategy}>
@@ -541,8 +541,8 @@ export default function DashboardDemo({
 
         {/* Widget Library Sidebar */}
         <div 
-          className={`shrink-0 sticky top-0 h-[calc(100vh-80px)] transition-all duration-300 overflow-hidden ${
-            isWidgetLibraryOpen ? 'w-[300px] xl:w-[320px] opacity-100' : 'w-0 opacity-0'
+          className={`shrink-0 sticky top-0 transition-all duration-300 overflow-hidden ${
+            isWidgetLibraryOpen ? 'w-[300px] xl:w-[320px] opacity-100 h-[calc(100vh-92px)]' : 'w-0 opacity-0 h-0'
           }`}
         >
           <div className="w-[300px] xl:w-[320px] h-full">
