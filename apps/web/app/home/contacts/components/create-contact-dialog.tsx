@@ -137,7 +137,7 @@ export function CreateContactDialog({
                 Personal Details
               </h3>              
               <div className="grid grid-cols-2 gap-2">
-                <div className="space-y-2">
+                <div>
                   <Label htmlFor="first_name">First Name *</Label>
                   <Input
                     id="first_name"
@@ -149,7 +149,7 @@ export function CreateContactDialog({
                     required
                   />
                 </div>
-                <div className="space-y-2">
+                <div>
                   <Label htmlFor="last_name">Last Name</Label>
                   <Input
                     id="last_name"
@@ -163,7 +163,7 @@ export function CreateContactDialog({
               </div>
 
               <div className="grid grid-cols-2 gap-2">
-                <div className="space-y-2">
+                <div>
                   <Label htmlFor="email">Email</Label>
                   <Input
                     id="email"
@@ -175,7 +175,7 @@ export function CreateContactDialog({
                     placeholder="jane.doe@example.com"
                   />
                 </div>
-                <div className="space-y-2">
+                <div>
                   <Label htmlFor="phone_number">Phone</Label>
                   <Input
                     id="phone_number"
@@ -194,7 +194,7 @@ export function CreateContactDialog({
                 Professional & Status
               </h3>              
               <div className="grid grid-cols-2 gap-2">
-                <div className="space-y-2">
+                <div>
                   <Label htmlFor="job_title">Job Title</Label>
                   <Input
                     id="job_title"
@@ -208,7 +208,7 @@ export function CreateContactDialog({
               </div>
 
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between mb-0">
                   <Label htmlFor="account_id">Account</Label>
                   <Button
                     type="button"
@@ -220,11 +220,12 @@ export function CreateContactDialog({
                     New Account
                   </Button>
                 </div>
+                <div className="mb-0">
                 <Select
                   value={formData.account_id}
                   onValueChange={(value) =>
                     setFormData({ ...formData, account_id: value })
-                  }
+                  }                  
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select associated account" />
@@ -243,10 +244,11 @@ export function CreateContactDialog({
                     ))}
                   </SelectContent>
                 </Select>
+                </div>
               </div>
             </div>
 
-            <div className="space-y-2">
+            <div>
               <Label htmlFor="notes">Notes</Label>
               <Textarea
                 id="notes"
