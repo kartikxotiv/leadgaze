@@ -684,3 +684,231 @@ export const disconnectWorkspaceIntegration = catchAsync(
     return successDataResponse('Integration disconnected successfully');
   }
 );
+
+export const getWorkspaceAuditLogs = catchAsync(
+  async ({ request, user, params }: { request: NextRequest; user?: any; params?: Record<string, string> }) => {
+    const adminClient = getSupabaseServerAdminClient<Database>();
+    const id = params?.id;
+
+    if (!id) {
+      return new Response(JSON.stringify({ error: 'Workspace ID is required' }), { status: 400 });
+    }
+
+    const pageStr = request.nextUrl?.searchParams?.get('page') || new URL(request.url).searchParams.get('page');
+    const limitStr = request.nextUrl?.searchParams?.get('limit') || new URL(request.url).searchParams.get('limit');
+    const page = parseInt(pageStr || '1', 10) || 1;
+    let limit = parseInt(limitStr || '50', 10) || 50;
+    
+    // Ensure limit doesn't cause a NaN range, which returns all records
+    if (isNaN(limit)) limit = 50;
+    const offset = (page - 1) * limit;
+
+    let query = adminClient
+      .from('audit_logs')
+      .select(
+        `
+          *,
+          actor:accounts!audit_logs_actor_id_fkey(id, email, name)
+        `,
+        { count: 'exact' },
+      )
+      .eq('workspace_id', id);
+
+    const {
+      data: logs,
+      count,
+      error,
+    } = await query
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (error) {
+      console.error('Get audit logs error:', error);
+      throw error;
+    }
+
+    // Enrich logs for ALL modules: batch resolve entity titles and strip all raw UUIDs
+    if (logs && logs.length > 0) {
+      const uuidPattern = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
+
+      // Group entity IDs needing title resolution by table type
+      const moduleMap: Record<string, Set<string>> = {
+        tasks: new Set(),
+        notes: new Set(),
+        meetings: new Set(),
+        reminders: new Set(),
+        documents: new Set(),
+        emails: new Set(),
+        call_logs: new Set(),
+        leads: new Set(),
+        contacts: new Set(),
+        accounts: new Set(),
+        opportunities: new Set(),
+      };
+
+      logs.forEach((log: any) => {
+        const mod = log.module;
+        const eId = log.entity_id;
+
+        // Check for task_id references in entity_name or new_data
+        if (log.entity_name) {
+          const matches = log.entity_name.match(uuidPattern);
+          matches?.forEach((id: string) => moduleMap.tasks.add(id));
+        }
+        if (log.new_data?.task_id) {
+          moduleMap.tasks.add(log.new_data.task_id);
+        }
+
+        // Add main entity_id if entity_name is missing or contains UUID or fallback prefix
+        if (
+          !log.entity_name ||
+          uuidPattern.test(log.entity_name) ||
+          log.entity_name.startsWith('#') ||
+          log.entity_name.includes('Unknown')
+        ) {
+          if (mod === 'core_tasks' || mod === 'tasks') moduleMap.tasks.add(eId);
+          else if (mod === 'core_notes' || mod === 'notes') moduleMap.notes.add(eId);
+          else if (mod === 'core_meetings' || mod === 'meetings') moduleMap.meetings.add(eId);
+          else if (mod === 'core_reminders' || mod === 'reminders') moduleMap.reminders.add(eId);
+          else if (mod === 'core_documents' || mod === 'documents') moduleMap.documents.add(eId);
+          else if (mod === 'core_emails' || mod === 'emails') moduleMap.emails.add(eId);
+          else if (mod === 'call_logs') moduleMap.call_logs.add(eId);
+          else if (mod === 'leads') moduleMap.leads.add(eId);
+          else if (mod === 'contacts') moduleMap.contacts.add(eId);
+          else if (mod === 'accounts') moduleMap.accounts.add(eId);
+          else if (mod === 'opportunities') moduleMap.opportunities.add(eId);
+        }
+      });
+
+      // Batch queries in parallel across tables
+      const titleMap = new Map<string, string>();
+
+      await Promise.all([
+        moduleMap.tasks.size > 0
+          ? adminClient
+              .schema('core')
+              .from('tasks')
+              .select('id, title')
+              .in('id', Array.from(moduleMap.tasks))
+              .then(({ data }) => data?.forEach((t: any) => titleMap.set(t.id, t.title)))
+          : Promise.resolve(),
+        moduleMap.notes.size > 0
+          ? adminClient
+              .schema('core')
+              .from('notes')
+              .select('id, note')
+              .in('id', Array.from(moduleMap.notes))
+              .then(({ data }) => data?.forEach((n: any) => titleMap.set(n.id, n.note ? `Note: ${n.note.slice(0, 50)}` : '')))
+          : Promise.resolve(),
+        moduleMap.meetings.size > 0
+          ? adminClient
+              .schema('core')
+              .from('meetings')
+              .select('id, title')
+              .in('id', Array.from(moduleMap.meetings))
+              .then(({ data }) => data?.forEach((m: any) => titleMap.set(m.id, m.title)))
+          : Promise.resolve(),
+        moduleMap.reminders.size > 0
+          ? adminClient
+              .schema('core')
+              .from('reminders')
+              .select('id, title')
+              .in('id', Array.from(moduleMap.reminders))
+              .then(({ data }) => data?.forEach((r: any) => titleMap.set(r.id, r.title)))
+          : Promise.resolve(),
+        moduleMap.documents.size > 0
+          ? adminClient
+              .schema('core')
+              .from('documents')
+              .select('id, name')
+              .in('id', Array.from(moduleMap.documents))
+              .then(({ data }) => data?.forEach((d: any) => titleMap.set(d.id, d.name)))
+          : Promise.resolve(),
+        moduleMap.emails.size > 0
+          ? adminClient
+              .schema('core')
+              .from('emails')
+              .select('id, subject')
+              .in('id', Array.from(moduleMap.emails))
+              .then(({ data }) => data?.forEach((e: any) => titleMap.set(e.id, e.subject)))
+          : Promise.resolve(),
+        moduleMap.call_logs.size > 0
+          ? adminClient
+              .from('crm_call_logs')
+              .select('id, subject')
+              .in('id', Array.from(moduleMap.call_logs))
+              .then(({ data }) => data?.forEach((c: any) => titleMap.set(c.id, c.subject)))
+          : Promise.resolve(),
+        moduleMap.leads.size > 0
+          ? adminClient
+              .from('crm_leads')
+              .select('id, first_name, last_name')
+              .in('id', Array.from(moduleMap.leads))
+              .then(({ data }) => data?.forEach((l: any) => titleMap.set(l.id, `${l.first_name || ''} ${l.last_name || ''}`.trim())))
+          : Promise.resolve(),
+        moduleMap.contacts.size > 0
+          ? adminClient
+              .from('crm_contacts')
+              .select('id, first_name, last_name')
+              .in('id', Array.from(moduleMap.contacts))
+              .then(({ data }) => data?.forEach((c: any) => titleMap.set(c.id, `${c.first_name || ''} ${c.last_name || ''}`.trim())))
+          : Promise.resolve(),
+        moduleMap.accounts.size > 0
+          ? adminClient
+              .from('crm_accounts')
+              .select('id, account_name')
+              .in('id', Array.from(moduleMap.accounts))
+              .then(({ data }) => data?.forEach((a: any) => titleMap.set(a.id, a.account_name)))
+          : Promise.resolve(),
+        moduleMap.opportunities.size > 0
+          ? adminClient
+              .from('crm_opportunities')
+              .select('id, opportunity_name')
+              .in('id', Array.from(moduleMap.opportunities))
+              .then(({ data }) => data?.forEach((o: any) => titleMap.set(o.id, o.opportunity_name)))
+          : Promise.resolve(),
+      ]);
+
+      // Apply entity name updates & strip all raw UUIDs
+      logs.forEach((log: any) => {
+        if (titleMap.has(log.entity_id) && (!log.entity_name || uuidPattern.test(log.entity_name) || log.entity_name.startsWith('#'))) {
+          log.entity_name = titleMap.get(log.entity_id);
+        }
+
+        if (log.entity_name) {
+          log.entity_name = log.entity_name
+            .replace(uuidPattern, (match: string) => {
+              const title = titleMap.get(match);
+              return title ? `"${title}"` : '';
+            })
+            .replace(/^#\s*/, '')
+            .replace(/#[0-9a-f]{8,}/gi, '')
+            .replace(/\s+Task\s*""/gi, '')
+            .replace(/\s{2,}/g, ' ')
+            .trim();
+        }
+
+        const newIsDeleted =
+          log.new_data?.is_deleted === true ||
+          log.new_data?.is_deleted === 'true' ||
+          Boolean(log.new_data?.deleted_at);
+        const oldIsDeleted =
+          log.old_data?.is_deleted === true ||
+          log.old_data?.is_deleted === 'true' ||
+          Boolean(log.old_data?.deleted_at);
+        if (log.action === 'UPDATE' && newIsDeleted && !oldIsDeleted) {
+          log.action = 'DELETE';
+        }
+
+        if (log.entity_name && uuidPattern.test(log.entity_name)) {
+          log.entity_name = '';
+        }
+      });
+    }
+
+    return successDataResponse({
+      data: logs || [],
+      count: count || 0,
+    });
+  }
+);

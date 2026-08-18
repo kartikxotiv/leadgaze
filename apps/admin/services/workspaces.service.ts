@@ -112,3 +112,13 @@ export const getWorkspaceUsageAnalyticsService = asyncHandlerClient(
   },
 );
 
+export const getWorkspaceAuditLogsService = asyncHandlerClient(
+  async (params: { workspaceId: string; page?: number; limit?: number }) => {
+    const { workspaceId, page = 1, limit = 50 } = params;
+    const response = await ApiClient.get(`/workspaces/${workspaceId}/audit-logs?page=${page}&limit=${limit}`);
+    return {
+      data: (response.data?.data?.data || response.data?.data || []) as any[],
+      count: (response.data?.data?.count ?? response.data?.count ?? 0) as number,
+    };
+  },
+);

@@ -5,11 +5,22 @@ import Image from 'next/image';
 import Link from 'next/link';
 import {
   ArrowLeft,
+  Bell,
+  Briefcase,
+  Building2,
+  Calendar,
   Check,
+  CheckSquare,
+  Clock,
   Download,
+  File,
+  FileText,
   Loader2,
+  Mail,
   MoreVertical,
+  Phone,
   Plus,
+  User,
   UserCheck,
   X,
 } from 'lucide-react';
@@ -49,7 +60,7 @@ import { TablePagination } from '@kit/ui/table-pagination';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@kit/ui/tabs';
 import { AdminNavbar } from '~/components/admin-navbar';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getWorkspaceByIdService, getWorkspaceMembersService, removeWorkspaceMemberService, getWorkspaceUsageAnalyticsService } from '~/services/workspaces.service';
+import { getWorkspaceByIdService, getWorkspaceMembersService, removeWorkspaceMemberService, getWorkspaceUsageAnalyticsService, getWorkspaceAuditLogsService } from '~/services/workspaces.service';
 import { startImpersonationService } from '~/services/impersonation.service';
 import { Skeleton } from '@kit/ui/skeleton';
 import { toast } from 'sonner';
@@ -748,7 +759,7 @@ function IntegrationsTab({ workspaceId }: { workspaceId: string }) {
 
   return (
     <div className="card-container bg-white dark:bg-zinc-900 flex flex-col divide-y divide-zinc-100 dark:divide-zinc-800">
-      {(integrations || []).map((intg: any) => {
+      {(integrations || []).filter((intg: any) => !['google-ads', 'meta-ads', 'whatsapp'].includes(intg.id)).map((intg: any) => {
         const iconSrc = INTEGRATION_ICONS[intg.id] || '/images/web-icon.png';
         return (
           <div key={intg.id} className="flex items-center gap-3 px-4 py-3 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30 transition-colors">
@@ -794,13 +805,64 @@ function IntegrationsTab({ workspaceId }: { workspaceId: string }) {
   );
 }
 
-function AuditLogsTab() {
+function AuditLogsTab({ workspaceId }: { workspaceId: string }) {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['workspace-audit-logs', workspaceId, page, pageSize],
+    queryFn: () => getWorkspaceAuditLogsService({ workspaceId, page, limit: pageSize }),
+  });
+
+  const logs = data?.data || [];
+  const totalCount = data?.count || 0;
+  const totalPages = Math.ceil(totalCount / pageSize) || 1;
+
+  const getModuleIcon = (moduleName: string) => {
+    switch (moduleName) {
+      case 'leads': return <User className="h-4 w-4 text-blue-500" />;
+      case 'contacts': return <UserCheck className="h-4 w-4 text-indigo-500" />;
+      case 'accounts': return <Building2 className="h-4 w-4 text-emerald-500" />;
+      case 'opportunities': return <Briefcase className="h-4 w-4 text-amber-500" />;
+      case 'core_emails': case 'emails': return <Mail className="h-4 w-4 text-blue-500" />;
+      case 'core_notes': case 'notes': return <FileText className="h-4 w-4 text-purple-500" />;
+      case 'core_meetings': case 'meetings': return <Calendar className="h-4 w-4 text-sky-500" />;
+      case 'core_reminders': case 'reminders': return <Bell className="h-4 w-4 text-orange-500" />;
+      case 'core_tasks': case 'tasks': return <CheckSquare className="h-4 w-4 text-teal-500" />;
+      case 'call_logs': return <Phone className="h-4 w-4 text-green-500" />;
+      case 'core_documents': case 'documents': return <File className="h-4 w-4 text-gray-500" />;
+      default: return <Clock className="h-4 w-4 text-gray-400" />;
+    }
+  };
+
+  const getModuleLabel = (moduleName: string) => {
+    const map: Record<string, string> = {
+      leads: 'Lead', contacts: 'Contact', accounts: 'Account', opportunities: 'Opportunity',
+      core_emails: 'Email', emails: 'Email', core_notes: 'Note', notes: 'Note',
+      core_meetings: 'Meeting', meetings: 'Meeting', core_reminders: 'Reminder', reminders: 'Reminder',
+      core_tasks: 'Task', tasks: 'Task', core_task_time_logs: 'Time Log', call_logs: 'Call',
+      core_documents: 'Document', documents: 'Document', team_members: 'Team Member', roles: 'Role',
+    };
+    return map[moduleName] || moduleName;
+  };
+
+  const getActionBadge = (action: string) => {
+    switch (action?.toUpperCase()) {
+      case 'CREATE':
+        return <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold tracking-wide bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800">CREATE</span>;
+      case 'UPDATE':
+        return <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold tracking-wide bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800">UPDATE</span>;
+      case 'DELETE':
+        return <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold tracking-wide bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800">DELETE</span>;
+      default:
+        return <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold tracking-wide bg-gray-100 text-gray-700 border border-gray-200 dark:bg-gray-800 dark:text-gray-300">{action}</span>;
+    }
+  };
+
   return (
     <CustomTableContainer
       pagination={
-        <TablePagination currentPage={page} totalPages={2} totalCount={25}
+        <TablePagination currentPage={page} totalPages={totalPages} totalCount={totalCount}
           pageSize={pageSize} onPageChange={setPage}
           onPageSizeChange={(s) => { setPageSize(s); setPage(1); }} entityLabel="entries" />
       }
@@ -808,41 +870,46 @@ function AuditLogsTab() {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-10 pl-4"><Checkbox /></TableHead>
             <TableHead>S. No.</TableHead>
             <TableHead>User</TableHead>
             <TableHead>Detail</TableHead>
-            <TableHead>IP Address</TableHead>
             <TableHead>Timestamp</TableHead>
             <TableHead>Action</TableHead>
-            <TableHead className="sticky right-0 bg-zinc-50 dark:bg-zinc-900 w-10 text-center">
-              <button className="flex h-5 w-5 items-center justify-center rounded-full bg-leadgaze-primary text-white mx-auto">
-                <Plus className="h-3.5 w-3.5" />
-              </button>
-            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {AUDIT_LOGS.map((row) => (
+          {isLoading ? (
+             [1, 2, 3, 4, 5].map((i) => (
+                <TableRow key={i}>
+                  <TableCell colSpan={5} className="p-4">
+                    <Skeleton className="h-6 w-full rounded" />
+                  </TableCell>
+                </TableRow>
+             ))
+          ) : logs.length === 0 ? (
+             <TableRow>
+                <TableCell colSpan={5} className="h-32 text-center text-muted-foreground">
+                  No audit logs found.
+                </TableCell>
+             </TableRow>
+          ) : logs.map((row: any, index: number) => (
             <TableRow key={row.id} className="hover:bg-muted/50">
-              <TableCell className="pl-4"><Checkbox /></TableCell>
-              <TableCell className="primary-text-regular text-leadgaze-muted">{row.sno}</TableCell>
-              <TableCell className="primary-text-medium text-leadgaze-dark dark:text-white">{row.user}</TableCell>
-              <TableCell className="primary-text-regular text-leadgaze-muted">{row.detail}</TableCell>
-              <TableCell className="primary-text-regular text-leadgaze-muted font-mono">{row.ip}</TableCell>
-              <TableCell className="primary-text-regular text-leadgaze-muted">{row.timestamp}</TableCell>
-              <TableCell>
-                <Badge className="bg-blue-50 text-blue-600 border-transparent secondary-text-small font-semibold">{row.action}</Badge>
+              <TableCell className="primary-text-regular text-leadgaze-muted pl-4">{(page - 1) * pageSize + index + 1}</TableCell>
+              <TableCell className="primary-text-medium text-leadgaze-dark dark:text-white">
+                {row.actor?.name || row.actor?.email || 'System'}
               </TableCell>
-              <TableCell className="text-right pr-4">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-7 w-7"><MoreVertical className="h-4 w-4" /></Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem>View Details</DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+              <TableCell className="primary-text-regular text-leadgaze-muted">
+                <div className="flex items-center gap-2">
+                  {getModuleIcon(row.module)}
+                  <span className="font-semibold text-zinc-900 dark:text-zinc-100">{getModuleLabel(row.module)}</span>
+                  {row.entity_name ? <span className="text-muted-foreground">- {row.entity_name}</span> : null}
+                </div>
+              </TableCell>
+              <TableCell className="primary-text-regular text-leadgaze-muted">
+                {new Date(row.created_at).toLocaleString()}
+              </TableCell>
+              <TableCell>
+                {getActionBadge(row.action)}
               </TableCell>
             </TableRow>
           ))}
@@ -1049,7 +1116,7 @@ export default function WorkspaceDetailPage({ params }: { params: Promise<{ id: 
           <TabsContent value="members" className="mt-0"><MembersTab workspaceId={id} activeModules={WS.activeModules} /></TabsContent>
           <TabsContent value="usage" className="mt-0"><UsageAnalyticsTab workspaceId={id} /></TabsContent>
           <TabsContent value="integrations" className="mt-0"><IntegrationsTab workspaceId={id} /></TabsContent>
-          <TabsContent value="audit-logs" className="mt-0"><AuditLogsTab /></TabsContent>
+          <TabsContent value="audit-logs" className="mt-0"><AuditLogsTab workspaceId={id} /></TabsContent>
           <TabsContent value="billing" className="mt-0"><BillingTimelineTab /></TabsContent>
         </Tabs>
       </PageBody>
