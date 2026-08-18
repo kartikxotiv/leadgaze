@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { Database } from '@kit/supabase/database';
 import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
-import { Database } from '@kit/supabase/database';
+import { createEntitlementService } from '~/lib/entitlements';
+
 import {
   catchAsync,
   successDataResponse,
@@ -11,13 +13,13 @@ import {
 
 // Column mapping for direct SQL sorting
 const CONTACT_SORT_COLUMNS: Record<string, string> = {
-  first_name:  'first_name',
-  last_name:   'last_name',
-  email:       'email',
-  job_title:   'job_title',
-  created_at:  'created_at',
-  'account.account_name':    'account_name',
-  'owner.name':              'owner_name',
+  first_name: 'first_name',
+  last_name: 'last_name',
+  email: 'email',
+  job_title: 'job_title',
+  created_at: 'created_at',
+  'account.account_name': 'account_name',
+  'owner.name': 'owner_name',
   'created_by_account.name': 'created_by_account_name',
   'updated_by_account.name': 'updated_by_account_name',
 };
@@ -101,7 +103,12 @@ export const getContacts = catchAsync(
     const visibleUserIds: string[] | null = rpcVisibleUserIds ?? null;
 
     let assignedContactIds: string[] = [];
-    if (!isOwner && hierarchyType === 'restricted' && visibleUserIds && visibleUserIds.length > 0) {
+    if (
+      !isOwner &&
+      hierarchyType === 'restricted' &&
+      visibleUserIds &&
+      visibleUserIds.length > 0
+    ) {
       const { data: assignments } = await (adminClient as any)
         .from('contact_assignees')
         .select('contact_id')
@@ -115,23 +122,24 @@ export const getContacts = catchAsync(
     const { ContactsService } = await import('@kit/sales');
     const contactsService = new ContactsService(adminClient as any);
 
-    const { data: sortedContacts, count } = await contactsService.getContactsList({
-      workspaceId,
-      accountId: accountId || undefined,
-      page,
-      limit,
-      searchTerm,
-      sortColumn,
-      sortDirection,
-      createdAtFrom,
-      createdAtTo,
-      updatedAtFrom,
-      updatedAtTo,
-      createdByIds,
-      isOwner,
-      visibleUserIds: visibleUserIds || undefined,
-      assignedContactIds,
-    });
+    const { data: sortedContacts, count } =
+      await contactsService.getContactsList({
+        workspaceId,
+        accountId: accountId || undefined,
+        page,
+        limit,
+        searchTerm,
+        sortColumn,
+        sortDirection,
+        createdAtFrom,
+        createdAtTo,
+        updatedAtFrom,
+        updatedAtTo,
+        createdByIds,
+        isOwner,
+        visibleUserIds: visibleUserIds || undefined,
+        assignedContactIds,
+      });
 
     return NextResponse.json({
       message: 'Contacts retrieved successfully',
@@ -212,23 +220,36 @@ export const createContact = catchAsync(
       cleanedData[key] = rest[key] === '' ? null : rest[key];
     });
 
-    const { data: contact, error } = await supabase
-      .from('crm_contacts')
-      .insert({
-        workspace_id: workspaceId,
-        first_name,
-        status_id: statusId,
-        owner_id: payload.owner_id || user.id,
-        created_by: user.id,
-        ...cleanedData,
-      })
-      .select()
-      .single();
+    const entitlements = createEntitlementService();
+    const contact = await entitlements.withUsageReservation(
+      {
+        workspaceId,
+        moduleKey: 'sales',
+        featureKey: 'sales.contacts',
+        resourceType: 'contact',
+      },
+      async () => {
+        const { data, error } = await supabase
+          .from('crm_contacts')
+          .insert({
+            workspace_id: workspaceId,
+            first_name,
+            status_id: statusId,
+            owner_id: payload.owner_id || user.id,
+            created_by: user.id,
+            ...cleanedData,
+          })
+          .select()
+          .single();
 
-    if (error) {
-      console.error('Create contact error:', error);
-      throw error;
-    }
+        if (error) {
+          console.error('Create contact error:', error);
+          throw error;
+        }
+        return data;
+      },
+      (created) => ({ resourceId: created.id }),
+    );
 
     return successDataResponse('Contact created successfully', contact);
   },

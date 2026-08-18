@@ -173,7 +173,10 @@ SELECT '20000000-0000-0000-0000-000000000001',
 FROM public.subscription_products product
 JOIN public.feature_catalog feature ON feature.module_id = product.id
 WHERE product.product_key = 'sales'
-  AND feature.feature_key = 'sales.leads';
+  AND feature.feature_key = 'sales.leads'
+ON CONFLICT (workspace_id, module_id, feature_id)
+DO UPDATE SET current_usage = EXCLUDED.current_usage,
+              limit_value = EXCLUDED.limit_value;
 
 SELECT is(
   public.get_workspace_entitlement_context(

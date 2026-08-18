@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
+import { createEntitlementService } from '~/lib/entitlements';
 import { catchAsync } from '~/utils/response-handler';
 
 /**
@@ -61,6 +62,7 @@ export const convertLead = catchAsync(
     const industryId = (lead as any).industry_id || null;
 
     const workspaceId = lead.workspace_id;
+    const entitlements = createEntitlementService();
 
     // Helper to get default status
     const getDefaultStatusId = async () => {
@@ -124,60 +126,84 @@ export const convertLead = catchAsync(
 
     // 4. Handle Contact (Create or Use Existing)
     if (contact.type === 'new') {
-      const { data: newContact, error: contError } = await supabase
-        .from('crm_contacts')
-        .insert({
-          workspace_id: workspaceId,
-          first_name: contact.first_name || lead.first_name,
-          last_name: contact.last_name || lead.last_name,
-          email: contact.email || lead.email,
-          phone_number: contact.phone || lead.phone_number,
-          job_title: lead.job_title,
-          account_id: accountId,
-          status_id: contact.status_id || fallbackStatusId,
-          owner_id: user.id,
-          created_by: user.id,
-          created_from_lead_id: leadId,
-          alt_email: lead.alt_email,
-          mobile_number: lead.mobile_number,
-          linkedin_url: lead.linkedin_url,
-          department: lead.department,
-          location: lead.location,
-          timezone: lead.timezone,
-        })
-        .select('id')
-        .single();
+      const newContact = await entitlements.withUsageReservation(
+        {
+          workspaceId,
+          moduleKey: 'sales',
+          featureKey: 'sales.contacts',
+          resourceType: 'contact',
+        },
+        async () => {
+          const { data, error } = await supabase
+            .from('crm_contacts')
+            .insert({
+              workspace_id: workspaceId,
+              first_name: contact.first_name || lead.first_name,
+              last_name: contact.last_name || lead.last_name,
+              email: contact.email || lead.email,
+              phone_number: contact.phone || lead.phone_number,
+              job_title: lead.job_title,
+              account_id: accountId,
+              status_id: contact.status_id || fallbackStatusId,
+              owner_id: user.id,
+              created_by: user.id,
+              created_from_lead_id: leadId,
+              alt_email: lead.alt_email,
+              mobile_number: lead.mobile_number,
+              linkedin_url: lead.linkedin_url,
+              department: lead.department,
+              location: lead.location,
+              timezone: lead.timezone,
+            })
+            .select('id')
+            .single();
 
-      if (contError) {
-        throw new Error(`Failed to create contact: ${contError.message}`);
-      }
+          if (error) {
+            throw new Error(`Failed to create contact: ${error.message}`);
+          }
+          return data;
+        },
+        (created) => ({ resourceId: created.id }),
+      );
       contactId = newContact.id;
     }
 
     // 5. Handle Opportunity (Optional)
     if (should_create_opportunity && opportunity) {
       if (opportunity.type === 'new') {
-        const { data: newOpp, error: oppError } = await supabase
-          .from('crm_opportunities')
-          .insert({
-            workspace_id: workspaceId,
-            opportunity_name: opportunity.name,
-            account_id: accountId,
-            primary_contact_id: contactId,
-            stage_id: opportunity.stage_id || fallbackStatusId,
-            amount: opportunity.amount || 0,
-            expected_close_date: opportunity.close_date,
-            owner_id: user.id,
-            created_by: user.id,
-            created_from_lead_id: leadId,
-            lead_source: (lead as any).source?.source_name || null,
-          })
-          .select('id')
-          .single();
+        const newOpp = await entitlements.withUsageReservation(
+          {
+            workspaceId,
+            moduleKey: 'sales',
+            featureKey: 'sales.opportunities',
+            resourceType: 'opportunity',
+          },
+          async () => {
+            const { data, error } = await supabase
+              .from('crm_opportunities')
+              .insert({
+                workspace_id: workspaceId,
+                opportunity_name: opportunity.name,
+                account_id: accountId,
+                primary_contact_id: contactId,
+                stage_id: opportunity.stage_id || fallbackStatusId,
+                amount: opportunity.amount || 0,
+                expected_close_date: opportunity.close_date,
+                owner_id: user.id,
+                created_by: user.id,
+                created_from_lead_id: leadId,
+                lead_source: (lead as any).source?.source_name || null,
+              })
+              .select('id')
+              .single();
 
-        if (oppError) {
-          throw new Error(`Failed to create opportunity: ${oppError.message}`);
-        }
+            if (error) {
+              throw new Error(`Failed to create opportunity: ${error.message}`);
+            }
+            return data;
+          },
+          (created) => ({ resourceId: created.id }),
+        );
         opportunityId = newOpp.id;
       } else {
         opportunityId = opportunity.id;

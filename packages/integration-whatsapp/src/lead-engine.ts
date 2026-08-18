@@ -9,8 +9,8 @@
  *    - manual: never auto-create (agent does it manually)
  *    - hybrid: create only if keyword match or message threshold exceeded
  */
-
 import type { SupabaseClient } from '@supabase/supabase-js';
+
 import type { LeadCreationMode, WhatsAppSettings } from './types';
 
 // ---------------------------------------------------------------------------
@@ -53,7 +53,9 @@ async function findLeadByPhone(
     .from('crm_leads')
     .select('id')
     .eq('workspace_id', workspaceId)
-    .or(`phone_number.ilike.%${normalized}%,mobile_number.ilike.%${normalized}%`)
+    .or(
+      `phone_number.ilike.%${normalized}%,mobile_number.ilike.%${normalized}%`,
+    )
     .limit(1)
     .maybeSingle();
 
@@ -72,7 +74,9 @@ async function findContactByPhone(
     .from('crm_contacts')
     .select('id')
     .eq('workspace_id', workspaceId)
-    .or(`phone_number.ilike.%${normalized}%,mobile_number.ilike.%${normalized}%`)
+    .or(
+      `phone_number.ilike.%${normalized}%,mobile_number.ilike.%${normalized}%`,
+    )
     .limit(1)
     .maybeSingle();
 
@@ -129,19 +133,28 @@ async function createLeadFromConversation(
       .eq('workspace_id', workspaceId);
 
     if (moduleRow) {
-      statusQuery = statusQuery.eq('module_id', (moduleRow as { id: string }).id);
+      statusQuery = statusQuery.eq(
+        'module_id',
+        (moduleRow as { id: string }).id,
+      );
     }
 
-    let { data: statuses } = await statusQuery.order('sort_order', { ascending: true });
+    let { data: statuses } = await statusQuery.order('sort_order', {
+      ascending: true,
+    });
 
     // If workspace has no seeded statuses yet, trigger seeding RPC
     if (!statuses || statuses.length === 0) {
       try {
-        await supabase.rpc('initialize_workspace_crm_data', { p_workspace_id: workspaceId });
+        await supabase.rpc('initialize_workspace_crm_data', {
+          p_workspace_id: workspaceId,
+        });
       } catch {
         // ignore RPC failure if procedure does not exist
       }
-      const retryRes = await statusQuery.order('sort_order', { ascending: true });
+      const retryRes = await statusQuery.order('sort_order', {
+        ascending: true,
+      });
       statuses = retryRes.data;
     }
 
@@ -152,7 +165,10 @@ async function createLeadFromConversation(
       statuses?.[0];
 
     if (!statusRow) {
-      console.error('[whatsapp] Could not find any lead status for workspace', workspaceId);
+      console.error(
+        '[whatsapp] Could not find any lead status for workspace',
+        workspaceId,
+      );
       return null;
     }
 
@@ -186,13 +202,21 @@ async function createLeadFromConversation(
       .single();
 
     if (error || !lead) {
-      console.error('[whatsapp] Failed to create lead from conversation:', error);
+      console.error(
+        '[whatsapp] Failed to create lead from conversation:',
+        error,
+      );
       return null;
     }
 
     // Link conversation to the new lead
-    await supabase.schema('core').from('whatsapp_conversations')
-      .update({ lead_id: (lead as { id: string }).id, updated_at: new Date().toISOString() })
+    await supabase
+      .schema('core')
+      .from('whatsapp_conversations')
+      .update({
+        lead_id: (lead as { id: string }).id,
+        updated_at: new Date().toISOString(),
+      })
       .eq('id', conversationId);
 
     return (lead as { id: string }).id;
@@ -222,24 +246,53 @@ export async function matchOrCreateLead(
     settings: WhatsAppSettings | null;
   },
   supabase: SupabaseClient,
+  hooks?: {
+    beforeCreateLead?: (workspaceId: string) => Promise<{
+      commit(resourceId: string): Promise<void>;
+      rollback(): Promise<void>;
+    }>;
+  },
 ): Promise<LeadMatchResult> {
-  const { phone, customerName, messageBody, conversationId, messageCount, workspaceId, createdBy, settings } = params;
+  const {
+    phone,
+    customerName,
+    messageBody,
+    conversationId,
+    messageCount,
+    workspaceId,
+    createdBy,
+    settings,
+  } = params;
   const mode: LeadCreationMode = settings?.lead_creation_mode ?? 'hybrid';
 
   // 1. Try to find existing lead by phone
   const existingLead = await findLeadByPhone(phone, workspaceId, supabase);
   if (existingLead) {
-    await supabase.schema('core').from('whatsapp_conversations')
-      .update({ lead_id: existingLead.id, updated_at: new Date().toISOString() })
+    await supabase
+      .schema('core')
+      .from('whatsapp_conversations')
+      .update({
+        lead_id: existingLead.id,
+        updated_at: new Date().toISOString(),
+      })
       .eq('id', conversationId);
     return { matched: true, leadId: existingLead.id, leadCreated: false };
   }
 
   // 2. Try to find existing contact by phone
-  const existingContact = await findContactByPhone(phone, workspaceId, supabase);
+  const existingContact = await findContactByPhone(
+    phone,
+    workspaceId,
+    supabase,
+  );
   if (existingContact) {
-    await supabase.schema('core').from('whatsapp_conversations')
-      .update({ contact_id: existingContact.id, updated_at: new Date().toISOString() })
+    await supabase
+      .schema('core')
+      .from('whatsapp_conversations')
+      .update({
+        contact_id: existingContact.id,
+        updated_at: new Date().toISOString(),
+      })
       .eq('id', conversationId);
     return { matched: true, contactId: existingContact.id, leadCreated: false };
   }
@@ -251,14 +304,42 @@ export async function matchOrCreateLead(
   }
 
   if (mode === 'automatic') {
-    const leadId = await createLeadFromConversation(phone, customerName, conversationId, workspaceId, createdBy, supabase);
-    return { matched: false, leadCreated: !!leadId, leadId: leadId ?? undefined };
+    const reservation = await hooks?.beforeCreateLead?.(workspaceId);
+    const leadId = await createLeadFromConversation(
+      phone,
+      customerName,
+      conversationId,
+      workspaceId,
+      createdBy,
+      supabase,
+    );
+    if (leadId) await reservation?.commit(leadId);
+    else await reservation?.rollback();
+    return {
+      matched: false,
+      leadCreated: !!leadId,
+      leadId: leadId ?? undefined,
+    };
   }
 
   // hybrid
   if (settings && shouldCreateLeadHybrid(messageBody, messageCount, settings)) {
-    const leadId = await createLeadFromConversation(phone, customerName, conversationId, workspaceId, createdBy, supabase);
-    return { matched: false, leadCreated: !!leadId, leadId: leadId ?? undefined };
+    const reservation = await hooks?.beforeCreateLead?.(workspaceId);
+    const leadId = await createLeadFromConversation(
+      phone,
+      customerName,
+      conversationId,
+      workspaceId,
+      createdBy,
+      supabase,
+    );
+    if (leadId) await reservation?.commit(leadId);
+    else await reservation?.rollback();
+    return {
+      matched: false,
+      leadCreated: !!leadId,
+      leadId: leadId ?? undefined,
+    };
   }
 
   return { matched: false, leadCreated: false };

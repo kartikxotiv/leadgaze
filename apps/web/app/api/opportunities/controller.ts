@@ -1,35 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { buildOpportunityCurrencyFields } from '@kit/shared/currency';
+import { Database } from '@kit/supabase/database';
 import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
-import { Database } from '@kit/supabase/database';
+import { createEntitlementService } from '~/lib/entitlements';
+
 import {
   catchAsync,
   successDataResponse,
 } from '../../../utils/response-handler';
 
-import {
-  buildOpportunityCurrencyFields,
-} from '@kit/shared/currency';
-
 // Column mapping for direct SQL sorting
 const OPPORTUNITY_SORT_COLUMNS: Record<string, string> = {
-  opportunity_name:     'opportunity_name',
-  amount:               'amount',
-  currency:             'currency',
-  probability:          'probability',
-  expected_close_date:  'expected_close_date',
-  priority:             'priority',
-  opportunity_type:     'opportunity_type',
-  lead_source:          'lead_source',
-  competitor:           'competitor',
-  is_closed:            'is_closed',
-  is_won:               'is_won',
-  created_at:           'created_at',
-  'account.account_name':    'account_name',
-  'stage.status_name':       'stage_name',
-  'owner.name':              'owner_name',
+  opportunity_name: 'opportunity_name',
+  amount: 'amount',
+  currency: 'currency',
+  probability: 'probability',
+  expected_close_date: 'expected_close_date',
+  priority: 'priority',
+  opportunity_type: 'opportunity_type',
+  lead_source: 'lead_source',
+  competitor: 'competitor',
+  is_closed: 'is_closed',
+  is_won: 'is_won',
+  created_at: 'created_at',
+  'account.account_name': 'account_name',
+  'stage.status_name': 'stage_name',
+  'owner.name': 'owner_name',
   'created_by_account.name': 'created_by_account_name',
   'updated_by_account.name': 'updated_by_account_name',
 };
@@ -114,7 +113,12 @@ export const getOpportunities = catchAsync(
     const visibleUserIds: string[] | null = rpcVisibleUserIds ?? null;
 
     let assignedOpportunityIds: string[] = [];
-    if (!isOwner && hierarchyType === 'restricted' && visibleUserIds && visibleUserIds.length > 0) {
+    if (
+      !isOwner &&
+      hierarchyType === 'restricted' &&
+      visibleUserIds &&
+      visibleUserIds.length > 0
+    ) {
       const { data: assignments } = await (adminClient as any)
         .from('opportunity_assignees')
         .select('opportunity_id')
@@ -122,31 +126,36 @@ export const getOpportunities = catchAsync(
         .eq('assigned_to_user_id', user.id)
         .eq('assignment_status', 'active');
 
-      assignedOpportunityIds = assignments?.map((a: any) => a.opportunity_id) || [];
+      assignedOpportunityIds =
+        assignments?.map((a: any) => a.opportunity_id) || [];
     }
 
     const { OpportunitiesService } = await import('@kit/sales');
     const opportunitiesService = new OpportunitiesService(adminClient as any);
 
-    const { data: sortedOpportunities, count, totalAmount, stageBreakdown } =
-      await opportunitiesService.getOpportunitiesList({
-        workspaceId,
-        accountId: accountId || undefined,
-        page,
-        limit,
-        searchTerm,
-        stageId: stageId || undefined,
-        sortColumn,
-        sortDirection,
-        createdAtFrom,
-        createdAtTo,
-        updatedAtFrom,
-        updatedAtTo,
-        createdByIds,
-        isOwner,
-        visibleUserIds: visibleUserIds || undefined,
-        assignedOpportunityIds,
-      });
+    const {
+      data: sortedOpportunities,
+      count,
+      totalAmount,
+      stageBreakdown,
+    } = await opportunitiesService.getOpportunitiesList({
+      workspaceId,
+      accountId: accountId || undefined,
+      page,
+      limit,
+      searchTerm,
+      stageId: stageId || undefined,
+      sortColumn,
+      sortDirection,
+      createdAtFrom,
+      createdAtTo,
+      updatedAtFrom,
+      updatedAtTo,
+      createdByIds,
+      isOwner,
+      visibleUserIds: visibleUserIds || undefined,
+      assignedOpportunityIds,
+    });
 
     return NextResponse.json({
       message: 'Opportunities retrieved successfully',
@@ -189,7 +198,9 @@ export const getOpportunityStages = catchAsync(
 
     let query = supabase
       .from('entity_statuses')
-      .select('id, status_name, status_key, color, icon, is_closed, is_active, is_system, is_default, sort_order')
+      .select(
+        'id, status_name, status_key, color, icon, is_closed, is_active, is_system, is_default, sort_order',
+      )
       .eq('workspace_id', workspaceId)
       .eq('module_id', moduleData.id)
       .order('sort_order', { ascending: true })
@@ -236,7 +247,11 @@ export const getAffectedOpportunities = catchAsync(
       );
     }
 
-    const { data: records, error, count } = await adminClient
+    const {
+      data: records,
+      error,
+      count,
+    } = await adminClient
       .from('crm_opportunities')
       .select('id, opportunity_name', { count: 'exact' })
       .eq('workspace_id', workspaceId)
@@ -257,10 +272,13 @@ export const getAffectedOpportunities = catchAsync(
     }));
     /* eslint-enable @typescript-eslint/no-explicit-any */
 
-    return successDataResponse('Affected opportunities retrieved successfully', {
-      total_count: count ?? 0,
-      records: mapped,
-    });
+    return successDataResponse(
+      'Affected opportunities retrieved successfully',
+      {
+        total_count: count ?? 0,
+        records: mapped,
+      },
+    );
   },
 );
 
@@ -317,7 +335,11 @@ export const reassignOpportunityStage = catchAsync(
     // Bulk update all affected opportunities
     const { count: reassignedCount, error: updateError } = await adminClient
       .from('crm_opportunities')
-      .update({ stage_id: new_status_id, updated_by: user.id, updated_at: new Date().toISOString() })
+      .update({
+        stage_id: new_status_id,
+        updated_by: user.id,
+        updated_at: new Date().toISOString(),
+      })
       .eq('workspace_id', workspace_id)
       .eq('stage_id', oldStageId)
       .eq('is_deleted', false);
@@ -330,7 +352,11 @@ export const reassignOpportunityStage = catchAsync(
     // Now disable the old stage
     const { error: disableError } = await adminClient
       .from('entity_statuses')
-      .update({ is_active: false, updated_by: user.id, updated_at: new Date().toISOString() })
+      .update({
+        is_active: false,
+        updated_by: user.id,
+        updated_at: new Date().toISOString(),
+      })
       .eq('id', oldStageId);
 
     if (disableError) {
@@ -338,10 +364,13 @@ export const reassignOpportunityStage = catchAsync(
       throw disableError;
     }
 
-    return successDataResponse('Opportunities reassigned and stage disabled successfully', {
-      reassigned_count: reassignedCount ?? 0,
-      disabled_status_id: oldStageId,
-    });
+    return successDataResponse(
+      'Opportunities reassigned and stage disabled successfully',
+      {
+        reassigned_count: reassignedCount ?? 0,
+        disabled_status_id: oldStageId,
+      },
+    );
   },
 );
 
@@ -399,7 +428,7 @@ export const createOpportunity = catchAsync(
         // Fetch latest exchange rate for USD -> oppCurrency
         const adminClient = getSupabaseServerAdminClient();
         const { data: rates } = await adminClient
-        .schema('core')
+          .schema('core')
           .from('currency_exchange_rates')
           .select('*')
           .eq('base_currency', 'USD')
@@ -422,33 +451,46 @@ export const createOpportunity = catchAsync(
       }
     }
 
-    const { data: opportunity, error } = await supabase
-      .from('crm_opportunities')
-      .insert({
-        workspace_id,
-        account_id,
-        stage_id,
-        opportunity_name,
-        amount: oppAmount,
-        currency: oppCurrency,
-        expected_close_date: expected_close_date || null,
-        probability: probability || null,
-        priority: priority || null,
-        opportunity_type: opportunity_type || null,
-        lead_source: lead_source || null,
-        description: description || null,
-        competitor: competitor || null,
-        owner_id: user.id,
-        created_by: user.id,
-        ...currencyFields,
-      })
-      .select()
-      .single();
+    const entitlements = createEntitlementService();
+    const opportunity = await entitlements.withUsageReservation(
+      {
+        workspaceId: workspace_id,
+        moduleKey: 'sales',
+        featureKey: 'sales.opportunities',
+        resourceType: 'opportunity',
+      },
+      async () => {
+        const { data, error } = await supabase
+          .from('crm_opportunities')
+          .insert({
+            workspace_id,
+            account_id,
+            stage_id,
+            opportunity_name,
+            amount: oppAmount,
+            currency: oppCurrency,
+            expected_close_date: expected_close_date || null,
+            probability: probability || null,
+            priority: priority || null,
+            opportunity_type: opportunity_type || null,
+            lead_source: lead_source || null,
+            description: description || null,
+            competitor: competitor || null,
+            owner_id: user.id,
+            created_by: user.id,
+            ...currencyFields,
+          })
+          .select()
+          .single();
 
-    if (error) {
-      console.error('Create opportunity error:', error);
-      throw error;
-    }
+        if (error) {
+          console.error('Create opportunity error:', error);
+          throw error;
+        }
+        return data;
+      },
+      (created) => ({ resourceId: created.id }),
+    );
 
     return successDataResponse('Opportunity created successfully', opportunity);
   },
@@ -670,21 +712,32 @@ export const reorderOpportunityStages = catchAsync(
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
-    const updatePromises = orderedStatusIds.map((statusId: string, index: number) =>
-      supabase
-        .from('entity_statuses')
-        .update({ sort_order: index, updated_by: user.id, updated_at: new Date().toISOString() })
-        .eq('id', statusId)
-        .eq('workspace_id', workspaceId),
+    const updatePromises = orderedStatusIds.map(
+      (statusId: string, index: number) =>
+        supabase
+          .from('entity_statuses')
+          .update({
+            sort_order: index,
+            updated_by: user.id,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', statusId)
+          .eq('workspace_id', workspaceId),
     );
 
     const results = await Promise.all(updatePromises);
     const errors = results.filter((r) => r.error);
     if (errors.length > 0) {
-      console.error('Errors updating opportunity stage order:', errors.map((e) => e.error));
+      console.error(
+        'Errors updating opportunity stage order:',
+        errors.map((e) => e.error),
+      );
       throw new Error('Failed to update all opportunity stage orderings');
     }
 
-    return successDataResponse('Opportunity stages reordered successfully', null);
+    return successDataResponse(
+      'Opportunity stages reordered successfully',
+      null,
+    );
   },
 );

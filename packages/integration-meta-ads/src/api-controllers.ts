@@ -5,24 +5,25 @@
  * Called from apps/web/app/api routes.
  * Follows the same patterns as @kit/integration-google-ads.
  */
-
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+
 import {
-  resolveDefaultLeadStatusId,
   resolveCreatorId,
+  resolveDefaultLeadStatusId,
   resolveOrCreateLeadSource,
 } from '@kit/integration-website';
 import type { Connector } from '@kit/integration-website';
+
 import {
   buildMetaAdsOAuthUrl,
   exchangeMetaAdsCode,
-  fetchMetaPages,
   fetchMetaBusinesses,
-  fetchMetaLeadForms,
-  subscribePageToApp,
   fetchMetaLeadData,
+  fetchMetaLeadForms,
+  fetchMetaPages,
   isMetaTokenExpiringSoon,
+  subscribePageToApp,
 } from './meta-ads-provider';
 import type { MetaAdsSettingsData } from './types';
 
@@ -44,13 +45,16 @@ export async function handleGetMetaAdsSettings(
     .eq('is_deleted', false)
     .maybeSingle();
 
-  const connectionId = connectionData?.id ?? '00000000-0000-0000-0000-000000000000';
+  const connectionId =
+    connectionData?.id ?? '00000000-0000-0000-0000-000000000000';
 
   const [pagesResult, formsResult, logsResult] = await Promise.all([
     supabase
       .schema('core')
       .from('integration_accounts')
-      .select('id, external_account_id, display_name, email, metadata, status, created_at, updated_at')
+      .select(
+        'id, external_account_id, display_name, email, metadata, status, created_at, updated_at',
+      )
       .eq('workspace_id', workspaceId)
       .eq('connection_id', connectionId)
       .eq('is_deleted', false),
@@ -115,10 +119,20 @@ export async function handleMutateMetaAdsSettings(
       return handleGetAuthUrl(workspaceId, userId);
 
     case 'disconnect':
-      return handleDisconnect(workspaceId, body.pageAccountId as string, userId, supabase);
+      return handleDisconnect(
+        workspaceId,
+        body.pageAccountId as string,
+        userId,
+        supabase,
+      );
 
     case 'save-forms':
-      return handleSaveForms(workspaceId, body.forms as any[], userId, supabase);
+      return handleSaveForms(
+        workspaceId,
+        body.forms as any[],
+        userId,
+        supabase,
+      );
 
     case 'save-field-mappings':
       return handleSaveFieldMappings(
@@ -132,10 +146,18 @@ export async function handleMutateMetaAdsSettings(
       return handleFetchPages(workspaceId, supabase);
 
     case 'fetch-lead-forms':
-      return handleFetchLeadForms(workspaceId, body.pageAccountId as string, supabase);
+      return handleFetchLeadForms(
+        workspaceId,
+        body.pageAccountId as string,
+        supabase,
+      );
 
     case 'subscribe-page':
-      return handleSubscribePage(workspaceId, body.pageAccountId as string, supabase);
+      return handleSubscribePage(
+        workspaceId,
+        body.pageAccountId as string,
+        supabase,
+      );
 
     default:
       return NextResponse.json(
@@ -232,13 +254,19 @@ async function handleFetchPages(
 
   if (!user_access_token) {
     return NextResponse.json(
-      { success: false, message: 'Access token unavailable. Please reconnect.' },
+      {
+        success: false,
+        message: 'Access token unavailable. Please reconnect.',
+      },
       { status: 401 },
     );
   }
 
   if (token_expires_at && isMetaTokenExpiringSoon(token_expires_at)) {
-    console.warn('[integration-meta-ads] Meta token is expiring soon for workspace:', workspaceId);
+    console.warn(
+      '[integration-meta-ads] Meta token is expiring soon for workspace:',
+      workspaceId,
+    );
   }
 
   try {
@@ -291,7 +319,8 @@ async function handleFetchLeadForms(
     const forms = await fetchMetaLeadForms(page_id, page_access_token);
     return NextResponse.json({ success: true, data: { forms } });
   } catch (e) {
-    const message = e instanceof Error ? e.message : 'Failed to fetch lead forms.';
+    const message =
+      e instanceof Error ? e.message : 'Failed to fetch lead forms.';
     return NextResponse.json({ success: false, message }, { status: 500 });
   }
 }
@@ -337,7 +366,8 @@ async function handleSubscribePage(
     await subscribePageToApp(page_id, page_access_token);
     return NextResponse.json({ success: true, data: { subscribed: true } });
   } catch (e) {
-    const message = e instanceof Error ? e.message : 'Failed to subscribe page.';
+    const message =
+      e instanceof Error ? e.message : 'Failed to subscribe page.';
     return NextResponse.json({ success: false, message }, { status: 500 });
   }
 }
@@ -447,7 +477,10 @@ async function handleSaveFieldMappings(
     .select();
 
   if (error) {
-    console.error('[integration-meta-ads] Failed to save field mappings:', error);
+    console.error(
+      '[integration-meta-ads] Failed to save field mappings:',
+      error,
+    );
     return NextResponse.json(
       { success: false, message: 'Failed to save field mappings.' },
       { status: 500 },
@@ -465,7 +498,9 @@ async function handleSaveFieldMappings(
  * GET /api/integrations/meta/webhook
  * Meta webhook verification challenge.
  */
-export function handleMetaAdsWebhookVerification(request: NextRequest): NextResponse {
+export function handleMetaAdsWebhookVerification(
+  request: NextRequest,
+): NextResponse {
   const { searchParams } = request.nextUrl;
 
   const mode = searchParams.get('hub.mode');
@@ -513,9 +548,18 @@ export async function handleMetaAdsWebhook(
     }>;
   },
   supabase: any,
+  hooks?: {
+    beforeCreateLead?: (workspaceId: string) => Promise<{
+      commit(resourceId: string): Promise<void>;
+      rollback(): Promise<void>;
+    }>;
+  },
 ): Promise<NextResponse> {
   if (payload.object !== 'page') {
-    return NextResponse.json({ success: true, message: 'Not a page event. Skipped.' });
+    return NextResponse.json({
+      success: true,
+      message: 'Not a page event. Skipped.',
+    });
   }
 
   const entries = payload.entry ?? [];
@@ -530,9 +574,14 @@ export async function handleMetaAdsWebhook(
       if (!leadgen_id || !page_id || !form_id) continue;
 
       // Run async — don't block 200 response (fire and forget per entry)
-      processMetaLead({ leadgen_id, page_id, form_id }, supabase).catch((e) => {
-        console.error('[integration-meta-ads] Background lead processing failed:', e);
-      });
+      processMetaLead({ leadgen_id, page_id, form_id }, supabase, hooks).catch(
+        (e) => {
+          console.error(
+            '[integration-meta-ads] Background lead processing failed:',
+            e,
+          );
+        },
+      );
     }
   }
 
@@ -546,6 +595,12 @@ export async function handleMetaAdsWebhook(
 async function processMetaLead(
   event: { leadgen_id: string; page_id: string; form_id: string },
   supabase: any,
+  hooks?: {
+    beforeCreateLead?: (workspaceId: string) => Promise<{
+      commit(resourceId: string): Promise<void>;
+      rollback(): Promise<void>;
+    }>;
+  },
 ): Promise<void> {
   const { leadgen_id, page_id, form_id } = event;
 
@@ -560,14 +615,18 @@ async function processMetaLead(
     .maybeSingle();
 
   if (!formConfig) {
-    console.warn(`[integration-meta-ads] No active form config for form_id=${form_id}, page_id=${page_id}`);
+    console.warn(
+      `[integration-meta-ads] No active form config for form_id=${form_id}, page_id=${page_id}`,
+    );
     return;
   }
 
   const { workspace_id, account_id } = formConfig;
 
   if (!account_id) {
-    console.warn('[integration-meta-ads] Form has no account_id, cannot fetch lead data.');
+    console.warn(
+      '[integration-meta-ads] Form has no account_id, cannot fetch lead data.',
+    );
     return;
   }
 
@@ -580,13 +639,18 @@ async function processMetaLead(
     .eq('is_deleted', false)
     .maybeSingle();
 
-  const pageAccessToken: string | undefined = account?.metadata?.page_access_token;
+  const pageAccessToken: string | undefined =
+    account?.metadata?.page_access_token;
 
   if (!pageAccessToken) {
     await writeSyncLog(supabase, {
-      workspace_id, page_id, form_id, leadgen_id,
+      workspace_id,
+      page_id,
+      form_id,
+      leadgen_id,
       status: 'failed',
-      error_message: 'Page access token not found. Page may have been disconnected.',
+      error_message:
+        'Page access token not found. Page may have been disconnected.',
       payload: event,
     });
     return;
@@ -597,10 +661,14 @@ async function processMetaLead(
   try {
     rawLeadData = await fetchMetaLeadData(leadgen_id, pageAccessToken);
   } catch (e) {
-    const errorMessage = e instanceof Error ? e.message : 'Failed to fetch lead data.';
+    const errorMessage =
+      e instanceof Error ? e.message : 'Failed to fetch lead data.';
     console.error('[integration-meta-ads] Lead data fetch failed:', e);
     await writeSyncLog(supabase, {
-      workspace_id, page_id, form_id, leadgen_id,
+      workspace_id,
+      page_id,
+      form_id,
+      leadgen_id,
       status: 'failed',
       error_message: errorMessage,
       payload: event,
@@ -617,7 +685,7 @@ async function processMetaLead(
     .eq('workspace_id', workspace_id);
 
   const mappingMap: Record<string, string> = {};
-  for (const m of (mappings ?? [])) {
+  for (const m of mappings ?? []) {
     mappingMap[m.meta_field] = m.leadgaze_field;
   }
 
@@ -630,7 +698,8 @@ async function processMetaLead(
     city: 'city',
   };
 
-  const effectiveMappings = Object.keys(mappingMap).length > 0 ? mappingMap : DEFAULT_MAPPINGS;
+  const effectiveMappings =
+    Object.keys(mappingMap).length > 0 ? mappingMap : DEFAULT_MAPPINGS;
   const normalizedPayload: Record<string, string> = {};
 
   for (const [metaField, value] of Object.entries(rawLeadData)) {
@@ -670,7 +739,10 @@ async function processMetaLead(
 
   if (existingLeadId) {
     await writeSyncLog(supabase, {
-      workspace_id, page_id, form_id, leadgen_id,
+      workspace_id,
+      page_id,
+      form_id,
+      leadgen_id,
       status: 'duplicate',
       error_message: `Existing CRM lead found: ${existingLeadId}`,
       payload: { ...event, rawLeadData },
@@ -679,7 +751,9 @@ async function processMetaLead(
     return;
   }
 
-  // 6. Create CRM lead
+  // 6. Reserve capacity, then create the CRM lead. Failed inserts compensate
+  // the reservation so webhook retries cannot drift the usage counter.
+  const reservation = await hooks?.beforeCreateLead?.(workspace_id);
   try {
     const [statusId, creatorId] = await Promise.all([
       resolveDefaultLeadStatusId(supabase, workspace_id),
@@ -722,17 +796,27 @@ async function processMetaLead(
 
     if (leadError) throw leadError;
 
+    await reservation?.commit(newLead.id);
+
     await writeSyncLog(supabase, {
-      workspace_id, page_id, form_id, leadgen_id,
+      workspace_id,
+      page_id,
+      form_id,
+      leadgen_id,
       status: 'success',
       payload: { ...event, rawLeadData },
       crm_lead_id: newLead.id,
     });
   } catch (e) {
-    const errorMessage = e instanceof Error ? e.message : 'CRM lead creation failed.';
+    await reservation?.rollback();
+    const errorMessage =
+      e instanceof Error ? e.message : 'CRM lead creation failed.';
     console.error('[integration-meta-ads] Lead creation failed:', e);
     await writeSyncLog(supabase, {
-      workspace_id, page_id, form_id, leadgen_id,
+      workspace_id,
+      page_id,
+      form_id,
+      leadgen_id,
       status: 'failed',
       error_message: errorMessage,
       payload: { ...event, rawLeadData },
@@ -759,11 +843,15 @@ export async function handleMetaAdsCallback(
     userId = state.userId ?? '';
     returnUrl = state.returnUrl ?? returnUrl;
   } catch {
-    return { redirectUrl: `/home/sales/workspace-settings?error=invalid_state` };
+    return {
+      redirectUrl: `/home/sales/workspace-settings?error=invalid_state`,
+    };
   }
 
   if (!workspaceId) {
-    return { redirectUrl: `/home/sales/workspace-settings?error=missing_workspace` };
+    return {
+      redirectUrl: `/home/sales/workspace-settings?error=missing_workspace`,
+    };
   }
 
   try {
@@ -821,7 +909,10 @@ export async function handleMetaAdsCallback(
         .single();
 
       if (connErr || !newConn) {
-        console.error('[integration-meta-ads] Failed to create connection:', connErr);
+        console.error(
+          '[integration-meta-ads] Failed to create connection:',
+          connErr,
+        );
         return { redirectUrl: `${returnUrl}?error=db_error` };
       }
       connectionId = newConn.id;
@@ -832,7 +923,10 @@ export async function handleMetaAdsCallback(
     try {
       pages = await fetchMetaPages(tokens.user_access_token);
     } catch (e) {
-      console.warn('[integration-meta-ads] Could not fetch pages on connect:', e);
+      console.warn(
+        '[integration-meta-ads] Could not fetch pages on connect:',
+        e,
+      );
     }
 
     // Fetch businesses too (non-fatal)
@@ -876,29 +970,29 @@ export async function handleMetaAdsCallback(
           })
           .eq('id', existingPage.id);
       } else {
-        await supabase
-          .schema('core')
-          .from('integration_accounts')
-          .insert({
-            workspace_id: workspaceId,
-            connection_id: connectionId,
-            external_account_id: page.page_id,
-            display_name: page.page_name,
-            email: null,
-            metadata,
-            status: 'active',
-            owner_user_id: userId,
-            access_scope: 'workspace',
-            created_by: userId,
-            updated_by: userId,
-          });
+        await supabase.schema('core').from('integration_accounts').insert({
+          workspace_id: workspaceId,
+          connection_id: connectionId,
+          external_account_id: page.page_id,
+          display_name: page.page_name,
+          email: null,
+          metadata,
+          status: 'active',
+          owner_user_id: userId,
+          access_scope: 'workspace',
+          created_by: userId,
+          updated_by: userId,
+        });
       }
 
       // Auto-subscribe page to receive lead notifications
       try {
         await subscribePageToApp(page.page_id, page.page_access_token);
       } catch (e) {
-        console.warn(`[integration-meta-ads] Auto-subscribe failed for page ${page.page_id}:`, e);
+        console.warn(
+          `[integration-meta-ads] Auto-subscribe failed for page ${page.page_id}:`,
+          e,
+        );
       }
     }
 

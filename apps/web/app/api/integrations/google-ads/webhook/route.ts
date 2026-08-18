@@ -1,9 +1,14 @@
 import { NextResponse } from 'next/server';
-import { getSupabaseServerClient } from '@kit/supabase/server-client';
-import { handleGoogleAdsWebhook } from '@kit/integration-google-ads';
 import type { NextRequest } from 'next/server';
 
+import { handleGoogleAdsWebhook } from '@kit/integration-google-ads';
+import { getSupabaseServerClient } from '@kit/supabase/server-client';
+
+import { createServiceRoleEntitlementService } from '~/lib/entitlements';
+
 export const dynamic = 'force-dynamic';
+
+type GoogleAdsWebhookPayload = Parameters<typeof handleGoogleAdsWebhook>[0];
 
 /**
  * POST /api/integrations/google-ads/webhook
@@ -23,7 +28,21 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   const supabase = getSupabaseServerClient();
-  return handleGoogleAdsWebhook(payload as any, supabase);
+  const entitlements = createServiceRoleEntitlementService();
+  return handleGoogleAdsWebhook(payload as GoogleAdsWebhookPayload, supabase, {
+    beforeCreateLead: async (workspaceId) => {
+      const reservation = await entitlements.reserveUsage({
+        workspaceId,
+        moduleKey: 'sales',
+        featureKey: 'sales.leads',
+        resourceType: 'lead',
+      });
+      return {
+        commit: (resourceId) => reservation.commit({ resourceId }),
+        rollback: () => reservation.rollback(),
+      };
+    },
+  });
 }
 
 /**
@@ -31,5 +50,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
  * Google may send a verification GET request during webhook registration.
  */
 export async function GET(): Promise<NextResponse> {
-  return NextResponse.json({ success: true, message: 'Leadgaze Google Ads Webhook is active.' });
+  return NextResponse.json({
+    success: true,
+    message: 'Leadgaze Google Ads Webhook is active.',
+  });
 }

@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { Database } from '@kit/supabase/database';
 import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
-import { Database } from '@kit/supabase/database';
+import { createEntitlementService } from '~/lib/entitlements';
 import {
   filterLeadForRead,
   loadFieldPermissionContext,
@@ -124,7 +125,7 @@ const getLeadById = catchAsync(
       leadId,
       workspaceId: leadStub.workspace_id,
       isOwner,
-      visibleUserIds: rpcVisibleUserIds || []
+      visibleUserIds: rpcVisibleUserIds || [],
     });
 
     if (!rawLead) {
@@ -191,6 +192,7 @@ const updateLead = catchAsync(
       .from('crm_leads')
       .select('workspace_id, owner_id, created_by')
       .eq('id', leadId)
+      .eq('is_deleted', false)
       .single();
 
     if (!existingLead) {
@@ -220,10 +222,12 @@ const updateLead = catchAsync(
     // Update lead - support partial updates from sanitized payload
     const updateData: Database['public']['Tables']['crm_leads']['Update'] = {};
 
-    if (sanitized.first_name !== undefined) updateData.first_name = sanitized.first_name as string;
+    if (sanitized.first_name !== undefined)
+      updateData.first_name = sanitized.first_name as string;
     if (sanitized.last_name !== undefined)
       updateData.last_name = (sanitized.last_name as string) || null;
-    if (sanitized.email !== undefined) updateData.email = (sanitized.email as string) || null;
+    if (sanitized.email !== undefined)
+      updateData.email = (sanitized.email as string) || null;
     if (sanitized.alt_email !== undefined)
       updateData.alt_email = (sanitized.alt_email as string) || null;
     if (sanitized.phone_number !== undefined)
@@ -235,9 +239,11 @@ const updateLead = catchAsync(
     if (sanitized.company_name !== undefined)
       updateData.company_name = (sanitized.company_name as string) || null;
     if (sanitized.company_website !== undefined)
-      updateData.company_website = (sanitized.company_website as string) || null;
+      updateData.company_website =
+        (sanitized.company_website as string) || null;
     if (sanitized.company_linkedin_url !== undefined)
-      updateData.company_linkedin_url = (sanitized.company_linkedin_url as string) || null;
+      updateData.company_linkedin_url =
+        (sanitized.company_linkedin_url as string) || null;
     if (sanitized.job_title !== undefined)
       updateData.job_title = (sanitized.job_title as string) || null;
     if (sanitized.department !== undefined)
@@ -245,22 +251,29 @@ const updateLead = catchAsync(
     if (sanitized.industry_id !== undefined)
       updateData.industry_id = (sanitized.industry_id as string) || null;
     if (sanitized.company_size !== undefined)
-      updateData.company_size = (sanitized.company_size as Database['public']['Tables']['crm_leads']['Update']['company_size']) || null;
+      updateData.company_size =
+        (sanitized.company_size as Database['public']['Tables']['crm_leads']['Update']['company_size']) ||
+        null;
     if (sanitized.annual_revenue !== undefined)
       updateData.annual_revenue = (sanitized.annual_revenue as number) || null;
     if (sanitized.location !== undefined)
       updateData.location = (sanitized.location as string) || null;
     if (sanitized.timezone !== undefined)
       updateData.timezone = (sanitized.timezone as string) || null;
-    if (sanitized.status_id !== undefined) updateData.status_id = sanitized.status_id as string;
+    if (sanitized.status_id !== undefined)
+      updateData.status_id = sanitized.status_id as string;
     if (sanitized.source_id !== undefined)
       updateData.source_id = (sanitized.source_id as string) || null;
-    if (sanitized.trigger !== undefined) updateData.trigger = (sanitized.trigger as string) || null;
-    if (sanitized.lead_score !== undefined) updateData.lead_score = sanitized.lead_score as number;
+    if (sanitized.trigger !== undefined)
+      updateData.trigger = (sanitized.trigger as string) || null;
+    if (sanitized.lead_score !== undefined)
+      updateData.lead_score = sanitized.lead_score as number;
     if (sanitized.owner_id !== undefined)
       updateData.owner_id = (sanitized.owner_id as string) || null;
-    if (sanitized.notes !== undefined) updateData.notes = (sanitized.notes as string) || null;
-    if (sanitized.tags !== undefined) updateData.tags = sanitized.tags as string[];
+    if (sanitized.notes !== undefined)
+      updateData.notes = (sanitized.notes as string) || null;
+    if (sanitized.tags !== undefined)
+      updateData.tags = sanitized.tags as string[];
     if (sanitized.custom_fields !== undefined) {
       const { data: currentLead } = await supabase
         .from('crm_leads')
@@ -303,9 +316,10 @@ const updateLead = catchAsync(
         .eq('user_id', user.id)
         .eq('workspace_id', existingLead.workspace_id);
 
-      const member = members?.find((m: any) => m.product_key === 'sales')
-        || members?.find((m: any) => m.product_key === null)
-        || members?.[0];
+      const member =
+        members?.find((m: any) => m.product_key === 'sales') ||
+        members?.find((m: any) => m.product_key === null) ||
+        members?.[0];
 
       if (member?.role_id) {
         const { data: permission } = await supabase
@@ -410,11 +424,12 @@ const deleteLead = catchAsync(
     }
 
     // Check permissions
-    // Get the lead to check permissions
+    // Get the active lead so repeated deletes cannot release usage twice.
     const { data: existingLead } = await supabase
       .from('crm_leads')
       .select('workspace_id, owner_id, created_by')
       .eq('id', leadId)
+      .eq('is_deleted', false)
       .single();
 
     if (!existingLead) {
@@ -440,9 +455,10 @@ const deleteLead = catchAsync(
         .eq('user_id', user.id)
         .eq('workspace_id', existingLead.workspace_id);
 
-      const member = members?.find((m: any) => m.product_key === 'sales')
-        || members?.find((m: any) => m.product_key === null)
-        || members?.[0];
+      const member =
+        members?.find((m: any) => m.product_key === 'sales') ||
+        members?.find((m: any) => m.product_key === null) ||
+        members?.[0];
 
       if (member?.role_id) {
         const { data: permission } = await supabase
@@ -485,6 +501,7 @@ const deleteLead = catchAsync(
         deleted_by: user.id,
       })
       .eq('id', leadId)
+      .eq('is_deleted', false)
       .select()
       .single();
 
@@ -492,6 +509,14 @@ const deleteLead = catchAsync(
       console.error('Delete lead error:', error);
       throw error;
     }
+
+    await createEntitlementService().releaseUsage({
+      workspaceId: existingLead.workspace_id,
+      moduleKey: 'sales',
+      featureKey: 'sales.leads',
+      resourceId: leadId,
+      resourceType: 'lead',
+    });
 
     return NextResponse.json(
       {

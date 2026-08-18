@@ -456,7 +456,11 @@ BEGIN
     feature.id
   ) entitlement ON TRUE
   WHERE usage_value.current_usage IS NOT NULL
-  ON CONFLICT (workspace_id, module_id, feature_id) DO NOTHING;
+  ON CONFLICT (workspace_id, module_id, feature_id)
+  DO UPDATE
+  SET current_usage = EXCLUDED.current_usage,
+      limit_value = EXCLUDED.limit_value,
+      last_updated_at = NOW();
 
   GET DIAGNOSTICS usage_counter_count = ROW_COUNT;
 

@@ -6,17 +6,19 @@
  * They follow the same pattern as integration-zapier's api-controllers.ts.
  */
 import { NextResponse } from 'next/server';
+
 import {
-  resolveDefaultLeadStatusId,
   resolveCreatorId,
+  resolveDefaultLeadStatusId,
   resolveOrCreateLeadSource,
 } from '@kit/integration-website';
 import type { Connector } from '@kit/integration-website';
+
 import {
   buildGoogleAdsOAuthUrl,
   exchangeGoogleAdsCode,
-  getGoogleAdsCustomerAccounts,
   fetchGoogleAdsLeadData,
+  getGoogleAdsCustomerAccounts,
   refreshGoogleAdsToken,
 } from './google-ads-provider';
 import type { GoogleAdsSettingsData } from './types';
@@ -39,13 +41,16 @@ export async function handleGetGoogleAdsSettings(
     .eq('is_deleted', false)
     .maybeSingle();
 
-  const connectionId = connectionData?.id || '00000000-0000-0000-0000-000000000000';
+  const connectionId =
+    connectionData?.id || '00000000-0000-0000-0000-000000000000';
 
   const [accountsResult, formsResult, logsResult] = await Promise.all([
     supabase
       .schema('core')
       .from('integration_accounts')
-      .select('id, external_account_id, email, display_name, metadata, status, created_at, updated_at')
+      .select(
+        'id, external_account_id, email, display_name, metadata, status, created_at, updated_at',
+      )
       .eq('workspace_id', workspaceId)
       .eq('connection_id', connectionId)
       .eq('is_deleted', false),
@@ -110,21 +115,38 @@ export async function handleMutateGoogleAdsSettings(
       return handleGetAuthUrl(workspaceId, userId);
 
     case 'disconnect':
-      return handleDisconnect(workspaceId, body.accountId as string, userId, supabase);
+      return handleDisconnect(
+        workspaceId,
+        body.accountId as string,
+        userId,
+        supabase,
+      );
 
     case 'save-forms':
-      return handleSaveForms(workspaceId, body.forms as any[], userId, supabase);
+      return handleSaveForms(
+        workspaceId,
+        body.forms as any[],
+        userId,
+        supabase,
+      );
 
     case 'save-field-mappings':
       return handleSaveFieldMappings(
         workspaceId,
         body.form_id as string,
-        body.mappings as Array<{ google_field: string; leadgaze_field: string }>,
+        body.mappings as Array<{
+          google_field: string;
+          leadgaze_field: string;
+        }>,
         supabase,
       );
 
     case 'fetch-accounts':
-      return handleFetchAccounts(workspaceId, body.accountId as string, supabase);
+      return handleFetchAccounts(
+        workspaceId,
+        body.accountId as string,
+        supabase,
+      );
 
     default:
       return NextResponse.json(
@@ -141,7 +163,11 @@ export async function handleMutateGoogleAdsSettings(
 
 function handleGetAuthUrl(workspaceId: string, userId: string): NextResponse {
   const state = Buffer.from(
-    JSON.stringify({ workspaceId, userId, returnUrl: `/home/sales/workspace-settings/integrations/google-ads` }),
+    JSON.stringify({
+      workspaceId,
+      userId,
+      returnUrl: `/home/sales/workspace-settings/integrations/google-ads`,
+    }),
   ).toString('base64');
 
   const url = buildGoogleAdsOAuthUrl(state);
@@ -169,12 +195,19 @@ async function handleDisconnect(
   const { error } = await supabase
     .schema('core')
     .from('integration_accounts')
-    .update({ is_deleted: true, deleted_at: new Date().toISOString(), deleted_by: userId })
+    .update({
+      is_deleted: true,
+      deleted_at: new Date().toISOString(),
+      deleted_by: userId,
+    })
     .eq('id', accountId)
     .eq('workspace_id', workspaceId);
 
   if (error) {
-    console.error('[integration-google-ads] Failed to disconnect account:', error);
+    console.error(
+      '[integration-google-ads] Failed to disconnect account:',
+      error,
+    );
     return NextResponse.json(
       { success: false, message: 'Failed to disconnect Google Ads account.' },
       { status: 500 },
@@ -245,7 +278,10 @@ async function handleFetchAccounts(
 
   if (!access_token) {
     return NextResponse.json(
-      { success: false, message: 'Access token unavailable. Please reconnect.' },
+      {
+        success: false,
+        message: 'Access token unavailable. Please reconnect.',
+      },
       { status: 401 },
     );
   }
@@ -257,12 +293,15 @@ async function handleFetchAccounts(
     await supabase
       .schema('core')
       .from('integration_accounts')
-      .update({ metadata: { ...account.metadata, customer_accounts: accounts } })
+      .update({
+        metadata: { ...account.metadata, customer_accounts: accounts },
+      })
       .eq('id', account.id);
 
     return NextResponse.json({ success: true, data: { accounts } });
   } catch (e) {
-    const message = e instanceof Error ? e.message : 'Failed to fetch accounts.';
+    const message =
+      e instanceof Error ? e.message : 'Failed to fetch accounts.';
     return NextResponse.json({ success: false, message }, { status: 500 });
   }
 }
@@ -373,7 +412,10 @@ async function handleSaveFieldMappings(
     .select();
 
   if (error) {
-    console.error('[integration-google-ads] Failed to save field mappings:', error);
+    console.error(
+      '[integration-google-ads] Failed to save field mappings:',
+      error,
+    );
     return NextResponse.json(
       { success: false, message: 'Failed to save field mappings.' },
       { status: 500 },
@@ -396,12 +438,21 @@ export async function handleGoogleAdsWebhook(
     gclid?: string;
   },
   supabase: any,
+  hooks?: {
+    beforeCreateLead?: (workspaceId: string) => Promise<{
+      commit(resourceId: string): Promise<void>;
+      rollback(): Promise<void>;
+    }>;
+  },
 ): Promise<NextResponse> {
   const { lead_id, form_id, customer_id } = payload;
 
   if (!lead_id || !form_id || !customer_id) {
     return NextResponse.json(
-      { success: false, message: 'Missing required fields: lead_id, form_id, customer_id' },
+      {
+        success: false,
+        message: 'Missing required fields: lead_id, form_id, customer_id',
+      },
       { status: 400 },
     );
   }
@@ -417,14 +468,22 @@ export async function handleGoogleAdsWebhook(
     .maybeSingle();
 
   if (!formConfig) {
-    console.warn(`[integration-google-ads] No active form config for form_id=${form_id}, customer_id=${customer_id}`);
-    return NextResponse.json({ success: true, message: 'Form not configured. Skipped.' });
+    console.warn(
+      `[integration-google-ads] No active form config for form_id=${form_id}, customer_id=${customer_id}`,
+    );
+    return NextResponse.json({
+      success: true,
+      message: 'Form not configured. Skipped.',
+    });
   }
 
   const { workspace_id, account_id } = formConfig;
 
   if (!account_id) {
-    return NextResponse.json({ success: false, message: 'Form is not associated with a connected Google account.' });
+    return NextResponse.json({
+      success: false,
+      message: 'Form is not associated with a connected Google account.',
+    });
   }
 
   // Get OAuth tokens from the connected account
@@ -438,12 +497,19 @@ export async function handleGoogleAdsWebhook(
 
   if (!account) {
     await writeSyncLog(supabase, {
-      workspace_id, customer_id, form_id, lead_id,
+      workspace_id,
+      customer_id,
+      form_id,
+      lead_id,
       status: 'failed',
-      error_message: 'Associated Google account connection not found or was disconnected.',
+      error_message:
+        'Associated Google account connection not found or was disconnected.',
       payload,
     });
-    return NextResponse.json({ success: false, message: 'Google account connection missing.' });
+    return NextResponse.json({
+      success: false,
+      message: 'Google account connection missing.',
+    });
   }
 
   let accessToken: string | undefined = account.metadata?.access_token;
@@ -459,38 +525,63 @@ export async function handleGoogleAdsWebhook(
         .schema('core')
         .from('integration_accounts')
         .update({
-          metadata: { ...account.metadata, access_token: refreshed.access_token, expires_at: refreshed.expires_at },
+          metadata: {
+            ...account.metadata,
+            access_token: refreshed.access_token,
+            expires_at: refreshed.expires_at,
+          },
         })
         .eq('id', account_id);
     } catch (e) {
-      console.error('[integration-google-ads] Token refresh failed during webhook:', e);
+      console.error(
+        '[integration-google-ads] Token refresh failed during webhook:',
+        e,
+      );
     }
   }
 
   if (!accessToken) {
     await writeSyncLog(supabase, {
-      workspace_id, customer_id, form_id, lead_id,
+      workspace_id,
+      customer_id,
+      form_id,
+      lead_id,
       status: 'failed',
-      error_message: 'Access token unavailable. Please reconnect your Google account.',
+      error_message:
+        'Access token unavailable. Please reconnect your Google account.',
       payload,
     });
-    return NextResponse.json({ success: false, message: 'Auth token unavailable.' });
+    return NextResponse.json({
+      success: false,
+      message: 'Auth token unavailable.',
+    });
   }
 
   // Fetch lead data from Google Ads API
   let rawLeadData: Record<string, string> = {};
   try {
-    rawLeadData = await fetchGoogleAdsLeadData(accessToken, customer_id, lead_id);
+    rawLeadData = await fetchGoogleAdsLeadData(
+      accessToken,
+      customer_id,
+      lead_id,
+    );
   } catch (e) {
-    const errorMessage = e instanceof Error ? e.message : 'Failed to fetch lead data.';
+    const errorMessage =
+      e instanceof Error ? e.message : 'Failed to fetch lead data.';
     console.error('[integration-google-ads] Lead data fetch failed:', e);
     await writeSyncLog(supabase, {
-      workspace_id, customer_id, form_id, lead_id,
+      workspace_id,
+      customer_id,
+      form_id,
+      lead_id,
       status: 'failed',
       error_message: errorMessage,
       payload,
     });
-    return NextResponse.json({ success: true, message: 'Lead data fetch failed. Logged.' });
+    return NextResponse.json({
+      success: true,
+      message: 'Lead data fetch failed. Logged.',
+    });
   }
 
   // Apply field mappings
@@ -502,7 +593,7 @@ export async function handleGoogleAdsWebhook(
     .eq('workspace_id', workspace_id);
 
   const mappingMap: Record<string, string> = {};
-  for (const m of (mappings ?? [])) {
+  for (const m of mappings ?? []) {
     mappingMap[m.google_field] = m.leadgaze_field;
   }
 
@@ -514,7 +605,8 @@ export async function handleGoogleAdsWebhook(
     JOB_TITLE: 'designation',
   };
 
-  const effectiveMappings = Object.keys(mappingMap).length > 0 ? mappingMap : DEFAULT_MAPPINGS;
+  const effectiveMappings =
+    Object.keys(mappingMap).length > 0 ? mappingMap : DEFAULT_MAPPINGS;
   const normalizedPayload: Record<string, string> = {};
 
   for (const [googleField, value] of Object.entries(rawLeadData)) {
@@ -540,16 +632,23 @@ export async function handleGoogleAdsWebhook(
 
     if (existing) {
       await writeSyncLog(supabase, {
-        workspace_id, customer_id, form_id, lead_id,
+        workspace_id,
+        customer_id,
+        form_id,
+        lead_id,
         status: 'duplicate',
         error_message: `Existing CRM lead found for email: ${normalizedPayload.email}`,
         payload: { ...payload, rawLeadData },
         crm_lead_id: existing.id,
       });
-      return NextResponse.json({ success: true, message: 'Duplicate lead detected. Skipped.' });
+      return NextResponse.json({
+        success: true,
+        message: 'Duplicate lead detected. Skipped.',
+      });
     }
   }
 
+  const reservation = await hooks?.beforeCreateLead?.(workspace_id);
   try {
     const [statusId, creatorId] = await Promise.all([
       resolveDefaultLeadStatusId(supabase, workspace_id),
@@ -590,8 +689,13 @@ export async function handleGoogleAdsWebhook(
       throw leadError;
     }
 
+    await reservation?.commit(newLead.id);
+
     await writeSyncLog(supabase, {
-      workspace_id, customer_id, form_id, lead_id,
+      workspace_id,
+      customer_id,
+      form_id,
+      lead_id,
       status: 'success',
       payload: { ...payload, rawLeadData },
       crm_lead_id: newLead.id,
@@ -599,15 +703,23 @@ export async function handleGoogleAdsWebhook(
 
     return NextResponse.json({ success: true, data: { lead_id: newLead.id } });
   } catch (e) {
-    const errorMessage = e instanceof Error ? e.message : 'CRM lead creation failed.';
+    await reservation?.rollback();
+    const errorMessage =
+      e instanceof Error ? e.message : 'CRM lead creation failed.';
     console.error('[integration-google-ads] Lead creation failed:', e);
     await writeSyncLog(supabase, {
-      workspace_id, customer_id, form_id, lead_id,
+      workspace_id,
+      customer_id,
+      form_id,
+      lead_id,
       status: 'failed',
       error_message: errorMessage,
       payload: { ...payload, rawLeadData },
     });
-    return NextResponse.json({ success: true, message: 'Lead processing failed. Logged.' });
+    return NextResponse.json({
+      success: true,
+      message: 'Lead processing failed. Logged.',
+    });
   }
 }
 
@@ -630,11 +742,15 @@ export async function handleGoogleAdsCallback(
     userId = state.userId ?? '';
     returnUrl = state.returnUrl ?? returnUrl;
   } catch {
-    return { redirectUrl: `/home/sales/workspace-settings?error=invalid_state` };
+    return {
+      redirectUrl: `/home/sales/workspace-settings?error=invalid_state`,
+    };
   }
 
   if (!workspaceId) {
-    return { redirectUrl: `/home/sales/workspace-settings?error=missing_workspace` };
+    return {
+      redirectUrl: `/home/sales/workspace-settings?error=missing_workspace`,
+    };
   }
 
   try {
@@ -674,7 +790,10 @@ export async function handleGoogleAdsCallback(
         .single();
 
       if (connErr || !newConn) {
-        console.error('[integration-google-ads] Failed to create connection parent:', connErr);
+        console.error(
+          '[integration-google-ads] Failed to create connection parent:',
+          connErr,
+        );
         return { redirectUrl: `${returnUrl}?error=db_error` };
       }
       connectionId = newConn.id;
@@ -683,9 +802,14 @@ export async function handleGoogleAdsCallback(
     // Fetch initial customer accounts list
     let customerAccounts: unknown[] = [];
     try {
-      customerAccounts = await getGoogleAdsCustomerAccounts(tokens.access_token);
+      customerAccounts = await getGoogleAdsCustomerAccounts(
+        tokens.access_token,
+      );
     } catch (e) {
-      console.warn('[integration-google-ads] Could not fetch accounts on connect:', e);
+      console.warn(
+        '[integration-google-ads] Could not fetch accounts on connect:',
+        e,
+      );
     }
 
     const metadata = {
@@ -718,7 +842,10 @@ export async function handleGoogleAdsCallback(
         .eq('id', existingAccount.id);
 
       if (error) {
-        console.error('[integration-google-ads] Failed to update integration account:', error);
+        console.error(
+          '[integration-google-ads] Failed to update integration account:',
+          error,
+        );
         return { redirectUrl: `${returnUrl}?error=db_error` };
       }
     } else {
@@ -740,7 +867,10 @@ export async function handleGoogleAdsCallback(
         });
 
       if (error) {
-        console.error('[integration-google-ads] Failed to insert integration account:', error);
+        console.error(
+          '[integration-google-ads] Failed to insert integration account:',
+          error,
+        );
         return { redirectUrl: `${returnUrl}?error=db_error` };
       }
     }
