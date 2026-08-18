@@ -771,23 +771,23 @@ export default function AdminUsersPage() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <UserCheck className="h-4 w-4 text-amber-600" />
+              <UserCheck className="h-4 w-4 text-white" />
               Impersonate User
             </DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-4 py-2">
+          <div className="space-y-2 px-2 mt-1 pb-1">
             {impersonateTarget && (
-              <p className="text-sm text-muted-foreground">
+              <div className="text-sm text-muted-foreground mb-0">
                 You are about to start an impersonation session for{' '}
                 <span className="font-semibold text-foreground">
                   {impersonateTarget.full_name}
                 </span>{' '}
                 ({impersonateTarget.email}). This session will expire in 30 minutes.
-              </p>
+              </div>
             )}
 
-            <div className="space-y-2">
+            <div>
               <Label htmlFor="impersonate-reason">
                 Reason for Access <span className="text-rose-500">*</span>
               </Label>
@@ -813,7 +813,7 @@ export default function AdminUsersPage() {
             </Button>
             <Button
               variant="default"
-              className="gap-2 bg-amber-600 hover:bg-amber-700"
+              className="gap-2"
               onClick={handleImpersonateSubmit}
               disabled={isImpersonating || !impersonateReason.trim()}
             >

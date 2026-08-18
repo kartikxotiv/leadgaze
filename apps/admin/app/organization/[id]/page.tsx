@@ -1,13 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, use, useRef } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import {
   ArrowLeft,
   Check,
   Download,
+  Loader2,
   MoreVertical,
   Plus,
+  UserCheck,
   X,
 } from 'lucide-react';
 
@@ -24,6 +27,15 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@kit/ui/dropdown-menu';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@kit/ui/dialog';
+import { Label } from '@kit/ui/label';
+import { Textarea } from '@kit/ui/textarea';
 import { PageBody } from '@kit/ui/page';
 import {
   Table,
@@ -36,37 +48,18 @@ import {
 import { TablePagination } from '@kit/ui/table-pagination';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@kit/ui/tabs';
 import { AdminNavbar } from '~/components/admin-navbar';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { getWorkspaceByIdService, getWorkspaceMembersService, removeWorkspaceMemberService, getWorkspaceUsageAnalyticsService } from '~/services/workspaces.service';
+import { startImpersonationService } from '~/services/impersonation.service';
+import { Skeleton } from '@kit/ui/skeleton';
+import { toast } from 'sonner';
+import { CustomDeleteDialog } from '@kit/ui/custom-delete-dialog';
+import { AddColumnModal } from '@kit/ui/add-column-modal';
+import { useColumnVisibility } from '@kit/ui/use-column-visibility';
 
 // ─── Static mock data ─────────────────────────────────────────────────────────
 
-const WS = {
-  name: 'Wayne Corp',
-  initials: 'W',
-  color: 'bg-blue-600',
-  status: 'Active',
-  plan: 'Enterprise',
-  ownerName: 'Bruce Wayne',
-  ownerEmail: 'bruce@waynecorp.com',
-  domain: 'waynecorp.leadgaze.com',
-  industry: 'Technology',
-  created: '2025-01-15',
-  lastLogin: '2026-08-03 09:12 AM',
-  seats: 48,
-  mrr: '$2400',
-  modules: 2,
-  members: 33,
-  billingCycle: 'Monthly',
-  monthlyAmount: '$2400/mo',
-  renewalDate: '2026-09-03',
-  revenueGenerated: '$19,200 (8 months)',
-  activeModules: ['CRM', 'HRMS'],
-};
-
-const MEMBERS = Array.from({ length: 6 }, (_, i) => ({
-  id: `m${i}`, sno: i + 1,
-  name: 'Aman Kumar', email: 'bruce@waynecorp.com',
-  role: 'Owner', lastActive: '2026-08-03 11:42', status: 'Active',
-}));
+// WS static data removed in favor of dynamic API data
 
 const AUDIT_LOGS = Array.from({ length: 7 }, (_, i) => ({
   id: `a${i}`, sno: i + 1,
@@ -80,14 +73,7 @@ const BILLING_ROWS = Array.from({ length: 9 }, (_, i) => ({
   amount: '$2400', status: 'Paid', date: '2026-08-01',
 }));
 
-const USAGE_STATS = [
-  { label: 'Leads Created', value: '1,284' },
-  { label: 'Emails Sent', value: '3,920' },
-  { label: 'Meetings Scheduled', value: '148' },
-  { label: 'Storage Used', value: '4.2 GB' },
-  { label: 'API Calls', value: '82,410' },
-  { label: 'Documents Uploaded', value: '237' },
-];
+// Removed USAGE_STATS
 
 const MODULES_DATA = [
   {
@@ -181,7 +167,7 @@ const TAB_TRIGGER =
 
 // ─── Tab: Overview ────────────────────────────────────────────────────────────
 
-function OverviewTab() {
+function OverviewTab({ WS }: { WS: any }) {
   const infoRows = [
     { label: 'Name', value: WS.name },
     { label: 'Domain', value: WS.domain },
@@ -199,15 +185,15 @@ function OverviewTab() {
   return (
     <div className="grid grid-cols-1 gap-2 lg:grid-cols-3">
       {/* Workspace Info */}
-      <CardWidgetContainer title="Workspace Info" className="lg:col-span-1">
-        <div className="flex flex-col divide-y divide-zinc-100 dark:divide-zinc-800">
+      <CardWidgetContainer title="Workspace Info" headerClassName="p-2 xl:p-2 2xl:p-2" hideHeaderBorder={true}>
+        <div className="flex flex-col gap-1 px-2">
           {infoRows.map(({ label, value }) => (
-            <div key={label} className="flex items-center justify-between px-4 py-2">
-              <span className="primary-text-regular text-leadgaze-muted">{label}</span>
+            <div key={label} className="flex items-center justify-between border-b py-1">
+              <span className="primary-text-regular text-leadgaze-muted mb-0">{label}</span>
               <span className="primary-text-medium text-leadgaze-dark dark:text-white text-right">{value}</span>
             </div>
           ))}
-          <div className="flex items-center justify-between px-4 py-2">
+          <div className="flex items-center justify-between border-b py-1">
             <span className="primary-text-regular text-leadgaze-muted">Status</span>
             <StatusBadge status={WS.status} />
           </div>
@@ -221,46 +207,49 @@ function OverviewTab() {
             { v: WS.seats, l: 'Seats' }, { v: WS.mrr, l: 'MRR' },
             { v: WS.modules, l: 'Modules' }, { v: WS.members, l: 'Members' },
           ].map(({ v, l }) => (
-            <Card key={l} className="p-3">
-              <p className="text-2xl font-bold text-zinc-900 dark:text-white">{v}</p>
-              <p className="primary-text-regular text-leadgaze-muted">{l}</p>
+            <Card key={l} className="p-4 flex flex-col justify-center">
+              <p className="primary-heading-number text-zinc-900 dark:text-white leading-none">{v}</p>
+              <p className="secondary-text-small text-leadgaze-muted mt-2">{l}</p>
             </Card>
           ))}
         </div>
-        <CardWidgetContainer title="Active Modules" contentClassName="px-4 pb-3 pt-2">
+        <CardWidgetContainer title="Active Modules" contentClassName="px-2 pb-2 pt-2" headerClassName="p-2 xl:p-2 2xl:p-2" hideHeaderBorder={true}>
           <div className="flex flex-wrap gap-2">
-            {WS.activeModules.map((mod) => (
-              <Badge key={mod} className="bg-blue-50 text-blue-600 border border-blue-200 px-2 py-0.5 text-xs font-semibold">
-                {mod}
-              </Badge>
-            ))}
+            {WS.activeModules.map((mod: any) => {
+               const isCRM = mod.name === 'CRM';
+               return (
+                 <Badge key={mod.key} variant="outline" className={`rounded-none px-2.5 py-0.5 text-xs font-bold border-transparent ${isCRM ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' : 'bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300'}`}>
+                   {mod.name}
+                   <span className={`ml-1.5 flex h-4 w-4 items-center justify-center rounded-full text-[10px] ${isCRM ? 'bg-blue-200/50 dark:bg-blue-800/50' : 'bg-purple-200/50 dark:bg-purple-800/50'}`}>
+                     25
+                   </span>
+                 </Badge>
+               );
+            })}
           </div>
         </CardWidgetContainer>
       </div>
 
       {/* Subscription Summary */}
-      <div className="card-container rounded-[0.7px] bg-white dark:bg-zinc-900 lg:col-span-1 flex flex-col">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-100 dark:border-zinc-800">
-          <h2 className="primary-heading text-leadgaze-dark dark:text-zinc-100">Subscription</h2>
-        </div>
-        <div className="flex flex-col divide-y divide-zinc-100 dark:divide-zinc-800 px-4 flex-1">
-          <div className="flex items-center justify-between py-2">
-            <span className="primary-text-regular text-leadgaze-muted">Current Plan</span>
+      <CardWidgetContainer title="Subscription" headerClassName="p-2 xl:p-2 2xl:p-2" hideHeaderBorder={true}>
+        <div className="flex flex-col gap-1 px-2">
+          <div className="flex items-center justify-between border-b py-1">
+            <span className="primary-text-regular text-leadgaze-muted mb-0">Current Plan</span>
             <PlanBadge plan={WS.plan} />
           </div>
           {subRows.map(({ label, value }) => (
-            <div key={label} className="flex items-center justify-between py-2">
-              <span className="primary-text-regular text-leadgaze-muted">{label}</span>
-              <span className="primary-text-medium text-leadgaze-dark dark:text-white">{value}</span>
+            <div key={label} className="flex items-center justify-between border-b py-1">
+              <span className="primary-text-regular text-leadgaze-muted mb-0">{label}</span>
+              <span className="primary-text-medium text-leadgaze-dark dark:text-white text-right">{value}</span>
             </div>
           ))}
         </div>
-        <div className="px-4 pb-3 pt-2">
-          <Button className="w-full bg-leadgaze-primary hover:bg-leadgaze-primary/90 text-white secondary-text-small-bold">
+        <div className="px-2 pb-2 pt-2 flex justify-end">
+          <Button variant="default" className="bg-leadgaze-primary hover:bg-leadgaze-primary text-white secondary-text-small-bold gap-1.5 px-2">
             Change Plan
           </Button>
         </div>
-      </div>
+      </CardWidgetContainer>
     </div>
   );
 }
@@ -356,13 +345,171 @@ function ModulesTab() {
 
 // ─── Shared table page state + table components ───────────────────────────────
 
-function MembersTab() {
+const MEMBERS_FIELDS = [
+  { id: 'sno', key: 'sno', label: 'S. No.' },
+  { id: 'name', key: 'name', label: 'Name' },
+  { id: 'email', key: 'email', label: 'Email' },
+  { id: 'role', key: 'role', label: 'Role' },
+  { id: 'lastActive', key: 'lastActive', label: 'Last Active' },
+  { id: 'status', key: 'status', label: 'Status' },
+];
+
+const DEFAULT_MEMBERS_VISIBILITY = MEMBERS_FIELDS.reduce((acc, field) => {
+  acc[field.id] = true;
+  return acc;
+}, {} as Record<string, boolean>);
+
+function MembersTab({ workspaceId, activeModules }: { workspaceId: string, activeModules: { key: string, name: string }[] }) {
+  const queryClient = useQueryClient();
+  const [activeModuleKey, setActiveModuleKey] = useState(activeModules.length > 0 ? activeModules[0].key : 'All');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
+  const [memberToRemove, setMemberToRemove] = useState<string | null>(null);
+  const [isAddColumnModalOpen, setAddColumnModalOpen] = useState(false);
+
+  // Impersonation state
+  const [impersonateTarget, setImpersonateTarget] = useState<any | null>(null);
+  const [impersonateReason, setImpersonateReason] = useState('');
+  const [isImpersonating, setIsImpersonating] = useState(false);
+  const impersonateReasonRef = useRef<HTMLTextAreaElement>(null);
+
+  const { visibility, toggleVisibility, reset } = useColumnVisibility(
+    MEMBERS_FIELDS,
+    DEFAULT_MEMBERS_VISIBILITY
+  );
+
+  const { data, isLoading, isFetching } = useQuery({
+    queryKey: ['workspace-members', workspaceId, activeModuleKey, page, pageSize],
+    queryFn: () => getWorkspaceMembersService({ workspaceId, module: activeModuleKey, page, limit: pageSize }),
+  });
+
+  const removeMutation = useMutation({
+    mutationFn: (id: string) => removeWorkspaceMemberService({ workspaceId, memberId: id }),
+    onSuccess: () => {
+      toast.success('Member removed successfully');
+      setMemberToRemove(null);
+      queryClient.invalidateQueries({ queryKey: ['workspace-members', workspaceId] });
+    },
+    onError: () => {
+      toast.error('Failed to remove member');
+      setMemberToRemove(null);
+    }
+  });
+
+  const handleOpenImpersonate = (member: any) => {
+    setImpersonateTarget(member);
+    setImpersonateReason('');
+  };
+
+  const handleImpersonateSubmit = async () => {
+    if (!impersonateTarget) return;
+    const trimmedReason = impersonateReason.trim();
+    if (!trimmedReason) {
+      toast.error('Please provide a reason for impersonation');
+      impersonateReasonRef.current?.focus();
+      return;
+    }
+
+    setIsImpersonating(true);
+    try {
+      const webOrigin =
+        process.env.NEXT_PUBLIC_WEB_APP_URL || 'http://localhost:3000';
+
+      // Check if web portal already has an active logged-in session
+      try {
+        const checkResp = await fetch(`${webOrigin}/api/user-context`, {
+          method: 'GET',
+          credentials: 'include',
+        });
+
+        if (checkResp.ok) {
+          const checkData = await checkResp.json();
+          if (checkData?.authenticated && checkData?.user?.email) {
+            toast.error(
+              `You are already logged in to the web portal as ${checkData.user.email}. Please sign out from the web portal first, then try impersonating again.`,
+              { duration: 8000 },
+            );
+            setIsImpersonating(false);
+            return;
+          }
+        }
+      } catch (err) {
+        // If check fails (e.g. network issue), log warning and continue
+        console.warn('Could not check web portal session state:', err);
+      }
+
+      // Web portal is logged out — create impersonation session
+      const result = await startImpersonationService({
+        target_user_id: impersonateTarget.id,
+        workspace_id: '00000000-0000-0000-0000-000000000000',
+        reason: trimmedReason,
+      });
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const resObj = (result as any)?.data ?? result;
+      const sessionId = resObj?.session_id;
+      const tokenHash = resObj?.token_hash;
+
+      if (!sessionId || !tokenHash) {
+        console.error('Impersonation payload missing session_id or token_hash:', result);
+        toast.error('Failed to generate valid impersonation credentials');
+        setIsImpersonating(false);
+        return;
+      }
+
+      toast.success(
+        `Impersonation session started for ${impersonateTarget.name}. Redirecting to web app...`,
+      );
+      setImpersonateTarget(null);
+
+      const impersonateCallbackUrl = `${webOrigin}/api/impersonate?session_id=${encodeURIComponent(sessionId)}`;
+
+      const callbackParams = new URLSearchParams({
+        token_hash: tokenHash,
+        type: 'magiclink',
+        next: impersonateCallbackUrl,
+      });
+
+      setTimeout(() => {
+        window.location.href = `${webOrigin}/auth/callback?${callbackParams.toString()}`;
+      }, 800);
+    } catch (err: unknown) {
+      const message =
+        (err as { message?: string })?.message ?? 'Failed to start impersonation';
+      toast.error(message);
+    } finally {
+      setIsImpersonating(false);
+    }
+  };
+
+  const members = data?.data || [];
+  const totalCount = data?.count || 0;
+  const totalPages = Math.ceil(totalCount / pageSize) || 1;
+
+  const visibleColumns = new Set(Object.keys(visibility).filter((k) => visibility[k]));
+
   return (
-    <CustomTableContainer
+    <div className="flex flex-col gap-4">
+      {activeModules.length > 0 && (
+        <div className="inline-flex h-9 w-fit items-center justify-center rounded-lg bg-zinc-100 dark:bg-zinc-800 p-1 text-muted-foreground border border-zinc-200 dark:border-zinc-700">
+          {activeModules.map((mod) => (
+            <button
+              key={mod.key}
+              onClick={() => { setActiveModuleKey(mod.key); setPage(1); }}
+              className={`inline-flex items-center justify-center whitespace-nowrap rounded-md px-4 py-1 text-sm font-medium ring-offset-background transition-all ${
+                activeModuleKey === mod.key
+                  ? 'bg-white dark:bg-zinc-950 text-blue-600 shadow-sm'
+                  : 'hover:text-foreground'
+              }`}
+            >
+              {mod.name}
+            </button>
+          ))}
+        </div>
+      )}
+      <CustomTableContainer
       pagination={
-        <TablePagination currentPage={page} totalPages={2} totalCount={25}
+        <TablePagination currentPage={page} totalPages={totalPages} totalCount={totalCount}
           pageSize={pageSize} onPageChange={setPage}
           onPageSizeChange={(s) => { setPageSize(s); setPage(1); }} entityLabel="entries" />
       }
@@ -371,98 +518,272 @@ function MembersTab() {
         <TableHeader>
           <TableRow>
             <TableHead className="w-10 pl-4"><Checkbox /></TableHead>
-            <TableHead>S. No.</TableHead>
-            <TableHead>Name</TableHead>
-            <TableHead>Email</TableHead>
-            <TableHead>Role</TableHead>
-            <TableHead>Last Active</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead className="sticky right-0 bg-zinc-50 dark:bg-zinc-900 w-10 text-center">
-              <button className="flex h-5 w-5 items-center justify-center rounded-full bg-leadgaze-primary text-white mx-auto">
-                <Plus className="h-3.5 w-3.5" />
-              </button>
+            {visibleColumns.has('sno') && <TableHead>S. No.</TableHead>}
+            {visibleColumns.has('name') && <TableHead>Name</TableHead>}
+            {visibleColumns.has('email') && <TableHead>Email</TableHead>}
+            {visibleColumns.has('role') && <TableHead>Role</TableHead>}
+            {visibleColumns.has('lastActive') && <TableHead>Last Active</TableHead>}
+            {visibleColumns.has('status') && <TableHead>Status</TableHead>}
+            <TableHead className="sticky-right-header z-10 w-12 px-1 text-center">
+              <Button
+                type="button"
+                size="icon"
+                className="mx-auto flex h-5 w-5 items-center justify-center rounded-full bg-leadgaze-primary text-white hover:bg-leadgaze-primary/90 border-0 p-0 shadow-xs"
+                onClick={() => setAddColumnModalOpen(true)}
+                title="Add Column"
+              >
+                <Plus className="h-3.5 w-3.5 stroke-[2.5]" />
+              </Button>
             </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {MEMBERS.map((m) => (
-            <TableRow key={m.id} className="hover:bg-muted/50 cursor-pointer">
-              <TableCell className="pl-4" onClick={(e) => e.stopPropagation()}><Checkbox /></TableCell>
-              <TableCell className="primary-text-regular text-leadgaze-muted">{m.sno}</TableCell>
-              <TableCell className="primary-text-medium text-leadgaze-dark dark:text-white">{m.name}</TableCell>
-              <TableCell className="primary-text-regular text-leadgaze-muted">{m.email}</TableCell>
-              <TableCell><span className="secondary-text-small-bold text-blue-600">{m.role}</span></TableCell>
-              <TableCell className="primary-text-regular text-leadgaze-muted">{m.lastActive}</TableCell>
-              <TableCell><StatusBadge status={m.status} /></TableCell>
-              <TableCell className="text-right pr-4">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-7 w-7"><MoreVertical className="h-4 w-4" /></Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem>View Profile</DropdownMenuItem>
-                    <DropdownMenuItem>Change Role</DropdownMenuItem>
-                    <DropdownMenuItem className="text-red-600">Remove</DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </TableCell>
-            </TableRow>
-          ))}
+          {isFetching ? (
+             [1, 2, 3, 4, 5].map((i) => (
+                <TableRow key={i}>
+                  <TableCell colSpan={8} className="p-4">
+                    <Skeleton className="h-6 w-full rounded" />
+                  </TableCell>
+                </TableRow>
+             ))
+          ) : members.length === 0 ? (
+             <TableRow>
+                <TableCell colSpan={8} className="h-32 text-center text-muted-foreground">
+                  No members found.
+                </TableCell>
+             </TableRow>
+          ) : (
+            members.map((m: any) => (
+              <TableRow key={m.id} className="hover:bg-muted/50 cursor-pointer">
+                <TableCell className="pl-4" onClick={(e) => e.stopPropagation()}><Checkbox /></TableCell>
+                {visibleColumns.has('sno') && <TableCell className="primary-text-regular text-leadgaze-muted">{m.sno}</TableCell>}
+                {visibleColumns.has('name') && <TableCell className="primary-text-medium text-leadgaze-dark dark:text-white">{m.name}</TableCell>}
+                {visibleColumns.has('email') && <TableCell className="primary-text-regular text-leadgaze-muted">{m.email}</TableCell>}
+                {visibleColumns.has('role') && <TableCell><span className="secondary-text-small-bold text-blue-600">{m.role}</span></TableCell>}
+                {visibleColumns.has('lastActive') && <TableCell className="primary-text-regular text-leadgaze-muted">{m.lastActive}</TableCell>}
+                {visibleColumns.has('status') && <TableCell><StatusBadge status={m.status} /></TableCell>}
+                <TableCell className="text-right pr-4">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-7 w-7"><MoreVertical className="h-4 w-4" /></Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem
+                        disabled={m.status?.toLowerCase() === 'removed'}
+                        className="gap-2 text-amber-600 focus:text-amber-600"
+                        onSelect={() => handleOpenImpersonate(m)}
+                      >
+                        <UserCheck className="h-3.5 w-3.5" />
+                        Impersonate User
+                      </DropdownMenuItem>
+                      <DropdownMenuItem disabled={m.status?.toLowerCase() === 'removed'} className="text-red-600" onClick={() => setMemberToRemove(m.id)}>Remove Member</DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </TableCell>
+              </TableRow>
+            ))
+          )}
         </TableBody>
       </Table>
     </CustomTableContainer>
+    
+    <CustomDeleteDialog
+      isOpen={!!memberToRemove}
+      onOpenChange={(open) => !open && setMemberToRemove(null)}
+      title="Remove Member"
+      description="Are you sure you want to remove this member? This action cannot be undone."
+      onConfirm={() => {
+        if (memberToRemove) {
+          removeMutation.mutate(memberToRemove);
+        }
+      }}
+      isDeleting={removeMutation.isPending}
+    />
+
+    <AddColumnModal
+      open={isAddColumnModalOpen}
+      onOpenChange={setAddColumnModalOpen}
+      columns={MEMBERS_FIELDS}
+      visibility={visibility}
+      onToggleColumn={toggleVisibility}
+      onResetColumns={reset}
+    />
+
+    {/* Impersonation Reason Dialog */}
+    <Dialog
+      open={!!impersonateTarget}
+      onOpenChange={(open) => { if (!open) setImpersonateTarget(null); }}
+    >
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <UserCheck className="h-4 w-4 text-white" />
+            Impersonate User
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-2 px-2 mt-1 pb-1">
+          {impersonateTarget && (
+            <div className="text-sm text-muted-foreground mb-0">
+              You are about to start an impersonation session for{' '}
+              <span className="font-semibold text-foreground">
+                {impersonateTarget.name}
+              </span>{' '}
+              ({impersonateTarget.email}). This session will expire in 30 minutes.
+            </div>
+          )}
+
+          <div>
+            <Label htmlFor="impersonate-reason">
+              Reason for Access <span className="text-rose-500">*</span>
+            </Label>
+            <Textarea
+              id="impersonate-reason"
+              ref={impersonateReasonRef}
+              placeholder="e.g. Customer Support, Bug Investigation, Data Verification…"
+              value={impersonateReason}
+              onChange={(e) => setImpersonateReason(e.target.value)}
+              rows={3}
+              className="resize-none"
+            />
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button
+            variant="outline"
+            onClick={() => setImpersonateTarget(null)}
+            disabled={isImpersonating}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="default"
+            className="gap-2"
+            onClick={handleImpersonateSubmit}
+            disabled={isImpersonating || !impersonateReason.trim()}
+          >
+            {isImpersonating ? (
+              <>
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                Starting…
+              </>
+            ) : (
+              <>
+                <UserCheck className="h-3.5 w-3.5" />
+                Start Session
+              </>
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </div>
   );
 }
 
-function UsageAnalyticsTab() {
+function UsageAnalyticsTab({ workspaceId }: { workspaceId: string }) {
+  const { data: stats, isLoading } = useQuery({
+    queryKey: ['workspace-usage', workspaceId],
+    queryFn: () => getWorkspaceUsageAnalyticsService({ workspaceId }),
+  });
+
+  if (isLoading) {
+    return <div className="p-8 flex justify-center text-muted-foreground">Loading analytics...</div>;
+  }
+
+  const analyticsData = stats || [];
+
   return (
-    <div className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-3">
-      {USAGE_STATS.map(({ label, value }) => (
-        <Card key={label} className="p-4">
-          <p className="text-2xl font-bold text-zinc-900 dark:text-white">{value}</p>
-          <p className="primary-text-regular text-leadgaze-muted mt-0.5">{label}</p>
+    <div className="grid grid-cols-1 gap-2 md:grid-cols-3">
+      {analyticsData.map(({ label, value }: { label: string, value: string }) => (
+        <Card key={label} className="p-6">
+          <p className="text-2xl font-bold text-zinc-900 dark:text-white leading-none">{value}</p>
+          <p className="secondary-text-small text-leadgaze-muted mt-2">{label}</p>
         </Card>
       ))}
     </div>
   );
 }
 
-function IntegrationsTab() {
+const INTEGRATION_ICONS: Record<string, string> = {
+  'website-connector': '/images/web-icon.png',
+  'zapier': '/images/zapier-icon.png',
+  'google-ads': '/images/google-ads-icon.png',
+  'meta-ads': '/images/meta-icon.png',
+  'whatsapp': '/images/whatsapp-icon.png',
+  'email-accounts': '/images/email-icon.png',
+  'google-meet': '/images/google-meet-icon.png',
+  'zoom': '/images/zoom-icon.png',
+};
+
+function IntegrationsTab({ workspaceId }: { workspaceId: string }) {
+  const queryClient = useQueryClient();
+  const { data: integrations, isLoading } = useQuery({
+    queryKey: ['workspace-integrations', workspaceId],
+    queryFn: async () => {
+      const res = await fetch(`/api/workspaces/${workspaceId}/integrations`);
+      if (!res.ok) throw new Error('Failed to fetch integrations');
+      const json = await res.json();
+      return json.data;
+    },
+  });
+
+  const disconnectMutation = useMutation({
+    mutationFn: async ({ integrationId, connectionId }: { integrationId: string; connectionId: string }) => {
+      const res = await fetch(`/api/workspaces/${workspaceId}/integrations?integrationId=${integrationId}&connectionId=${connectionId}`, {
+        method: 'DELETE',
+      });
+      if (!res.ok) throw new Error('Failed to disconnect integration');
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['workspace-integrations', workspaceId] });
+    },
+  });
+
+  if (isLoading) {
+    return <div className="p-8 flex justify-center items-center"><Loader2 className="h-6 w-6 animate-spin text-leadgaze-primary" /></div>;
+  }
+
   return (
     <div className="card-container bg-white dark:bg-zinc-900 flex flex-col divide-y divide-zinc-100 dark:divide-zinc-800">
-      {INTEGRATIONS.map((intg) => {
-        const isConnected = intg.status === 'Connected';
+      {(integrations || []).map((intg: any) => {
+        const iconSrc = INTEGRATION_ICONS[intg.id] || '/images/web-icon.png';
         return (
           <div key={intg.id} className="flex items-center gap-3 px-4 py-3 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30 transition-colors">
-            <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-sm ${intg.logoBg} ${intg.logoColor}`}>
-              {intg.logo}
+            <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white shadow-sm`}>
+              <Image src={iconSrc} width={24} height={24} alt={intg.name} className="object-contain" />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="primary-text-medium text-leadgaze-dark dark:text-white">{intg.name}</span>
-                <span className="secondary-text-small text-leadgaze-muted">{intg.category}</span>
-                {isConnected
-                  ? <span className="flex items-center gap-1 secondary-text-small font-semibold text-emerald-600"><span className="h-1.5 w-1.5 rounded-full bg-emerald-500 inline-block" />Connected</span>
-                  : <span className="secondary-text-small text-zinc-400">Available</span>}
+              <div className="flex flex-wrap items-center gap-2 mb-1">
+                <span className="primary-text-medium text-leadgaze-dark dark:text-white font-semibold">{intg.name}</span>
+                <span className="secondary-text-small text-leadgaze-muted bg-slate-100 px-1.5 py-0.5 rounded-sm">{intg.category}</span>
+                {intg.isConnected
+                  ? <span className="flex items-center gap-1 text-[11px] font-semibold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full"><span className="h-1.5 w-1.5 rounded-full bg-emerald-500 inline-block" />Connected</span>
+                  : <span className="text-[11px] text-zinc-500 font-medium bg-zinc-100 px-1.5 py-0.5 rounded-full">Available</span>}
               </div>
               <div className="flex flex-wrap items-center gap-1.5">
-                {intg.services.map((s, i) => (
+                {intg.services.map((s: string, i: number) => (
                   <span key={s} className="secondary-text-small text-leadgaze-muted">
                     {s}{i < intg.services.length - 1 ? ' ·' : ''}
                   </span>
                 ))}
-                {isConnected && intg.lastSync && (
-                  <span className="secondary-text-small text-leadgaze-muted">· Last sync {intg.lastSync}</span>
-                )}
               </div>
             </div>
-            <div className="flex shrink-0 items-center gap-3">
-              {isConnected && intg.connectedSince && (
+            <div className="flex shrink-0 items-center gap-4">
+              {intg.isConnected && intg.connectedSince && (
                 <span className="secondary-text-small text-leadgaze-muted">Since {intg.connectedSince}</span>
               )}
-              {isConnected && (
-                <Button size="sm" variant="outline" className="text-red-600 border-red-200 hover:bg-red-50 secondary-text-small-bold h-7 px-3">
-                  Disconnect
+              {intg.isConnected && (
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 secondary-text-small-bold h-7 px-3"
+                  onClick={() => disconnectMutation.mutate({ integrationId: intg.id, connectionId: intg.connectionId })}
+                  disabled={disconnectMutation.isPending}
+                >
+                  {disconnectMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Disconnect'}
                 </Button>
               )}
             </div>
@@ -625,8 +946,55 @@ const TABS = [
   { value: 'billing', label: 'Billing Timeline' },
 ];
 
-export default function WorkspaceDetailPage() {
+export default function WorkspaceDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const unwrappedParams = use(params);
+  const { id } = unwrappedParams;
   const [activeTab, setActiveTab] = useState('overview');
+
+  const { data: workspaceData, isLoading } = useQuery({
+    queryKey: ['workspace', id],
+    queryFn: () => getWorkspaceByIdService({ id }),
+  });
+
+  if (isLoading) {
+    return (
+      <AppShell navbar={<AdminNavbar />}>
+        <div className="p-8 flex justify-center items-center h-full">Loading workspace details...</div>
+      </AppShell>
+    );
+  }
+
+  if (!workspaceData) {
+    return (
+      <AppShell navbar={<AdminNavbar />}>
+        <div className="p-8 flex justify-center items-center h-full">Workspace not found.</div>
+      </AppShell>
+    );
+  }
+
+  // Map backend response to the UI fields, applying fallbacks (like '-') where real data doesn't exist yet
+  const WS = {
+    name: workspaceData.name || '-',
+    initials: workspaceData.name ? workspaceData.name.charAt(0).toUpperCase() : 'W',
+    color: 'bg-blue-600',
+    status: workspaceData.status || 'Active',
+    plan: workspaceData.plan || 'Enterprise',
+    ownerName: workspaceData.owner_name || '-',
+    ownerEmail: workspaceData.owner_email || '-',
+    domain: workspaceData.domain || '-',
+    industry: workspaceData.industry || '-',
+    created: workspaceData.created_at || '-',
+    lastLogin: workspaceData.last_login || '-',
+    seats: workspaceData.members_count || '-',
+    mrr: workspaceData.mrr || '-',
+    modules: workspaceData.modules ? workspaceData.modules.length : '-',
+    members: workspaceData.members_count || '-',
+    billingCycle: workspaceData.billing_cycle || '-',
+    monthlyAmount: workspaceData.mrr || '-',
+    renewalDate: workspaceData.renewal_date || '-',
+    revenueGenerated: workspaceData.revenue_generated || '-',
+    activeModules: workspaceData.modules ? workspaceData.modules.map((m: any) => ({ key: m.key, name: m.name })) : [],
+  };
 
   return (
     <AppShell navbar={<AdminNavbar />}>
@@ -676,11 +1044,11 @@ export default function WorkspaceDetailPage() {
           </TabsList>
 
           {/* Tab content — no extra padding; content manages its own gap */}
-          <TabsContent value="overview" className="mt-0"><OverviewTab /></TabsContent>
+          <TabsContent value="overview" className="mt-0"><OverviewTab WS={WS} /></TabsContent>
           <TabsContent value="modules" className="mt-0"><ModulesTab /></TabsContent>
-          <TabsContent value="members" className="mt-0"><MembersTab /></TabsContent>
-          <TabsContent value="usage" className="mt-0"><UsageAnalyticsTab /></TabsContent>
-          <TabsContent value="integrations" className="mt-0"><IntegrationsTab /></TabsContent>
+          <TabsContent value="members" className="mt-0"><MembersTab workspaceId={id} activeModules={WS.activeModules} /></TabsContent>
+          <TabsContent value="usage" className="mt-0"><UsageAnalyticsTab workspaceId={id} /></TabsContent>
+          <TabsContent value="integrations" className="mt-0"><IntegrationsTab workspaceId={id} /></TabsContent>
           <TabsContent value="audit-logs" className="mt-0"><AuditLogsTab /></TabsContent>
           <TabsContent value="billing" className="mt-0"><BillingTimelineTab /></TabsContent>
         </Tabs>
