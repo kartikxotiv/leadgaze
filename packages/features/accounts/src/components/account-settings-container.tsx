@@ -68,10 +68,10 @@ export function PersonalAccountSettingsContainer(
   }
 
   return (
-    <div className={'flex w-full flex-col space-y-8 pb-32'}>
-      <div className={'grid grid-cols-1 gap-10 md:grid-cols-2'}>
+    <div className={'flex w-full flex-col space-y-2 pb-16'}>
+      <div className={'grid grid-cols-1 gap-2 md:grid-cols-2'}>
         <Card>
-          <CardHeader>
+          <CardHeader className="p-2">
             <CardTitle>
               <Trans i18nKey={'account:accountImage'} />
             </CardTitle>
@@ -81,7 +81,7 @@ export function PersonalAccountSettingsContainer(
             </CardDescription>
           </CardHeader>
 
-          <CardContent>
+          <CardContent className="p-2">
             <UpdateAccountImageContainer
               user={{
                 pictureUrl: user.data.picture_url,
@@ -92,7 +92,7 @@ export function PersonalAccountSettingsContainer(
         </Card>
 
         <Card>
-          <CardHeader>
+          <CardHeader className="p-2">
             <CardTitle>
               <Trans i18nKey={'account:name'} />
             </CardTitle>
@@ -102,7 +102,7 @@ export function PersonalAccountSettingsContainer(
             </CardDescription>
           </CardHeader>
 
-          <CardContent>
+          <CardContent className="p-2">
             <UpdateAccountDetailsFormContainer user={user.data} />
           </CardContent>
         </Card>
@@ -110,7 +110,7 @@ export function PersonalAccountSettingsContainer(
 
       <If condition={supportsLanguageSelection}>
         <Card>
-          <CardHeader>
+          <CardHeader className="p-2">
             <CardTitle>
               <Trans i18nKey={'account:language'} />
             </CardTitle>
@@ -120,16 +120,16 @@ export function PersonalAccountSettingsContainer(
             </CardDescription>
           </CardHeader>
 
-          <CardContent>
+          <CardContent className="p-2">
             <LanguageSelector />
           </CardContent>
         </Card>
       </If>
 
-      <div className={'grid grid-cols-1 gap-10 md:grid-cols-2'}>
+      <div className={'grid grid-cols-1 gap-2 md:grid-cols-2'}>
         <If condition={props.features.enablePasswordUpdate}>
           <Card>
-            <CardHeader>
+            <CardHeader className="p-2">
               <CardTitle>
                 <Trans i18nKey={'account:updatePasswordCardTitle'} />
               </CardTitle>
@@ -139,7 +139,7 @@ export function PersonalAccountSettingsContainer(
               </CardDescription>
             </CardHeader>
 
-            <CardContent>
+            <CardContent className="p-2">
               <UpdatePasswordFormContainer
                 callbackPath={props.paths.callback}
               />
@@ -151,7 +151,7 @@ export function PersonalAccountSettingsContainer(
       {/* Trusted Devices Section */}
       <If condition={!!props.trustedDevices}>
         <Card>
-          <CardHeader>
+          <CardHeader className="p-2">
             <CardTitle>
               <Trans i18nKey={'account:trustedDevices'} />
             </CardTitle>
@@ -161,7 +161,7 @@ export function PersonalAccountSettingsContainer(
             </CardDescription>
           </CardHeader>
 
-          <CardContent>
+          <CardContent className="p-2">
             <TrustedDevicesList
               fetchDevices={props.trustedDevices!.fetchDevices}
               removeDevice={props.trustedDevices!.removeDevice}
@@ -173,7 +173,7 @@ export function PersonalAccountSettingsContainer(
       </If>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="p-2">
           <CardTitle>
             <Trans i18nKey={'account:multiFactorAuth'} />
           </CardTitle>
@@ -183,14 +183,14 @@ export function PersonalAccountSettingsContainer(
           </CardDescription>
         </CardHeader>
 
-        <CardContent>
+        <CardContent className="p-2">
           <MultiFactorAuthFactorsList userId={props.userId} />
         </CardContent>
       </Card>
 
       <If condition={props.features.enableAccountDeletion}>
         <Card className={'border-destructive'}>
-          <CardHeader>
+          <CardHeader className="p-2">
             <CardTitle>
               <Trans i18nKey={'account:dangerZone'} />
             </CardTitle>
@@ -200,7 +200,7 @@ export function PersonalAccountSettingsContainer(
             </CardDescription>
           </CardHeader>
 
-          <CardContent>
+          <CardContent className="p-2">
             <AccountDangerZone />
           </CardContent>
         </Card>
