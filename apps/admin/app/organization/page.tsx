@@ -16,6 +16,7 @@ import {
   Shield,
   Trash2,
   Users,
+  Eye,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -820,16 +821,22 @@ export default function AdminWorkspacesPage() {
                                   className="gap-2"
                                   onClick={(e) => {
                                     e.stopPropagation();
+                                    router.push(`/organization/${ws.id}`);
+                                  }}
+                                >
+                                  <Eye className="h-3.5 w-3.5" />
+                                  View
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  className="gap-2"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
                                     setEditingOrganization(ws);
                                     setIsOrganizationDialogOpen(true);
                                   }}
                                 >
                                   <Edit className="h-3.5 w-3.5" />
-                                  Edit Workspace
-                                </DropdownMenuItem>
-                                <DropdownMenuItem className="gap-2">
-                                  <Shield className="h-3.5 w-3.5" />
-                                  Manage Permissions
+                                  Edit
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem 
@@ -840,7 +847,7 @@ export default function AdminWorkspacesPage() {
                                   }}
                                 >
                                   <Trash2 className="h-3.5 w-3.5" />
-                                  {ws.status === 'Suspended' ? 'Activate Workspace' : 'Suspend Workspace'}
+                                  {ws.status === 'Suspended' ? 'Activate' : 'Suspend'}
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
