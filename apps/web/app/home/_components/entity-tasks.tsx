@@ -379,9 +379,8 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
                 title={
                   <div className="flex items-center gap-2">
                     <span
-                      className={`text-sm font-medium ${
-                        task.is_completed ? 'line-through text-leadgaze-dark dark:text-white' : 'text-leadgaze-dark dark:text-white'
-                      }`}
+                      className={`text-sm font-medium ${task.is_completed ? 'line-through text-leadgaze-dark dark:text-white' : 'text-leadgaze-dark dark:text-white'
+                        }`}
                     >
                       {task.title}
                     </span>
@@ -392,7 +391,7 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
                 }
                 metadata={
                   <div className="flex flex-col gap-1 mt-1 text-xs text-gray-500">
-                    {task.description && <p className="text-gray-700 dark:text-gray-300 italic">{task.description}</p>}
+                    {task.description && <p className="text-gray-700 dark:text-gray-300">{task.description}</p>}
                     <div className="flex flex-wrap gap-x-3 gap-y-1">
                       <span>
                         Created by {task.created_by_user?.name || 'Unknown'}
