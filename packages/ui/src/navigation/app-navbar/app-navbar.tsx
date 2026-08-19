@@ -1,6 +1,6 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -31,7 +31,7 @@ export interface AppNavbarProps {
 export function AppNavbar({
   logo,
   items = [],
-  maxVisibleItems = 6,
+  maxVisibleItems,
   workspaceSwitcher,
   moduleSwitcher,
   actions,
@@ -40,9 +40,68 @@ export function AppNavbar({
   className,
 }: AppNavbarProps) {
   const pathname = usePathname();
+  const [windowWidth, setWindowWidth] = useState(1200);
 
-  const visibleItems = items.slice(0, maxVisibleItems);
-  const moreItems = items.slice(maxVisibleItems);
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setWindowWidth(window.innerWidth);
+      const handleResize = () => setWindowWidth(window.innerWidth);
+      window.addEventListener('resize', handleResize);
+      return () => window.removeEventListener('resize', handleResize);
+    }
+  }, []);
+
+  const calculatedMaxVisible = useMemo(() => {
+    if (maxVisibleItems !== undefined) {
+      return maxVisibleItems;
+    }
+
+    const reservedWidth = 370; // estimated width for Logo + actions + profile
+    const availableWidth = windowWidth - reservedWidth;
+    const totalItemsCount = items.length;
+    const estimatedItemWidth = 110;
+    const moreButtonWidth = 80;
+
+    if (totalItemsCount * estimatedItemWidth <= availableWidth) {
+      return totalItemsCount;
+    }
+
+    const maxFit = Math.floor(
+      (availableWidth - moreButtonWidth) / estimatedItemWidth,
+    );
+    return Math.max(1, maxFit);
+  }, [windowWidth, items.length, maxVisibleItems]);
+
+  const activeIndex = useMemo(() => {
+    return items.findIndex((item) =>
+      item.path ? isRouteActive(item.path, pathname, item.end ?? false) : false
+    );
+  }, [items, pathname]);
+
+  const { visibleItems, moreItems } = useMemo(() => {
+    if (activeIndex === -1 || activeIndex < calculatedMaxVisible) {
+      return {
+        visibleItems: items.slice(0, calculatedMaxVisible),
+        moreItems: items.slice(calculatedMaxVisible),
+      };
+    }
+
+    const visible = items.slice(0, calculatedMaxVisible - 1);
+    const activeRoute = items[activeIndex];
+
+    if (activeRoute) {
+      visible.push(activeRoute);
+    }
+
+    const more = items.filter(
+      (item) => !visible.some((v) => v.path === item.path),
+    );
+
+    return {
+      visibleItems: visible,
+      moreItems: more,
+    };
+  }, [items, activeIndex, calculatedMaxVisible]);
 
   return (
     <div
