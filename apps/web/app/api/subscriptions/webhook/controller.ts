@@ -8,6 +8,10 @@ import {
   getStripeClient,
   getStripeWebhookSecret,
 } from '~/lib/stripe/stripe-client';
+import {
+  registerStripeCheckout,
+  synchronizeStripeSubscription,
+} from '~/lib/subscriptions/stripe-sync';
 
 /**
  * POST /api/subscriptions/webhook
@@ -46,14 +50,18 @@ export async function POST(request: NextRequest) {
   }
 
   // ── Idempotency: check if event already processed ─────────────
-  const { data: existingEvent } = await adminClient
-    .from('payment_events')
-    .select('id')
-    .eq('payment_provider', 'stripe')
-    .eq('provider_event_id', event.id)
-    .maybeSingle();
+  const claim = await adminClient.from('payment_events').insert({
+    workspace_id: null,
+    seat_id: null,
+    payment_provider: 'stripe',
+    provider_event_id: event.id,
+    event_type: event.type,
+    payload: event.data.object,
+    processed_at: null,
+  });
 
-  if (existingEvent) {
+  if (claim.error) {
+    if (claim.error.code !== '23505') throw claim.error;
     // Already processed — return 200 so Stripe doesn't retry
     return NextResponse.json({ received: true, duplicate: true });
   }
@@ -62,49 +70,52 @@ export async function POST(request: NextRequest) {
   try {
     switch (event.type) {
       case 'checkout.session.completed':
-        await handleCheckoutCompleted(event, adminClient, stripe);
+        if (
+          (event.data.object as Stripe.Checkout.Session).metadata
+            ?.pricing_model === 'v1'
+        ) {
+          await handlePricingCheckoutCompleted(event, adminClient, stripe);
+        } else {
+          await handleCheckoutCompleted(event, adminClient, stripe);
+        }
         break;
 
       case 'customer.subscription.updated':
-        await handleSubscriptionUpdated(event, adminClient);
+        await handleCompatibleSubscriptionUpdated(event, adminClient);
         break;
 
       case 'customer.subscription.deleted':
-        await handleSubscriptionDeleted(event, adminClient);
+        await handleCompatibleSubscriptionDeleted(event, adminClient);
         break;
 
       case 'invoice.payment_succeeded':
-        await handleInvoicePaymentSucceeded(event, adminClient);
+        await handleCompatibleInvoice(event, adminClient, true);
         break;
 
       case 'invoice.payment_failed':
-        await handleInvoicePaymentFailed(event, adminClient);
+        await handleCompatibleInvoice(event, adminClient, false);
         break;
 
       default:
-        // Log unhandled event types for observability
-        await logPaymentEvent(adminClient, {
-          workspace_id: null,
-          seat_id: null,
-          event_type: event.type,
-          provider_event_id: event.id,
-          payload: event.data.object,
-          processed_at: new Date().toISOString(),
-        });
         break;
     }
+    await adminClient
+      .from('payment_events')
+      .update({
+        processed_at: new Date().toISOString(),
+        processing_error: null,
+      })
+      .eq('payment_provider', 'stripe')
+      .eq('provider_event_id', event.id);
   } catch (err) {
     console.error(`Stripe webhook error for event ${event.type}:`, err);
 
-    // Log the failure
-    await logPaymentEvent(adminClient, {
-      workspace_id: null,
-      seat_id: null,
-      event_type: event.type,
-      provider_event_id: event.id,
-      payload: event.data.object,
-      processing_error: err instanceof Error ? err.message : 'Unknown error',
-    });
+    await adminClient
+      .from('payment_events')
+      .delete()
+      .eq('payment_provider', 'stripe')
+      .eq('provider_event_id', event.id)
+      .is('processed_at', null);
 
     return NextResponse.json(
       { error: 'Webhook handler error' },
@@ -113,6 +124,144 @@ export async function POST(request: NextRequest) {
   }
 
   return NextResponse.json({ received: true });
+}
+
+async function handlePricingCheckoutCompleted(
+  event: Stripe.Event,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  adminClient: any,
+  stripe: Stripe,
+) {
+  const session = event.data.object as Stripe.Checkout.Session;
+  const subscriptionId =
+    typeof session.subscription === 'string'
+      ? session.subscription
+      : session.subscription?.id;
+  if (!subscriptionId) throw new Error('Checkout is missing a subscription');
+  const subscription = await stripe.subscriptions.retrieve(subscriptionId, {
+    expand: ['items.data.price'],
+  });
+  await registerStripeCheckout({ client: adminClient, session, subscription });
+}
+
+async function handleCompatibleSubscriptionUpdated(
+  event: Stripe.Event,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  adminClient: any,
+) {
+  const subscription = event.data.object as Stripe.Subscription;
+  const { data: billing } = await adminClient
+    .from('workspace_billing_subscriptions')
+    .select('id')
+    .eq('provider_subscription_id', subscription.id)
+    .maybeSingle();
+  if (billing) {
+    await synchronizeStripeSubscription({ client: adminClient, subscription });
+    return;
+  }
+  await handleSubscriptionUpdated(event, adminClient);
+}
+
+async function handleCompatibleSubscriptionDeleted(
+  event: Stripe.Event,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  adminClient: any,
+) {
+  const subscription = event.data.object as Stripe.Subscription;
+  const { data: billing } = await adminClient
+    .from('workspace_billing_subscriptions')
+    .select('id, workspace_id, workspace_subscription_id')
+    .eq('provider_subscription_id', subscription.id)
+    .maybeSingle();
+  if (!billing) {
+    await handleSubscriptionDeleted(event, adminClient);
+    return;
+  }
+  const now = new Date().toISOString();
+  const { error: applyError } = await adminClient.rpc(
+    'apply_due_subscription_changes',
+    {
+      p_workspace_id: billing.workspace_id,
+    },
+  );
+  if (applyError) throw applyError;
+  await adminClient
+    .from('workspace_billing_subscriptions')
+    .update({ provider_status: 'canceled', cancel_at_period_end: false })
+    .eq('id', billing.id);
+  const { data: modules } = await adminClient
+    .from('workspace_module_subscriptions')
+    .select('id, status, plans(is_paid)')
+    .eq('workspace_id', billing.workspace_id)
+    .neq('status', 'cancelled');
+  const paidModuleIds = (modules ?? [])
+    .filter((module: { plans?: { is_paid?: boolean } }) => {
+      const plan = Array.isArray(module.plans) ? module.plans[0] : module.plans;
+      return plan?.is_paid;
+    })
+    .map((module: { id: string }) => module.id);
+  if (paidModuleIds.length) {
+    await adminClient
+      .from('workspace_module_subscriptions')
+      .update({ status: 'cancelled', cancelled_at: now })
+      .in('id', paidModuleIds);
+    await adminClient
+      .from('subscription_changes')
+      .update({ status: 'applied', applied_at: now })
+      .in('workspace_module_subscription_id', paidModuleIds)
+      .eq('status', 'pending');
+  }
+  const hasFreeModule = (modules ?? []).some(
+    (module: { status?: string; plans?: { is_paid?: boolean } }) => {
+      const plan = Array.isArray(module.plans) ? module.plans[0] : module.plans;
+      return plan && !plan.is_paid && module.status !== 'cancelled';
+    },
+  );
+  await adminClient
+    .from('workspace_subscriptions')
+    .update({ subscription_status: hasFreeModule ? 'free' : 'cancelled' })
+    .eq('id', billing.workspace_subscription_id);
+}
+
+async function handleCompatibleInvoice(
+  event: Stripe.Event,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  adminClient: any,
+  succeeded: boolean,
+) {
+  // Stripe's invoice subscription field differs across API versions.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const invoice = event.data.object as any;
+  const subscriptionId =
+    typeof invoice.subscription === 'string'
+      ? invoice.subscription
+      : (invoice.subscription?.id ??
+        invoice.parent?.subscription_details?.subscription);
+  if (subscriptionId) {
+    const { data: billing } = await adminClient
+      .from('workspace_billing_subscriptions')
+      .select('id, workspace_subscription_id')
+      .eq('provider_subscription_id', subscriptionId)
+      .maybeSingle();
+    if (billing) {
+      await adminClient
+        .from('workspace_billing_subscriptions')
+        .update({ provider_status: succeeded ? 'active' : 'past_due' })
+        .eq('id', billing.id);
+      await adminClient
+        .from('workspace_subscriptions')
+        .update({
+          subscription_status: succeeded ? 'active' : 'payment_failed',
+        })
+        .eq('id', billing.workspace_subscription_id);
+      return;
+    }
+  }
+  if (succeeded) {
+    await handleInvoicePaymentSucceeded(event, adminClient);
+  } else {
+    await handleInvoicePaymentFailed(event, adminClient);
+  }
 }
 
 // ─── Event Handlers ──────────────────────────────────────────────
@@ -425,10 +574,13 @@ async function handleSubscriptionUpdated(
       }
       // Fallback: match by stripe product ID
       const stripeProductId = s.subscription_products?.stripe_product_id;
-      const subItemProduct = typeof subItem.price.product === 'string'
-        ? subItem.price.product
-        : subItem.price.product?.id;
-      return stripeProductId && subItemProduct && stripeProductId === subItemProduct;
+      const subItemProduct =
+        typeof subItem.price.product === 'string'
+          ? subItem.price.product
+          : subItem.price.product?.id;
+      return (
+        stripeProductId && subItemProduct && stripeProductId === subItemProduct
+      );
     });
 
     let seatToUpdate;

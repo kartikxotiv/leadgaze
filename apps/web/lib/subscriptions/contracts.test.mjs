@@ -1,0 +1,72 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+
+import {
+  addModuleRequestSchema,
+  pricingCheckoutRequestSchema,
+  providerSyncRequestSchema,
+  removeModuleRequestSchema,
+  startTrialRequestSchema,
+} from './contracts.ts';
+
+const workspaceId = '00000000-0000-4000-8000-000000000001';
+
+test('trial selection rejects duplicate modules', () => {
+  const result = startTrialRequestSchema.safeParse({
+    workspaceId,
+    selectedModules: ['sales', 'sales'],
+  });
+  assert.equal(result.success, false);
+});
+
+test('module lifecycle schemas accept the supported catalog keys', () => {
+  assert.equal(
+    addModuleRequestSchema.safeParse({
+      workspaceId,
+      moduleKey: 'service_cloud',
+      planKey: 'growth',
+      billingCycle: 'yearly',
+    }).success,
+    true,
+  );
+  assert.equal(
+    removeModuleRequestSchema.safeParse({ workspaceId, moduleKey: 'sales' })
+      .success,
+    true,
+  );
+});
+
+test('checkout only accepts local return paths', () => {
+  const base = {
+    workspaceId,
+    moduleKey: 'sales',
+    planKey: 'growth',
+    billingCycle: 'monthly',
+  };
+  assert.equal(
+    pricingCheckoutRequestSchema.safeParse({
+      ...base,
+      returnUrl: '/org/subscription',
+    }).success,
+    true,
+  );
+  assert.equal(
+    pricingCheckoutRequestSchema.safeParse({
+      ...base,
+      returnUrl: 'https://attacker.invalid',
+    }).success,
+    false,
+  );
+});
+
+test('provider synchronization is Stripe-only in v1', () => {
+  assert.equal(
+    providerSyncRequestSchema.parse({ workspaceId }).provider,
+    'stripe',
+  );
+  assert.equal(
+    providerSyncRequestSchema.safeParse({ workspaceId, provider: 'manual' })
+      .success,
+    false,
+  );
+});

@@ -237,6 +237,48 @@ export const downgradeSubscriptionRequestSchema = z.object({
   newPlanKey: planKeySchema,
 });
 
+export const addModuleRequestSchema = z.object({
+  workspaceId: uuidSchema,
+  moduleKey: subscriptionModuleKeySchema,
+  planKey: planKeySchema,
+  billingCycle: billingCycleSchema,
+});
+
+export const removeModuleRequestSchema = z.object({
+  workspaceId: uuidSchema,
+  moduleKey: subscriptionModuleKeySchema,
+});
+
+export const pricingCheckoutRequestSchema = addModuleRequestSchema.extend({
+  returnUrl: z.string().startsWith('/').optional(),
+});
+
+export const providerSyncRequestSchema = z.object({
+  workspaceId: uuidSchema,
+  provider: z.literal('stripe').default('stripe'),
+});
+
+export const checkoutResponseDataSchema = z.object({
+  url: z.string().url(),
+  sessionId: z.string().min(1),
+});
+
+export const moduleChangeResponseDataSchema = z.object({
+  workspaceId: uuidSchema,
+  moduleKey: subscriptionModuleKeySchema,
+  planKey: planKeySchema,
+  effectiveAt: timestampSchema,
+  changeStatus: z.enum(['applied', 'pending']),
+});
+
+export const providerSyncResponseDataSchema = z.object({
+  workspaceId: uuidSchema,
+  provider: z.literal('stripe'),
+  providerSubscriptionId: z.string().min(1),
+  providerStatus: z.string().min(1),
+  synchronizedAt: timestampSchema,
+});
+
 export const planChangeResponseDataSchema = z.object({
   workspaceId: uuidSchema,
   moduleKey: subscriptionModuleKeySchema,
@@ -303,6 +345,12 @@ export type UpgradeSubscriptionRequest = z.infer<
 export type DowngradeSubscriptionRequest = z.infer<
   typeof downgradeSubscriptionRequestSchema
 >;
+export type AddModuleRequest = z.infer<typeof addModuleRequestSchema>;
+export type RemoveModuleRequest = z.infer<typeof removeModuleRequestSchema>;
+export type PricingCheckoutRequest = z.infer<
+  typeof pricingCheckoutRequestSchema
+>;
+export type ProviderSyncRequest = z.infer<typeof providerSyncRequestSchema>;
 export type PlanChangeResponseData = z.infer<
   typeof planChangeResponseDataSchema
 >;

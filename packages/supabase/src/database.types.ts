@@ -10685,6 +10685,10 @@ export type Database = {
       };
     };
     Functions: {
+      apply_due_subscription_changes: {
+        Args: { p_workspace_id?: string | null };
+        Returns: number;
+      };
       apply_pricing_workspace_backfill: {
         Args: { p_confirmation: string };
         Returns: Json;
