@@ -149,14 +149,14 @@ export function WebsiteConnectorListPage({
 
   const CreateConnectorForm = () => (
     <>
-      <DialogHeader className="bg-blue-600 p-2">
+      <DialogHeader>
         <DialogTitle className="text-white">Create Website Connector</DialogTitle>
         <DialogDescription className="text-white/80">
           Configure a new endpoint structure for web integration.
         </DialogDescription>
       </DialogHeader>
-      <div className="space-y-4 px-2">
-        <div className="space-y-2 mb-0">
+      <div className="space-y-2 px-2 mt-2 mb-2">
+        <div>
           <Label htmlFor="cname">Connector Name</Label>
           <Input
             id="cname"
@@ -165,7 +165,7 @@ export function WebsiteConnectorListPage({
             onChange={(e) => setNewConnectorName(e.target.value)}
           />
         </div>
-        <div className="space-y-2 mb-2">
+        <div>
           <Label htmlFor="cowner">Default Owner</Label>
           <Select value={newConnectorOwner} onValueChange={setNewConnectorOwner}>
             <SelectTrigger className="w-full">
