@@ -220,11 +220,11 @@ function FactorsTableContainer(props: { userId: string }) {
         <Alert variant={'destructive'}>
           <ExclamationTriangleIcon className={'h-4'} />
 
-          <AlertTitle>
+          <AlertTitle className="text-leadgaze-dark dark:text-white">
             <Trans i18nKey={'account:factorsListError'} />
           </AlertTitle>
 
-          <AlertDescription>
+          <AlertDescription className="text-leadgaze-dark dark:text-white">
             <Trans i18nKey={'account:factorsListErrorDescription'} />
           </AlertDescription>
         </Alert>
@@ -240,11 +240,11 @@ function FactorsTableContainer(props: { userId: string }) {
         <Alert>
           <ShieldCheck className={'h-4'} />
 
-          <AlertTitle>
+          <AlertTitle className="text-leadgaze-dark dark:text-white">
             <Trans i18nKey={'account:multiFactorAuthHeading'} />
           </AlertTitle>
 
-          <AlertDescription>
+          <AlertDescription className="text-leadgaze-dark dark:text-white">
             <Trans i18nKey={'account:multiFactorAuthDescription'} />
           </AlertDescription>
         </Alert>
