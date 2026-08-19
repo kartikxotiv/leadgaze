@@ -348,21 +348,21 @@ export default function AccountDetailsPage() {
         return [
           ...(contact.email
             ? [
-                {
-                  email: contact.email,
-                  name,
-                  label: 'Primary Email',
-                },
-              ]
+              {
+                email: contact.email,
+                name,
+                label: 'Primary Email',
+              },
+            ]
             : []),
           ...(contact.alt_email
             ? [
-                {
-                  email: contact.alt_email,
-                  name,
-                  label: 'Alt Email',
-                },
-              ]
+              {
+                email: contact.alt_email,
+                name,
+                label: 'Alt Email',
+              },
+            ]
             : []),
         ];
       }),
@@ -498,7 +498,7 @@ export default function AccountDetailsPage() {
                 <TooltipTrigger asChild>
                   <Button
                     variant="outline"
-                    className={`secondary-text-small-bold text-leadgaze-dark dark:text-white gap-1.5 px-2 ${accountEmailRecipients.length === 0 ? 'opacity-50' : ''}`}                    
+                    className={`secondary-text-small-bold text-leadgaze-dark dark:text-white gap-1.5 px-2 ${accountEmailRecipients.length === 0 ? 'opacity-50' : ''}`}
                     disabled={accountEmailRecipients.length === 0}
                     onClick={() =>
                       accountEmailRecipients.length > 0 &&
@@ -967,7 +967,8 @@ export default function AccountDetailsPage() {
                             >
                               <span className="block w-full rounded-[4px] px-0 py-0 text-right text-sm text-gray-900 dark:text-white transition-colors group-hover:text-foreground">
                                 {account.account_type ? (
-                                  <span className="capitalize">
+                                  <span className="capitalize flex items-center justify-end gap-2">
+                                    <div className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: account.account_type_relation?.color }}></div>
                                     {account.account_type_relation?.status_name || account.account_type}
                                   </span>
                                 ) : (
@@ -1154,7 +1155,7 @@ export default function AccountDetailsPage() {
                           e.stopPropagation();
                           setIsContactDialogOpen(true);
                         }}
-                        className="bg-leadgaze-primary hover:bg-leadgaze-primary text-white secondary-text-small-bold gap-1.5 px-2 disabled:pointer-events-none disabled:opacity-50 mr-2"                        
+                        className="bg-leadgaze-primary hover:bg-leadgaze-primary text-white secondary-text-small-bold gap-1.5 px-2 disabled:pointer-events-none disabled:opacity-50 mr-2"
                       >
                         <Plus className="h-4 w-4" />
                         <span>Add Contact</span>
