@@ -4,7 +4,7 @@ CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
 SET LOCAL search_path = public, extensions;
 SET LOCAL request.jwt.claim.role = 'service_role';
 
-SELECT plan(11);
+SELECT plan(12);
 
 SELECT has_table('public', 'billing_events', 'billing event ledger exists');
 SELECT has_table(
@@ -135,6 +135,12 @@ SELECT is(
   ),
   1::BIGINT,
   'trial expiry is recorded idempotently in the billing ledger'
+);
+
+SELECT is(
+  (SELECT COUNT(*) FROM public.expire_due_subscription_trials()),
+  0::BIGINT,
+  'retrying the trial-expiry cron does not process the workspace twice'
 );
 
 SELECT lives_ok(

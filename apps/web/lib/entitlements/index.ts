@@ -3,6 +3,7 @@ import 'server-only';
 import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
+import { createEntitlementEnforcementPolicy } from './enforcement-policy';
 import { EntitlementRepository } from './repository';
 import { EntitlementService } from './service';
 
@@ -14,6 +15,7 @@ export type * from './types';
 export function createEntitlementService() {
   return new EntitlementService(
     new EntitlementRepository(getSupabaseServerClient()),
+    createEntitlementEnforcementPolicy(),
   );
 }
 
@@ -21,5 +23,6 @@ export function createEntitlementService() {
 export function createServiceRoleEntitlementService() {
   return new EntitlementService(
     new EntitlementRepository(getSupabaseServerAdminClient()),
+    createEntitlementEnforcementPolicy(),
   );
 }

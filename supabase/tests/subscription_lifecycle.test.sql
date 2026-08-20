@@ -4,7 +4,7 @@ CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
 SET LOCAL search_path = public, extensions;
 SET LOCAL request.jwt.claim.role = 'service_role';
 
-SELECT plan(7);
+SELECT plan(8);
 
 SELECT has_function(
   'public',
@@ -190,6 +190,14 @@ SELECT is(
   ),
   1::BIGINT,
   'future changes remain pending'
+);
+
+SELECT is(
+  public.apply_due_subscription_changes(
+    '82000000-0000-0000-0000-000000000001'
+  ),
+  0,
+  'retrying the lifecycle processor does not reapply completed changes'
 );
 
 SELECT * FROM finish();

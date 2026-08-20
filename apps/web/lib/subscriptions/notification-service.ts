@@ -5,6 +5,8 @@ import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client'
 
 import { transporter } from '~/utils/send-mail';
 
+import { shouldAttemptNotificationDelivery } from './subscription-rules';
+
 export type SubscriptionNotificationEvent =
   | 'trial_started'
   | 'trial_ending'
@@ -119,7 +121,11 @@ export class SubscriptionNotificationService {
             .eq('channel', 'email')
             .maybeSingle();
       const emailRow = insertedEmailRow.data ?? existingEmailRow?.data;
-      if (!emailRow || emailRow.delivery_status === 'sent') continue;
+      if (
+        !emailRow ||
+        !shouldAttemptNotificationDelivery(emailRow.delivery_status)
+      )
+        continue;
 
       try {
         await transporter.sendMail({

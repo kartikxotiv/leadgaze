@@ -224,3 +224,35 @@ test('blocks new writes for an inactive module subscription', async () => {
     },
   );
 });
+
+test('feature-flagged workspaces bypass checks without changing counters', async () => {
+  const { repository, calls } = createRepository({
+    async tryConsume() {
+      throw new Error('counter should not be touched');
+    },
+  });
+  const service = new EntitlementService(repository, () => false);
+
+  assert.equal(
+    await service.requireBooleanFeature(
+      workspaceId,
+      'sales',
+      'sales.import_export',
+    ),
+    null,
+  );
+  const result = await service.withUsageReservation(
+    {
+      workspaceId,
+      moduleKey: 'sales',
+      featureKey: 'sales.leads',
+      resourceType: 'lead',
+    },
+    async () => 'created',
+  );
+
+  assert.equal(result, 'created');
+  assert.equal(calls.contexts, 0);
+  assert.equal(calls.releases, 0);
+  assert.equal(calls.events.length, 0);
+});

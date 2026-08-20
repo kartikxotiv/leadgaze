@@ -1,5 +1,6 @@
 import type { Json } from '@kit/supabase/database';
 
+import type { EntitlementEnforcementPolicy } from './enforcement-policy';
 import type { EntitlementRepository } from './repository';
 import type {
   EntitlementContext,
@@ -153,7 +154,10 @@ export class EntitlementService {
   >();
   private readonly featureCache = new Map<string, Promise<FeatureDefinition>>();
 
-  constructor(private readonly repository: EntitlementRepositoryContract) {}
+  constructor(
+    private readonly repository: EntitlementRepositoryContract,
+    private readonly shouldEnforce: EntitlementEnforcementPolicy = () => true,
+  ) {}
 
   /** A service instance is request-scoped; each module context is loaded once. */
   getContext(workspaceId: string, moduleKey: EntitlementModuleKey) {
@@ -185,6 +189,7 @@ export class EntitlementService {
     moduleKey: EntitlementModuleKey,
     featureKey: string,
   ) {
+    if (!this.shouldEnforce(workspaceId)) return null;
     const context = await this.getContext(workspaceId, moduleKey);
     this.requireWritableSubscription(context);
     const feature = context.features[featureKey];
@@ -218,6 +223,13 @@ export class EntitlementService {
     const quantity = input.quantity ?? 1;
     if (!Number.isInteger(quantity) || quantity <= 0) {
       throw new TypeError('Entitlement quantity must be a positive integer');
+    }
+
+    if (!this.shouldEnforce(input.workspaceId)) {
+      return {
+        commit: async () => undefined,
+        rollback: async () => undefined,
+      };
     }
 
     const context = await this.getContext(input.workspaceId, input.moduleKey);
@@ -321,6 +333,7 @@ export class EntitlementService {
     eventType?: Extract<UsageEventType, 'deleted' | 'bulk_deleted'>;
     metadata?: Json;
   }) {
+    if (!this.shouldEnforce(input.workspaceId)) return;
     const quantity = input.quantity ?? 1;
     const feature = await this.getFeature(input.moduleKey, input.featureKey);
     await this.repository.release(input.workspaceId, feature.id, quantity);

@@ -23,6 +23,10 @@ import {
 } from './notification-service';
 import { SubscriptionRepository } from './repository';
 import { StripeSubscriptionProvider } from './stripe-provider';
+import {
+  getPlanChangeDirection,
+  getTrialStartRejection,
+} from './subscription-rules';
 
 type Client = SupabaseClient<Database>;
 // Supabase relation cardinality is represented as either an object or an array.
@@ -253,18 +257,17 @@ export class SubscriptionService {
         'ENTITLEMENT_CONTEXT_MISSING',
       );
     }
-    if (subscription.trial_start_date) {
+    const trialRejection = getTrialStartRejection({
+      trialStartDate: subscription.trial_start_date,
+      subscriptionStatus: subscription.subscription_status,
+    });
+    if (trialRejection) {
       throw new SubscriptionApiError(
-        'This workspace has already used its trial',
+        trialRejection === 'TRIAL_ALREADY_USED'
+          ? 'This workspace has already used its trial'
+          : 'Only a free workspace can start a trial',
         409,
-        'TRIAL_ALREADY_USED',
-      );
-    }
-    if (subscription.subscription_status !== 'free') {
-      throw new SubscriptionApiError(
-        'Only a free workspace can start a trial',
-        409,
-        'CONFLICT',
+        trialRejection,
       );
     }
     const growth = await this.repository.getPlan('growth');
@@ -390,10 +393,13 @@ export class SubscriptionService {
       productModule.id,
     );
     const currentPlan = asObject(current?.plans);
-    if (
-      changeType === 'plan_upgrade' &&
-      (!current || plan.display_order <= Number(currentPlan.display_order))
-    ) {
+    const planChangeDirection = current
+      ? getPlanChangeDirection(
+          Number(currentPlan.display_order),
+          plan.display_order,
+        )
+      : null;
+    if (changeType === 'plan_upgrade' && planChangeDirection !== 'upgrade') {
       throw new SubscriptionApiError(
         'The requested plan is not an upgrade',
         409,
@@ -531,7 +537,12 @@ export class SubscriptionService {
       );
     }
     const currentPlan = asObject(current.plans);
-    if (target.display_order >= Number(currentPlan.display_order)) {
+    if (
+      getPlanChangeDirection(
+        Number(currentPlan.display_order),
+        target.display_order,
+      ) !== 'downgrade'
+    ) {
       throw new SubscriptionApiError(
         'The requested plan is not a downgrade',
         409,
