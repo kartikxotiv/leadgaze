@@ -77,41 +77,41 @@ export function CardWidgetListItem({
             {icon}
           </div>
         )}
-        <div className={`flex min-w-0 flex-1 ${isBadgeVerticalCenter ? 'flex-row items-center': 'flex-col'}`}>
+        <div className={`flex min-w-0 flex-1 ${isBadgeVerticalCenter ? 'flex-row items-center' : 'flex-col'}`}>
           <div className="flex min-w-0 flex-1 flex-col">
-          {(title || badge) && (
-            <div className="flex items-center justify-between gap-2">
-              {title && (
-                <div className={cn("h-5 truncate primary-text-medium leading-5 text-leadgaze-dark dark:text-white", titleClassFormat)}>
-                  {title}
-                </div>
-              )}
-              {(badge && !isBadgeVerticalCenter)  && <div className="flex-shrink-0">{badge}</div>}
-            </div>
-          )}
-          {subtitle && (
-            <div className="text-muted-foreground h-4 truncate text-xs leading-4">
-              {subtitle}
-            </div>
-          )}
-          {content && (
-            <div className="mt-1 text-sm break-words whitespace-pre-wrap text-leadgaze-dark dark:text-white">
-              {content}
-            </div>
-          )}
-          {metadata && (
-            <div className={cn("text-muted-foreground flex items-center gap-1 text-xs", content || subtitle ? "mt-1.5" : "")}>
-              {metadata}
-            </div>
-          )}
+            {(title || badge) && (
+              <div className="flex items-center justify-between gap-2">
+                {title && (
+                  <div className={cn("h-5 truncate primary-text-medium leading-5 text-leadgaze-dark dark:text-white", titleClassFormat)}>
+                    {title}
+                  </div>
+                )}
+                {(badge && !isBadgeVerticalCenter) && <div className="flex-shrink-0">{badge}</div>}
+              </div>
+            )}
+            {subtitle && (
+              <div className="text-muted-foreground h-4 truncate text-xs leading-4">
+                {subtitle}
+              </div>
+            )}
+            {content && (
+              <div className="mt-1 text-sm break-words whitespace-pre-wrap text-leadgaze-dark dark:text-white">
+                {content}
+              </div>
+            )}
+            {metadata && (
+              <div className={cn("text-muted-foreground flex items-center gap-1 text-xs", content || subtitle ? "mt-1.5" : "")}>
+                {metadata}
+              </div>
+            )}
           </div>
-          {(badge && isBadgeVerticalCenter)  && <div className="flex-shrink-0">{badge}</div>}
+          {(badge && isBadgeVerticalCenter) && <div className="flex-shrink-0">{badge}</div>}
         </div>
       </div>
       {actions && (
         <div
           className={cn(
-            "flex flex-shrink-0 gap-1 transition-all duration-300",
+            "flex flex-shrink-0 gap-1 transition-all duration-300 absolute right-2 top-px",
             actionStyle === 'fixed' && "ml-3 opacity-0 group-hover:opacity-100",
             actionStyle === 'floating' && "absolute right-2 top-2 opacity-0 group-hover:opacity-100 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-sm p-1 rounded-md",
             actionStyle === 'slide' && "max-w-0 ml-0 overflow-hidden opacity-0 group-hover:max-w-[200px] group-hover:ml-3 group-hover:opacity-100"
@@ -158,7 +158,7 @@ export function CardWidgetTimelineItem({
           className={cn(
             'relative z-10 flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold shadow-xs',
             iconClassName ||
-              'bg-gray-100 text-gray-600 dark:bg-zinc-800 dark:text-zinc-300',
+            'bg-gray-100 text-gray-600 dark:bg-zinc-800 dark:text-zinc-300',
           )}
         >
           {icon}

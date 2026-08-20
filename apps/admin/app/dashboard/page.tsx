@@ -449,7 +449,7 @@ function TopWorkspacesByMRR() {
           className="h-7 px-2 text-xs text-blue-600 dark:text-blue-400"
           asChild
         >
-          <Link href="/workspaces">View all</Link>
+          <Link href="/organization">View all</Link>
         </Button>
       }
     >
