@@ -60,7 +60,7 @@ import { TablePagination } from '@kit/ui/table-pagination';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@kit/ui/tabs';
 import { AdminNavbar } from '~/components/admin-navbar';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getWorkspaceByIdService, getWorkspaceMembersService, removeWorkspaceMemberService, getWorkspaceUsageAnalyticsService, getWorkspaceAuditLogsService } from '~/services/workspaces.service';
+import { getWorkspaceByIdService, getWorkspaceMembersService, removeWorkspaceMemberService, getWorkspaceUsageAnalyticsService, getWorkspaceAuditLogsService, getWorkspaceModulesService } from '~/services/workspaces.service';
 import { startImpersonationService } from '~/services/impersonation.service';
 import { Skeleton } from '@kit/ui/skeleton';
 import { toast } from 'sonner';
@@ -267,10 +267,21 @@ function OverviewTab({ WS }: { WS: any }) {
 
 // ─── Tab: Modules ─────────────────────────────────────────────────────────────
 
-function ModulesTab() {
+function ModulesTab({ workspaceId }: { workspaceId: string }) {
+  const { data: modules, isLoading } = useQuery({
+    queryKey: ['workspace-modules', workspaceId],
+    queryFn: () => getWorkspaceModulesService({ workspaceId }),
+  });
+
+  if (isLoading) {
+    return <div className="p-8 flex justify-center items-center"><Loader2 className="h-6 w-6 animate-spin text-leadgaze-primary" /></div>;
+  }
+
+  const modulesData = modules || [];
+
   return (
     <div className="flex flex-col gap-2">
-      {MODULES_DATA.map((mod) => {
+      {modulesData.map((mod: any) => {
         const isDisabled = mod.status === 'Disabled';
         return (
           <div key={mod.id} className="card-container bg-white dark:bg-zinc-900">
@@ -334,7 +345,7 @@ function ModulesTab() {
               <div className="px-4 py-3">
                 <p className="secondary-text-small text-leadgaze-muted uppercase tracking-wider mb-2">Feature Access</p>
                 <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
-                  {mod.features.map((f) => (
+                  {mod.features.map((f: any) => (
                     <div key={f.name} className="flex items-center gap-1.5">
                       {f.on
                         ? <Check className="h-3 w-3 shrink-0 text-emerald-500" />
@@ -568,7 +579,16 @@ function MembersTab({ workspaceId, activeModules }: { workspaceId: string, activ
               <TableRow key={m.id} className="hover:bg-muted/50 cursor-pointer">
                 <TableCell className="pl-4" onClick={(e) => e.stopPropagation()}><Checkbox /></TableCell>
                 {visibleColumns.has('sno') && <TableCell className="primary-text-regular text-leadgaze-muted">{m.sno}</TableCell>}
-                {visibleColumns.has('name') && <TableCell className="primary-text-medium text-leadgaze-dark dark:text-white">{m.name}</TableCell>}
+                {visibleColumns.has('name') && (
+                  <TableCell className="primary-text-medium text-leadgaze-dark dark:text-white">
+                    <div className="flex items-center gap-2">
+                      {m.name}
+                      {m.isOwner && (
+                        <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800 text-[10px] px-1.5 py-0 h-4">Owner</Badge>
+                      )}
+                    </div>
+                  </TableCell>
+                )}
                 {visibleColumns.has('email') && <TableCell className="primary-text-regular text-leadgaze-muted">{m.email}</TableCell>}
                 {visibleColumns.has('role') && <TableCell><span className="secondary-text-small-bold text-blue-600">{m.role}</span></TableCell>}
                 {visibleColumns.has('lastActive') && <TableCell className="primary-text-regular text-leadgaze-muted">{m.lastActive}</TableCell>}
@@ -1112,7 +1132,7 @@ export default function WorkspaceDetailPage({ params }: { params: Promise<{ id: 
 
           {/* Tab content — no extra padding; content manages its own gap */}
           <TabsContent value="overview" className="mt-0"><OverviewTab WS={WS} /></TabsContent>
-          <TabsContent value="modules" className="mt-0"><ModulesTab /></TabsContent>
+          <TabsContent value="modules" className="mt-0"><ModulesTab workspaceId={params.id as string} /></TabsContent>
           <TabsContent value="members" className="mt-0"><MembersTab workspaceId={id} activeModules={WS.activeModules} /></TabsContent>
           <TabsContent value="usage" className="mt-0"><UsageAnalyticsTab workspaceId={id} /></TabsContent>
           <TabsContent value="integrations" className="mt-0"><IntegrationsTab workspaceId={id} /></TabsContent>

@@ -362,6 +362,7 @@ export const getWorkspaceMembers = catchAsync(
         id,
         status,
         created_at,
+        user_id,
         accounts(id, name, email),
         workspace_roles!inner(role_name)
       `, { count: 'exact' })
@@ -372,7 +373,12 @@ export const getWorkspaceMembers = catchAsync(
       query = query.eq('product_key', moduleFilter);
     }
 
-    const { data: members, count, error } = await query.range(offset, offset + limit - 1);
+    const [membersData, workspaceData] = await Promise.all([
+      query.range(offset, offset + limit - 1),
+      adminClient.from('workspaces').select('owner_id').eq('id', id).single()
+    ]);
+
+    const { data: members, count, error } = membersData;
 
     if (error) {
       console.error('Error fetching workspace members:', error);
@@ -399,6 +405,7 @@ export const getWorkspaceMembers = catchAsync(
         role: role?.role_name || 'Member',
         status: m.status === 'accepted' ? 'Active' : m.status.charAt(0).toUpperCase() + m.status.slice(1),
         lastActive: m.created_at ? new Date(m.created_at).toISOString().slice(0, 16).replace('T', ' ') : '-',
+        isOwner: m.user_id === workspaceData.data?.owner_id || account?.id === workspaceData.data?.owner_id,
       };
     });
 
@@ -910,5 +917,86 @@ export const getWorkspaceAuditLogs = catchAsync(
       data: logs || [],
       count: count || 0,
     });
+  }
+);
+
+export const getWorkspaceModules = catchAsync(
+  async ({ request, user, params }: { request: NextRequest; user?: any; params?: Record<string, string> }) => {
+    const adminClient = getSupabaseServerAdminClient<Database>();
+    const id = params?.id;
+
+    if (!id) {
+      return new Response(JSON.stringify({ error: 'Workspace ID is required' }), { status: 400 });
+    }
+
+    // Fetch all subscription products
+    const { data: products } = await adminClient.from('subscription_products').select('*');
+    
+    // Fetch workspace module seats
+    const { data: moduleSeats } = await adminClient
+      .from('workspace_module_seats')
+      .select('*')
+      .eq('workspace_id', id);
+
+    // Fetch product module map for features
+    const { data: productModuleMap } = await adminClient
+      .from('product_module_map')
+      .select(`
+        product_id,
+        access_mode,
+        crm_modules(module_key, module_name)
+      `);
+      
+    // Format the response
+    const formattedModules = (products || []).map(product => {
+      const seatInfo = (moduleSeats || []).find((seat: any) => seat.product_id === product.id);
+      const isEnabled = !!seatInfo && seatInfo.status === 'active';
+      
+      const productFeatures = (productModuleMap || [])
+        .filter((pmm: any) => pmm.product_id === product.id)
+        .map((pmm: any) => ({
+          name: (pmm.crm_modules as any)?.module_name || 'Unknown',
+          on: isEnabled,
+        }));
+      
+      let icon = '⚙';
+      let iconBg = 'bg-zinc-50';
+      let barColor = 'bg-zinc-200';
+      
+      if (product.product_key === 'sales') {
+        icon = '👤'; iconBg = 'bg-blue-50'; barColor = 'bg-blue-600';
+      } else if (product.product_key === 'service_cloud') {
+        icon = '🖥'; iconBg = 'bg-purple-50'; barColor = 'bg-purple-500';
+      } else if (product.product_key === 'hrms') {
+        icon = '👥'; iconBg = 'bg-amber-50'; barColor = 'bg-amber-500';
+      } else if (product.product_key === 'inventory') {
+        icon = '📦'; iconBg = 'bg-emerald-50'; barColor = 'bg-emerald-500';
+      }
+
+      const seatsTotal = seatInfo?.seats_purchased || 0;
+      const seatsUsed = seatInfo?.seats_used || 0;
+      const utilisation = seatsTotal > 0 ? Math.round((seatsUsed / seatsTotal) * 100) : 0;
+      
+      return {
+        id: product.product_key,
+        name: product.display_name,
+        status: seatInfo ? (seatInfo.status === 'active' || seatInfo.status === 'trialing' ? 'Active' : 'Disabled') : 'Disabled',
+        activeSince: seatInfo?.created_at ? new Date(seatInfo.created_at).toISOString().split('T')[0] : null,
+        icon,
+        iconBg,
+        seatUsed: seatsUsed,
+        seatTotal: seatsTotal,
+        utilisation,
+        entitlement: {
+          plan: 'Enterprise',
+          billing: seatInfo?.billing_cycle ? (seatInfo.billing_cycle === 'monthly' ? 'Monthly' : 'Yearly') : '-',
+          renewal: seatInfo?.current_period_end ? new Date(seatInfo.current_period_end).toISOString().split('T')[0] : '-',
+        },
+        features: productFeatures,
+        barColor,
+      };
+    });
+
+    return successDataResponse(formattedModules);
   }
 );
