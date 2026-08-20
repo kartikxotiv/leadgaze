@@ -317,7 +317,7 @@ export default function EditLeadDialog({
               <div className="space-y-2">
                 <h3 className="primary-heading text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">
                   Contact Information
-                </h3>                
+                </h3>
 
                 <div className="grid grid-cols-2 gap-2">
                   <FieldGuard fieldKey="first_name" canEdit={canEdit}>
@@ -416,7 +416,7 @@ export default function EditLeadDialog({
               <div className="space-y-2">
                 <h3 className="primary-heading text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">
                   Company Information
-                </h3>                
+                </h3>
 
                 <div className="grid grid-cols-2 gap-2">
                   <FieldGuard fieldKey="company" canEdit={canEdit}>
@@ -576,25 +576,27 @@ export default function EditLeadDialog({
               <div className="space-y-2">
                 <h3 className="primary-heading text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">
                   Lead Information
-                </h3>                
+                </h3>
 
                 <div className="grid grid-cols-2 gap-2">
                   {/* Status is always shown — required field */}
-                  <div>
-                    <Label htmlFor="status_id">
-                      Status <span className="text-red-500">*</span>
-                    </Label>
+                  <FieldGuard fieldKey="status" canEdit={canEdit}>
                     <div>
-                      <ManageableStatusSelect
-                        moduleKey="leads"
-                        workspaceId={workspace?.id ?? ''}
-                        value={formData.status_id}
-                        onValueChange={(value) => handleInputChange('status_id', value)}
-                        disabled={isLoading || !canEdit('status')}
-                        triggerClassName="border-gray-300 bg-white text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
-                      />
+                      <Label htmlFor="status_id">
+                        Status <span className="text-red-500">*</span>
+                      </Label>
+                      <div>
+                        <ManageableStatusSelect
+                          moduleKey="leads"
+                          workspaceId={workspace?.id ?? ''}
+                          value={formData.status_id}
+                          onValueChange={(value) => handleInputChange('status_id', value)}
+                          disabled={isLoading || !canEdit('status')}
+                          triggerClassName="border-gray-300 bg-white text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                        />
+                      </div>
                     </div>
-                  </div>
+                  </FieldGuard>
                   <FieldGuard fieldKey="source" canEdit={canEdit}>
                     <div>
                       <Label htmlFor="source_id">Lead Source (Optional)</Label>
@@ -631,7 +633,7 @@ export default function EditLeadDialog({
                 <div className="space-y-2">
                   <h3 className="primary-heading text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">
                     Additional Information
-                  </h3>                  
+                  </h3>
 
                   <div>
                     <Label htmlFor="notes">Notes (Optional)</Label>
@@ -666,7 +668,7 @@ export default function EditLeadDialog({
               type="button"
               variant="outline"
               onClick={() => handleOpenChange(false)}
-              disabled={isLoading}                
+              disabled={isLoading}
             >
               Cancel
             </Button>
