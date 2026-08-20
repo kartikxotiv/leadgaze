@@ -27,10 +27,6 @@ export const adminNavigation: NavigationItem[] = [
     path: '/support',
   },
   {
-    label: 'Audit Logs',
-    path: '/audit-logs',
-  },
-  {
     label: 'System',
     path: '/system',
   },
