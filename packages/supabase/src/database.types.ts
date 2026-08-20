@@ -10809,6 +10809,10 @@ export type Database = {
         Args: { p_workspace_id?: string | null };
         Returns: number;
       };
+      apply_free_forever_provisioning: {
+        Args: { p_confirmation: string };
+        Returns: Json;
+      };
       apply_pricing_workspace_backfill: {
         Args: { p_confirmation: string };
         Returns: Json;
@@ -11157,6 +11161,13 @@ export type Database = {
           resolved_from_plan_key: string;
         }[];
       };
+      get_free_forever_provisioning_targets: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          workspace_id: string;
+          workspace_name: string;
+        }[];
+      };
       get_lead_related_entities: {
         Args: { p_lead_id: string; p_workspace_id: string };
         Returns: Json;
@@ -11231,6 +11242,10 @@ export type Database = {
       };
       preview_pricing_workspace_backfill: {
         Args: Record<PropertyKey, never>;
+        Returns: Json;
+      };
+      provision_workspace_free_forever: {
+        Args: { p_workspace_id: string };
         Returns: Json;
       };
       release_entitlement: {
