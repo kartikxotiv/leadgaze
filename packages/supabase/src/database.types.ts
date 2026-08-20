@@ -11168,6 +11168,21 @@ export type Database = {
           workspace_name: string;
         }[];
       };
+      get_legacy_paid_launch_targets: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          active_seat_assignments: number;
+          current_plan_key: string;
+          legacy_status: Database['public']['Enums']['seat_subscription_status'];
+          module_id: string;
+          module_key: string;
+          paid_seats: number;
+          recommended_action: string;
+          target_billing_cycle: Database['public']['Enums']['billing_cycle'];
+          workspace_id: string;
+          workspace_name: string;
+        }[];
+      };
       get_lead_related_entities: {
         Args: { p_lead_id: string; p_workspace_id: string };
         Returns: Json;
@@ -11238,6 +11253,10 @@ export type Database = {
           p_user_id: string;
           p_workspace_id?: string;
         };
+        Returns: Json;
+      };
+      migrate_legacy_paid_seats_to_launch: {
+        Args: Record<PropertyKey, never>;
         Returns: Json;
       };
       preview_pricing_workspace_backfill: {
