@@ -1,6 +1,8 @@
 /*
  * Subscription lifecycle support for pricing v1.
  *
+ * Requires explicit workspace/module subscriptions and synchronized counters.
+ *
  * Scheduled changes remain explicit rows until their billing-period boundary.
  * This function is safe to call from a scheduler, webhook, or read boundary.
  */

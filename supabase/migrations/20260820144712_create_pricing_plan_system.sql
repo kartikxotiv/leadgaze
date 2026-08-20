@@ -2,6 +2,7 @@
  * Pricing and subscription plan foundation.
  *
  * This migration is additive. Legacy seat billing tables remain unchanged.
+ * This is the prerequisite for all later plan-pricing migrations.
  */
 
 BEGIN;

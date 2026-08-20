@@ -1,3 +1,5 @@
+/* Requires the pricing foundation and guarded workspace backfill helpers. */
+
 BEGIN;
 
 CREATE OR REPLACE FUNCTION public.sync_workspace_module_entitlement_limits()
@@ -88,4 +90,3 @@ COMMENT ON FUNCTION public.sync_workspace_module_entitlement_limits() IS
   'Synchronizes numeric counter limits after explicit module plan changes while preserving usage for downgrade read access.';
 
 COMMIT;
-

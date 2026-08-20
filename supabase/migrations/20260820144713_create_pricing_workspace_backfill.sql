@@ -1,6 +1,8 @@
 /*
  * Guarded one-time backfill for the plan-based pricing system.
  *
+ * Requires the pricing and subscription plan foundation.
+ *
  * Applying this migration creates reporting and apply functions only. It does
  * not mutate workspace subscription data. Operators must run the preview and
  * explicitly invoke apply_pricing_workspace_backfill after reviewing blockers.

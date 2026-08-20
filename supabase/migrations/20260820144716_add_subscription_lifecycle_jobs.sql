@@ -1,4 +1,7 @@
-/* Subscription lifecycle jobs, billing events, and notification delivery. */
+/*
+ * Subscription lifecycle jobs, billing events, and notification delivery.
+ * Requires the scheduled subscription lifecycle processor.
+ */
 
 BEGIN;
 
