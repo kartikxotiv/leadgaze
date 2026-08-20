@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Loader2, Phone, Plus, Trash2 } from 'lucide-react';
+import { Loader2, Phone, Plus, Trash2, User } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Badge } from '@kit/ui/badge';
@@ -13,7 +13,7 @@ import { CustomDeleteDialog } from '@kit/ui/custom-delete-dialog';
 
 import { useLocalization } from '~/lib/localization/localization-provider';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
-import { getCallsService, deleteCallService } from '~/services/calls.service';
+import { getCallsService, deleteCallService, type CallLog } from '~/services/calls.service';
 import { LogCallDialog } from '../leads/components/log-call-dialog';
 
 interface EntityCallsProps {
@@ -145,45 +145,59 @@ export function EntityCalls({ entityType, entityId }: EntityCallsProps) {
                     </div>
                 ) : calls.length > 0 ? (
                     <CardWidgetList>
-                        {calls.map((call: any) => (
-                            <CardWidgetListItem
-                                key={call.id}
-                                icon={<Phone className="h-4 w-4 text-blue-600" />}
-                                iconAlignTop={true}
-                                title={call.call_type === 'inbound' ? 'Inbound Call' : 'Outbound Call'}
-                                badge={getCallStatusBadge(call.status)}
-                                actionStyle="slide"
-                                content={
-                                    <>
-                                        {call.subject && (
-                                            <p className="text-sm text-leadgaze-dark dark:text-white whitespace-pre-wrap">
-                                                {call.subject}
-                                            </p>
-                                        )}
-                                        {call.comments && (
-                                            <p className="text-sm text-gray-500 whitespace-pre-wrap">
-                                                {call.comments}
-                                            </p>
-                                        )}
-                                    </>
-                                }
-                                metadata={
-                                    <div className="flex flex-wrap gap-2">
-                                        <span>{formatDate(call.date_time)}</span>
-                                    </div>
-                                }
-                                actions={
-                                    <Button
-                                        size="icon"
-                                        variant="ghost"
-                                        onClick={() => handleDelete(call.id)}
-                                        className="h-7 w-7 text-gray-400 hover:text-red-500"
-                                    >
-                                        <Trash2 className="h-3 w-3" />
-                                    </Button>
-                                }
-                            />
-                        ))}
+                        {calls.map((call: CallLog) => {
+                            const creatorName = call.created_by_user?.name || call.created_by_user?.email || call.created_by_name;
+
+                            return (
+                                <CardWidgetListItem
+                                    key={call.id}
+                                    icon={<Phone className="h-4 w-4 text-blue-600" />}
+                                    iconAlignTop={true}
+                                    title={
+                                        <div className="flex items-center gap-2">
+                                            <span>{call.call_type === 'inbound' ? 'Inbound Call' : 'Outbound Call'}</span>
+                                            {creatorName && (
+                                                <Badge variant="secondary" className="font-normal text-xs text-muted-foreground flex items-center gap-1">
+                                                    <User className="h-3 w-3" />
+                                                    <span>{creatorName}</span>
+                                                </Badge>
+                                            )}
+                                        </div>
+                                    }
+                                    badge={getCallStatusBadge(call.status)}
+                                    actionStyle="slide"
+                                    content={
+                                        <>
+                                            {call.subject && (
+                                                <p className="text-sm text-leadgaze-dark dark:text-white whitespace-pre-wrap">
+                                                    {call.subject}
+                                                </p>
+                                            )}
+                                            {call.comments && (
+                                                <p className="text-sm text-gray-500 whitespace-pre-wrap">
+                                                    {call.comments}
+                                                </p>
+                                            )}
+                                        </>
+                                    }
+                                    metadata={
+                                        <div className="flex flex-wrap gap-2">
+                                            <span>{formatDate(call.date_time)}</span>
+                                        </div>
+                                    }
+                                    actions={
+                                        <Button
+                                            size="icon"
+                                            variant="ghost"
+                                            onClick={() => handleDelete(call.id)}
+                                            className="h-7 w-7 text-gray-400 hover:text-red-500"
+                                        >
+                                            <Trash2 className="h-3 w-3" />
+                                        </Button>
+                                    }
+                                />
+                            );
+                        })}
                     </CardWidgetList>
                 ) : (
                     <div className="flex flex-col items-center justify-center py-8 text-center">

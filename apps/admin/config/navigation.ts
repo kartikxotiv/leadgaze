@@ -7,8 +7,8 @@ export const adminNavigation: NavigationItem[] = [
     end: true,
   },
   {
-    label: 'Workspace',
-    path: '/workspaces',
+    label: 'Organization',
+    path: '/organization',
   },
   {
     label: 'Subscriptions',
