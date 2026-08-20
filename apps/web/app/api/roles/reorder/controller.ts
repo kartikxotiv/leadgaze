@@ -31,13 +31,13 @@ export const reorderRoles = catchAsync(
         .map((r: any) => r.id),
     );
 
-    let customRoleCounter = 1;
-    const updatePromises = orderedRoleIds.map((roleId: string) => {
-      if (adminRoleIdSet.has(roleId)) {
-        return Promise.resolve({ error: null });
-      }
+    const customRoleIds = orderedRoleIds.filter(
+      (id: string) => !adminRoleIdSet.has(id),
+    );
+    const totalCustomRoles = customRoleIds.length;
 
-      const hierarchy_level = customRoleCounter++;
+    const updatePromises = customRoleIds.map((roleId: string, index: number) => {
+      const hierarchy_level = totalCustomRoles - index;
       return supabase
         .from('workspace_roles')
         .update({ hierarchy_level })
@@ -46,7 +46,7 @@ export const reorderRoles = catchAsync(
     });
 
     const results = await Promise.all(updatePromises);
-    
+
     const errors = results.filter(r => r.error);
     if (errors.length > 0) {
       console.error('Errors updating role orders:', errors.map(e => e.error));
