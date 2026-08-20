@@ -85,7 +85,7 @@ export const getWorkspaces = catchAsync(
     if (workspaceIds.length > 0) {
       const { data: wm } = await adminClient
         .from('workspace_module_seats')
-        .select('workspace_id, seats_purchased, subscription_products(display_name)')
+        .select('workspace_id, status, seats_purchased, subscription_products(display_name)')
         .in('workspace_id', workspaceIds)
         .in('status', ['active', 'trialing']);
       if (wm) {
@@ -98,13 +98,18 @@ export const getWorkspaces = catchAsync(
       const plans = ['Enterprise', 'Pro', 'Starter', 'Trial'] as const;
       const plan = plans[index % plans.length]!;
       
-      let status = ws.is_active ? 'Active' : 'Suspended';
+      // Extract modules and calculate status
+      const wmForWorkspace = allWorkspaceModules.filter(wm => wm.workspace_id === ws.id);
       
-      // Clever mock logic to make the tabs work seamlessly before real schema is ready
-      if (ws.is_active) {
-        if (statusesFilter.includes('Trial') && !statusesFilter.includes('Active')) {
-          status = 'Trial';
-        } else if (statusesFilter.length === 0 && index % 4 === 1) {
+      let status = 'Active';
+      if (!ws.is_active) {
+        status = 'Suspended';
+      } else if (wmForWorkspace.length > 0) {
+        const hasActive = wmForWorkspace.some(wm => wm.status === 'active');
+        const hasTrialing = wmForWorkspace.some(wm => wm.status === 'trialing');
+        if (hasActive) {
+          status = 'Active';
+        } else if (hasTrialing) {
           status = 'Trial';
         }
       }
@@ -128,8 +133,6 @@ export const getWorkspaces = catchAsync(
       // Format Owner Name
       const capitalizedOwnerName = ownerName.replace(/\b\w/g, l => l.toUpperCase());
 
-      // Extract modules
-      const wmForWorkspace = allWorkspaceModules.filter(wm => wm.workspace_id === ws.id);
       let modules: any[] = [];
       if (wmForWorkspace.length > 0) {
           modules = wmForWorkspace.map((wm: any) => {
@@ -161,9 +164,14 @@ export const getWorkspaces = catchAsync(
       };
     });
 
+    let finalData = formattedData;
+    if (statusesFilter.length > 0) {
+      finalData = formattedData.filter(ws => statusesFilter.includes(ws.status));
+    }
+
     return successDataResponse({
-      data: formattedData,
-      count: count || formattedData.length,
+      data: finalData,
+      count: count || finalData.length,
     });
   },
 );
