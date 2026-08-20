@@ -90,7 +90,8 @@ export class SubscriptionRepository {
         .select(
           '*, subscription_products!workspace_module_subscriptions_module_id_fkey(product_key, display_name), plans!workspace_module_subscriptions_plan_id_fkey(plan_key, plan_name), bundles(bundle_key)',
         )
-        .eq('workspace_id', workspaceId),
+        .eq('workspace_id', workspaceId)
+        .in('status', ['active', 'trial', 'suspended']),
       this.client
         .from('subscription_changes')
         .select(

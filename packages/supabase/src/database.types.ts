@@ -5926,6 +5926,54 @@ export type Database = {
           },
         ];
       };
+      billing_events: {
+        Row: {
+          created_at: string;
+          event_type: string;
+          id: string;
+          idempotency_key: string;
+          module_id: string | null;
+          occurred_at: string;
+          payload: Json;
+          workspace_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          event_type: string;
+          id?: string;
+          idempotency_key: string;
+          module_id?: string | null;
+          occurred_at?: string;
+          payload?: Json;
+          workspace_id: string;
+        };
+        Update: {
+          created_at?: string;
+          event_type?: string;
+          id?: string;
+          idempotency_key?: string;
+          module_id?: string | null;
+          occurred_at?: string;
+          payload?: Json;
+          workspace_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'billing_events_module_id_fkey';
+            columns: ['module_id'];
+            isOneToOne: false;
+            referencedRelation: 'subscription_products';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'billing_events_workspace_id_fkey';
+            columns: ['workspace_id'];
+            isOneToOne: false;
+            referencedRelation: 'workspaces';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       billing_provider_prices: {
         Row: {
           billing_cycle: Database['public']['Enums']['billing_cycle'];
@@ -8960,6 +9008,78 @@ export type Database = {
           },
         ];
       };
+      subscription_notifications: {
+        Row: {
+          action_url: string | null;
+          channel: string;
+          created_at: string;
+          delivered_at: string | null;
+          delivery_error: string | null;
+          delivery_status: string;
+          event_key: string;
+          event_type: string;
+          id: string;
+          message: string;
+          metadata: Json;
+          read_at: string | null;
+          recipient_id: string;
+          title: string;
+          updated_at: string;
+          workspace_id: string;
+        };
+        Insert: {
+          action_url?: string | null;
+          channel: string;
+          created_at?: string;
+          delivered_at?: string | null;
+          delivery_error?: string | null;
+          delivery_status?: string;
+          event_key: string;
+          event_type: string;
+          id?: string;
+          message: string;
+          metadata?: Json;
+          read_at?: string | null;
+          recipient_id: string;
+          title: string;
+          updated_at?: string;
+          workspace_id: string;
+        };
+        Update: {
+          action_url?: string | null;
+          channel?: string;
+          created_at?: string;
+          delivered_at?: string | null;
+          delivery_error?: string | null;
+          delivery_status?: string;
+          event_key?: string;
+          event_type?: string;
+          id?: string;
+          message?: string;
+          metadata?: Json;
+          read_at?: string | null;
+          recipient_id?: string;
+          title?: string;
+          updated_at?: string;
+          workspace_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'subscription_notifications_recipient_id_fkey';
+            columns: ['recipient_id'];
+            isOneToOne: false;
+            referencedRelation: 'accounts';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'subscription_notifications_workspace_id_fkey';
+            columns: ['workspace_id'];
+            isOneToOne: false;
+            referencedRelation: 'workspaces';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       subscription_products: {
         Row: {
           created_at: string;
@@ -10721,6 +10841,10 @@ export type Database = {
         Args: { p_workspace_id: string };
         Returns: boolean;
       };
+      expire_due_subscription_trials: {
+        Args: Record<PropertyKey, never>;
+        Returns: { workspace_id: string }[];
+      };
       gbt_bit_compress: {
         Args: { '': unknown };
         Returns: unknown;
@@ -11060,6 +11184,10 @@ export type Database = {
           workspace_id: string;
           workspace_name: string;
         }[];
+      };
+      reconcile_subscription_usage: {
+        Args: Record<PropertyKey, never>;
+        Returns: Json;
       };
       get_sales_dashboard_stats: {
         Args:

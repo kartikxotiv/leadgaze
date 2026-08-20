@@ -30,9 +30,16 @@ import {
   type WorkspaceSubscriptionStatus,
   getWorkspaceSubscriptionService,
 } from '@kit/core/services';
+import { useLocalization } from '@kit/shared/localization';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@kit/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@kit/ui/card';
 import {
   Dialog,
   DialogContent,
@@ -51,6 +58,7 @@ import {
 } from '@kit/ui/table';
 import { cn } from '@kit/ui/utils';
 
+import { SubscriptionManagementPage } from '~/components/subscriptions/subscription-management-page';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import {
   type ModuleEntitlement,
@@ -65,7 +73,6 @@ import {
   getWorkspaceSeatsService,
   updateSeatsViaStripeService,
 } from '~/services/subscription.service';
-import { useLocalization } from '@kit/shared/localization';
 
 // ─── Constants ───────────────────────────────────────────────────
 
@@ -158,17 +165,21 @@ function getProductStyle(key: string) {
 // ─── Main Page ───────────────────────────────────────────────────
 
 function getPriceAndCurrency(
-  product: {
-    monthly_price_per_seat?: number | null;
-    yearly_price_per_seat?: number | null;
-    india_monthly_price_per_seat?: number | null;
-    india_yearly_price_per_seat?: number | null;
-  } | null | undefined,
+  product:
+    | {
+        monthly_price_per_seat?: number | null;
+        yearly_price_per_seat?: number | null;
+        india_monthly_price_per_seat?: number | null;
+        india_yearly_price_per_seat?: number | null;
+      }
+    | null
+    | undefined,
   billingCountry: string | null | undefined,
   billingCycle: 'monthly' | 'yearly',
 ) {
   if (!product) return { price: 0, currencySymbol: '$' };
-  const isIndia = billingCountry === 'IN' || billingCountry?.toLowerCase() === 'india';
+  const isIndia =
+    billingCountry === 'IN' || billingCountry?.toLowerCase() === 'india';
   const price = isIndia
     ? billingCycle === 'yearly'
       ? (product.india_yearly_price_per_seat ?? 0)
@@ -179,7 +190,11 @@ function getPriceAndCurrency(
   return { price, currencySymbol: isIndia ? '₹' : '$' };
 }
 
-export default function OrgSubscriptionPage({
+export default function OrgSubscriptionPage() {
+  return <SubscriptionManagementPage />;
+}
+
+export function LegacyOrgSubscriptionPage({
   canManageSubscription: canManageSubscriptionProp,
 }: {
   canManageSubscription?: boolean;
@@ -279,7 +294,10 @@ export default function OrgSubscriptionPage({
   });
 
   const billingCountry = currentWorkspace?.billing_country;
-  const currencySymbol = billingCountry === 'IN' || billingCountry?.toLowerCase() === 'india' ? '₹' : '$';
+  const currencySymbol =
+    billingCountry === 'IN' || billingCountry?.toLowerCase() === 'india'
+      ? '₹'
+      : '$';
 
   // Fetch workspace entitlements (free access grants)
   const { data: entitlementsData } = useQuery({
@@ -394,7 +412,11 @@ export default function OrgSubscriptionPage({
         const pending = pendingChanges[seat.product_id] ?? seat.seats_purchased;
         const product = seat.subscription_products;
         if (product) {
-          const { price } = getPriceAndCurrency(product, billingCountry, billingCycle);
+          const { price } = getPriceAndCurrency(
+            product,
+            billingCountry,
+            billingCycle,
+          );
           monthly += price * pending;
           seatsTotal += pending;
           if (pending !== seat.seats_purchased) {
@@ -409,7 +431,11 @@ export default function OrgSubscriptionPage({
       )) {
         const product = products.find((p) => p.product_key === productKey);
         if (product) {
-          const { price } = getPriceAndCurrency(product, billingCountry, billingCycle);
+          const { price } = getPriceAndCurrency(
+            product,
+            billingCountry,
+            billingCycle,
+          );
           monthly += price * seatCount;
           seatsTotal += seatCount;
           newItems.push({ productKey, seats: seatCount });
@@ -580,8 +606,8 @@ export default function OrgSubscriptionPage({
       };
       toast.error(
         error?.response?.data?.message ||
-        error?.message ||
-        'Failed to remove module',
+          error?.message ||
+          'Failed to remove module',
       );
     },
   });
@@ -652,12 +678,12 @@ export default function OrgSubscriptionPage({
 
       {/* Quick stats pills */}
       <div className="flex gap-2">
-        <button className="px-2 border border-slate-200 rounded-md primary-text-medium text-leadgaze-dark dark:text-white flex items-center gap-2 bg-white h-9">
-          <div className="w-2 h-2 rounded-full bg-orange-500" />
+        <button className="primary-text-medium text-leadgaze-dark flex h-9 items-center gap-2 rounded-md border border-slate-200 bg-white px-2 dark:text-white">
+          <div className="h-2 w-2 rounded-full bg-orange-500" />
           Active Modules ({seats.length})
         </button>
-        <button className="px-2 border border-slate-200 rounded-md primary-text-medium text-leadgaze-dark dark:text-white flex items-center gap-2 bg-white h-9">
-          <div className="w-2 h-2 rounded-full bg-blue-500" />
+        <button className="primary-text-medium text-leadgaze-dark flex h-9 items-center gap-2 rounded-md border border-slate-200 bg-white px-2 dark:text-white">
+          <div className="h-2 w-2 rounded-full bg-blue-500" />
           Total Seats ({totalSeats})
         </button>
       </div>
@@ -665,8 +691,10 @@ export default function OrgSubscriptionPage({
       {/* Active Subscriptions — Table layout */}
       {seats.length > 0 && (
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between p-2 border-b border-slate-200 pb-1">
-            <CardTitle className="primary-text-big-regular text-leadgaze-dark dark:text-white mb-0">Your Modules</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between border-b border-slate-200 p-2 pb-1">
+            <CardTitle className="primary-text-big-regular text-leadgaze-dark mb-0 dark:text-white">
+              Your Modules
+            </CardTitle>
             <div className="secondary-text-small-bold text-leadgaze-dark dark:text-white">
               {seats.length} MODULE{seats.length !== 1 ? 'S' : ''}
               {isTrial && ' (Trial)'}
@@ -676,11 +704,21 @@ export default function OrgSubscriptionPage({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="secondary-text-small-bold text-leadgaze-dark dark:text-white uppercase">Module</TableHead>
-                  <TableHead className="secondary-text-small-bold text-leadgaze-dark dark:text-white uppercase">Status</TableHead>
-                  <TableHead className="secondary-text-small-bold text-leadgaze-dark dark:text-white uppercase">Seats</TableHead>
-                  <TableHead className="secondary-text-small-bold text-leadgaze-dark dark:text-white uppercase">Price / Seat</TableHead>
-                  <TableHead className="secondary-text-small-bold text-leadgaze-dark dark:text-white uppercase">Total</TableHead>
+                  <TableHead className="secondary-text-small-bold text-leadgaze-dark uppercase dark:text-white">
+                    Module
+                  </TableHead>
+                  <TableHead className="secondary-text-small-bold text-leadgaze-dark uppercase dark:text-white">
+                    Status
+                  </TableHead>
+                  <TableHead className="secondary-text-small-bold text-leadgaze-dark uppercase dark:text-white">
+                    Seats
+                  </TableHead>
+                  <TableHead className="secondary-text-small-bold text-leadgaze-dark uppercase dark:text-white">
+                    Price / Seat
+                  </TableHead>
+                  <TableHead className="secondary-text-small-bold text-leadgaze-dark uppercase dark:text-white">
+                    Total
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -720,7 +758,8 @@ export default function OrgSubscriptionPage({
             {/* Pricing breakdown rows */}
             {seats.map((seat) => {
               const product = seat.subscription_products;
-              const { price: pricePerSeat, currencySymbol } = getPriceAndCurrency(product, billingCountry, billingCycle);
+              const { price: pricePerSeat, currencySymbol } =
+                getPriceAndCurrency(product, billingCountry, billingCycle);
               const pending =
                 pendingChanges[seat.product_id] ?? seat.seats_purchased;
               const displaySeats = isPaid ? seat.seats_purchased : pending;
@@ -729,7 +768,9 @@ export default function OrgSubscriptionPage({
               if (!pricePerSeat) return null;
 
               return (
-                <PricingBreakdownRow currencySymbol={currencySymbol} key={`breakdown-${seat.id}`}
+                <PricingBreakdownRow
+                  currencySymbol={currencySymbol}
+                  key={`breakdown-${seat.id}`}
                   seat={seat}
                   workspaceId={workspaceId}
                   pricePerSeat={Number(pricePerSeat)}
@@ -861,7 +902,9 @@ export default function OrgSubscriptionPage({
           ) : (
             <div className="grid gap-4 px-1 sm:grid-cols-2 lg:grid-cols-3">
               {availableProducts.map((product) => (
-                <AvailableModuleCard billingCountry={billingCountry} key={product.id}
+                <AvailableModuleCard
+                  billingCountry={billingCountry}
+                  key={product.id}
                   product={product}
                   billingCycle={billingCycle}
                   canManageSubscription={canManageSubscription}
@@ -951,18 +994,18 @@ export default function OrgSubscriptionPage({
       {/* Cancel Subscription Section (only for paid subscriptions) */}
       {canManageSubscription && isPaid && seats.length > 0 && (
         <Card className="border-destructive/20">
-          <CardContent className="flex flex-col md:flex-row items-center justify-between py-4 px-2">
-            <div className="flex items-start gap-3 mb-2">
+          <CardContent className="flex flex-col items-center justify-between px-2 py-4 md:flex-row">
+            <div className="mb-2 flex items-start gap-3">
               <div className="bg-destructive/10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full">
                 <AlertTriangle className="text-destructive h-4 w-4" />
               </div>
               <div className="flex-1">
-                <h3 className="text-destructive font-semibold custom-sub-heading-dialog-form">
+                <h3 className="text-destructive custom-sub-heading-dialog-form font-semibold">
                   Cancel Subscription
                 </h3>
                 <p className="text-muted-foreground mt-1 text-sm">
-                  Cancelling will revoke access to all modules at the end of your
-                  current billing period. This action cannot be undone.
+                  Cancelling will revoke access to all modules at the end of
+                  your current billing period. This action cannot be undone.
                 </p>
               </div>
             </div>
@@ -999,44 +1042,45 @@ export default function OrgSubscriptionPage({
           }
         }}
       >
-        <DialogContent className="flex max-h-[90vh] flex-col p-0 overflow-hidden border-gray-200 bg-white sm:max-w-md dark:border-slate-800 dark:bg-slate-950">          
+        <DialogContent className="flex max-h-[90vh] flex-col overflow-hidden border-gray-200 bg-white p-0 sm:max-w-md dark:border-slate-800 dark:bg-slate-950">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <div className="flex items-center gap-2"><Users className="h-5 w-5 text-white" />
-              {seatUpdateDialog.newSeats > seatUpdateDialog.currentSeats
-                ? 'Add Seat'
-                : 'Remove Seat'}{' '}
-              — {seatUpdateDialog.displayName}</div>
+              <div className="flex items-center gap-2">
+                <Users className="h-5 w-5 text-white" />
+                {seatUpdateDialog.newSeats > seatUpdateDialog.currentSeats
+                  ? 'Add Seat'
+                  : 'Remove Seat'}{' '}
+                — {seatUpdateDialog.displayName}
+              </div>
             </DialogTitle>
-            </DialogHeader>
-            
-              <div className="flex flex-col flex-1 overflow-y-auto p-2 space-y-2 pt-0">
-                <p className="primary-text-regular text-leadgaze-dark dark:text-white">
-                  {seatUpdateDialog.newSeats > seatUpdateDialog.currentSeats
-                    ? `You are about to increase ${seatUpdateDialog.displayName} from ${seatUpdateDialog.currentSeats} to ${seatUpdateDialog.newSeats} seat${seatUpdateDialog.newSeats !== 1 ? 's' : ''}.`
-                    : `You are about to decrease ${seatUpdateDialog.displayName} from ${seatUpdateDialog.currentSeats} to ${seatUpdateDialog.newSeats} seat${seatUpdateDialog.newSeats !== 1 ? 's' : ''}.`}
-                </p>
-                <div className="bg-muted rounded-lg border p-3">
-                  <div className="flex items-start gap-2">
-                    <CreditCard className="text-primary mt-0.5 h-4 w-4 shrink-0" />
-                    <div className="space-y-1">
-                      <p className="text-leadgaze-dark text-sm font-medium dark:text-white">
-                        Prorated billing
-                      </p>
-                      <p className="text-muted-foreground text-xs">
-                        Your subscription will be updated immediately. The
-                        difference will be calculated on a{' '}
-                        <strong>pro-rata basis</strong> and reflected in your
-                        next invoice.{' '}
-                        {seatUpdateDialog.newSeats >
-                          seatUpdateDialog.currentSeats
-                          ? 'You will be charged for the remaining days of the current billing period.'
-                          : 'A prorated credit will be applied to your next invoice.'}
-                      </p>
-                    </div>
-                  </div>
+          </DialogHeader>
+
+          <div className="flex flex-1 flex-col space-y-2 overflow-y-auto p-2 pt-0">
+            <p className="primary-text-regular text-leadgaze-dark dark:text-white">
+              {seatUpdateDialog.newSeats > seatUpdateDialog.currentSeats
+                ? `You are about to increase ${seatUpdateDialog.displayName} from ${seatUpdateDialog.currentSeats} to ${seatUpdateDialog.newSeats} seat${seatUpdateDialog.newSeats !== 1 ? 's' : ''}.`
+                : `You are about to decrease ${seatUpdateDialog.displayName} from ${seatUpdateDialog.currentSeats} to ${seatUpdateDialog.newSeats} seat${seatUpdateDialog.newSeats !== 1 ? 's' : ''}.`}
+            </p>
+            <div className="bg-muted rounded-lg border p-3">
+              <div className="flex items-start gap-2">
+                <CreditCard className="text-primary mt-0.5 h-4 w-4 shrink-0" />
+                <div className="space-y-1">
+                  <p className="text-leadgaze-dark text-sm font-medium dark:text-white">
+                    Prorated billing
+                  </p>
+                  <p className="text-muted-foreground text-xs">
+                    Your subscription will be updated immediately. The
+                    difference will be calculated on a{' '}
+                    <strong>pro-rata basis</strong> and reflected in your next
+                    invoice.{' '}
+                    {seatUpdateDialog.newSeats > seatUpdateDialog.currentSeats
+                      ? 'You will be charged for the remaining days of the current billing period.'
+                      : 'A prorated credit will be applied to your next invoice.'}
+                  </p>
                 </div>
               </div>
+            </div>
+          </div>
           <DialogFooter>
             <Button
               variant="outline"
@@ -1074,7 +1118,9 @@ export default function OrgSubscriptionPage({
                 }
               }}
             >
-              {isDirectUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isDirectUpdating && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
               Confirm Update
             </Button>
           </DialogFooter>
@@ -1088,47 +1134,47 @@ export default function OrgSubscriptionPage({
           if (!open) setCancelDialogOpen(false);
         }}
       >
-        <DialogContent className="flex max-h-[90vh] flex-col p-0 overflow-hidden border-gray-200 bg-white sm:max-w-md dark:border-slate-800 dark:bg-slate-950">
+        <DialogContent className="flex max-h-[90vh] flex-col overflow-hidden border-gray-200 bg-white p-0 sm:max-w-md dark:border-slate-800 dark:bg-slate-950">
           <DialogHeader className="bg-red-500">
             <DialogTitle>
-              <div className="flex items-center gap-2"><AlertTriangle className="h-5 w-5" /> Cancel Subscription</div>
-            </DialogTitle>
-            </DialogHeader>
-            
-              <div className="flex flex-col flex-1 overflow-y-auto p-2 space-y-2 pt-0">
-                <p className="primary-text-regular text-leadgaze-dark dark:text-white">
-                  Are you sure you want to cancel your subscription? All{' '}
-                  <strong>
-                    {seats.length} active module
-                    {seats.length !== 1 ? 's' : ''}
-                  </strong>{' '}
-                  will be deactivated and your team members will lose access to
-                  their assigned modules.
-                </p>
-                <div className="bg-muted rounded-lg border p-3">
-                  <div className="flex items-start gap-2">
-                    <CreditCard className="text-primary mt-0.5 h-4 w-4 shrink-0" />
-                    <div className="space-y-1">
-                      <p className="text-foreground text-sm font-medium">
-                        Billing &amp; Access
-                      </p>
-                      <p className="text-muted-foreground text-xs">
-                        Your subscription will be cancelled immediately in
-                        Stripe. Access to all modules will be revoked. A{' '}
-                        <strong>prorated credit</strong> for any unused portion
-                        of your current billing period will be applied to your
-                        account.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                <p className="text-destructive text-xs">
-                  This action cannot be undone. You will need to re-subscribe to
-                  regain access.
-                </p>
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5" /> Cancel Subscription
               </div>
-            
-          
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="flex flex-1 flex-col space-y-2 overflow-y-auto p-2 pt-0">
+            <p className="primary-text-regular text-leadgaze-dark dark:text-white">
+              Are you sure you want to cancel your subscription? All{' '}
+              <strong>
+                {seats.length} active module
+                {seats.length !== 1 ? 's' : ''}
+              </strong>{' '}
+              will be deactivated and your team members will lose access to
+              their assigned modules.
+            </p>
+            <div className="bg-muted rounded-lg border p-3">
+              <div className="flex items-start gap-2">
+                <CreditCard className="text-primary mt-0.5 h-4 w-4 shrink-0" />
+                <div className="space-y-1">
+                  <p className="text-foreground text-sm font-medium">
+                    Billing &amp; Access
+                  </p>
+                  <p className="text-muted-foreground text-xs">
+                    Your subscription will be cancelled immediately in Stripe.
+                    Access to all modules will be revoked. A{' '}
+                    <strong>prorated credit</strong> for any unused portion of
+                    your current billing period will be applied to your account.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <p className="text-destructive text-xs">
+              This action cannot be undone. You will need to re-subscribe to
+              regain access.
+            </p>
+          </div>
+
           <DialogFooter>
             <Button
               variant="outline"
@@ -1330,7 +1376,11 @@ function ActiveModuleRow({
 
   const displaySeats = isPaid ? seat.seats_purchased : pendingSeats;
 
-  const { price: pricePerSeat, currencySymbol } = getPriceAndCurrency(product, billingCountry, billingCycle);
+  const { price: pricePerSeat, currencySymbol } = getPriceAndCurrency(
+    product,
+    billingCountry,
+    billingCycle,
+  );
   const total = pricePerSeat ? Number(pricePerSeat) * displaySeats : 0;
 
   const handleIncrement = async () => {
@@ -1380,7 +1430,7 @@ function ActiveModuleRow({
         <div className="flex items-center gap-3">
           <div
             className={cn(
-              'flex w-8 h-8 items-center justify-center rounded-lg',
+              'flex h-8 w-8 items-center justify-center rounded-lg',
               style.iconBg,
               style.iconColor,
             )}
@@ -1391,7 +1441,7 @@ function ActiveModuleRow({
             <p className="primary-text-medium text-leadgaze-dark dark:text-white">
               {product?.display_name ?? 'Module'}
             </p>
-            <p className="text-xs text-leadgaze-dark dark:text-white">
+            <p className="text-leadgaze-dark text-xs dark:text-white">
               {seat.seats_used}/{seat.seats_purchased} used
             </p>
           </div>
@@ -1408,7 +1458,7 @@ function ActiveModuleRow({
               : seat.status === 'active'
                 ? 'bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-400'
                 : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400',
-                'font-semibold text-xs px-2 py-0'
+            'px-2 py-0 text-xs font-semibold',
           )}
         >
           {statusLabel}
@@ -1428,7 +1478,7 @@ function ActiveModuleRow({
           >
             <Minus className="h-3 w-3" />
           </Button>
-          <span className="text-sm font-semibold text-leadgaze-dark dark:text-white w-6 text-center">
+          <span className="text-leadgaze-dark w-6 text-center text-sm font-semibold dark:text-white">
             {displaySeats}
           </span>
           <Button
@@ -1451,13 +1501,18 @@ function ActiveModuleRow({
       <TableCell className="text-foreground text-sm whitespace-nowrap">
         {pricePerSeat ? (
           <>
-            <span className="text-center text-sm font-semibold text-leadgaze-dark dark:text-white">{currencySymbol}{pricePerSeat}</span>
-            <span className="text-center text-sm font-semibold text-leadgaze-dark dark:text-white">
+            <span className="text-leadgaze-dark text-center text-sm font-semibold dark:text-white">
+              {currencySymbol}
+              {pricePerSeat}
+            </span>
+            <span className="text-leadgaze-dark text-center text-sm font-semibold dark:text-white">
               /{billingCycle === 'yearly' ? 'yr' : 'mo'}
             </span>
           </>
         ) : (
-          <span className="text-center text-sm font-semibold text-leadgaze-dark dark:text-white">—</span>
+          <span className="text-leadgaze-dark text-center text-sm font-semibold dark:text-white">
+            —
+          </span>
         )}
       </TableCell>
 
@@ -1467,8 +1522,11 @@ function ActiveModuleRow({
           <div className="text-foreground text-sm whitespace-nowrap">
             {pricePerSeat ? (
               <>
-                <span className="text-center text-sm font-semibold text-leadgaze-dark dark:text-white">{currencySymbol}{total}</span>
-                <span className="text-center text-sm font-semibold text-leadgaze-dark dark:text-white">
+                <span className="text-leadgaze-dark text-center text-sm font-semibold dark:text-white">
+                  {currencySymbol}
+                  {total}
+                </span>
+                <span className="text-leadgaze-dark text-center text-sm font-semibold dark:text-white">
                   /{billingCycle === 'yearly' ? 'yr' : 'mo'}
                 </span>
               </>
@@ -1521,11 +1579,14 @@ function PricingBreakdownRow({
             className="text-sm font-semibold"
             style={{ color: accentColor }}
           >
-            {currencySymbol}{pricePerSeat}/seat/{period}
+            {currencySymbol}
+            {pricePerSeat}/seat/{period}
           </span>
           <span className="text-muted-foreground text-xs text-[18px]">·</span>
           <span className="text-muted-foreground text-xs">
-            {displaySeats} seat{displaySeats !== 1 ? 's' : ''} × {currencySymbol}{pricePerSeat}
+            {displaySeats} seat{displaySeats !== 1 ? 's' : ''} ×{' '}
+            {currencySymbol}
+            {pricePerSeat}
           </span>
         </div>
         <Button
@@ -1625,7 +1686,7 @@ function AvailableModuleCard({
 
         {/* Name + description */}
         <div className="mt-4 flex-1">
-          <h3 className="text-foreground font-semibold custom-sub-heading-dialog-form">
+          <h3 className="text-foreground custom-sub-heading-dialog-form font-semibold">
             {product.display_name}
           </h3>
           <p className="text-muted-foreground mt-1 text-sm">
@@ -1638,7 +1699,8 @@ function AvailableModuleCard({
           {pricePerSeat ? (
             <div className="flex items-baseline gap-0.5">
               <span className="text-foreground text-2xl font-bold">
-                {currencySymbol}{pricePerSeat}
+                {currencySymbol}
+                {pricePerSeat}
               </span>
               <span className="text-muted-foreground text-sm">
                 /seat/{period}
@@ -1767,8 +1829,10 @@ function CheckoutBar({
         : 'Subscribe Now'
       : 'Proceed to Payment';
 
-  const periodLabel = billingCycle === 'yearly' ? 'New Yearly Total' : 'New Monthly Total';
-  const normalPeriodLabel = billingCycle === 'yearly' ? 'Total Yearly' : 'Total Monthly';
+  const periodLabel =
+    billingCycle === 'yearly' ? 'New Yearly Total' : 'New Monthly Total';
+  const normalPeriodLabel =
+    billingCycle === 'yearly' ? 'Total Yearly' : 'Total Monthly';
 
   return (
     <Card className="sticky bottom-0 z-10 border-t shadow-lg">
@@ -1787,13 +1851,14 @@ function CheckoutBar({
         </div>
 
         <div className="flex items-center gap-6">
-          <div className="flex flex-col items-end mr-2">
-            <span className="text-muted-foreground text-[10px] uppercase tracking-wider font-bold">
+          <div className="mr-2 flex flex-col items-end">
+            <span className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
               {isPaid ? periodLabel : normalPeriodLabel}
             </span>
             <div className="flex items-baseline gap-0.5">
               <span className="text-foreground text-xl font-bold">
-                {currencySymbol}{totalMonthly}
+                {currencySymbol}
+                {totalMonthly}
               </span>
               <span className="text-muted-foreground text-sm">
                 {billingCycle === 'yearly' ? '/yr' : '/mo'}
@@ -1864,14 +1929,14 @@ function SeatAssignmentsList({
           className="hover:bg-muted/50 flex items-center justify-between rounded-lg px-2 py-1 transition-colors"
         >
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 secondary-text-small-bold font-bold">
+            <div className="secondary-text-small-bold flex h-9 w-9 items-center justify-center rounded-full bg-blue-100 font-bold text-blue-700">
               {(a.accounts?.email?.charAt(0) ?? 'U').toUpperCase()}
             </div>
             <div>
               <p className="primary-text-medium text-leadgaze-dark dark:text-white">
                 {a.accounts?.name ?? 'User'}
               </p>
-              <p className="text-[10px] text-black-100 dark:text-white">
+              <p className="text-black-100 text-[10px] dark:text-white">
                 {a.accounts?.email}
               </p>
             </div>

@@ -8,6 +8,7 @@ import {
   getStripeClient,
   getStripeWebhookSecret,
 } from '~/lib/stripe/stripe-client';
+import { SubscriptionNotificationService } from '~/lib/subscriptions/notification-service';
 import {
   registerStripeCheckout,
   synchronizeStripeSubscription,
@@ -221,6 +222,16 @@ async function handleCompatibleSubscriptionDeleted(
     .from('workspace_subscriptions')
     .update({ subscription_status: hasFreeModule ? 'free' : 'cancelled' })
     .eq('id', billing.workspace_subscription_id);
+  await new SubscriptionNotificationService().emitBestEffort({
+    workspaceId: billing.workspace_id,
+    eventType: 'subscription_cancelled',
+    eventKey: `subscription_cancelled:${subscription.id}`,
+    title: 'Subscription cancelled',
+    message: hasFreeModule
+      ? 'Paid billing has ended. Your Free Forever modules remain available.'
+      : 'The subscription and its paid modules have been cancelled.',
+    email: true,
+  });
 }
 
 async function handleCompatibleInvoice(
@@ -240,7 +251,7 @@ async function handleCompatibleInvoice(
   if (subscriptionId) {
     const { data: billing } = await adminClient
       .from('workspace_billing_subscriptions')
-      .select('id, workspace_subscription_id')
+      .select('id, workspace_id, workspace_subscription_id')
       .eq('provider_subscription_id', subscriptionId)
       .maybeSingle();
     if (billing) {
@@ -254,6 +265,17 @@ async function handleCompatibleInvoice(
           subscription_status: succeeded ? 'active' : 'payment_failed',
         })
         .eq('id', billing.workspace_subscription_id);
+      if (!succeeded) {
+        await new SubscriptionNotificationService().emitBestEffort({
+          workspaceId: billing.workspace_id,
+          eventType: 'payment_failed',
+          eventKey: `payment_failed:${event.id}`,
+          title: 'Subscription payment failed',
+          message:
+            'Update the Stripe payment method to prevent subscription interruption.',
+          email: true,
+        });
+      }
       return;
     }
   }

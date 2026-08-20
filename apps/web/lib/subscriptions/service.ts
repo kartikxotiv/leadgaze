@@ -2,7 +2,7 @@ import 'server-only';
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-import type { Database } from '@kit/supabase/database';
+import type { Database, Json } from '@kit/supabase/database';
 
 import type {
   AddModuleRequest,
@@ -17,6 +17,10 @@ import type {
   WorkspacePlansResponseData,
 } from './contracts';
 import { SubscriptionApiError } from './errors';
+import {
+  type SubscriptionNotificationEvent,
+  SubscriptionNotificationService,
+} from './notification-service';
 import { SubscriptionRepository } from './repository';
 import { StripeSubscriptionProvider } from './stripe-provider';
 
@@ -36,6 +40,7 @@ const toNumber = (value: unknown): number | null =>
 export class SubscriptionService {
   readonly repository: SubscriptionRepository;
   private readonly provider: StripeSubscriptionProvider;
+  private readonly notifications = new SubscriptionNotificationService();
 
   constructor(
     private readonly client: Client,
@@ -310,7 +315,16 @@ export class SubscriptionService {
         );
       if (result.error) throw result.error;
     }
-    void actorId;
+    await this.recordEvent({
+      workspaceId: input.workspaceId,
+      eventType: 'trial_started',
+      eventKey: `trial_started:${subscription.id}:${start.toISOString()}`,
+      title: 'Your 14-day Growth trial has started',
+      message:
+        'Growth features are active for the selected modules until the trial ends.',
+      email: true,
+      metadata: { selectedModules: input.selectedModules, actorId },
+    });
     return {
       workspaceId: input.workspaceId,
       status: 'trial_active' as const,
@@ -476,6 +490,21 @@ export class SubscriptionService {
       applied_at: now,
     });
     if (change.error) throw change.error;
+    await this.recordEvent({
+      workspaceId: input.workspaceId,
+      eventType: changeType === 'module_add' ? 'module_added' : 'plan_upgraded',
+      eventKey: `${changeType}:${refreshed!.id}:${plan.id}:${now}`,
+      title:
+        changeType === 'module_add'
+          ? `${productModule.display_name} added`
+          : `${productModule.display_name} upgraded to ${plan.plan_name}`,
+      message:
+        changeType === 'module_add'
+          ? `${productModule.display_name} is active on the ${plan.plan_name} plan.`
+          : 'The plan upgrade is active immediately and updated limits now apply.',
+      email: false,
+      metadata: { moduleKey: input.moduleKey, planKey: plan.plan_key, actorId },
+    });
     return {
       workspaceId: input.workspaceId,
       moduleKey: input.moduleKey,
@@ -561,6 +590,19 @@ export class SubscriptionService {
       created_by: actorId,
     });
     if (result.error) throw result.error;
+    await this.recordEvent({
+      workspaceId: input.workspaceId,
+      eventType: 'plan_downgrade_scheduled',
+      eventKey: `plan_downgrade_scheduled:${current.id}:${target.id}:${effectiveAt}`,
+      title: `${productModule.display_name} downgrade scheduled`,
+      message: `The ${target.plan_name} plan will take effect on ${new Date(effectiveAt).toLocaleDateString('en-US', { timeZone: 'UTC' })}.`,
+      email: true,
+      metadata: {
+        moduleKey: input.moduleKey,
+        planKey: target.plan_key,
+        actorId,
+      },
+    });
     return {
       workspaceId: input.workspaceId,
       moduleKey: input.moduleKey,
@@ -620,6 +662,15 @@ export class SubscriptionService {
       created_by: actorId,
     });
     if (result.error) throw result.error;
+    await this.recordEvent({
+      workspaceId,
+      eventType: 'module_removed',
+      eventKey: `module_removal_scheduled:${current.id}:${effectiveAt}`,
+      title: `${productModule.display_name} removal scheduled`,
+      message: `The module remains active until ${new Date(effectiveAt).toLocaleDateString('en-US', { timeZone: 'UTC' })}.`,
+      email: true,
+      metadata: { moduleKey, actorId, scheduled: true },
+    });
     return {
       workspaceId,
       moduleKey,
@@ -836,6 +887,21 @@ export class SubscriptionService {
       .eq('workspace_module_subscription_id', moduleSubscriptionId)
       .eq('status', 'pending');
     if (result.error) throw result.error;
+  }
+
+  private async recordEvent(input: {
+    workspaceId: string;
+    eventType: SubscriptionNotificationEvent;
+    eventKey: string;
+    title: string;
+    message: string;
+    email: boolean;
+    metadata?: Json;
+  }) {
+    await this.notifications.emitBestEffort({
+      ...input,
+      actionUrl: '/org/subscription',
+    });
   }
 }
 

@@ -22,6 +22,10 @@ export type EntitlementContext = {
     planName: string;
     subscriptionStatus: string;
     moduleStatus: string;
+    billingCycle?: 'monthly' | 'yearly';
+    trialEndDate?: string | null;
+    currentPeriodStart?: string | null;
+    currentPeriodEnd?: string | null;
   };
   features: Record<string, EntitlementFeature>;
 };
