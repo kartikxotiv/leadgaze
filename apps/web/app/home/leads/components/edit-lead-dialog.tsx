@@ -277,9 +277,13 @@ export default function EditLeadDialog({
       if (canEdit('status')) payload.status_id = formData.status_id;
       if (canEdit('source')) payload.source_id = formData.source_id || null;
       if (canEdit('trigger')) payload.trigger = formData.trigger;
-      if (canEdit('notes')) payload.notes = formData.notes;
-      if (canEdit('score')) payload.lead_score = totalScore;
-      payload.custom_fields = customFields;
+      const editableCustom: Record<string, unknown> = {};
+      for (const [cfKey, cfVal] of Object.entries(customFields)) {
+        if (canEdit(cfKey)) {
+          editableCustom[cfKey] = cfVal;
+        }
+      }
+      payload.custom_fields = editableCustom;
 
       await mutation.mutateAsync(payload);
     } finally {
