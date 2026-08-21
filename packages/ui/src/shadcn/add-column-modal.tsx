@@ -383,8 +383,8 @@ export function AddColumnModal({
             <div className="flex flex-col h-full overflow-hidden flex-1">
               <div className="p-2 flex-1 overflow-y-auto pt-0 flex flex-col gap-2">
           {/* Field Name */}
-          <div className="space-y-2">
-            <Label htmlFor="add-col-label">Column Name *</Label>
+          <div>
+            <Label htmlFor="add-col-label">Column Name <span className="text-red-500">*</span></Label>
             <Input
               id="add-col-label"
               value={fieldLabel}
@@ -394,8 +394,8 @@ export function AddColumnModal({
           </div>
 
           {/* Field Key */}
-          <div className="space-y-2">
-            <Label htmlFor="add-col-key">Field Key *</Label>
+          <div>
+            <Label htmlFor="add-col-key">Field Key <span className="text-red-500">*</span></Label>
             <Input
               id="add-col-key"
               value={fieldKey}
@@ -409,7 +409,7 @@ export function AddColumnModal({
           </div>
 
           {/* Field Type */}
-          <div className="space-y-2">
+          <div>
             <Label htmlFor="add-col-type">Field Type</Label>
             <Select value={fieldType} onValueChange={setFieldType}>
               <SelectTrigger id="add-col-type">
@@ -426,7 +426,7 @@ export function AddColumnModal({
           </div>
 
           {/* Description */}
-          <div className="space-y-2">
+          <div>
             <Label htmlFor="add-col-description">Description</Label>
             <Input
               id="add-col-description"
@@ -438,7 +438,9 @@ export function AddColumnModal({
 
           {/* Required toggle */}
           <div className="flex items-center justify-between pb-2">
-            <Label htmlFor="add-col-required">Required Field</Label>
+            <Label htmlFor="add-col-required">
+              <span className="text-[14px]">Required Field</span>
+            </Label>
             <Switch
               id="add-col-required"
               checked={isRequired}
@@ -448,7 +450,7 @@ export function AddColumnModal({
           </div>
 
           {/* Access Type */}
-          <div className="space-y-3">
+          <div className="space-y-2">
             <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Permission Schema</Label>
             <div className="flex flex-col">
               {availableAccessTypes.map((type, index) => (
@@ -582,12 +584,12 @@ export function AddColumnModal({
                           ) : (
                             <Users className="text-muted-foreground h-4 w-4" />
                           )}
-                          <span className="text-sm font-medium">
+                          <span className="text-sm text-leadgaze-dark dark:text-white">
                             {getMemberName(member.member_type, member.member_id)}
                           </span>
                         </div>
                         <div className="flex items-center gap-4">
-                          <label className="flex cursor-pointer items-center gap-2 text-sm">
+                          <Label className="!flex cursor-pointer items-center gap-2 text-sm justify-center">
                             <Switch
                               checked={member.can_view}
                               onCheckedChange={() =>
@@ -599,8 +601,8 @@ export function AddColumnModal({
                               }
                             />
                             <span>View</span>
-                          </label>
-                          <label className="flex cursor-pointer items-center gap-2 text-sm">
+                          </Label>
+                          <Label className="!flex cursor-pointer items-center gap-2 text-sm justify-center">
                             <Switch
                               checked={member.can_edit}
                               onCheckedChange={() =>
@@ -612,7 +614,7 @@ export function AddColumnModal({
                               }
                             />
                             <span>Edit</span>
-                          </label>
+                          </Label>
                         </div>
                       </div>
                     ))}

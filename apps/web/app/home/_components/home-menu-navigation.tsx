@@ -1582,12 +1582,11 @@ export function HomeMenuNavigation() {
           />
         </div> */}
 
-        {/* Check Circle */}
         <button 
           onClick={() => setIsGlobalCreateModalOpen(true)}
           className="cursor-pointer rounded-full p-2 text-blue-100 transition-colors hover:bg-white/10 hover:text-white"
         >
-          <CircleCheckBig className="h-4 w-4" />
+          <img src="/images/checkplusicon.png" alt="Create" className="h-4 w-4" />
         </button>
 
         {/* Notifications Bell */}

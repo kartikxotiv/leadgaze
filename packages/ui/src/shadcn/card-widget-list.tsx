@@ -2,6 +2,29 @@ import * as React from 'react';
 
 import { cn } from '../lib/utils';
 
+function hasMeaningfulContent(node: React.ReactNode): boolean {
+  if (node === null || node === undefined || node === false) {
+    return false;
+  }
+  if (typeof node === 'string' || typeof node === 'number') {
+    return String(node).trim().length > 0;
+  }
+  if (Array.isArray(node)) {
+    return node.some(hasMeaningfulContent);
+  }
+  if (typeof node === 'object' && 'props' in (node as any)) {
+    const props = (node as any).props;
+    if (props && props.children !== undefined) {
+      return hasMeaningfulContent(props.children);
+    }
+    if ((node as any).type === React.Fragment) {
+      return false;
+    }
+    return true;
+  }
+  return true;
+}
+
 export interface CardWidgetListProps
   extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
@@ -63,7 +86,8 @@ export function CardWidgetListItem({
   return (
     <div
       className={cn(
-        'group relative flex items-start justify-between gap-3 rounded-[4px] border-[0.6px] border-leadgaze-border bg-white p-2 opacity-100 transition-colors hover:bg-gray-50/50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800/50',
+        'group relative flex items-start justify-between rounded-[4px] border-[0.6px] border-leadgaze-border bg-white p-2 opacity-100 transition-colors hover:bg-gray-50/50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800/50',
+        actionStyle !== 'slide' && 'gap-3',
         className,
       )}
       {...props}
@@ -89,7 +113,7 @@ export function CardWidgetListItem({
                 {(badge && !isBadgeVerticalCenter) && <div className="flex-shrink-0">{badge}</div>}
               </div>
             )}
-            {subtitle && (
+            {hasMeaningfulContent(subtitle) && (
               <div className="text-muted-foreground h-4 truncate text-xs leading-4">
                 {subtitle}
               </div>
@@ -99,7 +123,7 @@ export function CardWidgetListItem({
                 {content}
               </div>
             )}
-            {metadata && (
+            {hasMeaningfulContent(metadata) && (
               <div className={cn("text-muted-foreground flex items-center gap-1 text-xs", content || subtitle ? "mt-1.5" : "")}>
                 {metadata}
               </div>
@@ -111,10 +135,10 @@ export function CardWidgetListItem({
       {actions && (
         <div
           className={cn(
-            "flex flex-shrink-0 gap-1 transition-all duration-300 absolute right-2 top-px",
-            actionStyle === 'fixed' && "ml-3 opacity-0 group-hover:opacity-100",
+            "flex flex-shrink-0 gap-1 transition-all duration-300",
+            actionStyle === 'fixed' && "absolute right-2 top-px ml-3 opacity-0 group-hover:opacity-100",
             actionStyle === 'floating' && "absolute right-2 top-2 opacity-0 group-hover:opacity-100 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-sm p-1 rounded-md",
-            actionStyle === 'slide' && "max-w-0 ml-0 overflow-hidden opacity-0 group-hover:max-w-[200px] group-hover:ml-3 group-hover:opacity-100"
+            actionStyle === 'slide' && "items-center justify-center max-w-0 ml-0 overflow-hidden opacity-0 group-hover:max-w-[100px] group-hover:ml-3 group-hover:opacity-100"
           )}
         >
           {actions}

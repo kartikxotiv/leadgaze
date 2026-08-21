@@ -110,7 +110,7 @@ export function GlobalCreateDocumentForm({ onSuccess, onCancel, asFormOnly = fal
           <Input
             type="file"
             onChange={(e) => setFile(e.target.files?.[0] || null)}
-            className="selectFileDetails"
+            className="selectFileDetails file:text-leadgaze-primary file:cursor-pointer"
           />
         </div>
       </div>
