@@ -787,7 +787,7 @@ export default function CreateLeadDialog({
             </>
           ) : (
             <>
-              <Plus className="h-4 w-4" />
+              {!asFormOnly && <Plus className="h-4 w-4" />}
               Add Lead
             </>
           )}

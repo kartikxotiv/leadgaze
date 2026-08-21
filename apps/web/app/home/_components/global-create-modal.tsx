@@ -151,12 +151,14 @@ export function GlobalCreateModal({ open, onOpenChange }: GlobalCreateModalProps
                 <GlobalCreateReminderForm
                   onSuccess={handleSuccess}
                   onCancel={() => onOpenChange(false)}
+                  asFormOnly
                 />
              )}
              {activeTab === 'note' && (
                 <GlobalCreateNoteForm
                   onSuccess={handleSuccess}
                   onCancel={() => onOpenChange(false)}
+                  asFormOnly
                 />
              )}
              {activeTab === 'meeting' && (
@@ -172,12 +174,14 @@ export function GlobalCreateModal({ open, onOpenChange }: GlobalCreateModalProps
                 <GlobalCreateDocumentForm
                   onSuccess={handleSuccess}
                   onCancel={() => onOpenChange(false)}
+                  asFormOnly
                 />
              )}
              {activeTab === 'ticket' && (
                 <GlobalCreateTicketForm
                   onSuccess={handleSuccess}
                   onCancel={() => onOpenChange(false)}
+                  asFormOnly
                 />
              )}
              {activeTab === 'customer' && (
@@ -188,6 +192,7 @@ export function GlobalCreateModal({ open, onOpenChange }: GlobalCreateModalProps
                   productKey="service-cloud"
                   onSuccess={handleSuccess}
                   onCancel={() => onOpenChange(false)}
+                  asFormOnly
                 />
              )}
              {activeTab === 'organization' && (
@@ -198,6 +203,7 @@ export function GlobalCreateModal({ open, onOpenChange }: GlobalCreateModalProps
                   productKey="service-cloud"
                   onSuccess={handleSuccess}
                   onCancel={() => onOpenChange(false)}
+                  asFormOnly
                 />
              )}
           </div>

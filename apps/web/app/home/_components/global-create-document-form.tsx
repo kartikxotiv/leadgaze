@@ -23,9 +23,10 @@ import { createDocumentService } from '~/services/activities.service';
 interface Props {
   onSuccess: () => void;
   onCancel: () => void;
+  asFormOnly: boolean
 }
 
-export function GlobalCreateDocumentForm({ onSuccess, onCancel }: Props) {
+export function GlobalCreateDocumentForm({ onSuccess, onCancel, asFormOnly = false }: Props) {
   const { currentWorkspace: workspace } = useRBAC();
   const queryClient = useQueryClient();
   
@@ -117,7 +118,7 @@ export function GlobalCreateDocumentForm({ onSuccess, onCancel }: Props) {
       <DialogFooter className="mt-2 pt-2 border-t">
         <Button variant="outline" onClick={onCancel} disabled={mutation.isPending}>Cancel</Button>
         <Button onClick={() => mutation.mutate()} disabled={mutation.isPending || !file || !formData.entityId}>
-          {mutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+          {mutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : (!asFormOnly && <Plus className="h-4 w-4" />)}
           Upload Document
         </Button>
       </DialogFooter>
