@@ -103,7 +103,7 @@ export function GlobalCreateModal({ open, onOpenChange }: GlobalCreateModalProps
                       'whitespace-nowrap pb-1 text-sm font-medium transition-colors',
                       activeTab === tab.id
                         ? 'border-b-2 border-blue-600 text-blue-600 dark:border-blue-500 dark:text-blue-500'
-                        : 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-300'
+                        : 'text-[#9ca3af] hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-300'
                     )}
                   >
                     {tab.label}

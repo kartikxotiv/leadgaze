@@ -443,7 +443,7 @@ function NavDropdown({
         <Link
           href={path}
           className={cn(
-            'px-3 py-1.5 outline-none focus:outline-none',
+            'px-1.5 py-1.5 outline-none focus:outline-none',
             active
               ? 'bg-header-primary !text-white'
               : '!text-blue-100 hover:bg-white/10 hover:text-white',

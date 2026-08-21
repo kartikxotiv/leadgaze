@@ -310,7 +310,7 @@ export function ServiceCloudDashboardPage({
     switch (id) {
       case 'total_tickets':
         return {
-          label: 'Total Tickets',
+          label: 'TOTAL TICKETS',
           value: data?.totalTickets ?? 0,
           icon: Ticket,
           detail: 'All active service tickets',
@@ -319,7 +319,7 @@ export function ServiceCloudDashboardPage({
         };
       case 'open_tickets':
         return {
-          label: 'Open Tickets',
+          label: 'OPEN TICKETS',
           value: data?.openTickets ?? 0,
           icon: AlertCircle,
           detail: 'Unresolved customer work',
@@ -328,7 +328,7 @@ export function ServiceCloudDashboardPage({
         };
       case 'customers':
         return {
-          label: 'Customers',
+          label: 'CUSTOMERS',
           value: data?.customers ?? 0,
           icon: Users,
           detail: 'Support customer records',
@@ -337,7 +337,7 @@ export function ServiceCloudDashboardPage({
         };
       case 'organizations':
         return {
-          label: 'Organizations',
+          label: 'ORGANIZATIONS',
           value: data?.organizations ?? 0,
           icon: Building2,
           detail: 'Linked companies',
@@ -346,7 +346,7 @@ export function ServiceCloudDashboardPage({
         };
       case 'logged_time':
         return {
-          label: 'Logged Time',
+          label: 'LOGGED TIME',
           value: formatHours(data?.totalLoggedSeconds ?? 0),
           icon: Clock3,
           detail: 'Tracked support effort',
