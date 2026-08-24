@@ -136,7 +136,7 @@ export function CreateAccountDialog({
         className={`flex flex-col flex-1 space-y-2 overflow-y-auto px-2 ${asFormOnly && 'mb-2'}`}
       >
           <div className={`space-y-2 ${asFormOnly && 'pt-2'}`}>
-            <h3 className="primary-heading text-leadgaze-dark uppercase dark:text-white custom-sub-heading-dialog-form">
+            <h3 className="primary-heading text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">
               Basic Information
             </h3>            
             <div className="grid grid-cols-2 gap-2">
@@ -228,7 +228,7 @@ export function CreateAccountDialog({
           </div>
 
           <div className="space-y-2">
-            <h3 className="primary-heading text-leadgaze-dark uppercase dark:text-white custom-sub-heading-dialog-form">
+            <h3 className="primary-heading text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">
               Address Information
             </h3>            
             <div>
