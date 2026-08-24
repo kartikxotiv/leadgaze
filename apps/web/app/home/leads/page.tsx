@@ -24,6 +24,12 @@ import { ListToolBar } from '@kit/ui/list-toolbar';
 import { PageBody, PageHeader } from '@kit/ui/page';
 import { Skeleton } from '@kit/ui/skeleton';
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@kit/ui/tooltip';
+import {
   Table,
   TableBody,
   TableCell,
@@ -1060,13 +1066,22 @@ export default function LeadsPage() {
           title="Leads"
         >
           {canAccess('leads', 'create') && (
-            <Button
-              onClick={() => setIsCreateDialogOpen(true)}
-              className="bg-leadgaze-primary hover:bg-leadgaze-primary text-white secondary-text-small-bold gap-1.5 px-2"
-            >
-              <Plus className="h-4 w-4" />
-              New Lead
-            </Button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    onClick={() => setIsCreateDialogOpen(true)}
+                    className="bg-leadgaze-primary hover:bg-leadgaze-primary text-white secondary-text-small-bold gap-1.5 px-2"
+                  >
+                    <Plus className="h-4 w-4" />
+                    New Lead
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  <span>New Lead</span>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           )}
         </PageHeader>
       </div>

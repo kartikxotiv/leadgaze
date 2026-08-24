@@ -105,7 +105,7 @@ export const PageSizeSelector: React.FC<PageSizeSelectorProps> = ({
         </span>
       )}
       <Select value={toSelectValue(value)} onValueChange={handleChange}>
-        <SelectTrigger className="h-5 min-w-[62px] text-sm border-light-gray secondary-text-small-regular">
+        <SelectTrigger className="h-5 min-w-[62px] text-sm border-light-gray secondary-text-small-regular text-leadgaze-dark dark:text-white">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>

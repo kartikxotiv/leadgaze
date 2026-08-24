@@ -31,6 +31,7 @@ import {
   Bell,
   CheckSquare,
   Activity,
+  Minus,
 } from 'lucide-react';
 import {
   Area,
@@ -116,7 +117,7 @@ const WIDGET_REGISTRY: Record<string, { label: string, component: (props: any) =
   latest_accounts: { label: 'Latest Accounts', component: (props) => <LatestAccountsTable heightClass={props.heightClass} data={props.metrics?.latestAccounts} /> },
 };
 
-function SortableWidgetWrapper({ id, children, isFullWidth }: { id: string; children: React.ReactNode; isFullWidth?: boolean }) {
+function SortableWidgetWrapper({ id, children, isFullWidth, onRemove }: { id: string; children: React.ReactNode; isFullWidth?: boolean; onRemove?: () => void }) {
   const {
     attributes,
     listeners,
@@ -142,12 +143,21 @@ function SortableWidgetWrapper({ id, children, isFullWidth }: { id: string; chil
         className="absolute top-0 left-0 w-[60%] h-14 z-40 cursor-grab active:cursor-grabbing"
         title="Drag to move"
       />
+      {onRemove && (
+        <button 
+          onClick={onRemove}
+          className="absolute top-2 right-1 z-50 p-1.5 bg-red-50 text-red-500 hover:bg-red-100 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
+          title="Remove widget"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      )}
       {children}
     </div>
   );
 }
 
-function SortableKpiWrapper({ id, children }: { id: string; children: React.ReactNode }) {
+function SortableKpiWrapper({ id, children, onRemove }: { id: string; children: React.ReactNode; onRemove?: () => void }) {
   const {
     attributes,
     listeners,
@@ -173,6 +183,15 @@ function SortableKpiWrapper({ id, children }: { id: string; children: React.Reac
         className="absolute top-0 left-0 right-12 h-10 z-40 cursor-grab active:cursor-grabbing"
         title="Drag to move"
       />
+      {onRemove && (
+        <button 
+          onClick={onRemove}
+          className="absolute top-1 right-1 z-50 p-1.5 bg-red-50 text-red-500 hover:bg-red-100 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
+          title="Remove KPI"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      )}
       {children}
     </div>
   );
@@ -344,7 +363,7 @@ export default function DashboardDemo({
                   let kpiData = null;
                   if (id === 'total_leads') {
                     kpiData = {
-                      title: 'Total Leads',
+                      title: 'TOTAL LEADS',
                       value: <Figure>{metrics.leads.total}</Figure>,
                       link: `/home/sales/leads${queryString}`,
                       icon: <File className="h-4 w-4 text-white" />,
@@ -353,7 +372,7 @@ export default function DashboardDemo({
                     };
                   } else if (id === 'contacts') {
                     kpiData = {
-                      title: 'Contacts',
+                      title: 'CONTACTS',
                       value: <Figure>{metrics.contacts.total}</Figure>,
                       link: `/home/sales/contacts${queryString}`,
                       icon: <Users className="h-4 w-4 text-white" />,
@@ -362,7 +381,7 @@ export default function DashboardDemo({
                     };
                   } else if (id === 'accounts') {
                     kpiData = {
-                      title: 'Accounts',
+                      title: 'ACCOUNTS',
                       value: <Figure>{metrics.accounts.total}</Figure>,
                       link: `/home/sales/accounts${queryString}`,
                       icon: <Building2 className="h-4 w-4 text-white" />,
@@ -371,7 +390,7 @@ export default function DashboardDemo({
                     };
                   } else if (id === 'pipeline_value') {
                     kpiData = {
-                      title: 'Pipeline Value',
+                      title: 'PIPELINE VALUE',
                       value: <Figure>{formatCurrency(pipelineValue, workspaceCurrency)}</Figure>,
                       link: `/home/sales/opportunities${queryString}`,
                       icon: <Target className="h-4 w-4 text-white" />,
@@ -383,7 +402,7 @@ export default function DashboardDemo({
                   if (!kpiData) return null;
 
                   return (
-                    <SortableKpiWrapper key={id} id={id}>
+                    <SortableKpiWrapper key={id} id={id} onRemove={() => removeKpiCard(id)}>
                       <Card className="h-32 xl:h-28 2xl:h-32 flex flex-col justify-between">
                         <CardHeader className="flex flex-row items-start justify-between space-y-0 xl:p-3 xl:pb-0 2xl:p-5 2xl:pb-0 relative">
                           <div className="space-y-1">
@@ -528,7 +547,7 @@ export default function DashboardDemo({
               const isLastAndOdd = index === activeWidgets.length - 1 && activeWidgets.length % 2 !== 0;
 
               return (
-                <SortableWidgetWrapper key={id} id={id} isFullWidth={isLastAndOdd}>
+                <SortableWidgetWrapper key={id} id={id} isFullWidth={isLastAndOdd} onRemove={() => removeWidget(id)}>
                   {widget.component({ metrics, heightClass })}
                 </SortableWidgetWrapper>
               );
@@ -959,9 +978,9 @@ function LatestLeadsTable({ heightClass = "h-[320px]", data = [] }: { heightClas
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Contact Name</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Value</TableHead>
+                  <TableHead>CONTACT NAME</TableHead>
+                  <TableHead>STATUS</TableHead>
+                  <TableHead>VALUE</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -999,9 +1018,9 @@ function LatestAccountsTable({ heightClass = "h-[320px]", data = [] }: { heightC
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Industry</TableHead>
-                  <TableHead>Owner</TableHead>
+                  <TableHead>NAME</TableHead>
+                  <TableHead>INDUSTRY</TableHead>
+                  <TableHead>PHONE</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -1009,7 +1028,7 @@ function LatestAccountsTable({ heightClass = "h-[320px]", data = [] }: { heightC
                   <TableRow key={i}>
                     <TableCell>{a.name}</TableCell>
                     <TableCell>{a.industry}</TableCell>
-                    <TableCell>{a.owner}</TableCell>
+                    <TableCell>{a.phone || '-'}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -1120,27 +1139,50 @@ function RecentActionsList({ data = [] }: { data?: any[] }) {
 function AccountGrowthTrends({ heightClass = "h-[320px]", data = [] }: { heightClass?: string, data?: any[] }) {
   const [timeRange, setTimeRange] = useState("6");
   
-  // Default mock data if no real data is passed yet
-  const chartData = data.length > 0 ? data : [
-    { name: 'JAN', value: 300, value2: 120 },
-    { name: 'FEB', value: 250, value2: 90 },
-    { name: 'MAR', value: 210, value2: 240 },
-    { name: 'APR', value: 280, value2: 190 },
-    { name: 'MAY', value: 310, value2: 210 },
-    { name: 'JUN', value: 350, value2: 250 },
-    { name: 'JUL', value: 400, value2: 280 },
-    { name: 'AUG', value: 420, value2: 300 },
-    { name: 'SEP', value: 450, value2: 320 },
-    { name: 'OCT', value: 480, value2: 350 },
-    { name: 'NOV', value: 500, value2: 380 },
-    { name: 'DEC', value: 520, value2: 400 },
-  ];
-
-  // Slice the data to show only the selected number of months
+  // Slice the data to show only the selected number of months and pad if necessary
   const filteredData = useMemo(() => {
     const numMonths = parseInt(timeRange);
-    return chartData.slice(-numMonths);
-  }, [chartData, timeRange]);
+    const mockData = [
+      { name: 'JAN', value: 300, value2: 120 },
+      { name: 'FEB', value: 250, value2: 90 },
+      { name: 'MAR', value: 210, value2: 240 },
+      { name: 'APR', value: 280, value2: 190 },
+      { name: 'MAY', value: 310, value2: 210 },
+      { name: 'JUN', value: 350, value2: 250 },
+      { name: 'JUL', value: 400, value2: 280 },
+      { name: 'AUG', value: 420, value2: 300 },
+      { name: 'SEP', value: 450, value2: 320 },
+      { name: 'OCT', value: 480, value2: 350 },
+      { name: 'NOV', value: 500, value2: 380 },
+      { name: 'DEC', value: 520, value2: 400 },
+    ];
+    
+    const baseData = data && data.length > 0 ? data : mockData;
+    let result = baseData.slice(-numMonths);
+    
+    if (result.length < numMonths && result.length > 0) {
+       const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+       const firstMonthStr = String(result[0].name || '').toUpperCase().substring(0, 3);
+       const firstMonthIndex = monthNames.indexOf(firstMonthStr);
+       
+       if (firstMonthIndex !== -1) {
+           const missingCount = numMonths - result.length;
+           const padding = [];
+           for (let i = missingCount; i > 0; i--) {
+               let mIndex = (firstMonthIndex - i) % 12;
+               if (mIndex < 0) mIndex += 12;
+               padding.push({
+                   name: monthNames[mIndex],
+                   value: 0,
+                   value2: 0
+               });
+           }
+           result = [...padding, ...result];
+       }
+    }
+    
+    return result;
+  }, [data, timeRange]);
 
   return (
     <CardWidgetContainer 
@@ -1158,7 +1200,7 @@ function AccountGrowthTrends({ heightClass = "h-[320px]", data = [] }: { heightC
           </div> */}
           <div className="ml-2 w-32">
              <Select value={timeRange} onValueChange={setTimeRange}>
-                <SelectTrigger className="h-8 text-[11px] font-bold text-slate-600 dark:text-zinc-400 bg-slate-50 dark:bg-zinc-800/50 border-slate-100 dark:border-zinc-800">
+                <SelectTrigger className="h-7 text-[11px] font-bold text-slate-600 dark:text-zinc-400 border-0 shadow-none">
                   <SelectValue placeholder="Select Range" />
                 </SelectTrigger>
                 <SelectContent>
@@ -1178,8 +1220,8 @@ function AccountGrowthTrends({ heightClass = "h-[320px]", data = [] }: { heightC
            value2: { label: 'Expected Pipeline Revenue', color: '#cbd5e1' }
         }} className="h-full w-full">
            <LineChart data={filteredData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-              <CartesianGrid vertical={false} strokeDasharray="3 3" />
-              <XAxis dataKey="name" axisLine={false} tickLine={false} tickMargin={12} fontSize={11} fill="currentColor" className="text-muted-foreground font-medium" />
+              <CartesianGrid vertical={true} horizontal={false} stroke="#E2E8F0" />
+              <XAxis dataKey="name" axisLine={{ stroke: '#E2E8F0' }} tickLine={false} tickMargin={12} fontSize={11} fill="currentColor" className="text-muted-foreground font-medium" />
               <ChartTooltip content={<ChartTooltipContent />} />
               <Line type="monotone" dataKey="value" stroke="#2563eb" strokeWidth={2.5} dot={false} />
               <Line type="monotone" dataKey="value2" stroke="#cbd5e1" strokeWidth={2.5} strokeDasharray="5 5" dot={false} />
@@ -1247,7 +1289,11 @@ function WidgetSection({ title, children }: { title: string, children: React.Rea
 function WidgetItem({ label, disabled, onClick, onRemove }: { label: string, disabled?: boolean, onClick?: () => void, onRemove?: () => void }) {
   return (
     <div onClick={disabled ? undefined : onClick} className={`group flex items-center gap-2.5 p-2 border bg-white border-[#C3C6D6] dark:bg-transparent transition-all ${disabled ? 'opacity-70 border-slate-200 shadow-sm' : 'cursor-pointer border-blue-400'}`}>
-       <Plus className="w-3.5 h-3.5 text-slate-600 dark:text-zinc-300 shrink-0" />
+       {disabled ? (
+         <Minus className="w-3.5 h-3.5 text-slate-400 dark:text-zinc-500 shrink-0" />
+       ) : (
+         <Plus className="w-3.5 h-3.5 text-slate-600 dark:text-zinc-300 shrink-0" />
+       )}
        {/* Icon mapping could be added here */}
        <span className="text-[13px] font-semibold text-slate-600 dark:text-zinc-300 flex-1">{label}</span>
        {disabled && onRemove && (

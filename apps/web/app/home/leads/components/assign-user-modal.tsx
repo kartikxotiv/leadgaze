@@ -7,6 +7,7 @@ import { Loader2, Search } from 'lucide-react';
 
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from '@kit/ui/avatar';
 import {
   Dialog,
   DialogContent,
@@ -153,13 +154,12 @@ export function AssignUserModal({
                     className="hover:bg-muted/50 w-full rounded-lg border p-2 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <div className="flex items-center gap-3">
-                      {member.avatar_url && (
-                        <img
-                          src={member.avatar_url}
-                          alt={member.full_name || 'User'}
-                          className="h-8 w-8 rounded-full object-cover"
-                        />
-                      )}
+                      <Avatar className="h-8 w-8 rounded-full">
+                        <AvatarImage src={member.avatar_url || ''} alt={member.full_name || 'User'} className="object-cover" />
+                        <AvatarFallback className="text-xs bg-[#E0E7FF] text-leadgaze-dark dark:text-white font-bold">
+                          {(member.full_name || member.email || 'U').charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
                       <div className="min-w-0 flex-1">
                         <p className="primary-text-medium text-leadgaze-dark">
                           {member.full_name || 'Unknown'}

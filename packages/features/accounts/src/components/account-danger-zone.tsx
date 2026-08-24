@@ -79,9 +79,9 @@ function DeleteAccountForm() {
         action={deletePersonalAccountAction}
         className={'flex flex-col space-y-4'}
       >
-        <div className={'flex flex-col space-y-6'}>
+        <div className={'flex flex-col space-y-6 px-2'}>
           <div
-            className={'border-destructive text-destructive border p-4 text-sm'}
+            className={'border-destructive text-destructive border p-2 text-sm mb-2'}
           >
             <div className={'flex flex-col space-y-2'}>
               <div>
@@ -95,7 +95,7 @@ function DeleteAccountForm() {
           </div>
 
           <FormItem>
-            <FormLabel>
+            <FormLabel className="mb-1">
               <Trans i18nKey={'account:deleteProfileConfirmationInputLabel'} />
             </FormLabel>
 

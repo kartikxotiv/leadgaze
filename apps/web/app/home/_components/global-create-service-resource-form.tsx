@@ -24,9 +24,10 @@ interface Props {
   productKey: string;
   onSuccess: () => void;
   onCancel: () => void;
+  asFormOnly: boolean;
 }
 
-export function GlobalCreateServiceResourceForm({ title, endpoint, entityType, productKey, onSuccess, onCancel }: Props) {
+export function GlobalCreateServiceResourceForm({ title, endpoint, entityType, productKey, onSuccess, onCancel, asFormOnly = false }: Props) {
   const { currentWorkspace, user } = useRBAC();
   const workspaceId = currentWorkspace?.id;
   const queryClient = useQueryClient();
@@ -107,6 +108,12 @@ export function GlobalCreateServiceResourceForm({ title, endpoint, entityType, p
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    const phoneRegex = /^\\+?[0-9]+$/;
+    if (form.phone && !phoneRegex.test(form.phone)) {
+      toast.error('Phone number can only contain numbers, optionally starting with +');
+      return;
+    }
     
     const systemPayload: any = {};
     const customPayload: any = {};
@@ -175,7 +182,7 @@ export function GlobalCreateServiceResourceForm({ title, endpoint, entityType, p
       <DialogFooter className="p-2 bg-white dark:bg-slate-950 border-t border-gray-200 dark:border-slate-800 mt-2">
         <Button type="button" variant="outline" onClick={onCancel} disabled={createMutation.isPending}>Cancel</Button>
         <Button type="submit" form={`create-${endpoint}-form`} disabled={createMutation.isPending}>
-          {createMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+          {createMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : (!asFormOnly && <Plus className="h-4 w-4" />)}
           Add {title}
         </Button>
       </DialogFooter>

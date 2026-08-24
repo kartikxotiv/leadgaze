@@ -17,7 +17,7 @@ const Input: React.FC<InputProps> = ({
   const isPassword = type === 'password';
 
   return (
-    <div className="relative w-full">
+    <>
       <input
         type={isPassword && showPassword ? 'text' : type}
         className={cn(
@@ -42,7 +42,7 @@ const Input: React.FC<InputProps> = ({
           )}
         </button>
       )}
-    </div>
+    </>
   );
 };
 

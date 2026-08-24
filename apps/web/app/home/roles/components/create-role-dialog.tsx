@@ -176,8 +176,8 @@ export function CreateRoleDialog({
               <div className="space-y-2">
                 <h3 className="primary-heading text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">Role Details</h3>
 
-                <div className="space-y-2">
-                  <Label htmlFor="role_name">Role Name *</Label>
+                <div>
+                  <Label htmlFor="role_name">Role Name <span className="text-red-500">*</span></Label>
                   <Input
                     id="role_name"
                     placeholder="e.g., Senior Manager"
@@ -189,8 +189,8 @@ export function CreateRoleDialog({
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="role_key">Role Key *</Label>
+                <div>
+                  <Label htmlFor="role_key">Role Key <span className="text-red-500">*</span></Label>
                   <Input
                     id="role_key"
                     placeholder="e.g., senior_manager"
@@ -202,7 +202,7 @@ export function CreateRoleDialog({
                   />
                 </div>
 
-                <div className="space-y-2">
+                <div>
                   <Label htmlFor="description">Description</Label>
                   <Input
                     id="description"
@@ -215,8 +215,8 @@ export function CreateRoleDialog({
                   />
                 </div>
 
-                <div className="grid grid-cols-1 gap-4">
-                  <div className="space-y-2">
+                <div className="grid grid-cols-1 gap-2">
+                  <div>
                     <Label htmlFor="color">Color</Label>
                     <Select
                       value={formData.color}
@@ -305,7 +305,7 @@ export function CreateRoleDialog({
                                       togglePermission(feature.id)
                                     }
                                   />
-                                  <label
+                                  <Label
                                     htmlFor={feature.id}
                                     className="flex-1 cursor-pointer text-sm"
                                   >
@@ -315,7 +315,7 @@ export function CreateRoleDialog({
                                     <span className="ml-2 text-xs text-slate-500">
                                       ({feature.feature_key})
                                     </span>
-                                  </label>
+                                  </Label>
                                 </div>
                               ))
                             ) : (

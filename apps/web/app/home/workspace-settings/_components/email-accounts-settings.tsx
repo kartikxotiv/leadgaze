@@ -303,7 +303,7 @@ export function EmailAccountsSettings({ workspace }: { workspace: any }) {
                       </div>
                       <Button
                         onClick={handleGoogleConnect}
-                        className="w-full text-leadgaze-dark dark:text-white"
+                        className="w-full text-leadgaze-dark dark:text-white primary-text-medium" 
                         variant="outline"
                       >
                         <Mail className="mr-2 h-4 w-4" />
@@ -519,7 +519,7 @@ export function EmailAccountsSettings({ workspace }: { workspace: any }) {
                               }
                               disabled={updatingAccountId === account.id}
                             >
-                              <SelectTrigger className="w-[170px]">
+                              <SelectTrigger className="w-[170px] !h-[32px]">
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>

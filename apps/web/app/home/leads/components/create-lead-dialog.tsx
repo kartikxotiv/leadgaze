@@ -236,6 +236,16 @@ export default function CreateLeadDialog({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const phoneRegex = /^\+?[0-9]+$/;
+    if (formData.phone_number && !phoneRegex.test(formData.phone_number)) {
+      toast.error('Phone number can only contain numbers, optionally starting with +');
+      return;
+    }
+    if ('mobile_number' in formData && formData.mobile_number && !phoneRegex.test(formData.mobile_number)) {
+      toast.error('Mobile number can only contain numbers, optionally starting with +');
+      return;
+    }
+
 
     if (!formData.first_name.trim()) {
       toast.error('First name is required');
@@ -787,7 +797,7 @@ export default function CreateLeadDialog({
             </>
           ) : (
             <>
-              <Plus className="h-4 w-4" />
+              {!asFormOnly && <Plus className="h-4 w-4" />}
               Add Lead
             </>
           )}

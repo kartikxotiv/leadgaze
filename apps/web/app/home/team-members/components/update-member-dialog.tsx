@@ -130,7 +130,7 @@ export function UpdateMemberDialog({
             </div>
           )}
 
-          <div className="space-y-2">
+          <div>
             <CustomInputForView
                                 label="Email"
                                 value={member.user?.email}                    
@@ -138,8 +138,8 @@ export function UpdateMemberDialog({
           </div>
             
 
-          <div className="space-y-2">
-            <Label htmlFor="role">Role *</Label>
+          <div>
+            <Label htmlFor="role">Role <span className="text-red-500">*</span></Label>
             <Select
               value={formData.role_id}
               onValueChange={(value) =>

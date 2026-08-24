@@ -355,7 +355,7 @@ export function CoreEmailSettingsPage({
                             </div>
                             <Button
                               onClick={handleGoogleConnect}
-                              className="w-full secondary-text-small-bold text-leadgaze-dark dark:text-white gap-1.5 px-2"
+                              className="w-full text-leadgaze-dark dark:text-white gap-1.5 px-2 primary-text-medium"
                               variant="outline"
                             >
                               <Mail className="mr-2 h-4 w-4" />
@@ -417,7 +417,7 @@ export function CoreEmailSettingsPage({
                             />
 
                             <Separator />
-                            <div className="text-sm font-medium">
+                            <div className="text-sm font-medium text-leadgaze-dark dark:text-white">
                               IMAP Settings for Inbox Sync
                             </div>
                             <div className="grid grid-cols-2 gap-2">
@@ -576,7 +576,7 @@ export function CoreEmailSettingsPage({
                           >
                             <span className="col-resize-handle" {...getResizeHandleProps('sync')} />
                           </SortableTableHead>
-                          <TableHead className="text-right">Actions</TableHead>
+                          <TableHead>Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -586,7 +586,7 @@ export function CoreEmailSettingsPage({
                               <TableCell className="h-[32px] px-4 py-2" colSpan={7}>
                                 <Skeleton className="h-7 w-full" />
                               </TableCell>
-                              <TableCell className="bg-card px-4 text-right">
+                              <TableCell className="bg-card px-4 text-left">
                                 <Skeleton className="h-7 ml-auto w-full" />
                               </TableCell>
                             </TableRow>
@@ -640,7 +640,7 @@ export function CoreEmailSettingsPage({
                                       value: CoreEmailAccountAccessScope,
                                     ) => handleAccessChange(account, value)}
                                   >
-                                    <SelectTrigger className="w-[160px]">
+                                    <SelectTrigger className="w-[160px] h-[30px]">
                                       <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -723,7 +723,7 @@ export function CoreEmailSettingsPage({
                                   <AlertDialog>
                                     <AlertDialogTrigger asChild>
                                       <Button variant="ghost" size="icon">
-                                        <Trash2 className="text-muted-foreground h-4 w-4" />
+                                        <Trash2 className="text-red-500 h-4 w-4" />
                                       </Button>
                                     </AlertDialogTrigger>
                                     <AlertDialogContent>
@@ -801,7 +801,7 @@ function SmtpField({
   type?: string;
 }) {
   return (
-    <div className="space-y-2">
+    <div>
       <Label>{label}</Label>
       <Input
         type={type}
@@ -822,14 +822,14 @@ function CheckboxField({
   onChange: (value: boolean) => void;
 }) {
   return (
-    <label className="flex items-center gap-2 text-sm">
+    <Label className="flex items-center gap-2 text-sm">
       <input
         type="checkbox"
         checked={checked}
         onChange={(event) => onChange(event.target.checked)}
         className="rounded border-gray-300"
       />
-      {label}
-    </label>
+      <div className="inline-block pl-2">{label}</div>
+    </Label>
   );
 }

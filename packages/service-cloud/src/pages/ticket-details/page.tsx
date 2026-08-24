@@ -24,6 +24,7 @@ import {
   Pencil,
   Settings,
   Tag,
+  LayoutGrid,
   Timer,
   Trash2,
   UserCheck,
@@ -429,7 +430,7 @@ export function ServiceCloudTicketDetailPage({
 
   const rawTimeEntries = data?.timeEntries ?? [];
   const [timePage, setTimePage] = useState(1);
-  const [timePageSize, setTimePageSize] = useState(10);
+  const [timePageSize, setTimePageSize] = useState(25);
   
   const {
     sortColumn: timeSortColumn,
@@ -1476,7 +1477,7 @@ export function ServiceCloudTicketDetailPage({
                   )}
                   {(!canViewField || canViewField('category_id')) && (
                     <EditableSelect
-                      icon={<Tag className="h-5 w-5" />}
+                      icon={<LayoutGrid className="h-5 w-5" />}
                       label="Category"
                       value={ticket.category_id}
                       options={categories}
@@ -1879,6 +1880,11 @@ export function ServiceCloudTicketDetailPage({
               value={noteContent}
               onChange={(e) => setNoteContent(e.target.value)}
               className="min-h-[120px] resize-none border-gray-300 dark:border-slate-700"
+              autoFocus
+              onFocus={(e) => {
+                const length = e.currentTarget.value.length;
+                e.currentTarget.setSelectionRange(length, length);
+              }}
             />
           </div>
           <DialogFooter>

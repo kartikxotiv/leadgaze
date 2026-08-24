@@ -103,6 +103,104 @@ const HIGHLIGHT_COLORS = [
   '#e0e0e0', '#eeeeee', '#f5f5f5', '#ffffff',
 ];
 
+function findMatchingFontLabel(fontString: string): string | null {
+  if (!fontString) return null;
+  const cleanFont = fontString.replace(/["']/g, '').toLowerCase().trim();
+
+  for (const font of FONT_FAMILIES) {
+    const labelLower = font.label.toLowerCase();
+    const valLower = font.value.replace(/["']/g, '').toLowerCase();
+    const parts = valLower.split(',').map((p) => p.trim());
+
+    if (
+      cleanFont === labelLower ||
+      cleanFont === valLower ||
+      parts.some((p) => p && cleanFont === p && p !== 'sans-serif' && p !== 'serif' && p !== 'monospace') ||
+      parts.some((p) => p && cleanFont.startsWith(p) && p !== 'sans-serif' && p !== 'serif' && p !== 'monospace')
+    ) {
+      return font.label;
+    }
+  }
+
+  for (const font of FONT_FAMILIES) {
+    const labelLower = font.label.toLowerCase();
+    if (labelLower !== 'sans serif' && labelLower !== 'serif' && cleanFont.includes(labelLower)) {
+      return font.label;
+    }
+  }
+
+  if (cleanFont.includes('monospace') || cleanFont.includes('courier')) return 'Fixed Width';
+  if (cleanFont.includes('georgia') || cleanFont.includes('serif')) return 'Serif';
+  if (cleanFont.includes('sans-serif') || cleanFont.includes('arial') || cleanFont.includes('helvetica')) return 'Sans Serif';
+
+  return null;
+}
+
+function detectFontFamily(editorEl: HTMLDivElement | null): string {
+  if (!editorEl) return 'Sans Serif';
+  const selection = window.getSelection();
+  if (!selection || selection.rangeCount === 0) return 'Sans Serif';
+
+  const range = selection.getRangeAt(0);
+  if (!editorEl.contains(range.commonAncestorContainer)) return 'Sans Serif';
+
+  let fontCmdValue = '';
+  try {
+    fontCmdValue = document.queryCommandValue('fontName') || '';
+  } catch {
+    fontCmdValue = '';
+  }
+  fontCmdValue = fontCmdValue.replace(/^["']|["']$/g, '').trim();
+
+  let startNode: Node | null = range.startContainer;
+  if (startNode.nodeType === Node.TEXT_NODE) startNode = startNode.parentElement;
+
+  let startFont = '';
+  if (startNode && startNode instanceof HTMLElement && editorEl.contains(startNode)) {
+    const fontEl = startNode.closest('font[face], [style*="font-family"]');
+    if (fontEl) {
+      startFont = fontEl.getAttribute('face') || (fontEl as HTMLElement).style.fontFamily || '';
+    }
+    if (!startFont) {
+      startFont = window.getComputedStyle(startNode).fontFamily || '';
+    }
+  }
+
+  const primaryFontToMatch = fontCmdValue || startFont;
+
+  if (!range.collapsed) {
+    let endNode: Node | null = range.endContainer;
+    if (endNode.nodeType === Node.TEXT_NODE) endNode = endNode.parentElement;
+    if (endNode && endNode instanceof HTMLElement && editorEl.contains(endNode)) {
+      let endFont = '';
+      const endFontEl = endNode.closest('font[face], [style*="font-family"]');
+      if (endFontEl) {
+        endFont = endFontEl.getAttribute('face') || (endFontEl as HTMLElement).style.fontFamily || '';
+      }
+      if (!endFont) {
+        endFont = window.getComputedStyle(endNode).fontFamily || '';
+      }
+
+      const startMatch = findMatchingFontLabel(primaryFontToMatch);
+      const endMatch = findMatchingFontLabel(endFont || primaryFontToMatch);
+      if (startMatch && endMatch && startMatch !== endMatch) {
+        return 'Mixed';
+      }
+    }
+  }
+
+  const matchedLabel = findMatchingFontLabel(primaryFontToMatch);
+  return matchedLabel || 'Sans Serif';
+}
+
+function getExecFontName(font: { label: string; value: string }): string {
+  if (font.label === 'Sans Serif') return 'sans-serif';
+  if (font.label === 'Fixed Width') return 'monospace';
+  if (font.label === 'Serif') return 'Georgia';
+  const firstFont = font.value.split(',')[0]?.trim().replace(/^["']|["']$/g, '');
+  return firstFont || font.label;
+}
+
 function cleanPastedHTML(html: string): string {
   if (!html) return '';
 
@@ -163,6 +261,7 @@ export const RichTextEditor = React.forwardRef<RichTextEditorRef, RichTextEditor
     const [isBulletList, setIsBulletList] = React.useState(false);
     const [isNumberedList, setIsNumberedList] = React.useState(false);
     const [currentAlignment, setCurrentAlignment] = React.useState<'left' | 'center' | 'right' | 'justify'>('left');
+    const [currentFontFamily, setCurrentFontFamily] = React.useState<string>('Sans Serif');
 
     const [linkUrl, setLinkUrl] = React.useState('');
     const [linkText, setLinkText] = React.useState('');
@@ -179,12 +278,12 @@ export const RichTextEditor = React.forwardRef<RichTextEditorRef, RichTextEditor
       }
     }, [value]);
 
-    const saveCurrentSelection = () => {
+    const saveCurrentSelection = React.useCallback(() => {
       const selection = window.getSelection();
       if (selection && selection.rangeCount > 0) {
         savedSelection.current = selection.getRangeAt(0).cloneRange();
       }
-    };
+    }, []);
 
     const restoreSelection = () => {
       if (savedSelection.current) {
@@ -210,10 +309,31 @@ export const RichTextEditor = React.forwardRef<RichTextEditorRef, RichTextEditor
         else if (document.queryCommandState('justifyRight')) setCurrentAlignment('right');
         else if (document.queryCommandState('justifyFull')) setCurrentAlignment('justify');
         else setCurrentAlignment('left');
+
+        const detectedFont = detectFontFamily(editorRef.current);
+        setCurrentFontFamily(detectedFont);
       } catch {
         // Ignore selection errors
       }
     }, []);
+
+    React.useEffect(() => {
+      const handleSelectionChange = () => {
+        const sel = window.getSelection();
+        if (sel && sel.rangeCount > 0 && editorRef.current) {
+          const range = sel.getRangeAt(0);
+          if (editorRef.current.contains(range.commonAncestorContainer)) {
+            saveCurrentSelection();
+            updateFormattingState();
+          }
+        }
+      };
+
+      document.addEventListener('selectionchange', handleSelectionChange);
+      return () => {
+        document.removeEventListener('selectionchange', handleSelectionChange);
+      };
+    }, [updateFormattingState]);
 
     const triggerChange = React.useCallback(() => {
       if (editorRef.current && onChange) {
@@ -237,8 +357,10 @@ export const RichTextEditor = React.forwardRef<RichTextEditorRef, RichTextEditor
       executeCommand('formatBlock', tag);
     };
 
-    const handleApplyFontFamily = (family: string) => {
-      executeCommand('fontName', family);
+    const handleApplyFontFamily = (font: { label: string; value: string }) => {
+      const execFont = getExecFontName(font);
+      executeCommand('fontName', execFont);
+      setCurrentFontFamily(font.label);
     };
 
     const handleApplyFontSize = (sizeVal: string) => {
@@ -364,8 +486,8 @@ export const RichTextEditor = React.forwardRef<RichTextEditorRef, RichTextEditor
     const renderToolbar = () => (
       <div className={cn(
         "flex flex-wrap items-center gap-0.5 px-2 py-1 select-none",
-        toolbarPosition === 'bottom' 
-          ? "border-t border-zinc-200/80 bg-zinc-50/70 rounded-b-lg dark:border-zinc-800 dark:bg-zinc-900/50" 
+        toolbarPosition === 'bottom'
+          ? "border-t border-zinc-200/80 bg-zinc-50/70 rounded-b-lg dark:border-zinc-800 dark:bg-zinc-900/50"
           : "border-b border-zinc-200/80 bg-zinc-50/70 rounded-t-lg dark:border-zinc-800 dark:bg-zinc-900/50"
       )}>
         {/* Undo / Redo */}
@@ -412,9 +534,12 @@ export const RichTextEditor = React.forwardRef<RichTextEditorRef, RichTextEditor
                   type="button"
                   variant="ghost"
                   size="sm"
+                  onMouseDown={() => {
+                    saveCurrentSelection();
+                  }}
                   className="h-7 px-1.5 text-xs font-normal text-zinc-700 hover:bg-zinc-200/60 dark:text-zinc-300 dark:hover:bg-zinc-800"
                 >
-                  <span>Sans Serif</span>
+                  <span className="truncate max-w-[90px]">{currentFontFamily}</span>
                 </Button>
               </DropdownMenuTrigger>
             </TooltipTrigger>
@@ -424,9 +549,12 @@ export const RichTextEditor = React.forwardRef<RichTextEditorRef, RichTextEditor
             {FONT_FAMILIES.map((font) => (
               <DropdownMenuItem
                 key={font.label}
-                onClick={() => handleApplyFontFamily(font.value)}
+                onClick={() => handleApplyFontFamily(font)}
                 style={{ fontFamily: font.value }}
-                className="text-xs cursor-pointer"
+                className={cn(
+                  'text-xs cursor-pointer justify-between',
+                  currentFontFamily === font.label && 'bg-accent font-semibold'
+                )}
               >
                 {font.label}
               </DropdownMenuItem>
@@ -589,9 +717,9 @@ export const RichTextEditor = React.forwardRef<RichTextEditorRef, RichTextEditor
                   className="h-7 w-7 p-0 text-zinc-700 hover:bg-zinc-200/60 dark:text-zinc-300 dark:hover:bg-zinc-800"
                 >
                   {currentAlignment === 'center' ? <AlignCenter className="h-3.5 w-3.5" /> :
-                   currentAlignment === 'right' ? <AlignRight className="h-3.5 w-3.5" /> :
-                   currentAlignment === 'justify' ? <AlignJustify className="h-3.5 w-3.5" /> :
-                   <AlignLeft className="h-3.5 w-3.5" />}
+                    currentAlignment === 'right' ? <AlignRight className="h-3.5 w-3.5" /> :
+                      currentAlignment === 'justify' ? <AlignJustify className="h-3.5 w-3.5" /> :
+                        <AlignLeft className="h-3.5 w-3.5" />}
                 </Button>
               </DropdownMenuTrigger>
             </TooltipTrigger>
@@ -780,7 +908,7 @@ export const RichTextEditor = React.forwardRef<RichTextEditorRef, RichTextEditor
           {toolbarPosition === 'top' && renderToolbar()}
 
           {/* Editable Canvas */}
-          <div className="relative flex-1 cursor-text p-0">
+          <div className="relative flex-1 cursor-text p-0 ckediter-mail-function [&_ol]:list-decimal [&_ol]:ml-4 [&_ul]:list-disc [&_ul]:ml-4">
             <div
               ref={editorRef}
               contentEditable={!disabled}
