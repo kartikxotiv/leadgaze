@@ -794,7 +794,7 @@ export default function AccountsPage() {
 
   return (
     <ModuleGuard module="accounts">
-      <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden border-top-bottom-gray">
+      <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden border-bottom-gray">
         <PageHeader
           title={`Accounts`}          
         >
