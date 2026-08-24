@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 import { enhanceRouteHandler } from '@kit/next/routes';
 import { catchAsync, successDataResponse } from '~/utils/response-handler';
+import { createEntitlementService } from '~/lib/entitlements';
 
 export const PATCH = enhanceRouteHandler(
   catchAsync(async ({ request, params }: { request: NextRequest; params?: Record<string, string> }) => {
@@ -42,6 +43,13 @@ export const DELETE = enhanceRouteHandler(
     const supabase = getSupabaseServerClient() as any;
     const id = params?.id;
 
+    const { data: connector } = await supabase
+      .schema('core')
+      .from('connectors')
+      .select('workspace_id,connector_forms(id)')
+      .eq('id', id)
+      .maybeSingle();
+
     const { error } = await supabase
       .schema('core')
       .from('connectors')
@@ -49,6 +57,22 @@ export const DELETE = enhanceRouteHandler(
       .eq('id', id);
 
     if (error) throw error;
+
+    if (connector?.connector_forms?.length > 0) {
+      await createEntitlementService().releaseUsage({
+        workspaceId: connector.workspace_id,
+        moduleKey: 'sales',
+        featureKey: 'sales.website_forms',
+        quantity: connector.connector_forms.length,
+        resourceType: 'website_form',
+        eventType: 'bulk_deleted',
+        metadata: {
+          resourceIds: connector.connector_forms.map(
+            (form: { id: string }) => form.id,
+          ),
+        },
+      });
+    }
     return successDataResponse('Connector deleted successfully');
   }),
   { auth: true }

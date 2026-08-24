@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 import { enhanceRouteHandler } from '@kit/next/routes';
 import { catchAsync, successDataResponse } from '~/utils/response-handler';
+import { createEntitlementService } from '~/lib/entitlements';
 
 export const GET = enhanceRouteHandler(
   catchAsync(async ({ request }: { request: NextRequest }) => {
@@ -44,6 +45,13 @@ export const POST = enhanceRouteHandler(
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
+    const formReservation = await createEntitlementService().reserveUsage({
+      workspaceId: workspace_id,
+      moduleKey: 'sales',
+      featureKey: 'sales.website_forms',
+      resourceType: 'website_form',
+    });
+
     // 1. Create connector
     const { data: connData, error: connErr } = await supabase
       .schema('core')
@@ -69,7 +77,10 @@ export const POST = enhanceRouteHandler(
       .select()
       .single();
 
-    if (connErr) throw connErr;
+    if (connErr) {
+      await formReservation.rollback();
+      throw connErr;
+    }
 
     // 2. Create default form for embedded forms
     const { data: formData, error: formErr } = await supabase
@@ -86,7 +97,12 @@ export const POST = enhanceRouteHandler(
       .select()
       .single();
 
-    if (formErr) throw formErr;
+    if (formErr) {
+      await formReservation.rollback();
+      throw formErr;
+    }
+
+    await formReservation.commit({ resourceId: formData.id });
 
     // 3. Create default fields
     const defaultFields = [

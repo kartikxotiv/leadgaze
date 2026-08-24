@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseServerClient } from '@kit/supabase/server-client';
-import { catchAsync } from '~/utils/response-handler';
+
 import {
-  handleGetZapierSettings,
-  handleToggleZapierStatus,
   handleGenerateZapierKey,
+  handleGetZapierSettings,
   handleRevokeZapierKey,
+  handleToggleZapierStatus,
 } from '@kit/integration-zapier';
+import { getSupabaseServerClient } from '@kit/supabase/server-client';
+
+import { createEntitlementService } from '~/lib/entitlements';
+import { catchAsync } from '~/utils/response-handler';
 
 export const getZapierSettings = catchAsync(
   async ({
@@ -18,12 +21,15 @@ export const getZapierSettings = catchAsync(
   }) => {
     const workspaceId = params?.id;
     if (!workspaceId) {
-      return NextResponse.json({ success: false, message: 'Workspace ID is required' }, { status: 400 });
+      return NextResponse.json(
+        { success: false, message: 'Workspace ID is required' },
+        { status: 400 },
+      );
     }
 
     const supabase = getSupabaseServerClient();
     return handleGetZapierSettings(workspaceId, supabase);
-  }
+  },
 );
 
 export const mutateZapierSettings = catchAsync(
@@ -36,12 +42,21 @@ export const mutateZapierSettings = catchAsync(
   }) => {
     const workspaceId = params?.id;
     if (!workspaceId) {
-      return NextResponse.json({ success: false, message: 'Workspace ID is required' }, { status: 400 });
+      return NextResponse.json(
+        { success: false, message: 'Workspace ID is required' },
+        { status: 400 },
+      );
     }
 
     const supabase = getSupabaseServerClient();
     const body = await request.json();
     const action = body.action;
+
+    await createEntitlementService().requireBooleanFeature(
+      workspaceId,
+      'sales',
+      'sales.zapier',
+    );
 
     if (action === 'toggle-status') {
       return handleToggleZapierStatus(workspaceId, !!body.checked, supabase);
@@ -55,6 +70,9 @@ export const mutateZapierSettings = catchAsync(
       return handleRevokeZapierKey(workspaceId, supabase);
     }
 
-    return NextResponse.json({ success: false, message: 'Invalid action' }, { status: 400 });
-  }
+    return NextResponse.json(
+      { success: false, message: 'Invalid action' },
+      { status: 400 },
+    );
+  },
 );

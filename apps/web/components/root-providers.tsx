@@ -16,10 +16,11 @@ import { PermissionProviderWrapper } from '~/components/permission-provider-wrap
 import appConfig from '~/config/app.config';
 import authConfig from '~/config/auth.config';
 import featuresFlagConfig from '~/config/feature-flags.config';
+import { EntitlementProvider } from '~/lib/entitlements/entitlement-provider';
 import { i18nResolver } from '~/lib/i18n/i18n.resolver';
 import { getI18nSettings } from '~/lib/i18n/i18n.settings';
-import { RBACProvider } from '~/lib/rbac/rbac-provider';
 import { LocalizationProvider } from '~/lib/localization/localization-provider';
+import { RBACProvider } from '~/lib/rbac/rbac-provider';
 
 import { ReactQueryProvider } from './react-query-provider';
 
@@ -55,19 +56,21 @@ export function RootProviders({
 
           <AuthProvider>
             <RBACProvider>
-              <LocalizationProvider>
-                <PermissionProviderWrapper>
-                  <ThemeProvider
-                    attribute="class"
-                    enableSystem
-                    disableTransitionOnChange
-                    defaultTheme={theme}
-                    enableColorScheme={false}
-                  >
-                    {children}
-                  </ThemeProvider>
-                </PermissionProviderWrapper>
-              </LocalizationProvider>
+              <EntitlementProvider>
+                <LocalizationProvider>
+                  <PermissionProviderWrapper>
+                    <ThemeProvider
+                      attribute="class"
+                      enableSystem
+                      disableTransitionOnChange
+                      defaultTheme={theme}
+                      enableColorScheme={false}
+                    >
+                      {children}
+                    </ThemeProvider>
+                  </PermissionProviderWrapper>
+                </LocalizationProvider>
+              </EntitlementProvider>
             </RBACProvider>
           </AuthProvider>
         </CaptchaProvider>

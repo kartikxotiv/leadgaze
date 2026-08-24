@@ -1,12 +1,17 @@
 import { NextResponse } from 'next/server';
-import { getSupabaseServerClient } from '@kit/supabase/server-client';
-import {
-  handleMetaAdsWebhookVerification,
-  handleMetaAdsWebhook,
-} from '@kit/integration-meta-ads';
 import type { NextRequest } from 'next/server';
 
+import {
+  handleMetaAdsWebhook,
+  handleMetaAdsWebhookVerification,
+} from '@kit/integration-meta-ads';
+import { getSupabaseServerClient } from '@kit/supabase/server-client';
+
+import { createServiceRoleEntitlementService } from '~/lib/entitlements';
+
 export const dynamic = 'force-dynamic';
+
+type MetaAdsWebhookPayload = Parameters<typeof handleMetaAdsWebhook>[0];
 
 /**
  * GET /api/integrations/meta/webhook
@@ -37,5 +42,24 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   const supabase = getSupabaseServerClient();
-  return handleMetaAdsWebhook(payload as any, supabase);
+  const entitlements = createServiceRoleEntitlementService();
+  return handleMetaAdsWebhook(payload as MetaAdsWebhookPayload, supabase, {
+    beforeCreateLead: async (workspaceId) => {
+      await entitlements.requireBooleanFeature(
+        workspaceId,
+        'sales',
+        'sales.meta_ads',
+      );
+      const reservation = await entitlements.reserveUsage({
+        workspaceId,
+        moduleKey: 'sales',
+        featureKey: 'sales.leads',
+        resourceType: 'lead',
+      });
+      return {
+        commit: (resourceId) => reservation.commit({ resourceId }),
+        rollback: () => reservation.rollback(),
+      };
+    },
+  });
 }
