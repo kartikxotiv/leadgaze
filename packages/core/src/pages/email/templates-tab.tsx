@@ -175,7 +175,7 @@ export function CoreEmailTemplatesTab({
               ) : (
                 sortedData.map((template: any) => (
                   <TableRow key={template.id}>
-                    <TableCell className="font-medium">
+                    <TableCell className="font-medium text-leadgaze-primary">
                       {template.name}
                     </TableCell>
                     <TableCell className="text-muted-foreground max-w-md truncate">
@@ -303,8 +303,8 @@ function CoreTemplateDialog({
               {template ? 'Edit Template' : 'Create Template'}
             </DialogTitle>
           </DialogHeader>
-          <div className="flex-1 space-y-3 overflow-y-auto p-4">
-            <div className="space-y-1.5">
+          <div className="flex-1 space-y-2 overflow-y-auto p-2">
+            <div>
               <Label>Template Name</Label>
               <Input
                 value={name}
@@ -312,7 +312,7 @@ function CoreTemplateDialog({
                 placeholder="e.g., Intro Outreach"
               />
             </div>
-            <div className="space-y-1.5">
+            <div>
               <Label>Subject</Label>
               <Input
                 value={subject}
@@ -320,7 +320,7 @@ function CoreTemplateDialog({
                 placeholder="e.g., Hello {{first_name}}!"
               />
             </div>
-            <div className="space-y-1.5">
+            <div>
               <div className="flex items-center justify-between">
                 <Label>Template Body</Label>
                 {customVariables.length > 0 && (
@@ -367,7 +367,7 @@ function CoreTemplateDialog({
               />
             </div>
           </div>
-          <DialogFooter className="px-6 py-3 border-t">
+          <DialogFooter>
             <Button
               variant="outline"
               onClick={() => onOpenChange(false)}

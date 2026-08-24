@@ -228,6 +228,16 @@ export default function EditLeadDialog({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const phoneRegex = /^\+?[0-9]+$/;
+    if (formData.phone_number && !phoneRegex.test(formData.phone_number)) {
+      toast.error('Phone number can only contain numbers, optionally starting with +');
+      return;
+    }
+    if ('mobile_number' in formData && formData.mobile_number && !phoneRegex.test(formData.mobile_number)) {
+      toast.error('Mobile number can only contain numbers, optionally starting with +');
+      return;
+    }
+
 
     if (!formData.first_name.trim()) {
       toast.error('First name is required');
@@ -277,9 +287,13 @@ export default function EditLeadDialog({
       if (canEdit('status')) payload.status_id = formData.status_id;
       if (canEdit('source')) payload.source_id = formData.source_id || null;
       if (canEdit('trigger')) payload.trigger = formData.trigger;
-      if (canEdit('notes')) payload.notes = formData.notes;
-      if (canEdit('score')) payload.lead_score = totalScore;
-      payload.custom_fields = customFields;
+      const editableCustom: Record<string, unknown> = {};
+      for (const [cfKey, cfVal] of Object.entries(customFields)) {
+        if (canEdit(cfKey)) {
+          editableCustom[cfKey] = cfVal;
+        }
+      }
+      payload.custom_fields = editableCustom;
 
       await mutation.mutateAsync(payload);
     } finally {
@@ -313,7 +327,7 @@ export default function EditLeadDialog({
               <div className="space-y-2">
                 <h3 className="primary-heading text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">
                   Contact Information
-                </h3>                
+                </h3>
 
                 <div className="grid grid-cols-2 gap-2">
                   <FieldGuard fieldKey="first_name" canEdit={canEdit}>
@@ -412,7 +426,7 @@ export default function EditLeadDialog({
               <div className="space-y-2">
                 <h3 className="primary-heading text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">
                   Company Information
-                </h3>                
+                </h3>
 
                 <div className="grid grid-cols-2 gap-2">
                   <FieldGuard fieldKey="company" canEdit={canEdit}>
@@ -572,25 +586,27 @@ export default function EditLeadDialog({
               <div className="space-y-2">
                 <h3 className="primary-heading text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">
                   Lead Information
-                </h3>                
+                </h3>
 
                 <div className="grid grid-cols-2 gap-2">
                   {/* Status is always shown — required field */}
-                  <div>
-                    <Label htmlFor="status_id">
-                      Status <span className="text-red-500">*</span>
-                    </Label>
+                  <FieldGuard fieldKey="status" canEdit={canEdit}>
                     <div>
-                      <ManageableStatusSelect
-                        moduleKey="leads"
-                        workspaceId={workspace?.id ?? ''}
-                        value={formData.status_id}
-                        onValueChange={(value) => handleInputChange('status_id', value)}
-                        disabled={isLoading || !canEdit('status')}
-                        triggerClassName="border-gray-300 bg-white text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
-                      />
+                      <Label htmlFor="status_id">
+                        Status <span className="text-red-500">*</span>
+                      </Label>
+                      <div>
+                        <ManageableStatusSelect
+                          moduleKey="leads"
+                          workspaceId={workspace?.id ?? ''}
+                          value={formData.status_id}
+                          onValueChange={(value) => handleInputChange('status_id', value)}
+                          disabled={isLoading || !canEdit('status')}
+                          triggerClassName="border-gray-300 bg-white text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                        />
+                      </div>
                     </div>
-                  </div>
+                  </FieldGuard>
                   <FieldGuard fieldKey="source" canEdit={canEdit}>
                     <div>
                       <Label htmlFor="source_id">Lead Source (Optional)</Label>
@@ -627,7 +643,7 @@ export default function EditLeadDialog({
                 <div className="space-y-2">
                   <h3 className="primary-heading text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">
                     Additional Information
-                  </h3>                  
+                  </h3>
 
                   <div>
                     <Label htmlFor="notes">Notes (Optional)</Label>
@@ -662,7 +678,7 @@ export default function EditLeadDialog({
               type="button"
               variant="outline"
               onClick={() => handleOpenChange(false)}
-              disabled={isLoading}                
+              disabled={isLoading}
             >
               Cancel
             </Button>

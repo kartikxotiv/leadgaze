@@ -12,6 +12,7 @@ import {
   Ticket,
   Users,
   Plus,
+  Minus,
   X
 } from 'lucide-react';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
@@ -60,7 +61,7 @@ function EmptyState({ label }: { label: string }) {
   );
 }
 
-function SortableWidgetWrapper({ id, children, isFullWidth }: { id: string; children: React.ReactNode; isFullWidth?: boolean }) {
+function SortableWidgetWrapper({ id, children, isFullWidth, onRemove }: { id: string; children: React.ReactNode; isFullWidth?: boolean; onRemove?: () => void }) {
   const {
     attributes,
     listeners,
@@ -85,12 +86,21 @@ function SortableWidgetWrapper({ id, children, isFullWidth }: { id: string; chil
         className="absolute top-0 left-0 w-[60%] h-14 z-40 cursor-grab active:cursor-grabbing"
         title="Drag to move"
       />
+      {onRemove && (
+        <button 
+          onClick={onRemove}
+          className="absolute top-2 right-1 z-50 p-1.5 bg-red-50 text-red-500 hover:bg-red-100 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
+          title="Remove widget"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      )}
       {children}
     </div>
   );
 }
 
-function SortableKpiWrapper({ id, children }: { id: string; children: React.ReactNode }) {
+function SortableKpiWrapper({ id, children, onRemove }: { id: string; children: React.ReactNode; onRemove?: () => void }) {
   const {
     attributes,
     listeners,
@@ -115,6 +125,15 @@ function SortableKpiWrapper({ id, children }: { id: string; children: React.Reac
         className="absolute top-0 left-0 right-12 h-10 z-40 cursor-grab active:cursor-grabbing"
         title="Drag to move"
       />
+      {onRemove && (
+        <button 
+          onClick={onRemove}
+          className="absolute top-1 right-1 z-50 p-1.5 bg-red-50 text-red-500 hover:bg-red-100 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
+          title="Remove KPI"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      )}
       {children}
     </div>
   );
@@ -134,7 +153,11 @@ function WidgetSection({ title, children }: { title: string, children: React.Rea
 function WidgetItem({ label, disabled, onClick, onRemove }: { label: string, disabled?: boolean, onClick?: () => void, onRemove?: () => void }) {
   return (
     <div onClick={disabled ? undefined : onClick} className={`group flex items-center gap-2.5 p-2 border bg-white border-[#C3C6D6] dark:bg-transparent transition-all ${disabled ? 'opacity-70 border-slate-200 shadow-sm' : 'cursor-pointer border-blue-400'}`}>
-       <Plus className="w-3.5 h-3.5 text-slate-600 dark:text-zinc-300 shrink-0" />
+       {disabled ? (
+         <Minus className="w-3.5 h-3.5 text-slate-400 dark:text-zinc-500 shrink-0" />
+       ) : (
+         <Plus className="w-3.5 h-3.5 text-slate-600 dark:text-zinc-300 shrink-0" />
+       )}
        <span className="text-[13px] font-semibold text-slate-600 dark:text-zinc-300 flex-1">{label}</span>
        {disabled && onRemove && (
          <button onClick={(e) => { e.stopPropagation(); onRemove(); }} className="hidden group-hover:flex p-1 bg-red-50 hover:bg-red-100 dark:bg-red-900/30 dark:hover:bg-red-900/50 rounded cursor-pointer text-red-500 shadow-sm border border-red-100 dark:border-red-900/30">
@@ -310,7 +333,7 @@ export function ServiceCloudDashboardPage({
     switch (id) {
       case 'total_tickets':
         return {
-          label: 'Total Tickets',
+          label: 'TOTAL TICKETS',
           value: data?.totalTickets ?? 0,
           icon: Ticket,
           detail: 'All active service tickets',
@@ -319,16 +342,17 @@ export function ServiceCloudDashboardPage({
         };
       case 'open_tickets':
         return {
-          label: 'Open Tickets',
+          label: 'OPEN TICKETS',
           value: data?.openTickets ?? 0,
           icon: AlertCircle,
           detail: 'Unresolved customer work',
           iconBg: 'bg-activity-4',
           link: '/home/services/tickets?status=open',
+          detailClassName: 'text-[#BA1A1A]',
         };
       case 'customers':
         return {
-          label: 'Customers',
+          label: 'CUSTOMERS',
           value: data?.customers ?? 0,
           icon: Users,
           detail: 'Support customer records',
@@ -337,16 +361,17 @@ export function ServiceCloudDashboardPage({
         };
       case 'organizations':
         return {
-          label: 'Organizations',
+          label: 'ORGANIZATIONS',
           value: data?.organizations ?? 0,
           icon: Building2,
           detail: 'Linked companies',
           iconBg: 'bg-activity-3',
           link: '/home/services/customers?tab=organizations',
+          detailClassName: 'text-leadgaze-dark dark:text-white',
         };
       case 'logged_time':
         return {
-          label: 'Logged Time',
+          label: 'LOGGED TIME',
           value: formatHours(data?.totalLoggedSeconds ?? 0),
           icon: Clock3,
           detail: 'Tracked support effort',
@@ -484,7 +509,7 @@ export function ServiceCloudDashboardPage({
                       <div key={priority.id} className={itemClass}>
                         <div>
                           <div className="secondary-text-small-semibold" style={{ color: textColor || 'inherit' }}>{priority.name}</div>
-                          <div className="text-[10px] mt-1 uppercase" style={{ color: subTextColor || 'var(--color-leadgaze-muted)' }}>{`${priority.openCount} OPEN`}</div>
+                          <div className="text-[10px] mt-1" style={{ color: subTextColor || 'var(--color-leadgaze-muted)' }}>{`${priority.openCount} open`}</div>
                         </div>
                         <Badge 
                           className="px-2 py-1 !secondary-text-small-semibold rounded-sm hover:opacity-100"
@@ -597,7 +622,7 @@ export function ServiceCloudDashboardPage({
                   const Icon = card.icon;
 
                   return (
-                    <SortableKpiWrapper key={id} id={id}>
+                    <SortableKpiWrapper key={id} id={id} onRemove={() => removeKpiCard(id)}>
                       <Card className="h-32 xl:h-28 2xl:h-32 flex flex-col justify-between">
                         <CardHeader className="flex flex-row items-start justify-between space-y-0 xl:p-3 xl:pb-0 2xl:p-5 2xl:pb-0 relative">
                           <div className="space-y-1">
@@ -624,7 +649,7 @@ export function ServiceCloudDashboardPage({
                           </div>
                         </CardHeader>
                         <CardContent className="xl:p-3 xl:pt-2 2xl:p-5 2xl:pt-2 relative z-10 pointer-events-none">
-                          <CardDescription className="secondary-text-small text-leadgaze-success">
+                          <CardDescription className={cn("secondary-text-small", card.detailClassName || "text-leadgaze-success")}>
                             {card.detail}
                           </CardDescription>
                         </CardContent>
@@ -643,7 +668,7 @@ export function ServiceCloudDashboardPage({
                   const isLastAndOdd = index === activeWidgets.length - 1 && activeWidgets.length % 2 !== 0;
 
                   return (
-                    <SortableWidgetWrapper key={id} id={id} isFullWidth={isLastAndOdd}>
+                    <SortableWidgetWrapper key={id} id={id} isFullWidth={isLastAndOdd} onRemove={() => removeWidget(id)}>
                       {getWidgetComponent(id, index)}
                     </SortableWidgetWrapper>
                   );

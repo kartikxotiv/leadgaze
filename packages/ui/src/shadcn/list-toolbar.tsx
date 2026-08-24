@@ -389,7 +389,7 @@ export const ListToolBar: React.FC<ListToolBarProps> = ({
               onFocus={() => setIsSearchFocused(true)}
               onBlur={() => setIsSearchFocused(false)}
               className={cn(
-                "h-[28px] pl-[32px]",
+                "h-[28px] pl-[32px] bg-white dark:bg-transparent",
                 expandableSearch 
                   ? "transition-all duration-300 ease-in-out w-[120px] focus:w-[220px]" 
                   : "w-full",
@@ -663,7 +663,9 @@ export const ListToolBar: React.FC<ListToolBarProps> = ({
                       'shrink-0 gap-1.5',
                       action.pillClassName,
                       action.className,
-                      'primary-text-medium dark:text-white',
+                      btnVariant === 'default' 
+                        ? 'bg-leadgaze-primary hover:bg-leadgaze-primary text-white'
+                        : 'primary-text-medium dark:text-white',
                       'h-[28px] px-2',
                     )}
                     aria-label={action.label}

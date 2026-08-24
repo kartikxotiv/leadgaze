@@ -226,11 +226,11 @@ function CoreVariableDialog({
             <DialogTitle>{variable ? 'Edit Variable' : 'Create Variable'}</DialogTitle>
           </DialogHeader>
           <div className="flex-1 space-y-2 overflow-y-auto p-2">
-          <div className="space-y-2">
+          <div>
             <Label>Variable Key</Label>
             <Input value={key} onChange={(event) => setKey(event.target.value)} placeholder="company_address" />
           </div>
-          <div className="space-y-2">
+          <div>
             <Label>Value</Label>
             <Input value={value} onChange={(event) => setValue(event.target.value)} placeholder="123 Main St" />
           </div>

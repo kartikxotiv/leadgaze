@@ -1185,20 +1185,20 @@ export default function AccountDetailsPage() {
                             }
                             title={`${contact.first_name} ${contact.last_name || ''}`}
                             subtitle={
-                              <span>
+                              <>
                                 {contact.job_title}
                                 {contact.job_title &&
                                   contact.department &&
                                   ' • '}
                                 {contact.department}
-                              </span>
+                              </>
                             }
                             metadata={
-                              <span>
+                              <>
                                 {contact.email}
                                 {contact.email && contact.phone_number && ' • '}
                                 {contact.phone_number}
-                              </span>
+                              </>
                             }
                             actions={
                               rbacCanAccess('contacts', 'view') && (

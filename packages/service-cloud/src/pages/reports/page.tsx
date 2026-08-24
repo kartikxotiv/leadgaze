@@ -86,6 +86,7 @@ export function ServiceCloudReportsPage({
       icon: Inbox,
       detail: 'All active service tickets',
       iconBg: 'bg-primary dark:bg-primary',
+      detailClassName: 'text-leadgaze-primary',
     },
     {
       label: 'Open Tickets',
@@ -93,6 +94,7 @@ export function ServiceCloudReportsPage({
       icon: AlertTriangle,
       detail: 'Unresolved customer work',
       iconBg: 'bg-activity-4',
+      detailClassName: 'text-[#BA1A1A]',
     },
     {
       label: 'Customers',
@@ -100,6 +102,7 @@ export function ServiceCloudReportsPage({
       icon: UserRound,
       detail: 'Support customer records',
       iconBg: 'bg-activity-5',
+      detailClassName: 'text-leadgaze-primary',
     },
     {
       label: 'Logged Time',
@@ -107,6 +110,7 @@ export function ServiceCloudReportsPage({
       icon: Clock3,
       detail: 'Tracked support effort',
       iconBg: 'bg-activity-6',
+      detailClassName: 'text-leadgaze-dark dark:text-white',
     },
   ];
 
@@ -138,7 +142,7 @@ export function ServiceCloudReportsPage({
                 </div>
               </CardHeader>
               <CardContent className="px-4">
-                <CardDescription className="secondary-text-small text-leadgaze-success">
+                <CardDescription className={cn("secondary-text-small", card.detailClassName || "text-leadgaze-success")}>
                   {card.detail}
                 </CardDescription>
               </CardContent>
@@ -154,7 +158,7 @@ export function ServiceCloudReportsPage({
             description="How many tickets are currently sitting in each status."
             headerClassName="p-2 xl:p-2 2xl:p-2"
           >
-            <div className="space-y-4 px-2 py-2  max-h-[460px] overflow-auto">
+            <div className="space-y-4 px-2 py-2 min-h-[315px] max-h-[460px] overflow-auto">
               {statusBreakdown.length === 0 ? (
                 <EmptyReport label="No ticket statuses found." />
               ) : (
@@ -326,7 +330,7 @@ export function ServiceCloudReportsPage({
                       <div key={priority.id} className={itemClass}>
                         <div>
                           <div className="secondary-text-small-semibold" style={{ color: textColor || 'inherit' }}>{priority.name}</div>
-                          <div className="text-[10px] mt-1 uppercase" style={{ color: subTextColor || 'var(--color-leadgaze-muted)' }}>{`${priority.openCount} OPEN`}</div>
+                          <div className="text-[10px] mt-1" style={{ color: subTextColor || 'var(--color-leadgaze-muted)' }}>{`${priority.openCount} open`}</div>
                         </div>
                         <Badge 
                           className="px-2 py-1 !secondary-text-small-semibold rounded-sm hover:opacity-100"
@@ -393,7 +397,7 @@ export function ServiceCloudReportsPage({
                       <div className="min-w-0">
                         <Link
                           href={`/home/services/tickets/${ticket.id}`}
-                          className="secondary-text-small-semibold w-[300px] truncate inline-block hover:underline"
+                          className="secondary-text-small-semibold w-[300px] truncate block hover:underline"
                           style={{ color: 'var(--color-report-blue-text)' }}
                         >
                           #{ticket.ticketNumber} {ticket.subject}
@@ -403,7 +407,7 @@ export function ServiceCloudReportsPage({
                           {ticket.assignee}
                         </div>
                       </div>
-                      <Badge variant="outline" className="rounded-none border-0">
+                      <Badge variant="outline" className="rounded-none border-0 text-leadgaze-dark dark:text-white">
                         {formatHours(ticket.loggedSeconds)}
                       </Badge>
                     </div>
