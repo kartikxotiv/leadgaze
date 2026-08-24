@@ -53,7 +53,6 @@ export async function handleCheckoutCompleted(
       const seats = parseInt(metadata[`item_${idx}_seats`] ?? '1', 10);
 
       if (!productId) {
-        console.warn(`Missing item_${idx}_product_id in checkout metadata`);
         continue;
       }
 

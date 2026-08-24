@@ -12,9 +12,6 @@ export async function handleSubscriptionUpdated(
   const workspaceId = metadata.workspace_id;
 
   if (!workspaceId) {
-    console.warn(
-      'customer.subscription.updated missing workspace_id, skipping.',
-    );
     return;
   }
 
@@ -25,9 +22,6 @@ export async function handleSubscriptionUpdated(
     .eq('provider_subscription_id', subscription.id);
 
   if (!seats || seats.length === 0) {
-    console.warn(
-      `No workspace_module_seats found for subscription ${subscription.id}`,
-    );
     return;
   }
 
@@ -73,7 +67,6 @@ export async function handleSubscriptionUpdated(
       // If only one seat row and one item, match directly
       seatToUpdate = seats[0];
     } else {
-      console.warn(`No seat row found for subscription item ${subItem.id}`);
       continue;
     }
 
@@ -167,9 +160,6 @@ export async function handleSubscriptionDeleted(
     .eq('provider_subscription_id', subscription.id);
 
   if (!seats || seats.length === 0) {
-    console.warn(
-      `No workspace_module_seats found for deleted subscription ${subscription.id}`,
-    );
     return;
   }
 
