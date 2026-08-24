@@ -3,14 +3,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
-import { requireSubscriptionManagePermission } from '~/lib/server/subscription-permissions';
+import { requireSubscriptionBillingPermission } from '~/lib/server/subscription-permissions';
 import {
   getOrCreateStripeCustomer,
   getStripeClient,
 } from '~/lib/stripe/stripe-client';
 import { getStripePriceId } from '~/lib/stripe/stripe-price-helper';
 
-import { catchAsync } from '../../../../utils/response-handler';
+import { ApiError, catchAsync } from '../../../../utils/response-handler';
 
 /**
  * POST /api/subscriptions/checkout-multi
@@ -74,7 +74,7 @@ export const createMultiProductCheckout = catchAsync(
 
     const cycle = billingCycle || 'monthly';
 
-    await requireSubscriptionManagePermission({
+    await requireSubscriptionBillingPermission({
       accountId: user.id,
       workspaceId,
     });
@@ -214,6 +214,12 @@ export const createMultiProductCheckout = catchAsync(
     items.forEach((item, idx) => {
       const product = productMap.get(item.productKey);
       const stripePriceId = getStripePriceId(product, billingCountry, cycle);
+      if (!stripePriceId) {
+        throw new ApiError(
+          `No Stripe price configured for ${item.productKey}`,
+          409,
+        );
+      }
 
       lineItems.push({
         price: stripePriceId,
@@ -243,7 +249,11 @@ export const createMultiProductCheckout = catchAsync(
 
     let basePath = '/org/subscription';
     let extraParams = '';
-    if (returnUrl && typeof returnUrl === 'string' && returnUrl.startsWith('/')) {
+    if (
+      returnUrl &&
+      typeof returnUrl === 'string' &&
+      returnUrl.startsWith('/')
+    ) {
       const parts = returnUrl.split('?');
       basePath = parts[0] || '/org/subscription';
       if (parts[1]) {
@@ -318,7 +328,17 @@ async function addItemsToExistingSubscription(
 
   for (const item of items) {
     const product = productMap.get(item.productKey);
-    const stripePriceId = getStripePriceId(product, billingCountry, billingCycle);
+    const stripePriceId = getStripePriceId(
+      product,
+      billingCountry,
+      billingCycle,
+    );
+    if (!stripePriceId) {
+      throw new ApiError(
+        `No Stripe price configured for ${item.productKey}`,
+        409,
+      );
+    }
 
     // Check if this product already has an item in the subscription
     const existingItem = subscription.items.data.find(

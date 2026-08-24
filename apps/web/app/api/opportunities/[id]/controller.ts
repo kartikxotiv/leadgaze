@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { getSupabaseServerClient } from '@kit/supabase/server-client';
-import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
-
-import { catchAsync, successDataResponse } from '~/utils/response-handler';
-
 import { buildOpportunityCurrencyFields } from '@kit/shared/currency';
+import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
+import { getSupabaseServerClient } from '@kit/supabase/server-client';
+
+import { createEntitlementService } from '~/lib/entitlements';
+import { catchAsync, successDataResponse } from '~/utils/response-handler';
 
 /**
  * GET /api/opportunities/[id]
@@ -97,10 +97,14 @@ export const updateOpportunity = catchAsync(
       .from('crm_opportunities')
       .select('workspace_id, owner_id, created_by')
       .eq('id', id)
+      .eq('is_deleted', false)
       .single();
 
     if (!existingOpportunity) {
-      return NextResponse.json({ message: 'Opportunity not found' }, { status: 404 });
+      return NextResponse.json(
+        { message: 'Opportunity not found' },
+        { status: 404 },
+      );
     }
 
     // Get workspace to check if user is owner
@@ -124,9 +128,10 @@ export const updateOpportunity = catchAsync(
         .eq('user_id', user.id)
         .eq('workspace_id', existingOpportunity.workspace_id);
 
-      const member = members?.find((m: any) => m.product_key === 'sales')
-        || members?.find((m: any) => m.product_key === null)
-        || members?.[0];
+      const member =
+        members?.find((m: any) => m.product_key === 'sales') ||
+        members?.find((m: any) => m.product_key === null) ||
+        members?.[0];
 
       if (member?.role_id) {
         const { data: permission } = await supabase
@@ -171,7 +176,7 @@ export const updateOpportunity = catchAsync(
       try {
         const adminClient = getSupabaseServerAdminClient();
         const { data: rates } = await adminClient
-        .schema('core')
+          .schema('core')
           .from('currency_exchange_rates')
           .select('*')
           .eq('base_currency', 'USD')
@@ -210,7 +215,7 @@ export const updateOpportunity = catchAsync(
           owner:accounts!crm_opportunities_owner_id_fkey(id, email, name),
           created_by_account:accounts!crm_opportunities_created_by_fkey(id, email, name),
           updated_by_account:accounts!crm_opportunities_updated_by_fkey(id, email, name)
-        `
+        `,
       )
       .single();
 
@@ -256,11 +261,12 @@ export const deleteOpportunity = catchAsync(
     }
 
     // Check permissions
-    // Get the opportunity to check permissions
+    // Get the active opportunity so repeated deletes cannot release usage twice.
     const { data: existingOpportunity } = await supabase
       .from('crm_opportunities')
       .select('workspace_id, owner_id, created_by')
       .eq('id', id)
+      .eq('is_deleted', false)
       .single();
 
     if (!existingOpportunity) {
@@ -289,9 +295,10 @@ export const deleteOpportunity = catchAsync(
         .eq('user_id', user.id)
         .eq('workspace_id', existingOpportunity.workspace_id);
 
-      const member = members?.find((m: any) => m.product_key === 'sales')
-        || members?.find((m: any) => m.product_key === null)
-        || members?.[0];
+      const member =
+        members?.find((m: any) => m.product_key === 'sales') ||
+        members?.find((m: any) => m.product_key === null) ||
+        members?.[0];
 
       if (member?.role_id) {
         const { data: permission } = await supabase
@@ -334,6 +341,7 @@ export const deleteOpportunity = catchAsync(
         deleted_by: user.id,
       })
       .eq('id', id)
+      .eq('is_deleted', false)
       .select()
       .single();
 
@@ -342,9 +350,14 @@ export const deleteOpportunity = catchAsync(
       throw error;
     }
 
-    return successDataResponse(
-      'Opportunity deleted successfully',
-      opportunity,
-    );
+    await createEntitlementService().releaseUsage({
+      workspaceId: existingOpportunity.workspace_id,
+      moduleKey: 'sales',
+      featureKey: 'sales.opportunities',
+      resourceId: id,
+      resourceType: 'opportunity',
+    });
+
+    return successDataResponse('Opportunity deleted successfully', opportunity);
   },
 );

@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
-import { requireSubscriptionManagePermission } from '~/lib/server/subscription-permissions';
+import { requireSubscriptionBillingPermission } from '~/lib/server/subscription-permissions';
 
 import { catchAsync } from '../../../../utils/response-handler';
 
@@ -53,7 +53,7 @@ export const dummyCheckout = catchAsync(
 
     const cycle = billingCycle || 'monthly';
 
-    await requireSubscriptionManagePermission({
+    await requireSubscriptionBillingPermission({
       accountId: user.id,
       workspaceId,
     });

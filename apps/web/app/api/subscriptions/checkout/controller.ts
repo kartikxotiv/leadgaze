@@ -3,12 +3,20 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
-import { requireSubscriptionManagePermission } from '~/lib/server/subscription-permissions';
+import { requireSubscriptionBillingPermission } from '~/lib/server/subscription-permissions';
 import {
   getOrCreateStripeCustomer,
   getStripeClient,
 } from '~/lib/stripe/stripe-client';
 import { getStripePriceId } from '~/lib/stripe/stripe-price-helper';
+import {
+  type RouteUser,
+  parseJson,
+  requireRouteUser,
+  success,
+} from '~/lib/subscriptions/api';
+import { pricingCheckoutRequestSchema } from '~/lib/subscriptions/contracts';
+import { createSubscriptionService } from '~/lib/subscriptions/service';
 
 import { catchAsync } from '../../../../utils/response-handler';
 
@@ -60,7 +68,7 @@ export const createCheckoutSession = catchAsync(
 
     const cycle = billingCycle || 'monthly';
 
-    await requireSubscriptionManagePermission({
+    await requireSubscriptionBillingPermission({
       accountId: user.id,
       workspaceId,
     });
@@ -152,7 +160,11 @@ export const createCheckoutSession = catchAsync(
 
     let basePath = '/org/subscription';
     let extraParams = '';
-    if (returnUrl && typeof returnUrl === 'string' && returnUrl.startsWith('/')) {
+    if (
+      returnUrl &&
+      typeof returnUrl === 'string' &&
+      returnUrl.startsWith('/')
+    ) {
       const parts = returnUrl.split('?');
       basePath = parts[0] || '/org/subscription';
       if (parts[1]) {
@@ -211,5 +223,39 @@ export const createCheckoutSession = catchAsync(
         sessionId: session.id,
       },
     });
+  },
+);
+
+/**
+ * Dispatches plan-aware pricing checkout requests to the new subscription
+ * model while preserving the legacy product/seat checkout contract.
+ */
+export const createCompatibleCheckoutSession = catchAsync(
+  async (params: { request: NextRequest; user?: RouteUser }) => {
+    const candidate = await params.request
+      .clone()
+      .json()
+      .catch(() => null);
+    if (
+      candidate &&
+      typeof candidate === 'object' &&
+      'moduleKey' in candidate &&
+      'planKey' in candidate
+    ) {
+      const actor = requireRouteUser(params.user);
+      const input = await parseJson(
+        params.request.clone(),
+        pricingCheckoutRequestSchema,
+      );
+      await requireSubscriptionBillingPermission({
+        accountId: actor.id,
+        workspaceId: input.workspaceId,
+      });
+      const service = createSubscriptionService(
+        getSupabaseServerAdminClient() as never,
+      );
+      return success(await service.createCheckout(input, actor));
+    }
+    return createCheckoutSession(params);
   },
 );

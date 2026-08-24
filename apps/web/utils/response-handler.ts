@@ -4,6 +4,8 @@ import { NextRequest, NextResponse } from 'next/server';
 export interface ErrorWithStatus extends Error {
   status?: number;
   statusCode?: number;
+  code?: string;
+  data?: unknown;
 }
 
 /**
@@ -43,6 +45,21 @@ const catchAsync = (handler: RouteHandler): RouteHandler => {
         statusCode = (err as ErrorWithStatus).statusCode ?? 500;
       }
 
+      // if (
+      //   err instanceof Error &&
+      //   err.name === 'EntitlementError' &&
+      //   'code' in err
+      // ) {
+      //   console.warn(
+      //     '[EntitlementEnforcement] blocked',
+      //     JSON.stringify({
+      //       code: (err as ErrorWithStatus).code,
+      //       statusCode,
+      //       data: (err as ErrorWithStatus).data ?? null,
+      //     }),
+      //   );
+      // }
+
       // Ensure safe error handling
       console.error('CaughtError:', err instanceof Error ? err.message : err);
       console.error(
@@ -55,7 +72,10 @@ const catchAsync = (handler: RouteHandler): RouteHandler => {
           success: false,
           message: errorMessage,
           statusCode,
-          data: null,
+          ...((err as ErrorWithStatus)?.code
+            ? { code: (err as ErrorWithStatus).code }
+            : {}),
+          data: (err as ErrorWithStatus)?.data ?? null,
         },
         { status: statusCode },
       );
@@ -91,7 +111,15 @@ const successDataResponse = <T>(
 
 const successListDataResponse = (
   listData: any,
-  { object, has_more = false, total = null, page = 1, count = null, limit = null, offset = null }: any,
+  {
+    object,
+    has_more = false,
+    total = null,
+    page = 1,
+    count = null,
+    limit = null,
+    offset = null,
+  }: any,
 ) => {
   const response: any = {
     success: true,
@@ -125,4 +153,9 @@ const errorResponse = (
   );
 };
 
-export { successDataResponse, successListDataResponse, errorResponse, catchAsync };
+export {
+  successDataResponse,
+  successListDataResponse,
+  errorResponse,
+  catchAsync,
+};

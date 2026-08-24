@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
-import { requireSubscriptionManagePermission } from '~/lib/server/subscription-permissions';
+import { requireSubscriptionBillingPermission } from '~/lib/server/subscription-permissions';
 import { getStripeClient } from '~/lib/stripe/stripe-client';
 
 import { catchAsync } from '../../../../utils/response-handler';
@@ -76,7 +76,7 @@ export const cancelSubscription = catchAsync(
       );
     }
 
-    await requireSubscriptionManagePermission({
+    await requireSubscriptionBillingPermission({
       accountId: user.id,
       workspaceId,
     });
