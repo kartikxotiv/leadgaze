@@ -46,9 +46,9 @@ const formSchema = z.object({
   last_name: z.string().optional().or(z.literal('')),
   email: z.string().email().optional().or(z.literal('')),
   alt_email: z.string().email().optional().or(z.literal('')),
-  phone_number: z.string().optional().or(z.literal('')),
-  mobile_number: z.string().optional().or(z.literal('')),
-  alt_phone: z.string().optional().or(z.literal('')),
+  phone_number: z.string().refine(val => !val || /^\\+?[0-9]+$/.test(val), { message: "Invalid phone number" }).optional().or(z.literal('')),
+  mobile_number: z.string().refine(val => !val || /^\\+?[0-9]+$/.test(val), { message: "Invalid mobile number" }).optional().or(z.literal('')),
+  alt_phone: z.string().refine(val => !val || /^\\+?[0-9]+$/.test(val), { message: "Invalid alt phone number" }).optional().or(z.literal('')),
   job_title: z.string().optional().or(z.literal('')),
   department: z.string().optional().or(z.literal('')),
   // Note: address fields removed as they don't exist in crm_contacts table

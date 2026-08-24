@@ -113,6 +113,12 @@ export function CreateContactDialog({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const phoneRegex = /^\+?[0-9]+$/;
+    if (formData.phone_number && !phoneRegex.test(formData.phone_number)) {
+      toast.error('Phone number can only contain numbers, optionally starting with +');
+      return;
+    }
+
     if (!formData.first_name) {
       toast.error('First name is required');
       return;
