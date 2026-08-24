@@ -99,7 +99,7 @@ export function InviteMemberDialog({
         </DialogHeader>
 
         <form id="dialog-form" onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-2 space-y-2">
-          <div className="space-y-2">
+          <div>
             <Label htmlFor="email">Email Address *</Label>
             <Input
               id="email"
@@ -113,7 +113,7 @@ export function InviteMemberDialog({
             />
           </div>
 
-          <div className="space-y-2">
+          <div>
             <Label htmlFor="role">Assign Role *</Label>
             <Select
               value={formData.role_id}

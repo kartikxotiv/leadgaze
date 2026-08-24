@@ -27,6 +27,12 @@ import { format } from 'date-fns';
 import { useLocalization } from '@kit/shared/localization';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@kit/ui/tooltip';
 import { Calendar } from '@kit/ui/calendar';
 import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
 import CustomTableContainer from '@kit/ui/custom-table-container';
@@ -693,23 +699,32 @@ export default function RemindersPage() {
         <PageHeader
           title={`Reminders`}          
         >
-          <Button
-            onClick={() => {
-              setFormData({
-                title: '',
-                description: '',
-                due_date: '',
-                priority: 'medium',
-                entity_type: 'lead',
-                entityId: '',
-              });
-              setIsCreateDialogOpen(true);
-            }}
-            className="secondary-text-small-bold gap-1.5 px-2 bg-leadgaze-primary hover:bg-leadgaze-primary text-white"
-          >
-            <Plus className="h-4 w-4" />
-            New Reminder
-          </Button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  onClick={() => {
+                    setFormData({
+                      title: '',
+                      description: '',
+                      due_date: '',
+                      priority: 'medium',
+                      entity_type: 'lead',
+                      entityId: '',
+                    });
+                    setIsCreateDialogOpen(true);
+                  }}
+                  className="secondary-text-small-bold gap-1.5 px-2 bg-leadgaze-primary hover:bg-leadgaze-primary text-white"
+                >
+                  <Plus className="h-4 w-4" />
+                  New Reminder
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                <span>New Reminder</span>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </PageHeader>
       </div>
 

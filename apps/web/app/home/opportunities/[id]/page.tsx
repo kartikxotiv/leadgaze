@@ -554,7 +554,10 @@ export default function OpportunityDetailsPage() {
                         disabled={!canChangeStage}
                         className="secondary-text-small-bold text-leadgaze-dark dark:text-white gap-1.5 px-2"
                       >
-                        <Workflow className="h-4 w-4" />
+                        <Workflow 
+                          className="h-4 w-4" 
+                          style={{ color: stages?.find((s: any) => s.id === opportunity?.stage_id)?.color || 'inherit' }} 
+                        />
                         <span className="hidden lg:inline">Update Stage</span>
                       </Button>
                     </PopoverTrigger>

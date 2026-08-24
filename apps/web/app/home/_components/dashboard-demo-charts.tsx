@@ -344,7 +344,7 @@ export default function DashboardDemo({
                   let kpiData = null;
                   if (id === 'total_leads') {
                     kpiData = {
-                      title: 'Total Leads',
+                      title: 'TOTAL LEADS',
                       value: <Figure>{metrics.leads.total}</Figure>,
                       link: `/home/sales/leads${queryString}`,
                       icon: <File className="h-4 w-4 text-white" />,
@@ -353,7 +353,7 @@ export default function DashboardDemo({
                     };
                   } else if (id === 'contacts') {
                     kpiData = {
-                      title: 'Contacts',
+                      title: 'CONTACTS',
                       value: <Figure>{metrics.contacts.total}</Figure>,
                       link: `/home/sales/contacts${queryString}`,
                       icon: <Users className="h-4 w-4 text-white" />,
@@ -362,7 +362,7 @@ export default function DashboardDemo({
                     };
                   } else if (id === 'accounts') {
                     kpiData = {
-                      title: 'Accounts',
+                      title: 'ACCOUNTS',
                       value: <Figure>{metrics.accounts.total}</Figure>,
                       link: `/home/sales/accounts${queryString}`,
                       icon: <Building2 className="h-4 w-4 text-white" />,
@@ -371,7 +371,7 @@ export default function DashboardDemo({
                     };
                   } else if (id === 'pipeline_value') {
                     kpiData = {
-                      title: 'Pipeline Value',
+                      title: 'PIPELINE VALUE',
                       value: <Figure>{formatCurrency(pipelineValue, workspaceCurrency)}</Figure>,
                       link: `/home/sales/opportunities${queryString}`,
                       icon: <Target className="h-4 w-4 text-white" />,
@@ -959,9 +959,9 @@ function LatestLeadsTable({ heightClass = "h-[320px]", data = [] }: { heightClas
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Contact Name</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Value</TableHead>
+                  <TableHead>CONTACT NAME</TableHead>
+                  <TableHead>STATUS</TableHead>
+                  <TableHead>VALUE</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -999,9 +999,9 @@ function LatestAccountsTable({ heightClass = "h-[320px]", data = [] }: { heightC
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Industry</TableHead>
-                  <TableHead>Owner</TableHead>
+                  <TableHead>NAME</TableHead>
+                  <TableHead>INDUSTRY</TableHead>
+                  <TableHead>PHONE</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -1009,7 +1009,7 @@ function LatestAccountsTable({ heightClass = "h-[320px]", data = [] }: { heightC
                   <TableRow key={i}>
                     <TableCell>{a.name}</TableCell>
                     <TableCell>{a.industry}</TableCell>
-                    <TableCell>{a.owner}</TableCell>
+                    <TableCell>{a.phone || '-'}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -1158,7 +1158,7 @@ function AccountGrowthTrends({ heightClass = "h-[320px]", data = [] }: { heightC
           </div> */}
           <div className="ml-2 w-32">
              <Select value={timeRange} onValueChange={setTimeRange}>
-                <SelectTrigger className="h-8 text-[11px] font-bold text-slate-600 dark:text-zinc-400 bg-slate-50 dark:bg-zinc-800/50 border-slate-100 dark:border-zinc-800">
+                <SelectTrigger className="h-7 text-[11px] font-bold text-slate-600 dark:text-zinc-400 border-0 shadow-none">
                   <SelectValue placeholder="Select Range" />
                 </SelectTrigger>
                 <SelectContent>
