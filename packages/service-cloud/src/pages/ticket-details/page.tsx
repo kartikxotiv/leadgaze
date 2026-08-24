@@ -1766,8 +1766,13 @@ export function ServiceCloudTicketDetailPage({
             onOpenChange={(open) => {
               if (!open) {
                 setReplyEmail(null);
+                refetchTicketDetail();
                 void queryClient.invalidateQueries({ queryKey });
               }
+            }}
+            onSuccess={() => {
+              refetchTicketDetail();
+              void queryClient.invalidateQueries({ queryKey });
             }}
             workspaceId={workspaceId}
             email={replyEmail}
@@ -1781,8 +1786,13 @@ export function ServiceCloudTicketDetailPage({
             onOpenChange={(open) => {
               setIsComposeOpen(open);
               if (!open) {
+                refetchTicketDetail();
                 void queryClient.invalidateQueries({ queryKey });
               }
+            }}
+            onSuccess={() => {
+              refetchTicketDetail();
+              void queryClient.invalidateQueries({ queryKey });
             }}
             workspaceId={workspaceId}
             accounts={emailAccounts}

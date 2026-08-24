@@ -92,6 +92,7 @@ export function CoreEmailReplyDialog({
   templateContext = {},
   entityType,
   entityId,
+  onSuccess,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -101,6 +102,7 @@ export function CoreEmailReplyDialog({
   templateContext?: Record<string, unknown>;
   entityType?: string;
   entityId?: string;
+  onSuccess?: (data?: any) => void;
 }) {
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -172,12 +174,18 @@ export function CoreEmailReplyDialog({
         throw error;
       }
     },
-    onSuccess: async () => {
+    onSuccess: async (data) => {
       toast.success('Reply sent');
       clearAttachmentFiles();
       await queryClient.invalidateQueries({
         queryKey: ['core-email-activity', workspaceId],
       });
+      if (entityType && entityId) {
+        await queryClient.invalidateQueries({
+          queryKey: ['core-entity-emails', workspaceId, entityType, entityId],
+        });
+      }
+      onSuccess?.(data);
       onOpenChange(false);
     },
     onError: (error: any) =>

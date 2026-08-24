@@ -67,6 +67,7 @@ export function CoreEmailComposeDialog({
   entityType,
   entityId,
   initialTo,
+  onSuccess,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -76,6 +77,7 @@ export function CoreEmailComposeDialog({
   entityType?: string;
   entityId?: string;
   initialTo?: string;
+  onSuccess?: (data?: any) => void;
 }) {
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -155,12 +157,18 @@ export function CoreEmailComposeDialog({
         throw error;
       }
     },
-    onSuccess: async () => {
+    onSuccess: async (data) => {
       toast.success('Email sent');
       clearAttachmentFiles();
       await queryClient.invalidateQueries({
         queryKey: ['core-email-activity', workspaceId],
       });
+      if (entityType && entityId) {
+        await queryClient.invalidateQueries({
+          queryKey: ['core-entity-emails', workspaceId, entityType, entityId],
+        });
+      }
+      onSuccess?.(data);
       onOpenChange(false);
     },
     onError: (error: any) =>

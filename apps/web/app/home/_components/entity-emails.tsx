@@ -463,6 +463,16 @@ export function EntityEmails({
             });
           }
         }}
+        onSuccess={() => {
+          queryClient.invalidateQueries({
+            queryKey: [
+              'core-entity-emails',
+              workspace?.id,
+              entityType,
+              entityId,
+            ],
+          });
+        }}
         workspaceId={workspace?.id || ''}
         accounts={coreEmailAccounts}
         entityType={entityType}
