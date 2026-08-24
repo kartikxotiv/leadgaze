@@ -307,7 +307,7 @@ export function WorkspaceLocalizationSettings({
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-2">
       {/* Date & Time Settings */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between p-2 border-b border-slate-200">

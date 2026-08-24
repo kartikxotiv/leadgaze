@@ -189,7 +189,7 @@ const updateLead = catchAsync(
     // Get the lead to check permissions
     const { data: existingLead } = await supabase
       .from('crm_leads')
-      .select('workspace_id, owner_id, created_by')
+      .select('*')
       .eq('id', leadId)
       .single();
 
@@ -205,7 +205,7 @@ const updateLead = catchAsync(
       moduleKey: 'leads',
     });
 
-    const { sanitized, rejected } = validateLeadWritePayload(body, fieldCtx);
+    const { sanitized, rejected } = validateLeadWritePayload(body, fieldCtx, existingLead as Record<string, unknown>);
 
     if (rejected.length > 0) {
       return NextResponse.json(

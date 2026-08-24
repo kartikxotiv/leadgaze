@@ -105,11 +105,23 @@ export function ServiceCloudSettingsPage({
                 </div>
               ),
             },
-            { key: 'status_key', label: 'Key' },
+            { 
+              key: 'status_key', 
+              label: 'Key',
+              render: (status) => (
+                <span className="text-muted-foreground font-normal">
+                  {status.status_key ? status.status_key.split('_').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : ''}
+                </span>
+              )
+            },
             {
               key: 'lifecycle',
               label: 'Lifecycle',
-              render: (status) => <StatusBadge value={status.lifecycle} />,
+              render: (status) => (
+                <span className="text-leadgaze-dark dark:text-white font-normal">
+                  {status.lifecycle ? status.lifecycle.split('_').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : ''}
+                </span>
+              ),
             },
             { key: 'display_order', label: 'Order' },
           ]}

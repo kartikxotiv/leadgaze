@@ -48,7 +48,7 @@ export function WorkspaceIntegrationsSettings({ workspace }: WorkspaceIntegratio
   if (view === 'emails' && canManageEmail) {
     return (
       <div className="flex flex-col h-full space-y-4">
-        <div className="flex items-center border-y-[1px] border-solid card-seperator-border py-1 mb-2">
+        <div className="flex items-center border-y-[1px] border-solid card-seperator-border py-1 mb-1">
           <Button variant="ghost" className="px-2 primary-heading-extra text-leadgaze-dark dark:text-white" onClick={() => router.push('?tab=integrations')}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Email Accounts
@@ -76,7 +76,7 @@ export function WorkspaceIntegrationsSettings({ workspace }: WorkspaceIntegratio
   if (view === 'meetings') {
     return (
       <div className="flex flex-col h-full space-y-4">
-        <div className="flex items-center border-y-[1px] border-solid card-seperator-border py-1 mb-2">
+        <div className="flex items-center border-y-[1px] border-solid card-seperator-border py-1 mb-1">
           <Button variant="ghost" className="px-2 primary-heading-extra text-leadgaze-dark dark:text-white" onClick={() => router.push('?tab=integrations')}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Meeting Accounts
