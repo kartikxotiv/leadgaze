@@ -3,7 +3,7 @@
 import React, { useMemo, useState } from 'react';
 
 import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -200,6 +200,8 @@ function LeadDetailsSkeleton() {
 export default function LeadDetailsPage() {
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get('tab');
   const { currentWorkspace: workspace, canAccess } = useRBAC();
   const { formatDate } = useLocalization();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -216,6 +218,18 @@ export default function LeadDetailsPage() {
 
   const leadId = params?.id as string;
   const canManageEmail = canAccess('emails', 'manage_email');
+
+  const defaultTab = useMemo(() => {
+    return tabParam || (canManageEmail ? 'email' : 'notes');
+  }, [tabParam, canManageEmail]);
+
+  const [activeTab, setActiveTab] = useState<string>(defaultTab);
+
+  React.useEffect(() => {
+    if (tabParam) {
+      setActiveTab(tabParam);
+    }
+  }, [tabParam]);
 
   // Page-level assign modal (works even when accordion is collapsed)
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
@@ -700,7 +714,8 @@ export default function LeadDetailsPage() {
             />
             {/* Tabs Section */}
             <Tabs
-              defaultValue={canManageEmail ? 'email' : 'notes'}
+              value={activeTab}
+              onValueChange={setActiveTab}
               className="space-y-4 mb-2"
             >
               <TabsList className="mb-0 h-auto w-full justify-start gap-3 overflow-x-auto rounded-none border-b bg-transparent p-0 [-ms-overflow-style:none] [scrollbar-width:none] sm:gap-6 [&::-webkit-scrollbar]:hidden">

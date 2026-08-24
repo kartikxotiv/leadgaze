@@ -351,10 +351,21 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
                 <Label>Due Date</Label>
                 <DateTimePicker
                   showTime
+                  minDate={new Date()}
                   value={formData.due_date ? new Date(formData.due_date) : undefined}
-                  onChange={(date) =>
-                    setFormData({ ...formData, due_date: date ? format(date, "yyyy-MM-dd'T'HH:mm") : '' })
-                  }
+                  onChange={(date) => {
+                    if (!date) {
+                      setFormData({ ...formData, due_date: '' });
+                      return;
+                    }
+                    if (date.getTime() < new Date().getTime()) {
+                      return;
+                    }
+                    setFormData({
+                      ...formData,
+                      due_date: format(date, "yyyy-MM-dd'T'HH:mm"),
+                    });
+                  }}
                 />
               </div>
             </div>

@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseServerClient } from '@kit/supabase/server-client';
-import { catchAsync } from '~/utils/response-handler';
+
 import { buildMetaAdsOAuthUrl } from '@kit/integration-meta-ads';
 import { buildWhatsAppOAuthUrl } from '@kit/integration-whatsapp';
+import { getSupabaseServerClient } from '@kit/supabase/server-client';
+
+import { createEntitlementService } from '~/lib/entitlements';
+import { catchAsync } from '~/utils/response-handler';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,11 +28,22 @@ export const metaAdsAuth = catchAsync(
     }
 
     const supabase = getSupabaseServerClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-    const returnUrl = type === 'whatsapp'
-      ? `/home/sales/workspace-settings/integrations/whatsapp`
-      : `/home/sales/workspace-settings/integrations/meta-ads`;
+    if (type === 'ads') {
+      await createEntitlementService().requireBooleanFeature(
+        workspaceId,
+        'sales',
+        'sales.meta_ads',
+      );
+    }
+
+    const returnUrl =
+      type === 'whatsapp'
+        ? `/home/sales/workspace-settings/integrations/whatsapp`
+        : `/home/sales/workspace-settings/integrations/meta-ads`;
 
     const state = Buffer.from(
       JSON.stringify({
@@ -40,9 +54,10 @@ export const metaAdsAuth = catchAsync(
       }),
     ).toString('base64');
 
-    const url = type === 'whatsapp'
-      ? buildWhatsAppOAuthUrl(state)
-      : buildMetaAdsOAuthUrl(state);
+    const url =
+      type === 'whatsapp'
+        ? buildWhatsAppOAuthUrl(state)
+        : buildMetaAdsOAuthUrl(state);
 
     return NextResponse.redirect(url);
   },

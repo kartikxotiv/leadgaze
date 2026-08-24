@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
+import { createEntitlementService } from '~/lib/entitlements';
 import { catchAsync, successDataResponse } from '~/utils/response-handler';
 
 /**
@@ -91,10 +92,14 @@ export const updateContact = catchAsync(
       .from('crm_contacts')
       .select('workspace_id, owner_id, created_by')
       .eq('id', id)
+      .eq('is_deleted', false)
       .single();
 
     if (!existingContact) {
-      return NextResponse.json({ message: 'Contact not found' }, { status: 404 });
+      return NextResponse.json(
+        { message: 'Contact not found' },
+        { status: 404 },
+      );
     }
 
     // Get workspace to check if user is owner
@@ -118,9 +123,10 @@ export const updateContact = catchAsync(
         .eq('user_id', user.id)
         .eq('workspace_id', existingContact.workspace_id);
 
-      const member = members?.find((m: any) => m.product_key === 'sales')
-        || members?.find((m: any) => m.product_key === null)
-        || members?.[0];
+      const member =
+        members?.find((m: any) => m.product_key === 'sales') ||
+        members?.find((m: any) => m.product_key === null) ||
+        members?.[0];
 
       if (member?.role_id) {
         const { data: permission } = await supabase
@@ -153,7 +159,6 @@ export const updateContact = catchAsync(
         { status: 403 },
       );
     }
-
 
     const { data: contact, error } = await supabase
       .from('crm_contacts')
@@ -217,11 +222,12 @@ export const deleteContact = catchAsync(
     }
 
     // Check permissions
-    // Get the contact to check permissions
+    // Get the active contact so repeated deletes cannot release usage twice.
     const { data: existingContact } = await supabase
       .from('crm_contacts')
       .select('workspace_id, owner_id, created_by')
       .eq('id', id)
+      .eq('is_deleted', false)
       .single();
 
     if (!existingContact) {
@@ -250,9 +256,10 @@ export const deleteContact = catchAsync(
         .eq('user_id', user.id)
         .eq('workspace_id', existingContact.workspace_id);
 
-      const member = members?.find((m: any) => m.product_key === 'sales')
-        || members?.find((m: any) => m.product_key === null)
-        || members?.[0];
+      const member =
+        members?.find((m: any) => m.product_key === 'sales') ||
+        members?.find((m: any) => m.product_key === null) ||
+        members?.[0];
 
       if (member?.role_id) {
         const { data: permission } = await supabase
@@ -295,6 +302,7 @@ export const deleteContact = catchAsync(
         deleted_by: user.id,
       })
       .eq('id', id)
+      .eq('is_deleted', false)
       .select()
       .single();
 
@@ -302,6 +310,14 @@ export const deleteContact = catchAsync(
       console.error('Delete contact error:', error);
       throw error;
     }
+
+    await createEntitlementService().releaseUsage({
+      workspaceId: existingContact.workspace_id,
+      moduleKey: 'sales',
+      featureKey: 'sales.contacts',
+      resourceId: id,
+      resourceType: 'contact',
+    });
 
     return successDataResponse('Contact deleted successfully', contact);
   },

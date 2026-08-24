@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseServerClient } from '@kit/supabase/server-client';
-import { catchAsync } from '~/utils/response-handler';
+
 import {
   handleGetMetaAdsSettings,
   handleMutateMetaAdsSettings,
 } from '@kit/integration-meta-ads';
+import { getSupabaseServerClient } from '@kit/supabase/server-client';
+
+import { createEntitlementService } from '~/lib/entitlements';
+import { catchAsync } from '~/utils/response-handler';
 
 export const getMetaAdsSettings = catchAsync(
   async ({
@@ -46,9 +49,23 @@ export const mutateMetaAdsSettings = catchAsync(
     const body = await request.json();
     const action = body.action as string;
 
-    const { data: { user } } = await supabase.auth.getUser();
+    await createEntitlementService().requireBooleanFeature(
+      workspaceId,
+      'sales',
+      'sales.meta_ads',
+    );
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     const userId = user?.id ?? '';
 
-    return handleMutateMetaAdsSettings(workspaceId, action, body, userId, supabase);
+    return handleMutateMetaAdsSettings(
+      workspaceId,
+      action,
+      body,
+      userId,
+      supabase,
+    );
   },
 );

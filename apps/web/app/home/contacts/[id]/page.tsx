@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 
 import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -178,9 +178,17 @@ export default function ContactDetailsPage() {
   const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
   const [openAccordions, setOpenAccordions] = useState<string[]>(['contact', 'account']);
 
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get('tab');
   const { currentWorkspace: workspace, canAccess } = useRBAC();
   const canManageEmail = canAccess('emails', 'manage_email');
   const { data: user } = useUser();
+
+  const defaultTab = useMemo(() => {
+    return tabParam || (canManageEmail ? 'email' : 'notes');
+  }, [tabParam, canManageEmail]);
+
+  const [activeTab, setActiveTab] = useState<string>(defaultTab);
 
   const {
     data: contact,
@@ -489,7 +497,8 @@ export default function ContactDetailsPage() {
 
             {/* Tabs Section */}
             <Tabs
-              defaultValue={canManageEmail ? 'email' : 'notes'}
+              value={activeTab}
+              onValueChange={setActiveTab}
               className="space-y-4 mb-2"
             >
               <TabsList className="mb-0 h-auto w-full justify-start gap-3 overflow-x-auto rounded-none border-b bg-transparent p-0 [-ms-overflow-style:none] [scrollbar-width:none] sm:gap-6 [&::-webkit-scrollbar]:hidden">

@@ -1,7 +1,7 @@
 import { enhanceRouteHandler } from '@kit/next/routes';
 
-import { createCheckoutSession } from './controller';
+import { createCompatibleCheckoutSession } from './controller';
 
-export const POST = enhanceRouteHandler(createCheckoutSession, {
+export const POST = enhanceRouteHandler(createCompatibleCheckoutSession, {
   auth: true,
 });

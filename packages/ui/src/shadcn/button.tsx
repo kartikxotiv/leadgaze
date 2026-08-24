@@ -12,16 +12,16 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          'bg-primary text-primary-foreground hover:bg-primary/90 shadow-xs dark:bg-leadgaze-primary dark:text-white dark:hover:bg-leadgaze-primary',
+          'bg-primary text-primary-foreground hover:bg-primary/90 shadow-xs dark:bg-leadgaze-primary dark:text-white dark:hover:bg-leadgaze-primary cursor-pointer',
         destructive:
-          'bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-xs',
+          'bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-xs cursor-pointer',
         outline:
-          'border-input bg-background hover:bg-accent hover:text-accent-foreground border shadow-xs',
+          'border-input bg-background hover:bg-accent hover:text-accent-foreground border shadow-xs cursor-pointer',
         secondary:
-          'bg-secondary text-secondary-foreground hover:bg-secondary/80 shadow-xs',
-        ghost: 'hover:bg-accent hover:text-accent-foreground',
-        link: 'decoration-primary underline-offset-4 hover:underline',
-        notactive: 'bg-white primary-text-medium text-leadgaze-dark hover:bg-white shadow-xs'
+          'bg-secondary text-secondary-foreground hover:bg-secondary/80 shadow-xs cursor-pointer',
+        ghost: 'hover:bg-accent hover:text-accent-foreground cursor-pointer',
+        link: 'decoration-primary underline-offset-4 hover:underline cursor-pointer',
+        notactive: 'bg-white primary-text-medium text-leadgaze-dark hover:bg-white shadow-xs cursor-pointer'
       },
       size: {
         default: 'h-[28px] px-4 py-2',
@@ -40,7 +40,7 @@ const buttonVariants = cva(
 
 export interface ButtonProps
   extends React.ComponentPropsWithRef<'button'>,
-    VariantProps<typeof buttonVariants> {
+  VariantProps<typeof buttonVariants> {
   asChild?: boolean;
 }
 

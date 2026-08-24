@@ -2812,7 +2812,7 @@ export default function MeetingsPage() {
                             <TableCell className="px-4 py-0" onClick={(e) => e.stopPropagation()}>
                               {meeting.entity_name && (
                                 <Link
-                                  href={`/home/sales/${meeting.entity_type === 'opportunity' ? 'opportunities' : `${meeting.entity_type}s`}/${meeting.entity_id}`}
+                                  href={`/home/sales/${meeting.entity_type === 'opportunity' ? 'opportunities' : `${meeting.entity_type}s`}/${meeting.entity_id}?tab=meetings`}
                                   className="primary-text-medium text-leadgaze-primary dark:text-leadgaze-primary text-xs font-medium hover:underline"
                                   title={`${meeting.entity_type}: ${meeting.entity_name}`}
                                 >

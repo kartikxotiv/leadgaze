@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
+
 import {
-  handleWhatsAppWebhookVerification,
   handleWhatsAppWebhook,
+  handleWhatsAppWebhookVerification,
 } from '@kit/integration-whatsapp';
 import type { WhatsAppWebhookPayload } from '@kit/integration-whatsapp';
 import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
+
+import { createServiceRoleEntitlementService } from '~/lib/entitlements';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,5 +36,19 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   const supabase = getSupabaseServerAdminClient();
-  return handleWhatsAppWebhook(rawBody, signature, payload, supabase);
+  const entitlements = createServiceRoleEntitlementService();
+  return handleWhatsAppWebhook(rawBody, signature, payload, supabase, {
+    beforeCreateLead: async (workspaceId) => {
+      const reservation = await entitlements.reserveUsage({
+        workspaceId,
+        moduleKey: 'sales',
+        featureKey: 'sales.leads',
+        resourceType: 'lead',
+      });
+      return {
+        commit: (resourceId) => reservation.commit({ resourceId }),
+        rollback: () => reservation.rollback(),
+      };
+    },
+  });
 }
