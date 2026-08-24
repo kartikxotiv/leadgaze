@@ -221,9 +221,10 @@ export function EditRoleDialog({
           className="flex flex-1 flex-col overflow-hidden"
         >
           <div className="flex-1 overflow-y-auto p-2">
+            <h3 className="primary-heading text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">Role Details</h3>
             <div className="space-y-2">
-              <div className="space-y-2">
-                <Label htmlFor="role_name">Role Name *</Label>
+              <div>
+                <Label htmlFor="role_name">Role Name <span className="text-red-500">*</span></Label>
                 <Input
                   id="role_name"
                   value={formData.role_name}
@@ -234,7 +235,7 @@ export function EditRoleDialog({
                 />
               </div>
 
-              <div className="space-y-2">
+              <div>
                 <Label htmlFor="description">Description</Label>
                 <Input
                   id="description"
@@ -246,8 +247,8 @@ export function EditRoleDialog({
                 />
               </div>
 
-              <div className="grid grid-cols-1 gap-4">
-                <div className="space-y-2">
+              <div className="grid grid-cols-1 gap-2">
+                <div>
                   <Label htmlFor="color">Color</Label>
                   <Select
                     value={formData.color}
@@ -275,7 +276,7 @@ export function EditRoleDialog({
                 </div>
               </div>
 
-              <div className="space-y-2">
+              <div>
                 <Label htmlFor="is_active">Status</Label>
                 <Select
                   value={formData.is_active ? 'active' : 'inactive'}
@@ -352,7 +353,7 @@ export function EditRoleDialog({
                                       togglePermission(feature.id)
                                     }
                                   />
-                                  <label
+                                  <Label
                                     htmlFor={feature.id}
                                     className="flex-1 cursor-pointer text-sm"
                                   >
@@ -362,7 +363,7 @@ export function EditRoleDialog({
                                     <span className="ml-2 text-xs text-slate-500">
                                       ({feature.feature_key})
                                     </span>
-                                  </label>
+                                  </Label>
                                 </div>
                               ))
                             ) : (

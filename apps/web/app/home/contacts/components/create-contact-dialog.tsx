@@ -138,7 +138,7 @@ export function CreateContactDialog({
               </h3>              
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <Label htmlFor="first_name">First Name *</Label>
+                  <Label htmlFor="first_name">First Name <span className="text-red-500">*</span></Label>
                   <Input
                     id="first_name"
                     value={formData.first_name}
@@ -273,9 +273,9 @@ export function CreateContactDialog({
               </Button>
               <Button type="submit" form="dialog-form" disabled={mutation.isPending}>
                 {mutation.isPending ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Plus className="mr-2 h-4 w-4" />
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : !asFormOnly && (
+                  <Plus className="h-4 w-4" />
                 )}
                 Create Contact
               </Button>

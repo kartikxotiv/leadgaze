@@ -23,9 +23,10 @@ import { createNoteService } from '~/services/activities.service';
 interface Props {
   onSuccess: () => void;
   onCancel: () => void;
+  asFormOnly: boolean
 }
 
-export function GlobalCreateNoteForm({ onSuccess, onCancel }: Props) {
+export function GlobalCreateNoteForm({ onSuccess, onCancel, asFormOnly = false }: Props) {
   const { currentWorkspace: workspace } = useRBAC();
   const queryClient = useQueryClient();
   
@@ -69,7 +70,7 @@ export function GlobalCreateNoteForm({ onSuccess, onCancel }: Props) {
     <div className="flex h-full flex-col overflow-auto">
       
       <div className="flex-1 space-y-2 overflow-y-auto px-2">
-        <div className="space-y-2">
+        <div>
           <Label>Associate with</Label>
           <RadioGroup
             value={formData.entity_type}
@@ -119,7 +120,7 @@ export function GlobalCreateNoteForm({ onSuccess, onCancel }: Props) {
       <DialogFooter className="mt-2">
         <Button variant="outline" onClick={onCancel} disabled={mutation.isPending}>Cancel</Button>
         <Button onClick={() => mutation.mutate()} disabled={mutation.isPending}>
-          {mutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+          {mutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : (!asFormOnly ? <Plus className="h-4 w-4" />: '')}
           Add Note
         </Button>
       </DialogFooter>

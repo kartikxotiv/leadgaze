@@ -873,6 +873,7 @@ export function ServiceCloudResourcePage({
                         <div key={field.key}>
                           <Label className="flex items-center gap-1.5">
                             {field.label}
+                            {field.required && <span className="pl-1 text-red-500">*</span>}
                             {!isEditable && (
                               <span className="text-muted-foreground text-xs font-normal">(view only)</span>
                             )}

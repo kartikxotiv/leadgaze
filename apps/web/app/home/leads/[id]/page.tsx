@@ -341,34 +341,9 @@ export default function LeadDetailsPage() {
       }
 
       const payload: Record<string, any> = {
-        first_name: lead.first_name,
-        last_name: lead.last_name,
-        email: lead.email,
-        alt_email: lead.alt_email,
-        phone_number: lead.phone_number,
-        mobile_number: lead.mobile_number,
-        linkedin_url: lead.linkedin_url,
-        company_name: lead.company_name,
-        company_website: lead.company_website,
-        company_linkedin_url: lead.company_linkedin_url,
-        job_title: lead.job_title,
-        department: lead.department,
-        industry_id: lead.industry_id ?? lead.industry?.id,
-        company_size: lead.company_size,
-        annual_revenue: lead.annual_revenue,
-        location: lead.location,
-        timezone: lead.timezone,
-        status_id: lead.status_id,
-        source_id: lead.source_id,
-        trigger: lead.trigger,
-        lead_score: lead.lead_score,
-        owner_id: lead.owner_id,
-        notes: lead.notes,
-        tags: lead.tags,
-        custom_fields: lead.custom_fields,
+        [params.field]: params.value,
       };
 
-      payload[params.field] = params.value;
       if (params.field === 'industry') {
         const matchingIndustry = industries.find(
           (industry: { id: string; industry_name: string }) =>

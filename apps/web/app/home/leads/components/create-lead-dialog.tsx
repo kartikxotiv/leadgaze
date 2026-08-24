@@ -43,7 +43,7 @@ import { ManageableStatusSelect } from '../../_components/manageable-status-sele
 interface CreateLeadDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSuccess: () => void;
+  onSuccess?: () => void;
   asFormOnly?: boolean;
   defaultStatusId?: string;
 }
@@ -194,9 +194,9 @@ export default function CreateLeadDialog({
     },
     onSuccess: () => {
       toast.success('Lead created successfully');
-      resetForm();
       queryClient.invalidateQueries({ queryKey: ['leads', workspace?.id] });
-      onSuccess();
+      handleOpenChange(false);
+      onSuccess?.();
     },
     onError: (error: any) => {
       const message =
@@ -345,455 +345,455 @@ export default function CreateLeadDialog({
       )}
 
       <form id="dialog-form"
-            onSubmit={handleSubmit}
-            className="flex flex-col flex-1 overflow-y-auto p-2 gap-2"
-          >
-            {/* Contact Information Section */}
-            <div className="space-y-2">
-              <h3 className="primary-heading text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">
-                Contact Information
-              </h3>              
+        onSubmit={handleSubmit}
+        className="flex flex-col flex-1 overflow-y-auto p-2 gap-2"
+      >
+        {/* Contact Information Section */}
+        <div className="space-y-2">
+          <h3 className="primary-heading text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">
+            Contact Information
+          </h3>
 
-              <div className="grid grid-cols-2 gap-2">
-                <LeadFormField formKey="first_name" canEdit={canEdit}>
-                <div>
-                  <Label
-                    htmlFor="first_name">
-                    First Name <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    id="first_name"
-                    placeholder="John"
-                    value={formData.first_name}
-                    onChange={(e) =>
-                      handleInputChange('first_name', e.target.value)
-                    }
-                    disabled={isLoading}
-                    className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
-                    required
-                  />
-                </div>
-                </LeadFormField>
-                <LeadFormField formKey="last_name" canEdit={canEdit}>
-                <div>
-                  <Label
-                    htmlFor="last_name">
-                    Last Name (Optional)
-                  </Label>
-                  <Input
-                    id="last_name"
-                    placeholder="Doe"
-                    value={formData.last_name}
-                    onChange={(e) =>
-                      handleInputChange('last_name', e.target.value)
-                    }
-                    disabled={isLoading}
-                    className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
-                  />
-                </div>
-                </LeadFormField>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <LeadFormField formKey="email" canEdit={canEdit}>
-                <div>
-                  <Label
-                    htmlFor="email">
-                    Email (Optional)
-                  </Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="john@example.com"
-                    value={formData.email}
-                    onChange={(e) => handleInputChange('email', e.target.value)}
-                    disabled={isLoading}
-                    className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
-                  />
-                </div>
-                </LeadFormField>
-                <LeadFormField formKey="alt_email" canEdit={canEdit}>
-                <div>
-                  <Label
-                    htmlFor="alt_email">
-                    Alternative Email (Optional)
-                  </Label>
-                  <Input
-                    id="alt_email"
-                    type="email"
-                    placeholder="john.doe@work.com"
-                    value={formData.alt_email}
-                    onChange={(e) =>
-                      handleInputChange('alt_email', e.target.value)
-                    }
-                    disabled={isLoading}
-                    className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
-                  />
-                </div>
-                </LeadFormField>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <Label
-                    htmlFor="phone_number">
-                    Phone (Optional)
-                  </Label>
-                  <Input
-                    id="phone_number"
-                    placeholder="+1 (555) 123-4567"
-                    value={formData.phone_number}
-                    onChange={(e) =>
-                      handleInputChange('phone_number', e.target.value)
-                    }
-                    disabled={isLoading}
-                    className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
-                  />
-                </div>
-                <div>
-                  <Label
-                    htmlFor="mobile_number">
-                    Mobile (Optional)
-                  </Label>
-                  <Input
-                    id="mobile_number"
-                    placeholder="+1 (555) 987-6543"
-                    value={formData.mobile_number}
-                    onChange={(e) =>
-                      handleInputChange('mobile_number', e.target.value)
-                    }
-                    disabled={isLoading}
-                    className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Company Information Section */}
-            <div className="space-y-2">
-              <h3 className="primary-heading text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">
-                Company Information
-              </h3>              
-
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <Label
-                    htmlFor="company_name">
-                    Company Name (Optional)
-                  </Label>
-                  <Input
-                    id="company_name"
-                    placeholder="Acme Inc."
-                    value={formData.company_name}
-                    onChange={(e) =>
-                      handleInputChange('company_name', e.target.value)
-                    }
-                    disabled={isLoading}
-                    className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
-                  />
-                </div>
-                <div>
-                  <Label
-                    htmlFor="industry_id">
-                    Industry (Optional)
-                  </Label>
-                  <div>
-                    <IndustrySelect
-                      value={formData.industry_id}
-                      onValueChange={(value) =>
-                        handleInputChange('industry_id', value)
-                      }
-                      disabled={isLoading}
-                      className="border-gray-300 bg-white text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <Label
-                    htmlFor="company_website">
-                    Website (Optional)
-                  </Label>
-                  <Input
-                    id="company_website"
-                    placeholder="https://acme.com"
-                    value={formData.company_website}
-                    onChange={(e) =>
-                      handleInputChange('company_website', e.target.value)
-                    }
-                    disabled={isLoading}
-                    className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
-                  />
-                </div>
-                <div>
-                  <Label
-                    htmlFor="company_linkedin_url">
-                    LinkedIn Company (Optional)
-                  </Label>
-                  <Input
-                    id="company_linkedin_url"
-                    placeholder="https://linkedin.com/company/acme"
-                    value={formData.company_linkedin_url}
-                    onChange={(e) =>
-                      handleInputChange('company_linkedin_url', e.target.value)
-                    }
-                    disabled={isLoading}
-                    className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <Label
-                    htmlFor="company_size">
-                    Company Size (Optional)
-                  </Label>
-                  <Select
-                    value={formData.company_size}
-                    onValueChange={(value) =>
-                      handleInputChange('company_size', value)
-                    }
-                    disabled={isLoading}
-                  >
-                    <SelectTrigger className="border-gray-300 bg-white text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white">
-                      <SelectValue placeholder="Select company size" />
-                    </SelectTrigger>
-                    <SelectContent className="z-50 border-gray-300 bg-white dark:border-slate-700 dark:bg-slate-900">
-                      {COMPANY_SIZES.map((size) => (
-                        <SelectItem key={size.value} value={size.value}>
-                          {size.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label
-                    htmlFor="department">
-                    Department (Optional)
-                  </Label>
-                  <Input
-                    id="department"
-                    placeholder="Sales"
-                    value={formData.department}
-                    onChange={(e) =>
-                      handleInputChange('department', e.target.value)
-                    }
-                    disabled={isLoading}
-                    className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <Label
-                    htmlFor="linkedin_url">
-                    Personal LinkedIn (Optional)
-                  </Label>
-                  <Input
-                    id="linkedin_url"
-                    placeholder="https://linkedin.com/in/..."
-                    value={formData.linkedin_url}
-                    onChange={(e) =>
-                      handleInputChange('linkedin_url', e.target.value)
-                    }
-                    disabled={isLoading}
-                    className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Professional Information Section */}
-            <div className="space-y-2">
-              <h3 className="primary-heading text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">
-                Professional Information
-              </h3>              
-
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <Label
-                    htmlFor="job_title">
-                    Job Title (Optional)
-                  </Label>
-                  <Input
-                    id="job_title"
-                    placeholder="Sales Manager"
-                    value={formData.job_title}
-                    onChange={(e) =>
-                      handleInputChange('job_title', e.target.value)
-                    }
-                    disabled={isLoading}
-                    className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
-                  />
-                </div>
-                <div>
-                  <Label
-                    htmlFor="location">
-                    Location (Optional)
-                  </Label>
-                  <Input
-                    id="location"
-                    placeholder="San Francisco, CA"
-                    value={formData.location}
-                    onChange={(e) =>
-                      handleInputChange('location', e.target.value)
-                    }
-                    disabled={isLoading}
-                    className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
-                  />
-                </div>
-              </div>
-
+          <div className="grid grid-cols-2 gap-2">
+            <LeadFormField formKey="first_name" canEdit={canEdit}>
               <div>
                 <Label
-                  htmlFor="timezone">
-                  Timezone (Optional)
+                  htmlFor="first_name">
+                  First Name <span className="text-red-500">*</span>
                 </Label>
                 <Input
-                  id="timezone"
-                  placeholder="America/Los_Angeles"
-                  value={formData.timezone}
+                  id="first_name"
+                  placeholder="John"
+                  value={formData.first_name}
                   onChange={(e) =>
-                    handleInputChange('timezone', e.target.value)
+                    handleInputChange('first_name', e.target.value)
+                  }
+                  disabled={isLoading}
+                  className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
+                  required
+                />
+              </div>
+            </LeadFormField>
+            <LeadFormField formKey="last_name" canEdit={canEdit}>
+              <div>
+                <Label
+                  htmlFor="last_name">
+                  Last Name (Optional)
+                </Label>
+                <Input
+                  id="last_name"
+                  placeholder="Doe"
+                  value={formData.last_name}
+                  onChange={(e) =>
+                    handleInputChange('last_name', e.target.value)
                   }
                   disabled={isLoading}
                   className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
                 />
               </div>
-            </div>
+            </LeadFormField>
+          </div>
 
-            {/* Lead Information Section */}
-            <div className="space-y-2">
-              <h3 className="primary-heading text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">
-                Lead Information
-              </h3>              
-
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <Label
-                    htmlFor="status_id">
-                    Status <span className="text-red-500">*</span>
-                  </Label>
-                  <div>
-                    <ManageableStatusSelect
-                      moduleKey="leads"
-                      workspaceId={workspace?.id ?? ''}
-                      value={formData.status_id}
-                      onValueChange={(value) =>
-                        handleInputChange('status_id', value)
-                      }
-                      disabled={isLoading}
-                      triggerClassName="border-gray-300 bg-white text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <Label
-                    htmlFor="source_id">
-                    Lead Source (Optional)
-                  </Label>
-                  <div>
-                    <LeadSourceSelect
-                      value={formData.source_id}
-                      onValueChange={(value) =>
-                        handleInputChange('source_id', value)
-                      }
-                      disabled={isLoading}
-                      placeholder="Select a source"
-                      className="border-gray-300 bg-white text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
-                    />
-                  </div>
-                </div>
-              </div>
-
+          <div className="grid grid-cols-2 gap-2">
+            <LeadFormField formKey="email" canEdit={canEdit}>
               <div>
                 <Label
-                  htmlFor="trigger">
-                  Trigger (Optional)
+                  htmlFor="email">
+                  Email (Optional)
                 </Label>
                 <Input
-                  id="trigger"
-                  placeholder="e.g., Inbound inquiry, Referral"
-                  value={formData.trigger}
-                  onChange={(e) => handleInputChange('trigger', e.target.value)}
+                  id="email"
+                  type="email"
+                  placeholder="john@example.com"
+                  value={formData.email}
+                  onChange={(e) => handleInputChange('email', e.target.value)}
                   disabled={isLoading}
                   className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
                 />
               </div>
-            </div>
-
-            {/* Additional Notes Section */}
-            <LeadFormField formKey="notes" canEdit={canEdit}>
-            <div className="space-y-2">
-              <h3 className="primary-heading text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">
-                Additional Information
-              </h3>              
-
+            </LeadFormField>
+            <LeadFormField formKey="alt_email" canEdit={canEdit}>
               <div>
                 <Label
-                  htmlFor="notes">
-                  Notes (Optional)
+                  htmlFor="alt_email">
+                  Alternative Email (Optional)
                 </Label>
-                <Textarea
-                  id="notes"
-                  placeholder="Add any additional notes about this lead..."
-                  value={formData.notes}
-                  onChange={(e) => handleInputChange('notes', e.target.value)}
+                <Input
+                  id="alt_email"
+                  type="email"
+                  placeholder="john.doe@work.com"
+                  value={formData.alt_email}
+                  onChange={(e) =>
+                    handleInputChange('alt_email', e.target.value)
+                  }
                   disabled={isLoading}
-                  className="border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
-                  rows={4}
+                  className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
+                />
+              </div>
+            </LeadFormField>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <Label
+                htmlFor="phone_number">
+                Phone (Optional)
+              </Label>
+              <Input
+                id="phone_number"
+                placeholder="+1 (555) 123-4567"
+                value={formData.phone_number}
+                onChange={(e) =>
+                  handleInputChange('phone_number', e.target.value)
+                }
+                disabled={isLoading}
+                className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
+              />
+            </div>
+            <div>
+              <Label
+                htmlFor="mobile_number">
+                Mobile (Optional)
+              </Label>
+              <Input
+                id="mobile_number"
+                placeholder="+1 (555) 987-6543"
+                value={formData.mobile_number}
+                onChange={(e) =>
+                  handleInputChange('mobile_number', e.target.value)
+                }
+                disabled={isLoading}
+                className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Company Information Section */}
+        <div className="space-y-2">
+          <h3 className="primary-heading text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">
+            Company Information
+          </h3>
+
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <Label
+                htmlFor="company_name">
+                Company Name (Optional)
+              </Label>
+              <Input
+                id="company_name"
+                placeholder="Acme Inc."
+                value={formData.company_name}
+                onChange={(e) =>
+                  handleInputChange('company_name', e.target.value)
+                }
+                disabled={isLoading}
+                className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
+              />
+            </div>
+            <div>
+              <Label
+                htmlFor="industry_id">
+                Industry (Optional)
+              </Label>
+              <div>
+                <IndustrySelect
+                  value={formData.industry_id}
+                  onValueChange={(value) =>
+                    handleInputChange('industry_id', value)
+                  }
+                  disabled={isLoading}
+                  className="border-gray-300 bg-white text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
                 />
               </div>
             </div>
-            </LeadFormField>
+          </div>
 
-            <LeadCustomFieldInputs
-              fields={editableCustomFields}
-              values={customFields}
-              onChange={(key, value) =>
-                setCustomFields((prev) => ({ ...prev, [key]: value }))
-              }
-              canEdit={canEdit}
-              canView={canView}
-            />
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <Label
+                htmlFor="company_website">
+                Website (Optional)
+              </Label>
+              <Input
+                id="company_website"
+                placeholder="https://acme.com"
+                value={formData.company_website}
+                onChange={(e) =>
+                  handleInputChange('company_website', e.target.value)
+                }
+                disabled={isLoading}
+                className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
+              />
+            </div>
+            <div>
+              <Label
+                htmlFor="company_linkedin_url">
+                LinkedIn Company (Optional)
+              </Label>
+              <Input
+                id="company_linkedin_url"
+                placeholder="https://linkedin.com/company/acme"
+                value={formData.company_linkedin_url}
+                onChange={(e) =>
+                  handleInputChange('company_linkedin_url', e.target.value)
+                }
+                disabled={isLoading}
+                className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
+              />
+            </div>
+          </div>
 
-            {/* Form Actions (Hidden here, moved outside) */}
-          </form>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <Label
+                htmlFor="company_size">
+                Company Size (Optional)
+              </Label>
+              <Select
+                value={formData.company_size}
+                onValueChange={(value) =>
+                  handleInputChange('company_size', value)
+                }
+                disabled={isLoading}
+              >
+                <SelectTrigger className="border-gray-300 bg-white text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+                  <SelectValue placeholder="Select company size" />
+                </SelectTrigger>
+                <SelectContent className="z-50 border-gray-300 bg-white dark:border-slate-700 dark:bg-slate-900">
+                  {COMPANY_SIZES.map((size) => (
+                    <SelectItem key={size.value} value={size.value}>
+                      {size.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label
+                htmlFor="department">
+                Department (Optional)
+              </Label>
+              <Input
+                id="department"
+                placeholder="Sales"
+                value={formData.department}
+                onChange={(e) =>
+                  handleInputChange('department', e.target.value)
+                }
+                disabled={isLoading}
+                className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
+              />
+            </div>
+          </div>
 
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => handleOpenChange(false)}
-              disabled={isLoading}                
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              onClick={handleSubmit}
-              disabled={isLoading}
-              className="gap-2"
-            >
-              {isLoading ? (
-                <>
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                  Creating...
-                </>
-              ) : (
-                <>
-                  <Plus className="h-4 w-4" />
-                  Add Lead
-                </>
-              )}
-            </Button>
-          </DialogFooter>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <Label
+                htmlFor="linkedin_url">
+                Personal LinkedIn (Optional)
+              </Label>
+              <Input
+                id="linkedin_url"
+                placeholder="https://linkedin.com/in/..."
+                value={formData.linkedin_url}
+                onChange={(e) =>
+                  handleInputChange('linkedin_url', e.target.value)
+                }
+                disabled={isLoading}
+                className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
+              />
+            </div>
+          </div>
         </div>
+
+        {/* Professional Information Section */}
+        <div className="space-y-2">
+          <h3 className="primary-heading text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">
+            Professional Information
+          </h3>
+
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <Label
+                htmlFor="job_title">
+                Job Title (Optional)
+              </Label>
+              <Input
+                id="job_title"
+                placeholder="Sales Manager"
+                value={formData.job_title}
+                onChange={(e) =>
+                  handleInputChange('job_title', e.target.value)
+                }
+                disabled={isLoading}
+                className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
+              />
+            </div>
+            <div>
+              <Label
+                htmlFor="location">
+                Location (Optional)
+              </Label>
+              <Input
+                id="location"
+                placeholder="San Francisco, CA"
+                value={formData.location}
+                onChange={(e) =>
+                  handleInputChange('location', e.target.value)
+                }
+                disabled={isLoading}
+                className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
+              />
+            </div>
+          </div>
+
+          <div>
+            <Label
+              htmlFor="timezone">
+              Timezone (Optional)
+            </Label>
+            <Input
+              id="timezone"
+              placeholder="America/Los_Angeles"
+              value={formData.timezone}
+              onChange={(e) =>
+                handleInputChange('timezone', e.target.value)
+              }
+              disabled={isLoading}
+              className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
+            />
+          </div>
+        </div>
+
+        {/* Lead Information Section */}
+        <div className="space-y-2">
+          <h3 className="primary-heading text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">
+            Lead Information
+          </h3>
+
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <Label
+                htmlFor="status_id">
+                Status <span className="text-red-500">*</span>
+              </Label>
+              <div>
+                <ManageableStatusSelect
+                  moduleKey="leads"
+                  workspaceId={workspace?.id ?? ''}
+                  value={formData.status_id}
+                  onValueChange={(value) =>
+                    handleInputChange('status_id', value)
+                  }
+                  disabled={isLoading}
+                  triggerClassName="border-gray-300 bg-white text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                />
+              </div>
+            </div>
+            <div>
+              <Label
+                htmlFor="source_id">
+                Lead Source (Optional)
+              </Label>
+              <div>
+                <LeadSourceSelect
+                  value={formData.source_id}
+                  onValueChange={(value) =>
+                    handleInputChange('source_id', value)
+                  }
+                  disabled={isLoading}
+                  placeholder="Select a source"
+                  className="border-gray-300 bg-white text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <Label
+              htmlFor="trigger">
+              Trigger (Optional)
+            </Label>
+            <Input
+              id="trigger"
+              placeholder="e.g., Inbound inquiry, Referral"
+              value={formData.trigger}
+              onChange={(e) => handleInputChange('trigger', e.target.value)}
+              disabled={isLoading}
+              className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
+            />
+          </div>
+        </div>
+
+        {/* Additional Notes Section */}
+        <LeadFormField formKey="notes" canEdit={canEdit}>
+          <div className="space-y-2">
+            <h3 className="primary-heading text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">
+              Additional Information
+            </h3>
+
+            <div>
+              <Label
+                htmlFor="notes">
+                Notes (Optional)
+              </Label>
+              <Textarea
+                id="notes"
+                placeholder="Add any additional notes about this lead..."
+                value={formData.notes}
+                onChange={(e) => handleInputChange('notes', e.target.value)}
+                disabled={isLoading}
+                className="border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
+                rows={4}
+              />
+            </div>
+          </div>
+        </LeadFormField>
+
+        <LeadCustomFieldInputs
+          fields={editableCustomFields}
+          values={customFields}
+          onChange={(key, value) =>
+            setCustomFields((prev) => ({ ...prev, [key]: value }))
+          }
+          canEdit={canEdit}
+          canView={canView}
+        />
+
+        {/* Form Actions (Hidden here, moved outside) */}
+      </form>
+
+      <DialogFooter>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => handleOpenChange(false)}
+          disabled={isLoading}
+        >
+          Cancel
+        </Button>
+        <Button
+          type="button"
+          onClick={handleSubmit}
+          disabled={isLoading}
+          className="gap-2"
+        >
+          {isLoading ? (
+            <>
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+              Creating...
+            </>
+          ) : (
+            <>
+              {!asFormOnly && <Plus className="h-4 w-4" />}
+              Add Lead
+            </>
+          )}
+        </Button>
+      </DialogFooter>
+    </div>
   );
 
   if (asFormOnly) {

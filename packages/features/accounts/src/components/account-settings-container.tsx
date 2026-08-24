@@ -72,7 +72,7 @@ export function PersonalAccountSettingsContainer(
       <div className={'grid grid-cols-1 gap-2 md:grid-cols-2'}>
         <Card>
           <CardHeader className="p-2">
-            <CardTitle>
+            <CardTitle className="mb-0">
               <Trans i18nKey={'account:accountImage'} />
             </CardTitle>
 
@@ -93,7 +93,7 @@ export function PersonalAccountSettingsContainer(
 
         <Card>
           <CardHeader className="p-2">
-            <CardTitle>
+            <CardTitle className="mb-0">
               <Trans i18nKey={'account:name'} />
             </CardTitle>
 
@@ -130,7 +130,7 @@ export function PersonalAccountSettingsContainer(
         <If condition={props.features.enablePasswordUpdate}>
           <Card>
             <CardHeader className="p-2">
-              <CardTitle>
+              <CardTitle className="mb-0">
                 <Trans i18nKey={'account:updatePasswordCardTitle'} />
               </CardTitle>
 
@@ -152,7 +152,7 @@ export function PersonalAccountSettingsContainer(
       <If condition={!!props.trustedDevices}>
         <Card>
           <CardHeader className="p-2">
-            <CardTitle>
+            <CardTitle className="mb-0">
               <Trans i18nKey={'account:trustedDevices'} />
             </CardTitle>
 
@@ -174,7 +174,7 @@ export function PersonalAccountSettingsContainer(
 
       <Card>
         <CardHeader className="p-2">
-          <CardTitle>
+          <CardTitle className="mb-0">
             <Trans i18nKey={'account:multiFactorAuth'} />
           </CardTitle>
 
@@ -191,7 +191,7 @@ export function PersonalAccountSettingsContainer(
       <If condition={props.features.enableAccountDeletion}>
         <Card className={'border-destructive'}>
           <CardHeader className="p-2">
-            <CardTitle>
+            <CardTitle className="mb-0">
               <Trans i18nKey={'account:dangerZone'} />
             </CardTitle>
 
