@@ -59,7 +59,7 @@ const AlertDialogFooter = ({
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     className={cn(
-      'flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 dialog-footer-border-top p-2 dialog-footer',
+      'flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 dialog-footer-border-top p-4 dialog-footer',
       className,
     )}
     {...props}
@@ -71,7 +71,7 @@ const AlertDialogTitle: React.FC<
   React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Title>
 > = ({ className, ...props }) => (
   <AlertDialogPrimitive.Title
-    className={cn('px-2 py-3 bg-(--color-destructive) primary-heading-extra text-white', className)}
+    className={cn('p-4 bg-(--color-destructive) primary-heading-extra text-white', className)}
     {...props}
   />
 );
@@ -81,7 +81,7 @@ const AlertDialogDescription: React.FC<
   React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Description>
 > = ({ className, ...props }) => (
   <AlertDialogPrimitive.Description
-    className={cn('text-leadgaze-dark primary-text-medium px-2 dark:text-white', className)}
+    className={cn('text-leadgaze-dark primary-text-medium p-2 dark:text-white', className)}
     {...props}
   />
 );

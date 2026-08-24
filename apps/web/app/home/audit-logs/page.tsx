@@ -225,7 +225,7 @@ export default function AuditLogsPage() {
 
   return (
     <ModuleGuard module="audit_logs">
-      <div className="flex shrink-0 flex-col gap-2 overflow-hidden border-top-bottom-gray">
+      <div className="flex shrink-0 flex-col gap-2 overflow-hidden">
         <PageHeader
           title={`Audit Logs`}
           // (${count})

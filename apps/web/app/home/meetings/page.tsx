@@ -2378,7 +2378,7 @@ export default function MeetingsPage() {
 
   return (
     <>
-      <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden border-bottom-gray">
+      <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden">
         <PageHeader
           title={`Meetings`}
         >
