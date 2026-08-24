@@ -164,11 +164,11 @@ export async function handleWhatsAppCallback(
       }
     }
 
-    if (phoneAccountsCreated === 0) {
-      console.warn(
-        `[whatsapp] Connection stored for workspace ${workspaceId}, but 0 phone numbers were found across ${wabas.length} WABA(s).`,
-      );
-    }
+    // if (phoneAccountsCreated === 0) {
+    //   console.warn(
+    //     `[whatsapp] Connection stored for workspace ${workspaceId}, but 0 phone numbers were found across ${wabas.length} WABA(s).`,
+    //   );
+    // }
 
     // Ensure default settings exist
     await supabase

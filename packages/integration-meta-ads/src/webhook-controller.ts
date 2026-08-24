@@ -127,18 +127,18 @@ async function processMetaLead(
     .maybeSingle();
 
   if (!formConfig) {
-    console.warn(
-      `[integration-meta-ads] No active form config for form_id=${form_id}, page_id=${page_id}`,
-    );
+    // console.warn(
+    //   `[integration-meta-ads] No active form config for form_id=${form_id}, page_id=${page_id}`,
+    // );
     return;
   }
 
   const { workspace_id, account_id } = formConfig;
 
   if (!account_id) {
-    console.warn(
-      '[integration-meta-ads] Form has no account_id, cannot fetch lead data.',
-    );
+    // console.warn(
+    //   '[integration-meta-ads] Form has no account_id, cannot fetch lead data.',
+    // );
     return;
   }
 

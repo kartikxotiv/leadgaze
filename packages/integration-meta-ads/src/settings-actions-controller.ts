@@ -163,12 +163,12 @@ async function handleFetchPages(
     );
   }
 
-  if (token_expires_at && isMetaTokenExpiringSoon(token_expires_at)) {
-    console.warn(
-      '[integration-meta-ads] Meta token is expiring soon for workspace:',
-      workspaceId,
-    );
-  }
+  // if (token_expires_at && isMetaTokenExpiringSoon(token_expires_at)) {
+  //   console.warn(
+  //     '[integration-meta-ads] Meta token is expiring soon for workspace:',
+  //     workspaceId,
+  //   );
+  // }
 
   try {
     const pages = await fetchMetaPages(user_access_token);

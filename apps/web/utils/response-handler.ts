@@ -45,20 +45,20 @@ const catchAsync = (handler: RouteHandler): RouteHandler => {
         statusCode = (err as ErrorWithStatus).statusCode ?? 500;
       }
 
-      if (
-        err instanceof Error &&
-        err.name === 'EntitlementError' &&
-        'code' in err
-      ) {
-        console.warn(
-          '[EntitlementEnforcement] blocked',
-          JSON.stringify({
-            code: (err as ErrorWithStatus).code,
-            statusCode,
-            data: (err as ErrorWithStatus).data ?? null,
-          }),
-        );
-      }
+      // if (
+      //   err instanceof Error &&
+      //   err.name === 'EntitlementError' &&
+      //   'code' in err
+      // ) {
+      //   console.warn(
+      //     '[EntitlementEnforcement] blocked',
+      //     JSON.stringify({
+      //       code: (err as ErrorWithStatus).code,
+      //       statusCode,
+      //       data: (err as ErrorWithStatus).data ?? null,
+      //     }),
+      //   );
+      // }
 
       // Ensure safe error handling
       console.error('CaughtError:', err instanceof Error ? err.message : err);

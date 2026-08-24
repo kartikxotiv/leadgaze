@@ -51,9 +51,9 @@ export async function handleGoogleAdsWebhook(
     .maybeSingle();
 
   if (!formConfig) {
-    console.warn(
-      `[integration-google-ads] No active form config for form_id=${form_id}, customer_id=${customer_id}`,
-    );
+    // console.warn(
+    //   `[integration-google-ads] No active form config for form_id=${form_id}, customer_id=${customer_id}`,
+    // );
     return NextResponse.json({
       success: true,
       message: 'Form not configured. Skipped.',

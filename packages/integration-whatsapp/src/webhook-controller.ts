@@ -65,9 +65,9 @@ async function processWebhookPayload(
         .maybeSingle();
 
       if (!account) {
-        console.warn(
-          `[whatsapp] No active account found for phone_number_id=${phoneNumberId}`,
-        );
+        // console.warn(
+        //   `[whatsapp] No active account found for phone_number_id=${phoneNumberId}`,
+        // );
         continue;
       }
 
