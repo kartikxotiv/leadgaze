@@ -135,7 +135,7 @@ export function CreateAccountDialog({
             </h3>            
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <Label htmlFor="account_name">Account Name *</Label>
+                <Label htmlFor="account_name">Account Name <span className="text-red-500">*</span></Label>
                 <Input
                   id="account_name"
                   value={formData.account_name}
@@ -316,9 +316,9 @@ export function CreateAccountDialog({
             disabled={mutation.isPending}
           >
             {mutation.isPending ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Plus className="mr-2 h-4 w-4" />
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : !asFormOnly && (
+              <Plus className="h-4 w-4" />
             )}
             Create Account
           </Button>

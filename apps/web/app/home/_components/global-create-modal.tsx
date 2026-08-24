@@ -103,7 +103,7 @@ export function GlobalCreateModal({ open, onOpenChange }: GlobalCreateModalProps
                       'whitespace-nowrap pb-1 text-sm font-medium transition-colors',
                       activeTab === tab.id
                         ? 'border-b-2 border-blue-600 text-blue-600 dark:border-blue-500 dark:text-blue-500'
-                        : 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-300'
+                        : 'text-[#9ca3af] hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-300'
                     )}
                   >
                     {tab.label}
@@ -151,12 +151,14 @@ export function GlobalCreateModal({ open, onOpenChange }: GlobalCreateModalProps
                 <GlobalCreateReminderForm
                   onSuccess={handleSuccess}
                   onCancel={() => onOpenChange(false)}
+                  asFormOnly
                 />
              )}
              {activeTab === 'note' && (
                 <GlobalCreateNoteForm
                   onSuccess={handleSuccess}
                   onCancel={() => onOpenChange(false)}
+                  asFormOnly
                 />
              )}
              {activeTab === 'meeting' && (
@@ -172,12 +174,14 @@ export function GlobalCreateModal({ open, onOpenChange }: GlobalCreateModalProps
                 <GlobalCreateDocumentForm
                   onSuccess={handleSuccess}
                   onCancel={() => onOpenChange(false)}
+                  asFormOnly
                 />
              )}
              {activeTab === 'ticket' && (
                 <GlobalCreateTicketForm
                   onSuccess={handleSuccess}
                   onCancel={() => onOpenChange(false)}
+                  asFormOnly
                 />
              )}
              {activeTab === 'customer' && (
@@ -188,6 +192,7 @@ export function GlobalCreateModal({ open, onOpenChange }: GlobalCreateModalProps
                   productKey="service-cloud"
                   onSuccess={handleSuccess}
                   onCancel={() => onOpenChange(false)}
+                  asFormOnly
                 />
              )}
              {activeTab === 'organization' && (
@@ -198,6 +203,7 @@ export function GlobalCreateModal({ open, onOpenChange }: GlobalCreateModalProps
                   productKey="service-cloud"
                   onSuccess={handleSuccess}
                   onCancel={() => onOpenChange(false)}
+                  asFormOnly
                 />
              )}
           </div>

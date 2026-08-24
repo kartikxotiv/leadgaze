@@ -25,9 +25,10 @@ import { useFieldPermissions } from '~/lib/hooks/use-field-permissions';
 interface Props {
   onSuccess: () => void;
   onCancel: () => void;
+  asFormOnly: boolean
 }
 
-export function GlobalCreateTicketForm({ onSuccess, onCancel }: Props) {
+export function GlobalCreateTicketForm({ onSuccess, onCancel, asFormOnly = false }: Props) {
   const { currentWorkspace } = useRBAC();
   const workspaceId = currentWorkspace?.id as string;
   const queryClient = useQueryClient();
@@ -434,7 +435,7 @@ export function GlobalCreateTicketForm({ onSuccess, onCancel }: Props) {
       <DialogFooter className="p-2 bg-white dark:bg-slate-950 border-t border-gray-200 dark:border-slate-800 mt-1">
         <Button type="button" variant="outline" onClick={onCancel} disabled={createMutation.isPending}>Cancel</Button>
         <Button type="submit" form="create-ticket-form" disabled={createMutation.isPending}>
-          {createMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+          {createMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : (!asFormOnly && <Plus className="h-4 w-4" />)}
           Add Ticket
         </Button>
       </DialogFooter>

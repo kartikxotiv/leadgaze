@@ -30,7 +30,7 @@ import {
   SelectValue,
 } from '@kit/ui/select';
 import { Textarea } from '@kit/ui/textarea';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@kit/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@kit/ui/tooltip';
 import { useDateRangeFilter } from '@kit/ui/use-date-range-filter';
 import { cn } from '@kit/ui/utils';
 
@@ -810,9 +810,18 @@ export function ServiceCloudTicketsPage({
                   {ticket.subject}
                 </Link>
                 {ticket.ticket_number && (
-                  <span className="inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">
-                    #{ticket.ticket_number}
-                  </span>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="cursor-default inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">
+                          #{ticket.ticket_number}
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Ticket: #{ticket.ticket_number}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 )}
               </div>
             ),

@@ -50,6 +50,7 @@ import {
   removeTeamMemberService,
 } from '~/services/teams.service';
 import { CustomDeleteDialog } from '@kit/ui/custom-delete-dialog';
+import { Label } from '@kit/ui/label';
 
 interface ManageTeamMembersDialogProps {
   team: Team;
@@ -173,15 +174,15 @@ export function ManageTeamMembersDialog({
         <div className="flex flex-col gap-2">
           {/* Add Member Section */}
           <div className="flex items-end gap-2 rounded-lg border bg-muted/30 p-2">
-            <div className="flex-1 space-y-2">
-              <label className="text-sm font-medium">Add Workspace Member</label>
+            <div>
+              <Label>Add Workspace Member</Label>
               <Popover open={openMemberSelect} onOpenChange={setOpenMemberSelect}>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
                     role="combobox"
                     aria-expanded={openMemberSelect}
-                    className="w-full justify-between h-auto min-h-[35.3px] font-normal"
+                    className="w-full justify-between h-[32px] font-normal"
                   >
                     <div className="flex flex-wrap gap-1">
                       {selectedUserIds.length === 0 && (
@@ -246,7 +247,7 @@ export function ManageTeamMembersDialog({
               </Popover>
             </div>
 
-            <div className="pb-1">
+            <div className="">
               <Button
                 onClick={handleAddMember}
                 disabled={selectedUserIds.length === 0 || addMemberMutation.isPending}
@@ -297,7 +298,7 @@ export function ManageTeamMembersDialog({
                           {member.accounts?.email}
                         </TableCell>
                         <TableCell>
-                          <Badge variant="secondary">
+                          <Badge variant="secondary text-leadgaze-dark dark:text-white">
                             {wsMember?.role?.role_name || 'Member'}
                           </Badge>
                         </TableCell>

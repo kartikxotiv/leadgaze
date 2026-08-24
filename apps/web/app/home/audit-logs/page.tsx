@@ -470,7 +470,7 @@ export default function AuditLogsPage() {
                               </TableCell>
                             )}
                             {isVisible('entity') && (
-                              <TableCell className="py-2 align-middle w-full max-w-[200px] sm:max-w-auto">
+                              <TableCell className="py-1 align-middle w-full max-w-[200px] sm:max-w-auto">
                                 <div className="flex flex-col gap-0.5">
                                   <span className="truncate text-sm font-medium">
                                     {log.entity_name || '-'}

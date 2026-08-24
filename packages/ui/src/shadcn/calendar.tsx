@@ -11,6 +11,14 @@ import { DayButton, DayPicker, getDefaultClassNames } from 'react-day-picker';
 
 import { cn } from '../lib/utils';
 import { Button, buttonVariants } from './button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from './select';
+import { ScrollArea } from './scroll-area';
 
 function Calendar({
   className,
@@ -49,17 +57,17 @@ function Calendar({
         ),
         month: cn('flex w-full flex-col gap-4', defaultClassNames.month),
         nav: cn(
-          'absolute inset-x-0 top-0 flex w-full items-center justify-between gap-1',
+          'absolute inset-x-0 top-0 flex w-full items-center justify-between gap-1 pointer-events-none',
           defaultClassNames.nav,
         ),
         button_previous: cn(
           buttonVariants({ variant: buttonVariant }),
-          'size-(--cell-size) p-0 select-none aria-disabled:opacity-50',
+          'size-(--cell-size) p-0 select-none aria-disabled:opacity-50 pointer-events-auto',
           defaultClassNames.button_previous,
         ),
         button_next: cn(
           buttonVariants({ variant: buttonVariant }),
-          'size-(--cell-size) p-0 select-none aria-disabled:opacity-50',
+          'size-(--cell-size) p-0 select-none aria-disabled:opacity-50 pointer-events-auto',
           defaultClassNames.button_next,
         ),
         month_caption: cn(
@@ -161,6 +169,37 @@ function Calendar({
                 {children}
               </div>
             </td>
+          );
+        },
+        Dropdown: ({ value, onChange, options, ...props }) => {
+          const selected = options?.find((child) => child.value === value);
+          const handleChange = (value: string) => {
+            const changeEvent = {
+              target: { value },
+            } as React.ChangeEvent<HTMLSelectElement>;
+            onChange?.(changeEvent);
+          };
+          return (
+            <Select
+              value={value?.toString()}
+              onValueChange={(value) => handleChange(value)}
+            >
+              <SelectTrigger className="h-8 pr-1.5 focus:ring-0 shadow-none font-medium">
+                <SelectValue>{selected?.label}</SelectValue>
+              </SelectTrigger>
+              <SelectContent position="popper">
+                <ScrollArea className="h-80">
+                  {options?.map((option, id: number) => (
+                    <SelectItem
+                      key={`${option.value}-${id}`}
+                      value={option.value?.toString() ?? ''}
+                    >
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </ScrollArea>
+              </SelectContent>
+            </Select>
           );
         },
         ...components,
