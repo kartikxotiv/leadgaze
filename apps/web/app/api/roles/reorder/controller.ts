@@ -19,13 +19,25 @@ export const reorderRoles = catchAsync(
       );
     }
 
-    // Role ordered starting with top of the list representing highest hierarchy
-    // The top role gets level = orderedRoleIds.length - 1
-    // The bottom role gets level = 0
-    const totalRoles = orderedRoleIds.length;
-    
-    const updatePromises = orderedRoleIds.map((roleId: string, index: number) => {
-      const hierarchy_level = totalRoles - 1 - index;
+    const { data: roles } = await supabase
+      .from('workspace_roles')
+      .select('id, role_key')
+      .eq('workspace_id', workspaceId)
+      .in('id', orderedRoleIds);
+
+    const adminRoleIdSet = new Set(
+      (roles || [])
+        .filter((r: any) => r.role_key === 'admin')
+        .map((r: any) => r.id),
+    );
+
+    const customRoleIds = orderedRoleIds.filter(
+      (id: string) => !adminRoleIdSet.has(id),
+    );
+    const totalCustomRoles = customRoleIds.length;
+
+    const updatePromises = customRoleIds.map((roleId: string, index: number) => {
+      const hierarchy_level = totalCustomRoles - index;
       return supabase
         .from('workspace_roles')
         .update({ hierarchy_level })
@@ -34,7 +46,7 @@ export const reorderRoles = catchAsync(
     });
 
     const results = await Promise.all(updatePromises);
-    
+
     const errors = results.filter(r => r.error);
     if (errors.length > 0) {
       console.error('Errors updating role orders:', errors.map(e => e.error));

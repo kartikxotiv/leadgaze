@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { usePathname } from 'next/navigation';
 
@@ -11,10 +11,19 @@ import {
   Plus,
   Shield,
   Trash2,
+  MoreVertical,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@kit/ui/dropdown-menu';
+
 import { Badge } from '@kit/ui/badge';
+import { AddColumnModal } from '@kit/ui/add-column-modal';
 import { Button } from '@kit/ui/button';
 import { ColumnVisibilitySelector } from '@kit/ui/column-visibility-selector';
 import CustomTableContainer from '@kit/ui/custom-table-container';
@@ -34,6 +43,7 @@ import { useColumnVisibility } from '@kit/ui/use-column-visibility';
 import { useColumnResize } from '@kit/ui/use-column-resize';
 import { useTableSort } from '@kit/ui/use-table-sort';
 import { SortableTableHead } from '@kit/ui/sortable-table-head';
+import { CustomDeleteDialog } from '@kit/ui/custom-delete-dialog';
 
 import { useDebounce } from '~/lib/hooks/use-debounce';
 import { ModuleGuard } from '~/lib/rbac/module-guard';
@@ -51,6 +61,7 @@ import { EditRoleDialog } from './components/edit-role-dialog';
 const EMPTY_ROLES: Role[] = [];
 
 export default function RolesPage() {
+  const [addColumnModalOpen, setAddColumnModalOpen] = useState(false);
   const queryClient = useQueryClient();
   const { currentWorkspace, canAccess } = useRBAC();
   const pathname = usePathname();
@@ -60,10 +71,16 @@ export default function RolesPage() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [orderedRoles, setOrderedRoles] = useState<Role[]>([]);
   const [draggedRoleIndex, setDraggedRoleIndex] = useState<number | null>(null);
+  const orderedRolesRef = useRef<Role[]>([]);
+  const draggedIndexRef = useRef<number | null>(null);
+  const hasMovedRef = useRef<boolean>(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('');
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
+
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [roleToDelete, setRoleToDelete] = useState<string | null>(null);
 
   const columns = useMemo(
     () => [
@@ -188,10 +205,17 @@ export default function RolesPage() {
   useEffect(() => {
     if (Array.isArray(roles)) {
       setOrderedRoles(roles);
+      orderedRolesRef.current = roles;
     }
   }, [roles]);
 
-  const handleDragStart = (e: React.DragEvent, index: number) => {
+  const handleDragStart = (e: React.DragEvent, index: number, role: Role) => {
+    if (role.role_key === 'admin') {
+      e.preventDefault();
+      return;
+    }
+    draggedIndexRef.current = index;
+    hasMovedRef.current = false;
     setDraggedRoleIndex(index);
     e.dataTransfer.effectAllowed = 'move';
     const img = new Image();
@@ -200,32 +224,42 @@ export default function RolesPage() {
     e.dataTransfer.setDragImage(img, 0, 0);
   };
 
-  const handleDragOver = (e: React.DragEvent, index: number) => {
+  const handleDragOver = (e: React.DragEvent, targetIndex: number) => {
     e.preventDefault();
-    if (draggedRoleIndex === null || draggedRoleIndex === index) return;
+    const fromIndex = draggedIndexRef.current;
+    if (fromIndex === null || fromIndex === targetIndex) return;
 
-    // Optimistic UI update
-    const newOrderedRoles = [...orderedRoles];
-    const draggedRole = newOrderedRoles[draggedRoleIndex];
-    if (draggedRole) {
-      newOrderedRoles.splice(draggedRoleIndex, 1);
-      newOrderedRoles.splice(index, 0, draggedRole);
-      setDraggedRoleIndex(index);
-      setOrderedRoles(newOrderedRoles);
-    }
+    const targetRole = orderedRolesRef.current[targetIndex];
+    if (targetRole?.role_key === 'admin' || targetIndex === 0) return;
+
+    const newOrderedRoles = [...orderedRolesRef.current];
+    const [movedRole] = newOrderedRoles.splice(fromIndex, 1);
+    if (!movedRole) return;
+
+    newOrderedRoles.splice(targetIndex, 0, movedRole);
+
+    orderedRolesRef.current = newOrderedRoles;
+    draggedIndexRef.current = targetIndex;
+    hasMovedRef.current = true;
+
+    setDraggedRoleIndex(targetIndex);
+    setOrderedRoles(newOrderedRoles);
   };
 
   const handleDragEnd = () => {
     setDraggedRoleIndex(null);
+    draggedIndexRef.current = null;
+
+    if (hasMovedRef.current) {
+      hasMovedRef.current = false;
+      const orderedIds = orderedRolesRef.current.map((r) => r.id);
+      reorderRolesMutation.mutate(orderedIds);
+    }
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
-    setDraggedRoleIndex(null);
-
-    // Save to server
-    const orderedIds = orderedRoles.map((r) => r.id);
-    reorderRolesMutation.mutate(orderedIds);
+    handleDragEnd();
   };
 
   // Delete role mutation
@@ -236,9 +270,13 @@ export default function RolesPage() {
         queryKey: ['workspaceRoles', currentWorkspace?.id, productKey],
       });
       toast.success('Role deleted successfully');
+      setIsDeleteDialogOpen(false);
+      setRoleToDelete(null);
     },
     onError: (error: any) => {
       toast.error(error?.message || 'Failed to delete role');
+      setIsDeleteDialogOpen(false);
+      setRoleToDelete(null);
     },
   });
 
@@ -248,9 +286,8 @@ export default function RolesPage() {
       return;
     }
 
-    if (confirm('Are you sure you want to delete this role?')) {
-      deleteRoleMutation.mutate(roleId);
-    }
+    setRoleToDelete(roleId);
+    setIsDeleteDialogOpen(true);
   };
 
   const handleEditRole = (role: Role) => {
@@ -266,12 +303,16 @@ export default function RolesPage() {
     return colorMap[role.role_key] || '#6b7280';
   };
 
-  const getHierarchyLabel = (role: Role) => {
+  const getHierarchyLabel = (role: Role, rowIndex?: number) => {
     if (role.role_key === 'admin') {
       return 'Admin (Highest)';
     }
 
-    return `Level ${role.hierarchy_level || 0}`;
+    const customRoles = filteredRoles.filter((r) => r.role_key !== 'admin');
+    const customIndex = customRoles.findIndex((r) => r.id === role.id);
+    const fallbackLevel = customIndex >= 0 ? customIndex + 1 : (rowIndex ?? 1);
+
+    return `Level ${role.hierarchy_level && role.hierarchy_level > 0 ? role.hierarchy_level : fallbackLevel}`;
   };
 
   const activeFilterCount = useMemo(() => {
@@ -288,48 +329,50 @@ export default function RolesPage() {
 
   return (
     <ModuleGuard module="roles">
-      <div className="flex shrink-0 flex-col gap-2 overflow-hidden">
+      <div className="flex shrink-0 flex-col gap-2 overflow-hidden border-top-bottom-gray">
         <PageHeader
-          title={`Roles Management (${roles.length})`}
-          description="Create and manage workspace roles with custom permissions"
-        />
-      </div>
-
-      {/* Toolbar with search, type filter, actions */}
-      <div className="w-full max-w-full min-w-0 shrink-0 border-b pb-2">
-        <ListToolBar
-          filterGroups={filterGroups}
-          showFilter
-          filterLabel="Show Filters"
-          activeFilterCount={activeFilterCount}
-          onClearFilters={handleClearFilters}
-          showSearch
-          searchPlaceholder="Search roles..."
-          searchValue={searchTerm}
-          onSearchChange={setSearchTerm}
-          actions={[
-            ...(canAccess('roles', 'create')
-              ? [
-                  {
-                    key: 'add',
-                    label: 'New Role',
-                    icon: Plus,
-                    onClick: () => setCreateDialogOpen(true),
-                    show: true,
-                    buttonVariant: 'default' as const,
-                  },
-                ]
-              : []),
-          ]}
-          columnVisibilitySlot={
-            <ColumnVisibilitySelector
-              columns={columns}
-              visibility={visibility}
-              onToggle={toggleVisibility}
-              onReset={reset}
+          title={`Roles Management`}
+        //  (${roles.length})
+        // description="Create and manage workspace roles with custom permissions"
+        >
+          <div className="p-[2px]">
+            <ListToolBar
+              align="right"
+              className="border-none bg-transparent p-0"
+              filterGroups={filterGroups}
+              showFilter
+              filterLabel="Show Filters"
+              activeFilterCount={activeFilterCount}
+              onClearFilters={handleClearFilters}
+              showSearch
+              searchPlaceholder="Search"
+              searchValue={searchTerm}
+              onSearchChange={setSearchTerm}
+              actions={[
+                ...(canAccess('roles', 'create')
+                  ? [
+                    {
+                      key: 'add',
+                      label: 'New Role',
+                      icon: Plus,
+                      onClick: () => setCreateDialogOpen(true),
+                      show: true,
+                      buttonVariant: 'default' as const,
+                    },
+                  ]
+                  : []),
+              ]}
+              columnVisibilitySlot={
+                <ColumnVisibilitySelector
+                  columns={columns}
+                  visibility={visibility}
+                  onToggle={toggleVisibility}
+                  onReset={reset}
+                />
+              }
             />
-          }
-        />
+          </div>
+        </PageHeader>
       </div>
       <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden">
         <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 gap-0">
@@ -348,18 +391,26 @@ export default function RolesPage() {
                       )}
                       {isVisible('type') && <TableHead>Type</TableHead>}
                       {isVisible('status') && <TableHead>Status</TableHead>}
-                      <TableHead className="sticky right-0 px-4 text-right">
-                        Actions
+                      <TableHead className="sticky-right-header z-10 w-12 px-1 text-center">
+                        <Button
+                          type="button"
+                          size="icon"
+                          className="mx-auto flex h-5 w-5 items-center justify-center rounded-full bg-leadgaze-primary text-white hover:bg-leadgaze-primary/90 border-0 p-0 shadow-xs"
+                          onClick={() => setAddColumnModalOpen(true)}
+                          title="Toggle Columns"
+                        >
+                          <Plus className="h-3.5 w-3.5 stroke-[2.5]" />
+                        </Button>
                       </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {[...Array(8)].map((_, i) => (
                       <TableRow key={i}>
-                         <TableCell
-                           className="h-[32px] px-4 py-2"
-                           colSpan={6}
-                         >
+                        <TableCell
+                          className="h-[32px] px-4 py-2"
+                          colSpan={6}
+                        >
                           <Skeleton className="h-7 w-full" />
                         </TableCell>
                       </TableRow>
@@ -381,76 +432,84 @@ export default function RolesPage() {
                 <TableHeader>
                   <TableRow>
                     {isVisible('role_name') && (
-  <SortableTableHead
-    label="Role Name"
-    columnId="role_name"
-    sortColumn={sortColumn}
-    sortDirection={sortDirection}
-    onSort={toggleSort}
-    className="relative"
-    {...getHeaderProps('role_name')}
-  >
-    <span className="col-resize-handle" {...getResizeHandleProps('role_name')} />
-  </SortableTableHead>
-)}
+                      <SortableTableHead
+                        label="Role Name"
+                        columnId="role_name"
+                        sortColumn={sortColumn}
+                        sortDirection={sortDirection}
+                        onSort={toggleSort}
+                        className="relative"
+                        {...getHeaderProps('role_name')}
+                      >
+                        <span className="col-resize-handle" {...getResizeHandleProps('role_name')} />
+                      </SortableTableHead>
+                    )}
                     {isVisible('role_key') && (
-  <SortableTableHead
-    label="Role Key"
-    columnId="role_key"
-    sortColumn={sortColumn}
-    sortDirection={sortDirection}
-    onSort={toggleSort}
-    className="relative"
-    {...getHeaderProps('role_key')}
-  >
-    <span className="col-resize-handle" {...getResizeHandleProps('role_key')} />
-  </SortableTableHead>
-)}
+                      <SortableTableHead
+                        label="Role Key"
+                        columnId="role_key"
+                        sortColumn={sortColumn}
+                        sortDirection={sortDirection}
+                        onSort={toggleSort}
+                        className="relative"
+                        {...getHeaderProps('role_key')}
+                      >
+                        <span className="col-resize-handle" {...getResizeHandleProps('role_key')} />
+                      </SortableTableHead>
+                    )}
                     {isVisible('hierarchy') && (
-  <SortableTableHead
-    label="Access Level"
-    columnId="hierarchy"
-    sortKey="hierarchy_level"
-    sortColumn={sortColumn}
-    sortDirection={sortDirection}
-    onSort={toggleSort}
-    sortable={false}
-    className="relative"
-    {...getHeaderProps('hierarchy')}
-  >
-    <span className="col-resize-handle" {...getResizeHandleProps('hierarchy')} />
-  </SortableTableHead>
-)}
+                      <SortableTableHead
+                        label="Access Level"
+                        columnId="hierarchy"
+                        sortKey="hierarchy_level"
+                        sortColumn={sortColumn}
+                        sortDirection={sortDirection}
+                        onSort={toggleSort}
+                        sortable={false}
+                        className="relative"
+                        {...getHeaderProps('hierarchy')}
+                      >
+                        <span className="col-resize-handle" {...getResizeHandleProps('hierarchy')} />
+                      </SortableTableHead>
+                    )}
                     {isVisible('type') && (
-  <SortableTableHead
-    label="Type"
-    columnId="type"
-    sortKey="is_system"
-    sortColumn={sortColumn}
-    sortDirection={sortDirection}
-    onSort={toggleSort}
-    className="relative"
-    {...getHeaderProps('type')}
-  >
-    <span className="col-resize-handle" {...getResizeHandleProps('type')} />
-  </SortableTableHead>
-)}
+                      <SortableTableHead
+                        label="Type"
+                        columnId="type"
+                        sortKey="is_system"
+                        sortColumn={sortColumn}
+                        sortDirection={sortDirection}
+                        onSort={toggleSort}
+                        className="relative"
+                        {...getHeaderProps('type')}
+                      >
+                        <span className="col-resize-handle" {...getResizeHandleProps('type')} />
+                      </SortableTableHead>
+                    )}
                     {isVisible('status') && (
-  <SortableTableHead
-    label="Status"
-    columnId="status"
-    sortKey="is_active"
-    sortColumn={sortColumn}
-    sortDirection={sortDirection}
-    onSort={toggleSort}
-    className="relative"
-    {...getHeaderProps('status')}
-  >
-    <span className="col-resize-handle" {...getResizeHandleProps('status')} />
-  </SortableTableHead>
-)}
-                    <TableHead className="sticky-right-header text-right">
-                      Actions
+                      <SortableTableHead
+                        label="Status"
+                        columnId="status"
+                        sortKey="is_active"
+                        sortColumn={sortColumn}
+                        sortDirection={sortDirection}
+                        onSort={toggleSort}
+                        className="relative"
+                        {...getHeaderProps('status')}
+                      >
+                        <span className="col-resize-handle" {...getResizeHandleProps('status')} />
+                      </SortableTableHead>
+                    )}
+                    <TableHead className="sticky-right-header z-10 w-12 px-1 text-center">
+                      <Button
+                        type="button"
+                        size="icon"
+                        className="mx-auto flex h-5 w-5 items-center justify-center rounded-full bg-leadgaze-primary text-white hover:bg-leadgaze-primary/90 border-0 p-0 shadow-xs"
+                        onClick={() => setAddColumnModalOpen(true)}
+                        title="Toggle Columns"
+                      >
+                        <Plus className="h-3.5 w-3.5 stroke-[2.5]" />
+                      </Button>
                     </TableHead>
                   </TableRow>
                 </TableHeader>
@@ -459,8 +518,8 @@ export default function RolesPage() {
                     <TableRow
                       key={role.id}
                       className={draggedRoleIndex === index ? 'opacity-50' : ''}
-                      draggable={!isDragDisabled && canAccess('roles', 'edit')}
-                      onDragStart={(e) => handleDragStart(e, index)}
+                      draggable={!isDragDisabled && canAccess('roles', 'edit') && role.role_key !== 'admin'}
+                      onDragStart={(e) => handleDragStart(e, index, role)}
                       onDragOver={(e) => handleDragOver(e, index)}
                       onDrop={(e) => handleDrop(e)}
                       onDragEnd={handleDragEnd}
@@ -469,7 +528,11 @@ export default function RolesPage() {
                         <TableCell>
                           <div className="flex items-center gap-3">
                             {canAccess('roles', 'edit') && (
-                              <GripVertical className="text-muted-foreground hover:text-foreground h-4 w-4 cursor-grab active:cursor-grabbing" />
+                              role.role_key === 'admin' ? (
+                                <div className="h-4 w-4" />
+                              ) : (
+                                <GripVertical className="text-muted-foreground hover:text-foreground h-4 w-4 cursor-grab active:cursor-grabbing" />
+                              )
                             )}
                             <div
                               className="h-2 w-2 rounded-full"
@@ -477,7 +540,7 @@ export default function RolesPage() {
                                 backgroundColor: getRoleColor(role),
                               }}
                             />
-                            <span className="font-medium">
+                            <span className="font-medium capitalize">
                               {role.role_name}
                             </span>
                           </div>
@@ -494,9 +557,9 @@ export default function RolesPage() {
                         <TableCell>
                           <Badge
                             variant="outline"
-                            className="dark-button-border-color"
+                            className="dark-button-border-color text-leadgaze-dark dark:text-white"
                           >
-                            {getHierarchyLabel(role)}
+                            {getHierarchyLabel(role, index)}
                           </Badge>
                         </TableCell>
                       )}
@@ -523,40 +586,48 @@ export default function RolesPage() {
                         </TableCell>
                       )}
                       <TableCell className="bg-card sticky right-0 px-4 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          {!role.is_system && canAccess('roles', 'edit') && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleEditRole(role)}
-                              className="gap-2"
-                            >
-                              <Edit2 className="h-4 w-4" />
-                            </Button>
-                          )}
-                          {canAccess('roles', 'delete') && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() =>
-                                handleDeleteRole(role.id, role.is_system)
-                              }
-                              className="text-destructive hover:bg-destructive/10 hover:text-destructive gap-2"
-                              disabled={
-                                role.is_system || deleteRoleMutation.isPending
-                              }
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          )}
+                        <div className="flex items-center justify-end">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                className="h-8 w-8 border-0 p-0 focus:outline-none focus-visible:ring-0 focus-visible:outline-none focus-visible:ring-offset-0"
+                              >
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              {!role.is_system && canAccess('roles', 'edit') && (
+                                <DropdownMenuItem
+                                  onClick={() => handleEditRole(role)}
+                                  className="gap-2 cursor-pointer"
+                                >
+                                  <Edit2 className="h-4 w-4" /> Edit
+                                </DropdownMenuItem>
+                              )}
+                              {canAccess('roles', 'delete') && (
+                                <DropdownMenuItem
+                                  onClick={() =>
+                                    handleDeleteRole(role.id, role.is_system)
+                                  }
+                                  disabled={
+                                    role.is_system || deleteRoleMutation.isPending
+                                  }
+                                  className="text-destructive focus:text-destructive cursor-pointer gap-2"
+                                >
+                                  <Trash2 className="h-4 w-4" /> Delete
+                                </DropdownMenuItem>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
-              </Table>            
-            )}        
-          </CustomTableContainer>  
+              </Table>
+            )}
+          </CustomTableContainer>
         </div>
 
         {/* Dialogs */}
@@ -575,6 +646,28 @@ export default function RolesPage() {
             onSuccess={() => setEditingRole(null)}
           />
         )}
+
+        <AddColumnModal
+          open={addColumnModalOpen}
+          onOpenChange={setAddColumnModalOpen}
+          columns={columns}
+          visibility={visibility}
+          onToggleColumn={toggleVisibility}
+          onResetColumns={reset}
+        />
+
+        <CustomDeleteDialog
+          isOpen={isDeleteDialogOpen}
+          onOpenChange={setIsDeleteDialogOpen}
+          title="Delete Role"
+          description="Are you sure you want to delete this role? This action cannot be undone."
+          onConfirm={() => {
+            if (roleToDelete) {
+              deleteRoleMutation.mutate(roleToDelete);
+            }
+          }}
+          isDeleting={deleteRoleMutation.isPending}
+        />
       </PageBody>
     </ModuleGuard>
   );

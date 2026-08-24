@@ -184,8 +184,8 @@ export function EmployeeCompensationFormDialog(props: {
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-hidden border-gray-200 bg-white p-0 sm:max-w-[560px] dark:border-slate-800 dark:bg-slate-950">
         <form className="flex max-h-[90vh] flex-col" onSubmit={onSubmit}>
-          <DialogHeader className="border-b border-gray-200 bg-white p-6 pb-4 dark:border-slate-800 dark:bg-slate-950">
-            <DialogTitle className="text-2xl pr-12">
+          <DialogHeader>
+            <DialogTitle>
               {isEditing
                 ? 'Edit Compensation Assignment'
                 : 'Assign Compensation to Employee'}
@@ -197,8 +197,8 @@ export function EmployeeCompensationFormDialog(props: {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex-1 overflow-y-auto p-6 space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+          <div className="flex-1 overflow-y-auto p-6 space-y-2">
+            <div className="grid grid-cols-2 gap-2">
               <div>
                 <Label htmlFor="employee_id">Employee *</Label>
                 <Select
@@ -245,7 +245,7 @@ export function EmployeeCompensationFormDialog(props: {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-2">
               <div>
                 <Label htmlFor="assignment_type">Assignment Type *</Label>
                 <Select
@@ -287,7 +287,7 @@ export function EmployeeCompensationFormDialog(props: {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-2">
               <div>
                 <Label htmlFor="annual_ctc">Annual CTC</Label>
                 <Input
@@ -370,7 +370,7 @@ export function EmployeeCompensationFormDialog(props: {
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-2">
               <div>
                 <Label htmlFor="effective_from">Effective From *</Label>
                 <Input
@@ -408,7 +408,7 @@ export function EmployeeCompensationFormDialog(props: {
             </div>
           </div>
 
-          <DialogFooter className="border-t border-gray-200 bg-white p-2 dark:border-slate-800 dark:bg-slate-950">
+          <DialogFooter>
             <Button
               type="button"
               variant="outline"

@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
 import { Button } from '@kit/ui/button';
@@ -10,6 +10,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@kit/ui/dialog';
@@ -100,8 +101,10 @@ export default function EditLeadDialog({
   const { canEdit, canView, editableCustomFields, visibleCustomFields, isLoading: permissionsLoading } = useFieldPermissions({
     entityType: 'leads',
     workspaceId: workspace?.id,
-    enabled: open && !!workspace?.id,
+    enabled: open && !!workspace?.id && !!lead,
+    staleTime: 5 * 60 * 1000,
   });
+  const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(false);
   const [customFields, setCustomFields] = useState<Record<string, unknown>>({});
   const [formData, setFormData] = useState<FormDataState>({
@@ -209,6 +212,9 @@ export default function EditLeadDialog({
     },
     onSuccess: () => {
       toast.success('Lead updated successfully');
+      queryClient.invalidateQueries({ queryKey: ['lead', lead.id] });
+      queryClient.invalidateQueries({ queryKey: ['leads'] });
+      queryClient.invalidateQueries({ queryKey: ['leads-kanban'] });
       onSuccess();
     },
     onError: (error: any) => {
@@ -271,9 +277,13 @@ export default function EditLeadDialog({
       if (canEdit('status')) payload.status_id = formData.status_id;
       if (canEdit('source')) payload.source_id = formData.source_id || null;
       if (canEdit('trigger')) payload.trigger = formData.trigger;
-      if (canEdit('notes')) payload.notes = formData.notes;
-      if (canEdit('score')) payload.lead_score = totalScore;
-      payload.custom_fields = customFields;
+      const editableCustom: Record<string, unknown> = {};
+      for (const [cfKey, cfVal] of Object.entries(customFields)) {
+        if (canEdit(cfKey)) {
+          editableCustom[cfKey] = cfVal;
+        }
+      }
+      payload.custom_fields = editableCustom;
 
       await mutation.mutateAsync(payload);
     } finally {
@@ -289,12 +299,12 @@ export default function EditLeadDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="flex max-h-[90vh] flex-col p-0 overflow-hidden border-gray-200 bg-white p-0 sm:max-w-[800px] dark:border-slate-800 dark:bg-slate-950">
         <div className="flex max-h-[90vh] flex-col">
-          <DialogHeader className="border-b border-gray-200 bg-white p-6 pb-4 dark:border-slate-800 dark:bg-slate-950 border-b p-6 pb-4">
-            <DialogTitle className="pr-12">
+          <DialogHeader>
+            <DialogTitle>
               Edit Lead
             </DialogTitle>
             <DialogDescription>
-              Update the lead information.
+              Update the lead information
             </DialogDescription>
           </DialogHeader>
 
@@ -302,15 +312,14 @@ export default function EditLeadDialog({
             onSubmit={handleSubmit}
             className="flex flex-1 flex-col overflow-hidden"
           >
-            <div className="flex-1 space-y-8 overflow-y-auto p-6">
+            <div className="flex flex-col flex-1 overflow-y-auto p-2 gap-2">
               {/* ── Contact Information ── */}
-              <div className="space-y-4">
-                <h3 className="primary-heading text-leadgaze-dark dark:text-white">
+              <div className="space-y-2">
+                <h3 className="primary-heading text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">
                   Contact Information
                 </h3>
-                <Separator className="bg-gray-200 dark:bg-slate-800" />
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-2">
                   <FieldGuard fieldKey="first_name" canEdit={canEdit}>
                     <div>
                       <Label htmlFor="first_name">
@@ -342,7 +351,7 @@ export default function EditLeadDialog({
                   </FieldGuard>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-2">
                   <FieldGuard fieldKey="email" canEdit={canEdit}>
                     <div>
                       <Label htmlFor="email">Email (Optional)</Label>
@@ -373,7 +382,7 @@ export default function EditLeadDialog({
                   </FieldGuard>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-2">
                   <FieldGuard fieldKey="phone" canEdit={canEdit}>
                     <div>
                       <Label htmlFor="phone_number">Phone (Optional)</Label>
@@ -404,13 +413,12 @@ export default function EditLeadDialog({
               </div>
 
               {/* ── Company Information ── */}
-              <div className="space-y-4">
-                <h3 className="primary-heading text-leadgaze-dark dark:text-white">
+              <div className="space-y-2">
+                <h3 className="primary-heading text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">
                   Company Information
                 </h3>
-                <Separator className="bg-gray-200 dark:bg-slate-800" />
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-2">
                   <FieldGuard fieldKey="company" canEdit={canEdit}>
                     <div>
                       <Label htmlFor="company_name">Company Name (Optional)</Label>
@@ -439,11 +447,11 @@ export default function EditLeadDialog({
                   </FieldGuard>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-2">
                   <FieldGuard fieldKey="industry" canEdit={canEdit}>
                     <div>
                       <Label htmlFor="industry_id">Industry (Optional)</Label>
-                      <div className="mt-2">
+                      <div>
                         <IndustrySelect
                           value={formData.industry_id}
                           onValueChange={(value) => handleInputChange('industry_id', value)}
@@ -461,7 +469,7 @@ export default function EditLeadDialog({
                         onValueChange={(value) => handleInputChange('company_size', value)}
                         disabled={isLoading}
                       >
-                        <SelectTrigger className="mt-2 border-gray-300 bg-white text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+                        <SelectTrigger className="border-gray-300 bg-white text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white">
                           <SelectValue placeholder="Select company size" />
                         </SelectTrigger>
                         <SelectContent className="z-50 border-gray-300 bg-white dark:border-slate-700 dark:bg-slate-900">
@@ -476,7 +484,7 @@ export default function EditLeadDialog({
                   </FieldGuard>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-2">
                   <FieldGuard fieldKey="company_website" canEdit={canEdit}>
                     <div>
                       <Label htmlFor="company_website">Website (Optional)</Label>
@@ -505,7 +513,7 @@ export default function EditLeadDialog({
                   </FieldGuard>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-2">
                   <FieldGuard fieldKey="department" canEdit={canEdit}>
                     <div>
                       <Label htmlFor="department">Department (Optional)</Label>
@@ -534,7 +542,7 @@ export default function EditLeadDialog({
                   </FieldGuard>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-2">
                   <FieldGuard fieldKey="location" canEdit={canEdit}>
                     <div>
                       <Label htmlFor="location">Location (Optional)</Label>
@@ -565,33 +573,34 @@ export default function EditLeadDialog({
               </div>
 
               {/* ── Lead Information ── */}
-              <div className="space-y-4">
-                <h3 className="primary-heading text-leadgaze-dark dark:text-white">
+              <div className="space-y-2">
+                <h3 className="primary-heading text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">
                   Lead Information
                 </h3>
-                <Separator className="bg-gray-200 dark:bg-slate-800" />
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-2">
                   {/* Status is always shown — required field */}
-                  <div>
-                    <Label htmlFor="status_id">
-                      Status <span className="text-red-500">*</span>
-                    </Label>
-                    <div className="mt-2">
-                      <ManageableStatusSelect
-                        moduleKey="leads"
-                        workspaceId={workspace?.id ?? ''}
-                        value={formData.status_id}
-                        onValueChange={(value) => handleInputChange('status_id', value)}
-                        disabled={isLoading || !canEdit('status')}
-                        triggerClassName="border-gray-300 bg-white text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
-                      />
+                  <FieldGuard fieldKey="status" canEdit={canEdit}>
+                    <div>
+                      <Label htmlFor="status_id">
+                        Status <span className="text-red-500">*</span>
+                      </Label>
+                      <div>
+                        <ManageableStatusSelect
+                          moduleKey="leads"
+                          workspaceId={workspace?.id ?? ''}
+                          value={formData.status_id}
+                          onValueChange={(value) => handleInputChange('status_id', value)}
+                          disabled={isLoading || !canEdit('status')}
+                          triggerClassName="border-gray-300 bg-white text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                        />
+                      </div>
                     </div>
-                  </div>
+                  </FieldGuard>
                   <FieldGuard fieldKey="source" canEdit={canEdit}>
                     <div>
                       <Label htmlFor="source_id">Lead Source (Optional)</Label>
-                      <div className="mt-2">
+                      <div>
                         <LeadSourceSelect
                           value={formData.source_id}
                           onValueChange={(value) => handleInputChange('source_id', value)}
@@ -621,11 +630,10 @@ export default function EditLeadDialog({
 
               {/* ── Additional Information ── */}
               <FieldGuard fieldKey="notes" canEdit={canEdit}>
-                <div className="space-y-4">
-                  <h3 className="primary-heading text-leadgaze-dark dark:text-white">
+                <div className="space-y-2">
+                  <h3 className="primary-heading text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">
                     Additional Information
                   </h3>
-                  <Separator className="bg-gray-200 dark:bg-slate-800" />
 
                   <div>
                     <Label htmlFor="notes">Notes (Optional)</Label>
@@ -635,7 +643,7 @@ export default function EditLeadDialog({
                       value={formData.notes}
                       onChange={(e) => handleInputChange('notes', e.target.value)}
                       disabled={isLoading}
-                      className="mt-2 border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
+                      className="border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-gray-400"
                       rows={4}
                     />
                   </div>
@@ -654,29 +662,27 @@ export default function EditLeadDialog({
               />
             </div>
 
-            {/* Form Actions */}
-            <div className="flex justify-end gap-3 border-t border-gray-200 bg-white p-2 dark:border-slate-800 dark:bg-slate-950">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => handleOpenChange(false)}
-                disabled={isLoading}
-                className="border-gray-300 text-gray-900 dark:border-slate-700 dark:text-white"
-              >
-                Cancel
-              </Button>
-              <Button type="submit" form="dialog-form" disabled={isLoading} className="gap-2">
-                {isLoading ? (
-                  <>
-                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                    Saving...
-                  </>
-                ) : (
-                  'Save Changes'
-                )}
-              </Button>
-            </div>
           </form>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => handleOpenChange(false)}
+              disabled={isLoading}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" form="dialog-form" disabled={isLoading} className="gap-2">
+              {isLoading ? (
+                <>
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  Saving...
+                </>
+              ) : (
+                'Save Changes'
+              )}
+            </Button>
+          </DialogFooter>
         </div>
       </DialogContent>
     </Dialog>

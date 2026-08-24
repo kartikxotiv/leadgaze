@@ -233,9 +233,13 @@ const IMMUTABLE_LEAD_KEYS = new Set([
 export function validateLeadWritePayload(
   body: Record<string, unknown>,
   ctx: FieldPermissionContext,
+  existingLead?: Record<string, unknown> | null,
 ): LeadWriteValidationResult {
   const sanitized: Record<string, unknown> = {};
   const rejected: string[] = [];
+
+  const existingCustom =
+    (existingLead?.custom_fields as Record<string, unknown> | null) ?? {};
 
   for (const [key, value] of Object.entries(body)) {
     if (IMMUTABLE_LEAD_KEYS.has(key)) continue;
@@ -247,7 +251,19 @@ export function validateLeadWritePayload(
         if (canEditField(ctx, cfKey)) {
           allowed[cfKey] = cfVal;
         } else {
-          rejected.push(`custom_fields.${cfKey}`);
+          const oldVal = existingCustom[cfKey];
+          const isUnchanged =
+            existingLead !== undefined &&
+            existingLead !== null &&
+            (oldVal === cfVal ||
+              (oldVal == null && cfVal == null) ||
+              (typeof oldVal === 'string' &&
+                typeof cfVal === 'string' &&
+                oldVal.trim() === cfVal.trim()));
+
+          if (!isUnchanged) {
+            rejected.push(`custom_fields.${cfKey}`);
+          }
         }
       }
       sanitized.custom_fields = allowed;
@@ -258,7 +274,20 @@ export function validateLeadWritePayload(
     if (canEditField(ctx, fieldKey)) {
       sanitized[key] = value;
     } else {
-      rejected.push(key);
+      const oldVal = existingLead?.[key];
+      const isUnchanged =
+        existingLead !== undefined &&
+        existingLead !== null &&
+        key in existingLead &&
+        (oldVal === value ||
+          (oldVal == null && value == null) ||
+          (typeof oldVal === 'string' &&
+            typeof value === 'string' &&
+            oldVal.trim() === value.trim()));
+
+      if (!isUnchanged) {
+        rejected.push(key);
+      }
     }
   }
 

@@ -263,7 +263,7 @@ export function DepartmentsDirectoryCard(props: {
                   {formatDate(department.updated_at)}
                 </TableCell>
               )}
-              <TableCell className="sticky right-0 px-4 text-right">
+              <TableCell className="bg-card sticky right-0 px-4 text-right">
                 {canEdit || canDelete ? (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>

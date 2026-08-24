@@ -7,7 +7,6 @@ const MEETING_REMINDER_TEMPLATE = ({
   meetingLink,
   intervalLabel,
   productName,
-  billingCountry = 'US',
   recipientTz = 'UTC',
 }: {
   meetingTitle: string;
@@ -23,35 +22,38 @@ const MEETING_REMINDER_TEMPLATE = ({
 }) => {
   const formatDate = (dateString: string) => {
     try {
-      return new Date(dateString).toLocaleString('en-US', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        timeZone: recipientTz,
-      }) + ` [${recipientTz}]`;
-    } catch (e) {
+      return (
+        new Date(dateString).toLocaleString('en-US', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          timeZone: recipientTz,
+        }) + ` [${recipientTz}]`
+      );
+    } catch {
       return new Date(dateString).toLocaleString('en-US') + ' [UTC]';
     }
   };
 
   const formatTime = (dateString: string) => {
     try {
-      return new Date(dateString).toLocaleTimeString('en-US', {
-        hour: '2-digit',
-        minute: '2-digit',
-        timeZone: recipientTz,
-      }) + ` [${recipientTz}]`;
-    } catch (e) {
+      return (
+        new Date(dateString).toLocaleTimeString('en-US', {
+          hour: '2-digit',
+          minute: '2-digit',
+          timeZone: recipientTz,
+        }) + ` [${recipientTz}]`
+      );
+    } catch {
       return new Date(dateString).toLocaleTimeString('en-US') + ' [UTC]';
     }
   };
 
-  const isIndia = billingCountry.toUpperCase() === 'IN';
-  const operatorName = isIndia ? 'Xotiv Pvt. Ltd.' : 'Programea LLC';
-  const operatorUrl = isIndia ? 'https://xotiv.com/' : 'https://programea.com/';
+  const operatorName = 'Xotiv Technologies Pvt. Ltd.';
+  const operatorUrl = 'https://xotiv.com';
 
   return `
 <!DOCTYPE html>
@@ -75,10 +77,11 @@ const MEETING_REMINDER_TEMPLATE = ({
     <div style="padding: 32px 24px;">
       <p style="margin: 0 0 16px 0; color: #1a202c; font-size: 20px; font-weight: bold; line-height: 1.2;">${meetingTitle}</p>
       
-      ${meetingDescription
-      ? `<p style="margin: 0 0 24px 0; color: #4a5568; font-size: 15px; line-height: 1.6;">${meetingDescription}</p>`
-      : ''
-    }
+      ${
+        meetingDescription
+          ? `<p style="margin: 0 0 24px 0; color: #4a5568; font-size: 15px; line-height: 1.6;">${meetingDescription}</p>`
+          : ''
+      }
       
       <!-- Time Info -->
       <div style="background-color: #ebf8ff; border-left: 4px solid #3953E7; padding: 16px; margin: 24px 0; border-radius: 4px;">
@@ -98,26 +101,28 @@ const MEETING_REMINDER_TEMPLATE = ({
         </table>
       </div>
       
-      ${location
-      ? `
+      ${
+        location
+          ? `
       <div style="background-color: #f7fafc; padding: 16px; margin: 16px 0; border-radius: 4px;">
         <p style="margin: 0; color: #2d3748; font-size: 13px; font-weight: 600; text-transform: uppercase;">📍 Location</p>
         <p style="margin: 8px 0 0 0; color: #1a202c; font-size: 15px;">${location}</p>
       </div>
       `
-      : ''
-    }
+          : ''
+      }
       
-      ${meetingLink
-      ? `
+      ${
+        meetingLink
+          ? `
       <div style="margin: 24px 0;">
         <a href="${meetingLink}" style="display: inline-block; background-color: #3953E7; color: #ffffff; text-decoration: none; padding: 12px 32px; border-radius: 6px; font-weight: 600; font-size: 15px; text-align: center;">
           Join Meeting
         </a>
       </div>
       `
-      : ''
-    }
+          : ''
+      }
       
       <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid #e2e8f0;">
         <p style="margin: 0; color: #718096; font-size: 12px; line-height: 1.5;">

@@ -21,6 +21,7 @@ export interface CallLog {
         name: string;
         email: string;
     };
+    created_by_name?: string;
 }
 
 export interface CreateCallPayload {

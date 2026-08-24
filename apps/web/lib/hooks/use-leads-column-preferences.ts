@@ -11,6 +11,7 @@ interface UseLeadsColumnPreferencesOptions {
   userId?: string;
   defaultVisibility: Record<string, boolean>;
   enabled?: boolean;
+  staleTime?: number;
 }
 
 /**
@@ -23,12 +24,14 @@ export function useLeadsColumnPreferences({
   userId,
   defaultVisibility,
   enabled = true,
+  staleTime = 5 * 60 * 1000,
 }: UseLeadsColumnPreferencesOptions) {
   const { preferences, updatePreferences, isLoading } = useDynamicColumns({
     entityType,
     workspaceId,
     userId,
     enabled,
+    staleTime,
   });
 
   const mergedDefaults = useMemo(() => {

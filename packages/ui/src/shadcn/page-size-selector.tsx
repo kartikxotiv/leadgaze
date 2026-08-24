@@ -48,8 +48,7 @@ const DEFAULT_OPTIONS: PageSizeOption[] = [
   { value: 15, label: '15' },
   { value: 25, label: '25' },
   { value: 50, label: '50' },
-  { value: 100, label: '100' },
-  { value: 10000, label: 'All' },
+  { value: 100, label: '100' },  
 ];
 
 // The sentinel value stored in the <Select> for the "All" option
@@ -66,7 +65,7 @@ const ALL_SENTINEL = 'all';
  *
  * Usage:
  * ```tsx
- * const [pageSize, setPageSize] = useState(15);
+ * const [pageSize, setPageSize] = useState(25);
  *
  * <PageSizeSelector value={pageSize} onChange={setPageSize} />
  * ```
@@ -101,12 +100,12 @@ export const PageSizeSelector: React.FC<PageSizeSelectorProps> = ({
       className={`flex items-center gap-2 ${className ?? ''}`}
     >
       {label && (
-        <span className="text-leadgaze-muted whitespace-nowrap text-sm">
+        <span className="text-leadgaze-muted whitespace-nowrap secondary-text-small-regular">
           {label}
         </span>
       )}
       <Select value={toSelectValue(value)} onValueChange={handleChange}>
-        <SelectTrigger className="h-8 w-[72px] text-sm border-light-gray">
+        <SelectTrigger className="h-5 min-w-[62px] text-sm border-light-gray secondary-text-small-regular text-leadgaze-dark dark:text-white">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -114,6 +113,7 @@ export const PageSizeSelector: React.FC<PageSizeSelectorProps> = ({
             <SelectItem
               key={opt.label}
               value={opt.label === 'All' ? ALL_SENTINEL : String(opt.value)}
+              className='secondary-text-small-regular'
             >
               {opt.label}
             </SelectItem>

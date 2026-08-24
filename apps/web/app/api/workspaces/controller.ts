@@ -1,7 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { after, NextRequest, NextResponse } from 'next/server';
 
 import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
+
+import ONBOARDING_TEMPLATE from '~/constants/email.templates/onboarding.template';
+import { transporter } from '~/utils/send-mail';
 
 import {
   catchAsync,
@@ -370,6 +373,69 @@ async function createTrialSeats(workspaceId: string, ownerUserId: string) {
 }
 
 
+async function sendOnboardingEmail(
+  recipientEmail: string,
+  userName: string,
+  workspaceName: string,
+  productName: string,
+): Promise<void> {
+  try {
+    await transporter.sendMail({
+      from: process.env.SMTP_USER,
+      to: recipientEmail,
+      replyTo: process.env.SMTP_USER,
+      subject: `Welcome to ${productName} - ${workspaceName} is ready`,
+      html: ONBOARDING_TEMPLATE({
+        userName,
+        workspaceName,
+        productName,
+        appUrl: process.env.NEXT_PUBLIC_APP_URL,
+      }),
+    });
+  } catch (error) {
+    console.error('Onboarding email error:', error);
+  }
+}
+
+async function scheduleOnboardingEmail(
+  supabase: Pick<ReturnType<typeof getSupabaseServerClient>, 'auth'>,
+  workspaceName: string,
+): Promise<void> {
+  try {
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user?.email) {
+      console.error(
+        'Unable to schedule onboarding email: user email not found',
+        userError,
+      );
+      return;
+    }
+
+    const recipientEmail = user.email;
+    const productName = process.env.NEXT_PUBLIC_PRODUCT_NAME || 'Leadgaze';
+    const userName =
+      user.user_metadata?.full_name ||
+      user.user_metadata?.name ||
+      recipientEmail.split('@')[0] ||
+      'there';
+
+    after(() =>
+      sendOnboardingEmail(
+        recipientEmail,
+        userName,
+        workspaceName,
+        productName,
+      ),
+    );
+  } catch (error) {
+    console.error('Unable to schedule onboarding email:', error);
+  }
+}
+
 const updateWorkspace = catchAsync(
   async ({
     request,
@@ -380,12 +446,35 @@ const updateWorkspace = catchAsync(
   }) => {
     const supabase = getSupabaseServerClient() as any;
     const body = await request.json();
-    
+
     if (!params?.id) {
       return NextResponse.json(
         { message: 'Workspace ID is required' },
         { status: 400 },
       );
+    }
+
+    let onboardingWorkspaceName: string | null = null;
+
+    if (body.is_onboarding_finished === true) {
+      const { data: existingWorkspace, error: existingWorkspaceError } =
+        await supabase
+          .from('workspaces')
+          .select('id, name, is_onboarding_finished')
+          .eq('id', params.id)
+          .single();
+
+      if (existingWorkspaceError || !existingWorkspace) {
+        return NextResponse.json(
+          { message: 'Workspace not found' },
+          { status: 404 },
+        );
+      }
+
+      // Only schedule an email on the initial false -> true transition.
+      if (!existingWorkspace.is_onboarding_finished) {
+        onboardingWorkspaceName = existingWorkspace.name;
+      }
     }
 
     const { data: workspace, error } = await supabase
@@ -401,6 +490,10 @@ const updateWorkspace = catchAsync(
         { message: 'Failed to update workspace' },
         { status: 500 },
       );
+    }
+
+    if (onboardingWorkspaceName) {
+      await scheduleOnboardingEmail(supabase, onboardingWorkspaceName);
     }
 
     return successDataResponse('Workspace updated successfully', workspace);

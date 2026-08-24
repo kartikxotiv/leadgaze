@@ -69,7 +69,7 @@ export function RecruitmentRequisitionsTab(props: {
                       label={formatLabel(requisition.status)}
                     />
                   </TableCell>
-                  <TableCell className="sticky right-0 px-4 text-right">
+                  <TableCell className="bg-card sticky right-0 px-4 text-right">
                     {props.canEditRequisition ? (
                       <div className="flex justify-end gap-1">
                         <Button

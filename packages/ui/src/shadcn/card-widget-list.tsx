@@ -2,6 +2,29 @@ import * as React from 'react';
 
 import { cn } from '../lib/utils';
 
+function hasMeaningfulContent(node: React.ReactNode): boolean {
+  if (node === null || node === undefined || node === false) {
+    return false;
+  }
+  if (typeof node === 'string' || typeof node === 'number') {
+    return String(node).trim().length > 0;
+  }
+  if (Array.isArray(node)) {
+    return node.some(hasMeaningfulContent);
+  }
+  if (typeof node === 'object' && 'props' in (node as any)) {
+    const props = (node as any).props;
+    if (props && props.children !== undefined) {
+      return hasMeaningfulContent(props.children);
+    }
+    if ((node as any).type === React.Fragment) {
+      return false;
+    }
+    return true;
+  }
+  return true;
+}
+
 export interface CardWidgetListProps
   extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
@@ -13,7 +36,7 @@ export function CardWidgetList({
   ...props
 }: CardWidgetListProps) {
   return (
-    <div className={cn('flex flex-col gap-3', className)} {...props}>
+    <div className={cn('flex flex-col gap-2', className)} {...props}>
       {children}
     </div>
   );
@@ -37,6 +60,12 @@ export interface CardWidgetListItemProps
   metadata?: React.ReactNode;
   /** Optional action buttons visible on hover or always (e.g. edit, delete) */
   actions?: React.ReactNode;
+  /** How the hover actions are positioned and animated. Defaults to 'slide' */
+  actionStyle?: 'fixed' | 'floating' | 'slide';
+
+  titleClassFormat?: React.ReactNode;
+
+  isBadgeVerticalCenter?: boolean;
 }
 
 export function CardWidgetListItem({
@@ -48,13 +77,17 @@ export function CardWidgetListItem({
   content,
   metadata,
   actions,
+  actionStyle = 'fixed',
   className,
+  titleClassFormat,
+  isBadgeVerticalCenter = false,
   ...props
 }: CardWidgetListItemProps) {
   return (
     <div
       className={cn(
-        'group relative flex items-start justify-between gap-3 rounded-[4px] border-[0.6px] border-leadgaze-border bg-white p-2 opacity-100 transition-colors hover:bg-gray-50/50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800/50',
+        'group relative flex items-start justify-between rounded-[4px] border-[0.6px] border-leadgaze-border bg-white p-2 opacity-100 transition-colors hover:bg-gray-50/50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800/50',
+        actionStyle !== 'slide' && 'gap-3',
         className,
       )}
       {...props}
@@ -68,36 +101,46 @@ export function CardWidgetListItem({
             {icon}
           </div>
         )}
-        <div className="flex min-w-0 flex-1 flex-col">
-          {(title || badge) && (
-            <div className="flex items-center justify-between gap-2">
-              {title && (
-                <div className="h-5 truncate text-sm leading-5 font-semibold text-gray-900 dark:text-zinc-100">
-                  {title}
-                </div>
-              )}
-              {badge && <div className="flex-shrink-0">{badge}</div>}
-            </div>
-          )}
-          {subtitle && (
-            <div className="text-muted-foreground h-4 truncate text-xs leading-4">
-              {subtitle}
-            </div>
-          )}
-          {content && (
-            <div className="mt-1.5 text-sm break-words whitespace-pre-wrap text-gray-700 dark:text-zinc-300">
-              {content}
-            </div>
-          )}
-          {metadata && (
-            <div className={cn("text-muted-foreground flex items-center gap-1 text-xs", content || subtitle ? "mt-1.5" : "")}>
-              {metadata}
-            </div>
-          )}
+        <div className={`flex min-w-0 flex-1 ${isBadgeVerticalCenter ? 'flex-row items-center' : 'flex-col'}`}>
+          <div className="flex min-w-0 flex-1 flex-col">
+            {(title || badge) && (
+              <div className="flex items-center justify-between gap-2">
+                {title && (
+                  <div className={cn("h-5 truncate primary-text-medium leading-5 text-leadgaze-dark dark:text-white", titleClassFormat)}>
+                    {title}
+                  </div>
+                )}
+                {(badge && !isBadgeVerticalCenter) && <div className="flex-shrink-0">{badge}</div>}
+              </div>
+            )}
+            {hasMeaningfulContent(subtitle) && (
+              <div className="text-muted-foreground h-4 truncate text-xs leading-4">
+                {subtitle}
+              </div>
+            )}
+            {content && (
+              <div className="mt-1 text-sm break-words whitespace-pre-wrap text-leadgaze-dark dark:text-white">
+                {content}
+              </div>
+            )}
+            {hasMeaningfulContent(metadata) && (
+              <div className={cn("text-muted-foreground flex items-center gap-1 text-xs", content || subtitle ? "mt-1.5" : "")}>
+                {metadata}
+              </div>
+            )}
+          </div>
+          {(badge && isBadgeVerticalCenter) && <div className="flex-shrink-0">{badge}</div>}
         </div>
       </div>
       {actions && (
-        <div className="ml-3 flex flex-shrink-0 gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+        <div
+          className={cn(
+            "flex flex-shrink-0 gap-1 transition-all duration-300",
+            actionStyle === 'fixed' && "absolute right-2 top-px ml-3 opacity-0 group-hover:opacity-100",
+            actionStyle === 'floating' && "absolute right-2 top-2 opacity-0 group-hover:opacity-100 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-sm p-1 rounded-md",
+            actionStyle === 'slide' && "items-center justify-center max-w-0 ml-0 overflow-hidden opacity-0 group-hover:max-w-[100px] group-hover:ml-3 group-hover:opacity-100"
+          )}
+        >
           {actions}
         </div>
       )}
@@ -139,7 +182,7 @@ export function CardWidgetTimelineItem({
           className={cn(
             'relative z-10 flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold shadow-xs',
             iconClassName ||
-              'bg-gray-100 text-gray-600 dark:bg-zinc-800 dark:text-zinc-300',
+            'bg-gray-100 text-gray-600 dark:bg-zinc-800 dark:text-zinc-300',
           )}
         >
           {icon}

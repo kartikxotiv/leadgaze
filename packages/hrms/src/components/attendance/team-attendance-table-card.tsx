@@ -113,7 +113,7 @@ export function TeamAttendanceTableCard(props: {
                 <TableCell>
                   <StatusBadge status={row.displayStatus} />
                 </TableCell>
-                <TableCell className="sticky right-0 px-4 text-right">
+                <TableCell className="bg-card sticky right-0 px-4 text-right">
                   {props.canApprove ? (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>

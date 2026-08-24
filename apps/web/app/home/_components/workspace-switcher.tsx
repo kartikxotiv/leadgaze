@@ -1,13 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-
 import { useRouter } from 'next/navigation';
 
 import { Building2, ChevronDown } from 'lucide-react';
 
-import { getSupabaseBrowserClient } from '@kit/supabase/browser-client';
-import { useUser } from '@kit/supabase/hooks/use-user';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,62 +19,11 @@ interface Workspace {
 }
 
 export function WorkspaceSwitcher() {
-  const { data: user } = useUser();
   const router = useRouter();
-  const { currentWorkspace } = useRBAC();
-  const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-
-  useEffect(() => {
-    const fetchWorkspaces = async () => {
-      if (!user?.id) return;
-
-      setIsLoading(true);
-      const supabase = getSupabaseBrowserClient();
-
-      try {
-        const { data, error } = await supabase
-          .from('workspace_members')
-          .select(
-            `
-            workspace_id,
-            workspaces (
-              id,
-              name
-            )
-          `,
-          )
-          .eq('user_id', user.id)
-          .eq('status', 'accepted');
-
-        if (error) throw error;
-
-        const uniqueWorkspaces = Array.from(
-          new Map(
-            data?.map((item: any) => [
-              item.workspaces.id,
-              {
-                id: item.workspaces.id,
-                name: item.workspaces.name,
-              },
-            ]),
-          ).values(),
-        );
-
-        setWorkspaces(uniqueWorkspaces as Workspace[]);
-      } catch (error) {
-        console.error('Failed to fetch workspaces:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchWorkspaces();
-  }, [user?.id]);
+  const { currentWorkspace, workspaces, selectWorkspace } = useRBAC();
 
   const handleWorkspaceChange = (workspaceId: string) => {
-    // Store the selected workspace ID (could use localStorage or context)
-    localStorage.setItem('selectedWorkspace', workspaceId);
+    selectWorkspace(workspaceId);
     router.refresh();
   };
 
@@ -92,15 +37,15 @@ export function WorkspaceSwitcher() {
   }
 
   return (
-    <div className="px-2 py-2">
+    <div className="">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <button className="hover:bg-accent group flex w-full items-center justify-between rounded-md px-3 py-2 pr-1 transition-colors">
+          <button className="hover:bg-accent group flex w-full items-center justify-between rounded-md px-3 py-2 pr-1 transition-colors h-8">
             <div className="flex min-w-0 items-center gap-2">
               <div className="bg-primary/10 text-primary flex h-6 w-6 items-center justify-center rounded transition-colors">
                 <Building2 className="h-3.5 w-3.5" />
               </div>
-              <span className="truncate text-sm font-semibold">
+              <span className="truncate text-sm dark:text-white">
                 {currentWorkspace.name}
               </span>
             </div>

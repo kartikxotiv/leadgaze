@@ -12,7 +12,7 @@ import { Label } from '@kit/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@kit/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@kit/ui/tabs';
 import { Textarea } from '@kit/ui/textarea';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@kit/ui/dialog';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@kit/ui/dialog';
 import { toast } from 'sonner';
 import { DateTimePicker } from '@kit/ui/datetime-picker';
 import { format } from 'date-fns';
@@ -249,32 +249,32 @@ function NotesPanel(props: CoreEntityPanelProps) {
 
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
         <DialogContent className="flex max-h-[90vh] flex-col p-0">
-          <DialogHeader className="border-b p-6 pb-4">
+          <DialogHeader>
             <DialogTitle>Edit Note</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 px-6 pb-4">
+          <div className="px-2">
             <Textarea
               placeholder="Enter note content..."
               value={editText}
               onChange={(e) => setEditText(e.target.value)}
               rows={4}
             />
-            <div className="flex justify-end gap-2">
-              <Button
-                variant="outline"
-                onClick={() => setIsEditOpen(false)}
-                disabled={updateMutation.isPending}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleEditSave}
-                disabled={updateMutation.isPending || !editText.trim()}
-              >
-                Save
-              </Button>
-            </div>
           </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsEditOpen(false)}
+              disabled={updateMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleEditSave}
+              disabled={updateMutation.isPending || !editText.trim()}
+            >
+              Save
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </section>

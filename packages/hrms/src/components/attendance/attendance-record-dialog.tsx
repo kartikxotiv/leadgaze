@@ -100,7 +100,7 @@ export function AttendanceRecordDialog(props: {
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
       <DialogContent className={'max-h-[90vh] overflow-hidden border-gray-200 bg-white p-0 sm:max-w-[600px] dark:border-slate-800 dark:bg-slate-950'}>
         <form className={'flex max-h-[90vh] flex-col'} onSubmit={onSubmit}>
-          <DialogHeader className={'border-b border-gray-200 bg-white p-6 pb-4 dark:border-slate-800 dark:bg-slate-950'}>
+          <DialogHeader>
             <DialogTitle className={'text-2xl pr-12'}>Edit Attendance</DialogTitle>
             <DialogDescription className={'text-base'}>
               {props.row
@@ -188,7 +188,7 @@ export function AttendanceRecordDialog(props: {
             </div>
           </div>
 
-          <DialogFooter className={'border-t border-gray-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950'}>
+          <DialogFooter>
             <Button
               type={'button'}
               variant={'outline'}

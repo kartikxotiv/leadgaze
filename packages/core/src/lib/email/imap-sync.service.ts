@@ -283,6 +283,12 @@ export class CoreImapSyncService {
       html_body: parsed.html || null,
       text_body: parsed.text || null,
       snippet: parsed.text?.slice(0, 200) ?? '',
+      attachments: (parsed.attachments || []).map((att: any, idx: number) => ({
+        name: att.filename || `Attachment_${idx + 1}`,
+        type: att.contentType,
+        size: att.size || 0,
+        provider_attachment_id: att.partId || `index_${idx}`,
+      })),
       raw_headers: Object.fromEntries(parsed.headers ?? []),
       status: direction === 'inbound' ? 'received' : 'sent',
       sent_at: direction === 'outbound' ? receivedAt.toISOString() : null,

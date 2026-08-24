@@ -5,6 +5,7 @@ import React, { useEffect, useState } from 'react';
 import { Check, Shield, Trash2, User, Users, X } from 'lucide-react';
 
 import { Button } from './button';
+import { CustomDeleteDialog } from './custom-delete-dialog';
 import {
   Dialog,
   DialogContent,
@@ -232,6 +233,9 @@ export function ColumnEditModal({
   const showRoleSelection = accessType !== 'user_based';
   const showUserSelection = accessType !== 'role_based';
 
+  const [isConfirmDeleteDialogOpen, setIsConfirmDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   // ── Handlers ────────────────────────────────────────────────────────────────
 
   const handleSave = () => {
@@ -240,9 +244,21 @@ export function ColumnEditModal({
     onSave({ field_label: fieldLabel }, accessType, memberPayload);
   };
 
-  const handleDelete = () => {
-    onDelete?.(field.id);
-    onOpenChange(false);
+  const handleDeleteClick = () => {
+    setIsConfirmDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    try {
+      setIsDeleting(true);
+      await onDelete?.(field.id);
+      setIsConfirmDeleteDialogOpen(false);
+      onOpenChange(false);
+    } catch (err) {
+      console.error('Failed to delete column:', err);
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   // ── Render ──────────────────────────────────────────────────────────────────
@@ -264,21 +280,20 @@ export function ColumnEditModal({
                   </svg>
                 </div>
                 <div>
-                  <h2 className="text-base font-bold text-foreground">Edit Column</h2>
+                  <DialogTitle className="text-base font-bold text-foreground">Edit Column</DialogTitle>
                   <p className="text-xs text-muted-foreground">General settings and identity</p>
                 </div>
               </div>
 
               {/* Column Name */}
-              <div className="space-y-2">
+              <div>
                 <Label htmlFor="col-edit-label" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Column Name</Label>
                 <Input
                   id="col-edit-label"
                   value={fieldLabel}
                   disabled={!isAdmin}
                   onChange={(e) => setFieldLabel(e.target.value)}
-                  placeholder="Enter column name"
-                  className="h-10 shadow-sm bg-white"
+                  placeholder="Enter column name"                  
                 />
               </div>
 
@@ -320,7 +335,7 @@ export function ColumnEditModal({
                           />
                           <div className="flex-1 space-y-0.5">
                             <div className={cn(
-                              "text-xs font-bold leading-none",
+                              "leadgaze-dark dark:text-white text-xs font-bold leading-none",
                               isSelected ? 'text-[#2D45D8]' : 'text-foreground'
                             )}>
                               {type === 'public' && 'Public'}
@@ -351,7 +366,7 @@ export function ColumnEditModal({
                   variant="ghost"
                   size="sm"
                   className="flex items-center gap-1.5 h-8 text-xs px-2.5 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                  onClick={handleDelete}
+                  onClick={handleDeleteClick}
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                   Delete Column
@@ -361,17 +376,14 @@ export function ColumnEditModal({
           </div>
 
           {/* Right Pane (Access Control & Permissions) */}
-          <div className="md:col-span-7 p-6 flex flex-col justify-between bg-white">
-            <div className="space-y-6">
+          <div className="md:col-span-7 p-0 flex flex-col justify-between bg-white">
+            <div className="space-y-6 p-2">
               {accessType !== 'public' && accessType !== 'private' ? (
                 <>
                   {/* Access Control Box */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Access Control</Label>
-                      {/* <span className="text-[10px] font-semibold text-[#2D45D8] hover:underline cursor-pointer">
-                        {accessType === 'role_based' ? '+ Add Role' : accessType === 'user_based' ? '+ Add User' : '+ Add Role/User'}
-                      </span> */}
                     </div>
 
                     <Select
@@ -384,16 +396,17 @@ export function ColumnEditModal({
                         }
                       }}
                     >
-                      <SelectTrigger className="w-full h-auto p-3 text-left border border-slate-200 rounded-lg bg-white flex flex-wrap gap-2 items-center hover:bg-white focus:ring-1 focus:ring-[#2D45D8]">
+                      <SelectTrigger className="w-full h-auto p-3 text-left border border-slate-200 rounded-lg bg-white flex items-center justify-between hover:bg-white focus:ring-1 focus:ring-[#2D45D8]">
                         {members.length === 0 ? (
-                          <span className="text-xs text-muted-foreground">Search roles or members...</span>
+                          <span className="text-xs text-muted-foreground flex-1">Search roles or members...</span>
                         ) : (
-                          <div className="flex flex-wrap gap-1.5 items-center w-full">
+                          <div className="flex flex-wrap gap-1.5 items-center flex-1 pr-2">
                             {members.map((member) => (
                               <div
                                 key={member.member_id}
                                 className="bg-[#2D45D8] text-white flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-medium"
-                                onClick={(e) => e.stopPropagation()} // Prevent trigger from opening dropdown when clicking on badge
+                                onPointerDown={(e) => e.stopPropagation()}
+                                onClick={(e) => e.stopPropagation()} 
                               >
                                 {member.member_type === 'role' ? (
                                   <Shield className="h-3 w-3 shrink-0" />
@@ -403,11 +416,16 @@ export function ColumnEditModal({
                                 <span>{getMemberName(member.member_type, member.member_id)}</span>
                                 <button
                                   type="button"
+                                  onPointerDown={(e) => {
+                                    e.stopPropagation();
+                                    e.preventDefault();
+                                  }}
                                   onClick={(e) => {
                                     e.stopPropagation();
+                                    e.preventDefault();
                                     removeMember(member.member_type, member.member_id);
                                   }}
-                                  className="text-white/80 hover:text-white shrink-0"
+                                  className="text-white/80 hover:text-white shrink-0 p-0.5 rounded-full hover:bg-white/20 transition-colors"
                                 >
                                   <X className="h-3 w-3" />
                                 </button>
@@ -475,7 +493,7 @@ export function ColumnEditModal({
                               return (
                                 <tr key={`${member.member_type}-${member.member_id}`} className="border-b border-slate-200 last:border-0 hover:bg-slate-50/30 transition-colors">
                                   <td className="p-3 flex items-center gap-3">
-                                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#E0E7FF] text-[#312E81] text-[11px] font-bold">
+                                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#E0E7FF] text-leadgaze-dark text-[11px] font-bold dark:text-white">
                                       {initials}
                                     </div>
                                     <span className="text-xs font-semibold text-foreground">{name}</span>
@@ -518,12 +536,12 @@ export function ColumnEditModal({
                   </div>
                 </>
               ) : (
-                <div className="flex flex-col items-center justify-center min-h-[300px] text-center p-6 space-y-4">
+                <div className="flex flex-col items-center justify-center min-h-[300px] text-center p-6 space-y-2">
                   <div className="h-16 w-16 rounded-full bg-emerald-50/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
                     <Check className="h-8 w-8" />
                   </div>
                   <div className="space-y-1.5">
-                    <h3 className="font-bold text-sm text-foreground">
+                    <h3 className="font-bold text-sm text-foreground custom-sub-heading-dialog-form">
                       {accessType === 'public' ? 'Public Column Visibility' : 'Private Column Visibility'}
                     </h3>
                     <p className="text-xs text-muted-foreground max-w-[280px] leading-normal">
@@ -537,23 +555,25 @@ export function ColumnEditModal({
             </div>
 
             {/* Footer */}
-            <div className="flex items-center justify-end border-t border-slate-200 pt-4 mt-6">
-              {/* <div className="flex flex-col text-[9px] text-muted-foreground tracking-wider uppercase">
-                <div>Product owned by Programea LLC</div>
-                <div className="font-semibold opacity-70">LEADGAZE V2.4.0 PRECISION SYSTEM</div>
-              </div> */}
-              <div className="flex items-center gap-3">
-                <Button variant="outline" size="sm" onClick={() => onOpenChange(false)} className="h-9 px-4 text-xs font-semibold">
-                  Cancel
-                </Button>
-                <Button size="sm" onClick={handleSave} disabled={isSaving} className="h-9 px-4 text-xs font-semibold bg-[#2D45D8] hover:bg-[#2D45D8]/90 text-white shadow-sm transition-colors">
-                  Save Changes
-                </Button>
-              </div>
-            </div>
+            <DialogFooter className="mt-2 border-t border-slate-200 pt-2">
+              <Button variant="outline" onClick={() => onOpenChange(false)} className="text-xs">
+                Cancel
+              </Button>
+              <Button onClick={handleSave} disabled={isSaving} className="text-primary-foreground text-xs">
+                Save Changes
+              </Button>
+            </DialogFooter>
           </div>
         </div>
       </DialogContent>
+      <CustomDeleteDialog
+        isOpen={isConfirmDeleteDialogOpen}
+        onOpenChange={setIsConfirmDeleteDialogOpen}
+        title="Delete Column"
+        description={`Are you sure you want to delete the column "${field.field_label}"? This action cannot be undone and any data stored in this column will be permanently removed.`}
+        onConfirm={handleConfirmDelete}
+        isDeleting={isDeleting}
+      />
     </Dialog>
   );
 }

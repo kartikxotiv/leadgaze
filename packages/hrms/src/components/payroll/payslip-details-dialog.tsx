@@ -51,8 +51,8 @@ export function PayslipDetailsDialog(props: {
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-hidden border-gray-200 bg-white p-0 sm:max-w-[800px] dark:border-slate-800 dark:bg-slate-950">
         <div className="flex max-h-[90vh] flex-col">
-          <DialogHeader className="border-b border-gray-200 bg-white p-6 pb-4 dark:border-slate-800 dark:bg-slate-950">
-            <DialogTitle className="pr-12">
+          <DialogHeader>
+            <DialogTitle>
               Payslip Breakdown: {props.payslip?.employee?.first_name}{' '}
               {props.payslip?.employee?.last_name}
             </DialogTitle>
@@ -64,7 +64,7 @@ export function PayslipDetailsDialog(props: {
 
           <div className="flex-1 overflow-y-auto p-6">
             <div className="grid grid-cols-2 gap-8">
-              <div className="space-y-4">
+              <div className="space-y-2">
                 <h4 className="text-muted-foreground text-sm font-semibold tracking-wider uppercase">
                   Earnings
                 </h4>
@@ -105,7 +105,7 @@ export function PayslipDetailsDialog(props: {
                 </div>
               </div>
 
-              <div className="space-y-4">
+              <div className="space-y-2">
                 <h4 className="text-muted-foreground text-sm font-semibold tracking-wider uppercase">
                   Deductions
                 </h4>

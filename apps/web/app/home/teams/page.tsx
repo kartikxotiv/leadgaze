@@ -3,10 +3,18 @@
 import React, { useMemo, useState } from 'react';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Edit2, Plus, Trash2, Users, UserPlus } from 'lucide-react';
+import { Edit2, Plus, Trash2, Users, UserPlus, MoreVertical } from 'lucide-react';
 import { toast } from 'sonner';
 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@kit/ui/dropdown-menu';
+
 import { Button } from '@kit/ui/button';
+import { AddColumnModal } from '@kit/ui/add-column-modal';
 import {
   Card,
   CardContent,
@@ -27,6 +35,7 @@ import { useTableSort } from '@kit/ui/use-table-sort';
 import { SortableTableHead } from '@kit/ui/sortable-table-head';
 import { ListToolBar } from '@kit/ui/list-toolbar';
 import { StatusFilterDropdown } from '@kit/ui/status-filter-dropdown';
+import { CustomDeleteDialog } from '@kit/ui/custom-delete-dialog';
 
 import { Skeleton } from '@kit/ui/skeleton';
 
@@ -47,6 +56,7 @@ import CustomTableContainer from '@kit/ui/custom-table-container';
 
 
 export default function TeamsPage() {
+  const [addColumnModalOpen, setAddColumnModalOpen] = useState(false);
   const queryClient = useQueryClient();
   const { currentWorkspace, canAccess } = useRBAC();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -54,6 +64,9 @@ export default function TeamsPage() {
   const [managingMembersTeam, setManagingMembersTeam] = useState<Team | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
+
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [teamToDelete, setTeamToDelete] = useState<string | null>(null);
 
   // Virtual team statuses for filtering
   const teamStatuses = useMemo(
@@ -140,7 +153,6 @@ export default function TeamsPage() {
     filteredTeams,
   );
 
-  // Delete team mutation
   const deleteTeamMutation = useMutation({
     mutationFn: deleteTeamService,
     onSuccess: () => {
@@ -148,16 +160,19 @@ export default function TeamsPage() {
         queryKey: ['workspaceTeams', currentWorkspace?.id],
       });
       toast.success('Team deleted successfully');
+      setIsDeleteDialogOpen(false);
+      setTeamToDelete(null);
     },
     onError: (error: any) => {
       toast.error(error?.message || 'Failed to delete team');
+      setIsDeleteDialogOpen(false);
+      setTeamToDelete(null);
     },
   });
 
   const handleDeleteTeam = (teamId: string) => {
-    if (confirm('Are you sure you want to delete this team? All team associations will be lost.')) {
-      deleteTeamMutation.mutate(teamId);
-    }
+    setTeamToDelete(teamId);
+    setIsDeleteDialogOpen(true);
   };
 
   const handleEditTeam = (team: Team) => {
@@ -170,55 +185,64 @@ export default function TeamsPage() {
 
   return (
     <ModuleGuard module="team_members">
-      <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden">
+      <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden border-top-bottom-gray">
         <PageHeader
-          title={`Teams (${teams.length})`}
-          description="Manage your workspace teams and their members"
-        />
-      </div>
-
-     
-
-      {/* Toolbar with status filter, search, actions, and column visibility */}
-      <div className="w-full max-w-full min-w-0 shrink-0 border-b pb-2">
-        <ListToolBar          
-          showSearch
-          searchPlaceholder="Search teams..."
-          searchValue={searchTerm}
-          onSearchChange={setSearchTerm}
-          actions={[
-            {
-              key: 'add',
-              label: 'New Team',
-              icon: Plus,
-              onClick: () => setCreateDialogOpen(true),
-              show: canAccess('team_members', 'create'),
-              buttonVariant: 'default',
-            },
-          ]}
-          columnVisibilitySlot={
-            <ColumnVisibilitySelector
-              columns={columns}
-              visibility={visibility}
-              onToggle={toggleVisibility}
-              onReset={reset}
+          title={`Teams`}
+          // description="Manage your workspace teams and their members"
+        >
+          <div className="p-[2px]">
+            <ListToolBar
+              align="right"
+              className="border-none bg-transparent p-0"
+              showSearch
+              searchPlaceholder="Search teams..."
+              searchValue={searchTerm}
+              onSearchChange={setSearchTerm}
+              actions={[
+                {
+                  key: 'add',
+                  label: 'New Team',
+                  icon: Plus,
+                  onClick: () => setCreateDialogOpen(true),
+                  show: canAccess('team_members', 'create'),
+                  buttonVariant: 'default',
+                },
+              ]}
+              columnVisibilitySlot={
+                <ColumnVisibilitySelector
+                  columns={columns}
+                  visibility={visibility}
+                  onToggle={toggleVisibility}
+                  onReset={reset}
+                />
+              }
             />
-          }
-        />
+          </div>
+        </PageHeader>
       </div>
 
-      <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden">
+      <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden mb-[1px]">
         <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 gap-0">
           <CustomTableContainer>                                    
             {isLoading ? (
               <div className="listing-table-container min-w-0 flex-1 overflow-x-auto overflow-y-auto rounded-lg pb-6">
                 <Table className="w-max min-w-full border-separate border-spacing-0 text-sm">
-                  <TableHeader className="bg-card sticky top-0 z-10 shadow-sm">
+                  <TableHeader className="sticky top-0 z-10 shadow-sm">
                     <TableRow>
                       <TableHead>Team Name</TableHead>
                       <TableHead>Description</TableHead>
                       <TableHead>Members</TableHead>
-                      <TableHead className="sticky-right-header text-right">Actions</TableHead>
+                      <TableHead className="sticky-right-header z-10 w-12 px-1 text-center">
+                    <Button
+                      type="button"
+                      size="icon"
+                      className="mx-auto flex h-5 w-5 items-center justify-center rounded-full bg-leadgaze-primary text-white hover:bg-leadgaze-primary/90 border-0 p-0 shadow-xs"
+                      onClick={() => setAddColumnModalOpen(true)}
+                      title="Toggle Columns"
+                    >
+                      <Plus className="h-3.5 w-3.5 stroke-[2.5]" />
+                    </Button>
+                  </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -305,9 +329,17 @@ export default function TeamsPage() {
     <span className="col-resize-handle" {...getResizeHandleProps('members')} />
   </SortableTableHead>
 )}
-                    <TableHead className="sticky-right-header text-right">
-                      Actions
-                    </TableHead>
+                    <TableHead className="sticky-right-header z-10 w-12 px-1 text-center">
+                    <Button
+                      type="button"
+                      size="icon"
+                      className="mx-auto flex h-5 w-5 items-center justify-center rounded-full bg-leadgaze-primary text-white hover:bg-leadgaze-primary/90 border-0 p-0 shadow-xs"
+                      onClick={() => setAddColumnModalOpen(true)}
+                      title="Toggle Columns"
+                    >
+                      <Plus className="h-3.5 w-3.5 stroke-[2.5]" />
+                    </Button>
+                  </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -329,39 +361,44 @@ export default function TeamsPage() {
                         </TableCell>
                       )}
                       <TableCell className="">
-                        <div className="flex items-center justify-end gap-2">
-                          {canAccess('team_members', 'edit') && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleManageMembers(team)}
-                              className="gap-2"
-                            >
-                              <UserPlus className="h-4 w-4" />
-                              Members
-                            </Button>
-                          )}
-                          {canAccess('team_members', 'edit') && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleEditTeam(team)}
-                              className="gap-2"
-                            >
-                              <Edit2 className="h-4 w-4" />
-                            </Button>
-                          )}
-                          {canAccess('team_members', 'delete') && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDeleteTeam(team.id)}
-                              className="text-destructive hover:bg-destructive/10 hover:text-destructive gap-2"
-                              disabled={deleteTeamMutation.isPending}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          )}
+                        <div className="flex items-center justify-end">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                className="h-8 w-8 border-0 p-0 focus:outline-none focus-visible:ring-0 focus-visible:outline-none focus-visible:ring-offset-0"
+                              >
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              {canAccess('team_members', 'edit') && (
+                                <DropdownMenuItem
+                                  onClick={() => handleManageMembers(team)}
+                                  className="gap-2 cursor-pointer"
+                                >
+                                  <UserPlus className="h-4 w-4" /> Members
+                                </DropdownMenuItem>
+                              )}
+                              {canAccess('team_members', 'edit') && (
+                                <DropdownMenuItem
+                                  onClick={() => handleEditTeam(team)}
+                                  className="gap-2 cursor-pointer"
+                                >
+                                  <Edit2 className="h-4 w-4" /> Edit
+                                </DropdownMenuItem>
+                              )}
+                              {canAccess('team_members', 'delete') && (
+                                <DropdownMenuItem
+                                  onClick={() => handleDeleteTeam(team.id)}
+                                  disabled={deleteTeamMutation.isPending}
+                                  className="text-destructive focus:text-destructive cursor-pointer gap-2"
+                                >
+                                  <Trash2 className="h-4 w-4" /> Delete
+                                </DropdownMenuItem>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -394,6 +431,28 @@ export default function TeamsPage() {
             onOpenChange={(open) => !open && setManagingMembersTeam(null)}
           />
         )}
+      
+      <AddColumnModal
+        open={addColumnModalOpen}
+        onOpenChange={setAddColumnModalOpen}
+        columns={columns}
+        visibility={visibility}
+        onToggleColumn={toggleVisibility}
+        onResetColumns={reset}
+      />
+      
+      <CustomDeleteDialog
+        isOpen={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        title="Delete Team"
+        description="Are you sure you want to delete this team? All team associations will be lost. This action cannot be undone."
+        onConfirm={() => {
+          if (teamToDelete) {
+            deleteTeamMutation.mutate(teamToDelete);
+          }
+        }}
+        isDeleting={deleteTeamMutation.isPending}
+      />
       </PageBody>
     </ModuleGuard>
   );

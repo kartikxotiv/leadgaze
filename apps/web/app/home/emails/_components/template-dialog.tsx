@@ -15,6 +15,7 @@ import {
 } from '@kit/ui/dialog';
 import { Input } from '@kit/ui/input';
 import { Label } from '@kit/ui/label';
+import { RichTextEditor, type RichTextEditorRef } from '@kit/ui/rich-text-editor';
 import {
   Tooltip,
   TooltipContent,
@@ -43,8 +44,9 @@ export function TemplateDialog({
   const queryClient = useQueryClient();
   const [name, setName] = useState('');
   const [subject, setSubject] = useState('');
+  const [htmlBody, setHtmlBody] = useState('');
   const [isSaving, setIsSaving] = useState(false);
-  const editorRef = useRef<HTMLDivElement>(null);
+  const editorRef = useRef<RichTextEditorRef>(null);
   const systemVariables = getAvailableVariables();
 
   const { data: customVariables = [] } = useQuery({
@@ -58,26 +60,25 @@ export function TemplateDialog({
       if (template) {
         setName(template.name);
         setSubject(template.subject);
-        // Small timeout to ensure editor is mounted
+        setHtmlBody(template.html_body || '');
         setTimeout(() => {
-          if (editorRef.current) {
-            editorRef.current.innerHTML = template.html_body || '';
-          }
+          editorRef.current?.setHTML(template.html_body || '');
         }, 0);
       } else {
         setName('');
         setSubject('');
-        if (editorRef.current) {
-          editorRef.current.innerHTML = '';
-        }
+        setHtmlBody('');
+        setTimeout(() => {
+          editorRef.current?.setHTML('');
+        }, 0);
       }
     }
   }, [open, template]);
 
   const handleSave = async () => {
-    const htmlBody = editorRef.current?.innerHTML || '';
+    const content = editorRef.current?.getHTML() || htmlBody;
 
-    if (!name || !subject || !htmlBody) {
+    if (!name || !subject || !content.trim()) {
       toast.error('Please fill in all required fields');
       return;
     }
@@ -89,7 +90,7 @@ export function TemplateDialog({
         workspace_id: workspaceId,
         name,
         subject,
-        html_body: htmlBody,
+        html_body: content,
         variables: [
           ...systemVariables.map(v => v.value),
           ...customVariables.map((v: any) => `{{${v.key}}}`)
@@ -108,27 +109,19 @@ export function TemplateDialog({
 
   const insertVariable = (variable: string) => {
     if (editorRef.current) {
-      editorRef.current.focus();
-      document.execCommand('insertText', false, variable);
-    }
-  };
-
-  const handleFormat = (command: string) => {
-    if (editorRef.current) {
-      editorRef.current.focus();
-      document.execCommand(command, false);
+      editorRef.current.insertText(variable);
     }
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[90vh] flex-col p-0 max-w-3xl overflow-hidden p-0 h-auto flex flex-col">
-        <DialogHeader className="px-6 py-4 border-b border-b p-6 pb-4">
+      <DialogContent className="flex max-h-[90vh] flex-col p-0 max-w-3xl overflow-hidden h-auto">
+        <DialogHeader>
           <DialogTitle>{template ? 'Edit Template' : 'Create New Template'}</DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 space-y-4 px-6 py-4">
-          <div className="space-y-2">
+        <div className="flex-1 space-y-3 px-6 py-4 overflow-y-auto">
+          <div className="space-y-1.5">
             <Label htmlFor="name">Template Name</Label>
             <Input
               id="name"
@@ -138,7 +131,7 @@ export function TemplateDialog({
             />
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label htmlFor="subject">Email Subject</Label>
             <Input
               id="subject"
@@ -151,74 +144,53 @@ export function TemplateDialog({
             </p>
           </div>
 
-          <div className="space-y-2">
-            <div className="flex flex-col gap-2">
-              {/* <div className="flex items-center justify-between">
-                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">System Variables</Label>
-                <div className="flex flex-wrap gap-1.5">
-                  {systemVariables.map((v) => (
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <Label>Template Body</Label>
+              {customVariables.length > 0 && (
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="text-[11px] text-muted-foreground">Insert:</span>
+                  {customVariables.map((v: any) => (
                     <Button
-                      key={v.value}
+                      key={v.key}
+                      type="button"
                       variant="outline"
                       size="sm"
-                      className="h-6 text-[10px] px-2 bg-blue-50/50 border-blue-100 hover:bg-blue-100 dark:bg-blue-900/10 dark:border-blue-900/20"
-                      onClick={() => insertVariable(v.value)}
+                      className="h-6 text-[10px] px-2 bg-emerald-50/50 border-emerald-100 hover:bg-emerald-100 dark:bg-emerald-900/10 dark:border-emerald-900/20"
+                      onClick={() => insertVariable(`{{${v.key}}}`)}
                     >
-                      {v.label}
+                      {v.key}
                     </Button>
                   ))}
                 </div>
-              </div> */}
-
-              {customVariables.length > 0 && (
-                <div className="flex items-center justify-between">
-                  <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Environment Variables</Label>
-                  <div className="flex flex-wrap gap-1.5">
-                    {customVariables.map((v: any) => (
-                      <Button
-                        key={v.key}
-                        variant="outline"
-                        size="sm"
-                        className="h-6 text-[10px] px-2 bg-emerald-50/50 border-emerald-100 hover:bg-emerald-100 dark:bg-emerald-900/10 dark:border-emerald-900/20"
-                        onClick={() => insertVariable(`{{${v.key}}}`)}
-                      >
-                        {v.key}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
               )}
             </div>
-            
-            <div className="border rounded-md overflow-hidden">
-              <div className="flex items-center gap-1 border-b bg-zinc-50 p-1 dark:bg-zinc-800/50">
-                <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => handleFormat('bold')}><b>B</b></Button>
-                <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => handleFormat('italic')}><i>I</i></Button>
-                <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => handleFormat('underline')}><u>U</u></Button>
-                <div className="ml-auto flex items-center gap-2 px-2">
-                   <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger>
-                          <Info className="h-4 w-4 text-gray-400" />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="text-xs">Dynamic variables will be replaced when sending.</p>
-                        </TooltipContent>
-                      </Tooltip>
-                   </TooltipProvider>
-                </div>
-              </div>
-              <div
-                ref={editorRef}
-                contentEditable
-                className="min-h-[300px] p-4 text-sm outline-none bg-white dark:bg-zinc-950"
-              />
-            </div>
+
+            <RichTextEditor
+              ref={editorRef}
+              value={htmlBody}
+              onChange={setHtmlBody}
+              minHeight="16rem"
+              placeholder="Write your email template here..."
+              toolbarExtra={
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="flex items-center gap-1 cursor-pointer">
+                        <Info className="h-3.5 w-3.5 text-zinc-400" />
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="text-xs">Dynamic variables like {'{{lead_name}}'} will be replaced when sending.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              }
+            />
           </div>
         </div>
 
-        
-      <DialogFooter className="px-6 py-4 border-t bg-zinc-50 dark:bg-zinc-900/50 border-t p-6 mt-auto">
+        <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSaving}>
             Cancel
           </Button>
@@ -235,3 +207,4 @@ export function TemplateDialog({
     </Dialog>
   );
 }
+

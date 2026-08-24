@@ -28,7 +28,7 @@ interface OpportunitiesKanbanColumnProps {
   canCreate: boolean;
   onOpportunityClick: (id: string) => void;
   onDelete: (opportunity: Opportunity) => void;
-  onCreateOpportunity: () => void;
+  onCreateOpportunity: (stageId: string) => void;
 }
 
 export function OpportunitiesKanbanColumn({
@@ -112,7 +112,7 @@ export function OpportunitiesKanbanColumn({
             variant="ghost"
             size="sm"
             className="h-8 w-full justify-start gap-1.5 rounded-lg text-xs text-muted-foreground hover:bg-muted/60 hover:text-foreground"
-            onClick={onCreateOpportunity}
+            onClick={() => onCreateOpportunity(stage.id)}
           >
             <Plus className="h-3.5 w-3.5" />
             Add Opportunity

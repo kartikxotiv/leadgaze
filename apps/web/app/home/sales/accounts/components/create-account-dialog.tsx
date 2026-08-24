@@ -35,6 +35,7 @@ import { IndustrySelect } from '../../../_components/industry-select';
 import { ManageableStatusSelect } from '../../../_components/manageable-status-select';
 
 interface CreateAccountDialogProps {
+  asFormOnly?: boolean;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: (account: any) => void;
@@ -44,6 +45,7 @@ export function CreateAccountDialog({
   open,
   onOpenChange,
   onSuccess,
+  asFormOnly = false
 }: CreateAccountDialogProps) {
   const { currentWorkspace: workspace } = useRBAC();
   const queryClient = useQueryClient();
@@ -111,26 +113,27 @@ export function CreateAccountDialog({
     mutation.mutate(payload);
   };
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[700px]">
-        <DialogHeader>
-          <DialogTitle>Create New Account</DialogTitle>
-          <DialogDescription>
-            Add a new business account to your workspace.
-          </DialogDescription>
-        </DialogHeader>
+  const innerContent = (
+    <div className={asFormOnly ? "flex h-full flex-col overflow-auto" : ""}>
+        {!asFormOnly && (
+          <DialogHeader>
+            <DialogTitle>Create New Account</DialogTitle>
+            <DialogDescription>
+              Add a new business account to your workspace.
+            </DialogDescription>
+          </DialogHeader>
+        )}
 
         <form
           onSubmit={handleSubmit}
-          className="flex-1 space-y-6 overflow-y-auto px-6 py-4"
+          className="flex-1 space-y-6 overflow-y-auto px-2"
         >
-          <div className="space-y-4">
-            <h3 className="primary-heading text-leadgaze-dark uppercase dark:text-white">
+          <div className="space-y-2">
+            <h3 className="primary-heading text-leadgaze-dark uppercase dark:text-white custom-sub-heading-dialog-form">
               Basic Information
             </h3>
             <Separator />
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-2">
               <div className="space-y-2">
                 <Label htmlFor="account_name">Account Name *</Label>
                 <Input
@@ -156,7 +159,7 @@ export function CreateAccountDialog({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-2">
               <div className="space-y-2">
                 <Label htmlFor="phone_number">Phone Number</Label>
                 <Input
@@ -170,7 +173,7 @@ export function CreateAccountDialog({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-2">
               <div className="space-y-2">
                 <Label htmlFor="industry_id">Industry</Label>
                 <IndustrySelect
@@ -202,7 +205,7 @@ export function CreateAccountDialog({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-2">
               <div className="space-y-2">
                 <Label htmlFor="account_type">Account Type</Label>
                 <ManageableStatusSelect
@@ -218,8 +221,8 @@ export function CreateAccountDialog({
             </div>
           </div>
 
-          <div className="space-y-4 pt-4">
-            <h3 className="primary-heading text-leadgaze-dark uppercase dark:text-white">
+          <div className="space-y-2 pt-4">
+            <h3 className="primary-heading text-leadgaze-dark uppercase dark:text-white custom-sub-heading-dialog-form">
               Address Information
             </h3>
             <Separator />
@@ -234,7 +237,7 @@ export function CreateAccountDialog({
                 placeholder="123 Main St"
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-2">
               <div className="space-y-2">
                 <Label htmlFor="billing_city">City</Label>
                 <Input
@@ -256,7 +259,7 @@ export function CreateAccountDialog({
                 />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-2">
               <div className="space-y-2">
                 <Label htmlFor="billing_postal_code">Postal Code</Label>
                 <Input
@@ -299,24 +302,35 @@ export function CreateAccountDialog({
             />
           </div>
 
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" disabled={mutation.isPending}>
-              {mutation.isPending ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Plus className="mr-2 h-4 w-4" />
-              )}
-              Create Account
-            </Button>
-          </DialogFooter>
-        </form>
+          <DialogFooter className="sticky bottom-0 bg-white p-4 pt-4 dark:bg-slate-950 border-t border-gray-200 dark:border-slate-800">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+          >
+            Cancel
+          </Button>
+          <Button type="submit" disabled={mutation.isPending}>
+            {mutation.isPending ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Plus className="mr-2 h-4 w-4" />
+            )}
+            Create Account
+          </Button>
+        </DialogFooter>
+      </form>
+    </div>
+  );
+
+  if (asFormOnly) {
+    return innerContent;
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[700px]">
+        {innerContent}
       </DialogContent>
     </Dialog>
   );

@@ -209,7 +209,7 @@ export function EditRoleDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[90vh] flex-col p-0 flex h-fit flex-col gap-0 overflow-hidden p-0 sm:max-w-[700px]">
-        <DialogHeader className="shrink-0 border-b px-6 py-4 border-b p-6 pb-4">
+        <DialogHeader>
           <DialogTitle>Edit Role</DialogTitle>
           <DialogDescription>
             Update the role details and settings
@@ -220,10 +220,11 @@ export function EditRoleDialog({
           onSubmit={handleSubmit}
           className="flex flex-1 flex-col overflow-hidden"
         >
-          <div className="flex-1 overflow-y-auto p-6 pt-0">
-            <div className="space-y-4 pt-6">
-              <div className="space-y-2">
-                <Label htmlFor="role_name">Role Name *</Label>
+          <div className="flex-1 overflow-y-auto p-2">
+            <h3 className="primary-heading text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">Role Details</h3>
+            <div className="space-y-2">
+              <div>
+                <Label htmlFor="role_name">Role Name <span className="text-red-500">*</span></Label>
                 <Input
                   id="role_name"
                   value={formData.role_name}
@@ -234,7 +235,7 @@ export function EditRoleDialog({
                 />
               </div>
 
-              <div className="space-y-2">
+              <div>
                 <Label htmlFor="description">Description</Label>
                 <Input
                   id="description"
@@ -246,8 +247,8 @@ export function EditRoleDialog({
                 />
               </div>
 
-              <div className="grid grid-cols-1 gap-4">
-                <div className="space-y-2">
+              <div className="grid grid-cols-1 gap-2">
+                <div>
                   <Label htmlFor="color">Color</Label>
                   <Select
                     value={formData.color}
@@ -275,7 +276,7 @@ export function EditRoleDialog({
                 </div>
               </div>
 
-              <div className="space-y-2">
+              <div>
                 <Label htmlFor="is_active">Status</Label>
                 <Select
                   value={formData.is_active ? 'active' : 'inactive'}
@@ -293,14 +294,14 @@ export function EditRoleDialog({
                 </Select>
               </div>
 
-              <div className="space-y-4 border-t pt-4">
-                <h3 className="text-sm font-semibold">Permissions</h3>
+              <div className="space-y-2 border-t pt-2">
+                <h3 className="primary-heading text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">Permissions</h3>
                 {modulesLoading || permissionsLoading ? (
                   <div className="flex items-center justify-center py-8">
                     <Loader2 className="h-4 w-4 animate-spin" />
                   </div>
                 ) : modulesData?.data && modulesData?.data?.length > 0 ? (
-                  <div className="space-y-2 rounded-lg border p-3">
+                  <div className="space-y-2 rounded-lg border p-2">
                     <div className="space-y-2">
                       {modulesData?.data?.map((module: any) => (
                         <Collapsible
@@ -352,7 +353,7 @@ export function EditRoleDialog({
                                       togglePermission(feature.id)
                                     }
                                   />
-                                  <label
+                                  <Label
                                     htmlFor={feature.id}
                                     className="flex-1 cursor-pointer text-sm"
                                   >
@@ -362,7 +363,7 @@ export function EditRoleDialog({
                                     <span className="ml-2 text-xs text-slate-500">
                                       ({feature.feature_key})
                                     </span>
-                                  </label>
+                                  </Label>
                                 </div>
                               ))
                             ) : (
@@ -384,7 +385,7 @@ export function EditRoleDialog({
 
           
         </form>
-      <DialogFooter className="shrink-0 border-t bg-white px-6 py-4 border-t p-6 mt-auto">
+      <DialogFooter>
             <Button
               type="button"
               variant="outline"
