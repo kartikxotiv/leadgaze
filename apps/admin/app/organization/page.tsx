@@ -360,7 +360,7 @@ export default function AdminWorkspacesPage() {
           title="Organization"
         >
           <div className="flex items-center gap-2">
-            <Button 
+            {/* <Button 
               variant="default" 
               className="bg-leadgaze-primary hover:bg-leadgaze-primary text-white secondary-text-small-bold gap-1.5 px-2"
               onClick={() => {
@@ -370,7 +370,7 @@ export default function AdminWorkspacesPage() {
             >
               <Plus className="h-4 w-4" />
               New Organization
-            </Button>
+            </Button> */}
           </div>
         </PageHeader>
       </div>
@@ -403,6 +403,7 @@ export default function AdminWorkspacesPage() {
 
           {['Active', 'Trial', 'Suspended'].map((statusLabel) => {
             const isSelected = selectedStatuses.length === 1 && selectedStatuses.includes(statusLabel);
+            const statusCount = workspaces.filter(w => w.status === statusLabel).length;
             return (
               <button
                 key={statusLabel}
@@ -422,7 +423,7 @@ export default function AdminWorkspacesPage() {
                   "ml-1 rounded-full px-2 py-0.5 text-xs border",
                   isSelected ? "border-blue-200 bg-blue-50 text-leadgaze-primary" : "border-gray-200 bg-gray-50 text-gray-600"
                 )}>
-                  0
+                  {statusCount}
                 </span>
               </button>
             );
@@ -466,7 +467,7 @@ export default function AdminWorkspacesPage() {
             setDateRange(null);
             setSearchTerm('');
           }}
-          actions={[
+          /* actions={[
             {
               key: 'import',
               label: 'Import',
@@ -474,7 +475,7 @@ export default function AdminWorkspacesPage() {
               onClick: () => setIsImportDialogOpen(true),
               buttonVariant: 'outline',
             },
-          ]}
+          ]} */
           exportSlot={
             <CsvExportButton
               selectedCount={selectedWorkspaceIds.size}

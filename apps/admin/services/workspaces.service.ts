@@ -122,3 +122,10 @@ export const getWorkspaceAuditLogsService = asyncHandlerClient(
     };
   },
 );
+
+export const getWorkspaceModulesService = asyncHandlerClient(
+  async (params: { workspaceId: string }) => {
+    const response = await ApiClient.get(`/workspaces/${params.workspaceId}/modules`);
+    return response.data?.data || response.data;
+  },
+);
