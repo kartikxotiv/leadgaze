@@ -557,7 +557,7 @@ export default function RolesPage() {
                         <TableCell>
                           <Badge
                             variant="outline"
-                            className="dark-button-border-color"
+                            className="dark-button-border-color text-leadgaze-dark dark:text-white"
                           >
                             {getHierarchyLabel(role, index)}
                           </Badge>
