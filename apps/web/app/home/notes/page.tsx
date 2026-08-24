@@ -457,8 +457,8 @@ export default function NotesPage() {
           categoryFilter === 'all'
             ? 'All entities'
             : categoryFilter.charAt(0).toUpperCase() +
-              categoryFilter.slice(1) +
-              's',
+            categoryFilter.slice(1) +
+            's',
         options: [
           { value: 'lead', label: 'Leads' },
           { value: 'contact', label: 'Contacts' },
@@ -476,10 +476,10 @@ export default function NotesPage() {
             ? 'All members'
             : selectedCreatedByIds.length === 1
               ? ((
-                  members.find(
-                    (m: any) => m.user_id === selectedCreatedByIds[0],
-                  ) as any
-                )?.user?.user_metadata?.full_name ?? '1 selected')
+                members.find(
+                  (m: any) => m.user_id === selectedCreatedByIds[0],
+                ) as any
+              )?.user?.user_metadata?.full_name ?? '1 selected')
               : `${selectedCreatedByIds.length} selected`,
         options: members
           .filter((m: any) => m.user_id)
@@ -537,7 +537,7 @@ export default function NotesPage() {
     <>
       <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden border-top-bottom-gray">
         <PageHeader
-          title={`Notes`}          
+          title={`Notes`}
         >
           <div className="p-[2px]">
             <ListToolBar
@@ -547,48 +547,48 @@ export default function NotesPage() {
               expandableSearch
               searchPlaceholder="Search"
               searchValue={searchTerm}
-          onSearchChange={setSearchTerm}
-          showFilter
-          filterLabel="Show Filters"
-          filterGroups={filterGroups}
-          activeFilterCount={
-            (categoryFilter !== 'all' ? 1 : 0) +
-            (createdOnRange ? 1 : 0) +
-            (updatedOnRange ? 1 : 0) +
-            (statusFilter !== 'active' ? 1 : 0) +
-            (selectedCreatedByIds.length > 0 ? 1 : 0)
-          }
-          onClearFilters={() => {
-            setCategoryFilter('all');
-            setStatusFilter('active');
-            setSelectedCreatedByIds([]);
-            clearCreatedOnRange();
-            clearUpdatedOnRange();
-          }}
-          actions={[
-            {
-              key: 'add',
-              label: 'New Note',
-              icon: Plus,
-              onClick: () => {
-                setNewNoteContent('');
-                setEntityType('lead');
-                setEntityId('');
-                setIsCreateDialogOpen(true);
-              },
-              show: true,
-              buttonVariant: 'default',
-            },
-          ]}
-          columnVisibilitySlot={
-            <ColumnVisibilitySelector
-              columns={noteColumns}
-              visibility={visibility}
-              onToggle={toggleVisibility}
-              onReset={reset}
+              onSearchChange={setSearchTerm}
+              showFilter
+              filterLabel="Show Filters"
+              filterGroups={filterGroups}
+              activeFilterCount={
+                (categoryFilter !== 'all' ? 1 : 0) +
+                (createdOnRange ? 1 : 0) +
+                (updatedOnRange ? 1 : 0) +
+                (statusFilter !== 'active' ? 1 : 0) +
+                (selectedCreatedByIds.length > 0 ? 1 : 0)
+              }
+              onClearFilters={() => {
+                setCategoryFilter('all');
+                setStatusFilter('active');
+                setSelectedCreatedByIds([]);
+                clearCreatedOnRange();
+                clearUpdatedOnRange();
+              }}
+              actions={[
+                {
+                  key: 'add',
+                  label: 'New Note',
+                  icon: Plus,
+                  onClick: () => {
+                    setNewNoteContent('');
+                    setEntityType('lead');
+                    setEntityId('');
+                    setIsCreateDialogOpen(true);
+                  },
+                  show: true,
+                  buttonVariant: 'default',
+                },
+              ]}
+              columnVisibilitySlot={
+                <ColumnVisibilitySelector
+                  columns={noteColumns}
+                  visibility={visibility}
+                  onToggle={toggleVisibility}
+                  onReset={reset}
+                />
+              }
             />
-          }
-        />
           </div>
         </PageHeader>
       </div>
@@ -789,8 +789,8 @@ export default function NotesPage() {
                           colSpan={
                             visibility
                               ? Object.values(visibility).filter(
-                                  (v) => v !== false,
-                                ).length + 1
+                                (v) => v !== false,
+                              ).length + 1
                               : 6
                           }
                         >
@@ -816,7 +816,7 @@ export default function NotesPage() {
                         <TableCell>
                           {note.entity_id ? (
                             <Link
-                              href={`/home/sales/${note.entity_type === 'opportunity' ? 'opportunities' : `${note.entity_type}s`}/${note.entity_id}`}
+                              href={`/home/sales/${note.entity_type === 'opportunity' ? 'opportunities' : `${note.entity_type}s`}/${note.entity_id}?tab=notes`}
                               className="primary-text-medium text-leadgaze-primary dark:text-leadgaze-primary inline-block max-w-[150px] truncate text-sm"
                               title={note.entity_name || 'General'}
                             >
@@ -926,7 +926,7 @@ export default function NotesPage() {
                       colSpan={
                         visibility
                           ? Object.values(visibility).filter((v) => v !== false)
-                              .length + 1
+                            .length + 1
                           : 10
                       }
                       className="text-muted-foreground h-24 text-center"
@@ -941,15 +941,15 @@ export default function NotesPage() {
             </Table>
           </CustomTableContainer>
         </div>
-      
-      <AddColumnModal
-        open={addColumnModalOpen}
-        onOpenChange={setAddColumnModalOpen}
-        columns={noteColumns}
-        visibility={visibility}
-        onToggleColumn={toggleVisibility}
-        onResetColumns={reset}
-      />
+
+        <AddColumnModal
+          open={addColumnModalOpen}
+          onOpenChange={setAddColumnModalOpen}
+          columns={noteColumns}
+          visibility={visibility}
+          onToggleColumn={toggleVisibility}
+          onResetColumns={reset}
+        />
       </PageBody>
 
       {/* Create Dialog */}
@@ -1107,7 +1107,7 @@ export default function NotesPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      
+
       <CustomDeleteDialog
         isOpen={isDeleteDialogOpen}
         onOpenChange={setIsDeleteDialogOpen}
