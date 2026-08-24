@@ -1001,7 +1001,7 @@ function LatestAccountsTable({ heightClass = "h-[320px]", data = [] }: { heightC
                 <TableRow>
                   <TableHead>NAME</TableHead>
                   <TableHead>INDUSTRY</TableHead>
-                  <TableHead>OWNER</TableHead>
+                  <TableHead>PHONE</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -1009,7 +1009,7 @@ function LatestAccountsTable({ heightClass = "h-[320px]", data = [] }: { heightC
                   <TableRow key={i}>
                     <TableCell>{a.name}</TableCell>
                     <TableCell>{a.industry}</TableCell>
-                    <TableCell>{a.owner}</TableCell>
+                    <TableCell>{a.phone || '-'}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
