@@ -108,6 +108,12 @@ export function GlobalCreateServiceResourceForm({ title, endpoint, entityType, p
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    const phoneRegex = /^\\+?[0-9]+$/;
+    if (form.phone && !phoneRegex.test(form.phone)) {
+      toast.error('Phone number can only contain numbers, optionally starting with +');
+      return;
+    }
     
     const systemPayload: any = {};
     const customPayload: any = {};
