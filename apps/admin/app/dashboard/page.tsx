@@ -239,9 +239,13 @@ function StatCard({
       </CardHeader>
       <CardContent className="xl:p-3 xl:pt-2 2xl:p-5 2xl:pt-2">
         {delta !== null ? (
-          <CardDescription className="secondary-text-small flex items-center gap-1">
+          <CardDescription className="secondary-text-small flex items-center gap-1.5">
             <span
-              className={`flex items-center gap-0.5 font-semibold ${positive ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'}`}
+              className={`inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-xs font-semibold ${
+                positive
+                  ? 'bg-admin-dashboard-badge-green text-admin-dashboard-badge-text-green'
+                  : 'bg-admin-dashboard-badge-red text-admin-dashboard-badge-text-red'
+              }`}
             >
               {positive ? (
                 <TrendingUp className="h-3 w-3" />
@@ -268,7 +272,7 @@ function MonthlyRevenueChart() {
       title="Monthly Revenue"
       headerClassName="p-2 xl:p-2 2xl:p-2"
       icon2={
-        <span className="flex items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+        <span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs font-semibold bg-admin-dashboard-badge-green text-admin-dashboard-badge-text-green">
           <TrendingUp className="h-3.5 w-3.5" />
           12.4% YoY
         </span>
