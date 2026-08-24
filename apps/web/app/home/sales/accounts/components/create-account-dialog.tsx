@@ -102,6 +102,12 @@ export function CreateAccountDialog({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const phoneRegex = /^\+?[0-9]+$/;
+    if (formData.phone_number && !phoneRegex.test(formData.phone_number)) {
+      toast.error('Phone number can only contain numbers, optionally starting with +');
+      return;
+    }
+
     if (!formData.account_name) {
       toast.error('Account name is required');
       return;
