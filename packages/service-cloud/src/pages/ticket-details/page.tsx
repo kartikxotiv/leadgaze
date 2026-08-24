@@ -44,6 +44,7 @@ import {
   CoreEmailReplyDialog,
   CoreEntityPanel,
 } from '@kit/core/pages';
+import { getCoreEmailAccountsService } from '@kit/core/services';
 import { useSupabase } from '@kit/supabase/hooks/use-supabase';
 import { useLocalization } from '@kit/shared/localization';
 import {

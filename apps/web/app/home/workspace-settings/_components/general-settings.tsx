@@ -311,6 +311,7 @@ export function WorkspaceGeneralSettings({ workspaceId }: WorkspaceGeneralSettin
       refetch();
       queryClient.invalidateQueries({ queryKey: ['workspace-general-settings', workspaceId] });
       queryClient.invalidateQueries({ queryKey: ['workspaces'] });
+      queryClient.invalidateQueries({ queryKey: ['workspace-init'] });
       setIsDirty(false);
     } catch (error: any) {
       console.error('Failed to update company/workspace details:', error);
