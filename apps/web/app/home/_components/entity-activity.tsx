@@ -195,8 +195,8 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
   });
 
   const updateMutation = useMutation({
-    mutationFn: (payload: any) =>
-      updateReminderService(editingReminder.id, payload),
+    mutationFn: ({ id, ...payload }: { id: string; [key: string]: any }) =>
+      updateReminderService(id, payload),
     onSuccess: () => {
       toast.success('Reminder updated');
       setIsOpen(false);
@@ -233,16 +233,17 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
   });
 
   const handleSave = () => {
+    const parsedDate = formData.due_date ? new Date(formData.due_date) : null;
     const payload = {
       title: formData.title,
       description: formData.description,
       priority: formData.priority,
-      due_date: formData.due_date
-        ? new Date(formData.due_date).toISOString()
+      due_date: parsedDate && !isNaN(parsedDate.getTime())
+        ? parsedDate.toISOString()
         : undefined,
     };
     if (editingReminder) {
-      updateMutation.mutate(payload);
+      updateMutation.mutate({ id: editingReminder.id, ...payload });
     } else {
       createMutation.mutate();
     }

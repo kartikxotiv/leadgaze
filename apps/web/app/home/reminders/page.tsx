@@ -433,12 +433,14 @@ export default function RemindersPage() {
   const handleSave = () => {
     if (!editingReminder || !formData.title.trim() || !formData.due_date)
       return;
+    const parsedDate = new Date(formData.due_date);
     updateMutation.mutate({
+      id: editingReminder.id,
       title: formData.title,
       description: formData.description,
       priority: formData.priority,
-      due_date: formData.due_date
-        ? new Date(formData.due_date).toISOString()
+      due_date: !isNaN(parsedDate.getTime())
+        ? parsedDate.toISOString()
         : null,
     });
   };
