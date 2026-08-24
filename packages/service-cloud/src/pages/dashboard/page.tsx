@@ -325,6 +325,7 @@ export function ServiceCloudDashboardPage({
           detail: 'Unresolved customer work',
           iconBg: 'bg-activity-4',
           link: '/home/services/tickets?status=open',
+          detailClassName: 'text-[#BA1A1A]',
         };
       case 'customers':
         return {
@@ -343,6 +344,7 @@ export function ServiceCloudDashboardPage({
           detail: 'Linked companies',
           iconBg: 'bg-activity-3',
           link: '/home/services/customers?tab=organizations',
+          detailClassName: 'text-leadgaze-dark dark:text-white',
         };
       case 'logged_time':
         return {
@@ -484,7 +486,7 @@ export function ServiceCloudDashboardPage({
                       <div key={priority.id} className={itemClass}>
                         <div>
                           <div className="secondary-text-small-semibold" style={{ color: textColor || 'inherit' }}>{priority.name}</div>
-                          <div className="text-[10px] mt-1 uppercase" style={{ color: subTextColor || 'var(--color-leadgaze-muted)' }}>{`${priority.openCount} OPEN`}</div>
+                          <div className="text-[10px] mt-1" style={{ color: subTextColor || 'var(--color-leadgaze-muted)' }}>{`${priority.openCount} open`}</div>
                         </div>
                         <Badge 
                           className="px-2 py-1 !secondary-text-small-semibold rounded-sm hover:opacity-100"
@@ -624,7 +626,7 @@ export function ServiceCloudDashboardPage({
                           </div>
                         </CardHeader>
                         <CardContent className="xl:p-3 xl:pt-2 2xl:p-5 2xl:pt-2 relative z-10 pointer-events-none">
-                          <CardDescription className="secondary-text-small text-leadgaze-success">
+                          <CardDescription className={cn("secondary-text-small", card.detailClassName || "text-leadgaze-success")}>
                             {card.detail}
                           </CardDescription>
                         </CardContent>

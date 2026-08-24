@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
-import { CreditCard, Globe, Link2, Mail, Settings2, Video, FileText } from 'lucide-react';
+import { CreditCard, Globe, Link2, Mail, Settings2, Video, FileText, Menu, Cog } from 'lucide-react';
 
 import { Card, CardContent } from '@kit/ui/card';
 import { PageBody, PageHeader } from '@kit/ui/page';
@@ -101,7 +101,7 @@ export default function WorkspaceSettingsPage() {
                 value="general"
                 className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
               >
-                <Settings2 className="mr-2 h-4 w-4" />
+                <Menu className="mr-2 h-4 w-4" />
                 General
               </TabsTrigger>
             )}
@@ -137,7 +137,7 @@ export default function WorkspaceSettingsPage() {
                 value="integrations"
                 className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
               >
-                <Link2 className="mr-2 h-4 w-4" />
+                <Cog className="mr-2 h-4 w-4" />
                 Integration
               </TabsTrigger>
             )}

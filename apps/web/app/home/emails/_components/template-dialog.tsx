@@ -190,7 +190,7 @@ export function TemplateDialog({
           </div>
         </div>
 
-        <DialogFooter className="px-6 py-3 border-t">
+        <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSaving}>
             Cancel
           </Button>
