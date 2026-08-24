@@ -79,7 +79,7 @@ export function GlobalCreateReminderForm({ onSuccess, onCancel, asFormOnly = fal
     <div className="flex h-full flex-col overflow-auto">
       
       <div className="flex-1 space-y-2 overflow-y-auto px-2 gap-2">
-        <div>
+        <div className="space-y-2">
           <Label>Associate with</Label>
           <RadioGroup
             value={formData.entity_type}

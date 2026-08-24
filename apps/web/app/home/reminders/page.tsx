@@ -1263,7 +1263,7 @@ export default function RemindersPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
+            <div>
               <Label>Title</Label>
               <Input
                 value={formData.title}
@@ -1273,7 +1273,7 @@ export default function RemindersPage() {
                 placeholder="Call client..."
               />
             </div>
-            <div className="space-y-2">
+            <div>
               <Label>Description</Label>
               <Input
                 value={formData.description}
@@ -1283,7 +1283,7 @@ export default function RemindersPage() {
                 placeholder="Add more details..."
               />
             </div>
-            <div className="space-y-2">
+            <div>
               <Label>Priority</Label>
               <Select
                 value={formData.priority}
@@ -1301,7 +1301,7 @@ export default function RemindersPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
+            <div>
               <Label>Due Date</Label>
               <DateTimePicker
                   showTime
