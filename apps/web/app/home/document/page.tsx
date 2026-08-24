@@ -940,7 +940,7 @@ export default function DocumentPage() {
                         <TableCell>
                           {doc.entity_name && (
                             <Link
-                              href={`/home/sales/${doc.entity_type === 'opportunity' ? 'opportunities' : `${doc.entity_type}s`}/${doc.entity_id}`}
+                              href={`/home/sales/${doc.entity_type === 'opportunity' ? 'opportunities' : `${doc.entity_type}s`}/${doc.entity_id}?tab=documents`}
                               className="primary-text-medium text-leadgaze-primary dark:text-leadgaze-primary text-xs font-medium hover:underline"
                               title={`${doc.entity_type}: ${doc.entity_name}`}
                             >
