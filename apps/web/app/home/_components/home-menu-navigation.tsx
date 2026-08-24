@@ -1230,7 +1230,7 @@ export function HomeMenuNavigation() {
                     </div>
                   ) : (
                     <div className="flex flex-col gap-6">
-                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+                      <div className="flex flex-wrap gap-4">
                       {activeProducts.map((prod) => {
                         const meta = getLauncherMeta(prod.product_key);
                         const displayName = getModuleDisplayName(prod.display_name);
@@ -1272,7 +1272,7 @@ export function HomeMenuNavigation() {
                             type="button"
                             onClick={handleClick}
                             className={cn(
-                              'group flex w-full cursor-pointer flex-col rounded-lg border p-4 text-left transition-all',
+                              'group flex flex-1 basis-full sm:basis-[calc(50%-8px)] lg:basis-[calc(33.333%-11px)] cursor-pointer flex-col rounded-lg border p-4 text-left transition-all',
                               'border-zinc-200 bg-zinc-50 hover:border-blue-400 hover:bg-blue-50/50 dark:border-zinc-800 dark:bg-zinc-900/50 dark:hover:bg-blue-950/20',
                               isLocked && 'opacity-75',
                             )}
@@ -1330,7 +1330,7 @@ export function HomeMenuNavigation() {
 
                     {/* Coming Soon Products Grid */}
                     {comingSoonProducts.length > 0 && (
-                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+                      <div className="flex flex-wrap gap-4">
                         {comingSoonProducts.map((prod) => {
                           const meta = getLauncherMeta(prod.product_key);
                           const displayName = getModuleDisplayName(prod.display_name);
@@ -1347,7 +1347,7 @@ export function HomeMenuNavigation() {
                               key={prod.id}
                               type="button"
                               onClick={handleClick}
-                              className="group flex w-full cursor-pointer flex-col rounded-lg border border-amber-500/50 bg-amber-50/50 p-4 text-left transition-all hover:border-amber-400 hover:bg-amber-50/50 dark:border-zinc-800 dark:bg-zinc-900/50 dark:hover:border-amber-500/50 dark:hover:bg-amber-950/20"
+                              className="group flex flex-1 basis-full sm:basis-[calc(50%-8px)] lg:basis-[calc(33.333%-11px)] cursor-pointer flex-col rounded-lg border border-amber-500/50 bg-amber-50/50 p-4 text-left transition-all hover:border-amber-400 hover:bg-amber-50/50 dark:border-zinc-800 dark:bg-zinc-900/50 dark:hover:border-amber-500/50 dark:hover:bg-amber-950/20"
                             >
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
