@@ -47,7 +47,7 @@ import { ManageableStatusSelect } from '../../../_components/manageable-status-s
 const formSchema = z.object({
   account_name: z.string().min(1, 'Account Name is required'),
   website: z.string().optional().or(z.literal('')),
-  phone_number: z.string().optional().or(z.literal('')),
+  phone_number: z.string().refine(val => !val || /^\\+?[0-9]+$/.test(val), { message: "Invalid phone number" }).optional().or(z.literal('')),
   industry_id: z.string().optional().or(z.literal('')),
   company_size: z.string().optional().or(z.literal('')),
   annual_revenue: z.string().optional().or(z.literal('')),
