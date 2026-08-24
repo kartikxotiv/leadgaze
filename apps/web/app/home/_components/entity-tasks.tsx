@@ -54,6 +54,7 @@ import {
   type Task,
   type TaskTimeLog,
 } from '../../../services/activities.service';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@kit/ui/tooltip';
 
 interface EntityTasksProps {
   entityType: string;
@@ -366,13 +367,22 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
                   toggleMutation.isPending && toggleMutation.variables?.id === task.id ? (
                     <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
                   ) : (
-                    <button onClick={() => toggleCompletion(task)} className="text-gray-400 hover:text-blue-500">
-                      {task.is_completed ? (
-                        <CheckSquare className="h-5 w-5 text-blue-500" />
-                      ) : (
-                        <Square className="h-5 w-5" />
-                      )}
-                    </button>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button onClick={() => toggleCompletion(task)} className="text-gray-400 hover:text-blue-500">
+                            {task.is_completed ? (
+                              <CheckSquare className="h-5 w-5 text-blue-500" />
+                            ) : (
+                              <Square className="h-5 w-5" />
+                            )}
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="top">
+                          {task.is_completed ? 'Mark as incomplete' : 'Mark as complete'}
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   )
                 }
                 iconAlignTop={true}
