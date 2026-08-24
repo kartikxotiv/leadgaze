@@ -139,7 +139,7 @@ export function CreateContactDialog({
 
           <form id="dialog-form" onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-2 space-y-6 py-4">
             <div className="space-y-2">
-              <h3 className="primary-heading text-leadgaze-dark dark:text-white uppercase custom-sub-heading-dialog-form">
+              <h3 className="primary-heading text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">
                 Personal Details
               </h3>
               <Separator />
@@ -197,7 +197,7 @@ export function CreateContactDialog({
             </div>
 
             <div className="space-y-2 pt-4">
-              <h3 className="primary-heading text-leadgaze-dark dark:text-white uppercase custom-sub-heading-dialog-form">
+              <h3 className="primary-heading text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">
                 Professional & Status
               </h3>
               <Separator />

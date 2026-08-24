@@ -315,7 +315,7 @@ export function AddColumnModal({
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) resetForm(); onOpenChange(v); }}>
-      <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-md gap-0">
+      <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-lg gap-0">
         <DialogHeader>
           <DialogTitle>Toggle Columns</DialogTitle>          
         </DialogHeader>
@@ -369,7 +369,7 @@ export function AddColumnModal({
                       <span className={cn("primary-text-medium", isLocked ? "text-leadgaze-muted" : "text-leadgaze-dark dark:text-white")}>
                         {column.label}
                       </span>
-                      <Switch className="h-4"
+                      <Switch className="h-5"
                         checked={visibility[column.id] !== false || isLocked}
                         onCheckedChange={() => !isLocked && onToggleColumn?.(column.id)}
                         disabled={isLocked}
@@ -487,8 +487,8 @@ export function AddColumnModal({
           {accessType !== 'public' && accessType !== 'private' && (
             <div className="space-y-2 border-t pt-4">
               {/* Roles */}
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2">
+              <div className="space-y-1">
+                <Label className="!flex items-center gap-2">
                   <Shield className="h-4 w-4" />
                   Roles with Access
                 </Label>
@@ -528,8 +528,8 @@ export function AddColumnModal({
               </div>
 
               {/* Users */}
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2">
+              <div className="space-y-1">
+                <Label className="!flex items-center gap-2">
                   <Users className="h-4 w-4" />
                   Users with Access
                 </Label>
