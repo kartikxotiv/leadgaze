@@ -15,11 +15,27 @@ import { HomeMenuNavigation } from './_components/home-menu-navigation';
 import { HomeMobileNavigation } from './_components/home-mobile-navigation';
 import { HomeSidebar } from './_components/home-sidebar';
 
-function HomeLayout({ children }: React.PropsWithChildren) {
-  const style = use(getLayoutStyle());
+import { ImpersonationBanner } from '~/components/impersonation-banner';
+import { getUserContext } from '~/lib/server/get-user-context';
+
+async function HomeLayout({ children }: React.PropsWithChildren) {
+  const style = await getLayoutStyle();
+  let ctx;
+  try {
+    ctx = await getUserContext();
+  } catch {
+    ctx = null;
+  }
 
   return (
     <>
+      {ctx?.isImpersonating && ctx.targetUser && ctx.impersonationSessionId && (
+        <ImpersonationBanner
+          targetName={ctx.targetUser.full_name || ctx.targetUser.email}
+          reason={ctx.reason}
+          sessionId={ctx.impersonationSessionId}
+        />
+      )}
       <Suspense fallback={null}>
         <WelcomeModal />
       </Suspense>

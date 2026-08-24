@@ -3,7 +3,6 @@ const REMINDER_EMAIL_TEMPLATE = ({
   reminderDescription,
   dueDate,
   productName,
-  billingCountry = 'US',
 }: {
   reminderTitle: string;
   reminderDescription?: string;
@@ -20,9 +19,8 @@ const REMINDER_EMAIL_TEMPLATE = ({
     minute: '2-digit',
   });
 
-  const isIndia = billingCountry.toUpperCase() === 'IN';
-  const operatorName = isIndia ? 'Xotiv Pvt. Ltd.' : 'Programea LLC';
-  const operatorUrl = isIndia ? 'https://xotiv.com/' : 'https://programea.com/';
+  const operatorName = 'Xotiv Technologies Pvt. Ltd.';
+  const operatorUrl = 'https://xotiv.com';
 
   return `
 <!DOCTYPE html>
@@ -33,7 +31,7 @@ const REMINDER_EMAIL_TEMPLATE = ({
   <title>Reminder: ${reminderTitle}</title>
 </head>
 <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
-  <div style="max-width: 600px; margin: 40px auto; background-color: #000; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+  <div style="max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
     <!-- Header -->
     <div style="background-color: #3953E7; background: linear-gradient(135deg, #3953E7 0%, #283BA4 100%); padding: 32px 24px; text-align: center;">
       <p style="margin: 0; color: #000; font-size: 26px; font-weight: bold; letter-spacing: 0.5px; text-shadow: 0 1px 2px rgba(0,0,0,0.1);">📌 Reminder</p>

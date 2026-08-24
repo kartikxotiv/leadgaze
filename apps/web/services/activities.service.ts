@@ -111,6 +111,8 @@ export const getNotesService = asyncHandlerClient(
     entityId?: string,
     status: 'active' | 'closed' = 'active',
     filters?: {
+      page?: number;
+      limit?: number;
       searchTerm?: string;
       createdAtFrom?: string;
       createdAtTo?: string;
@@ -124,6 +126,8 @@ export const getNotesService = asyncHandlerClient(
     if (entityType) url += `&entityType=${entityType}`;
     if (entityId) url += `&entityId=${entityId}`;
     if (filters) {
+      if (filters.page) url += `&page=${filters.page}`;
+      if (filters.limit) url += `&limit=${filters.limit}`;
       if (filters.searchTerm) url += `&searchTerm=${encodeURIComponent(filters.searchTerm)}`;
       if (filters.createdAtFrom) url += `&createdAtFrom=${filters.createdAtFrom}`;
       if (filters.createdAtTo) url += `&createdAtTo=${filters.createdAtTo}`;
@@ -135,6 +139,9 @@ export const getNotesService = asyncHandlerClient(
       if (filters.module) url += `&module=${filters.module}`;
     }
     const response = await ApiClient.get(url);
+    if (response.data?.total !== undefined && (filters?.page || filters?.limit)) {
+      return response.data;
+    }
     return response.data?.data || [];
   },
 );
@@ -170,6 +177,8 @@ export const getRemindersService = asyncHandlerClient(
     entityType?: string,
     entityId?: string,
     filters?: {
+      page?: number;
+      limit?: number;
       status?: string;
       priority?: string;
       searchTerm?: string;
@@ -184,6 +193,8 @@ export const getRemindersService = asyncHandlerClient(
     if (entityType) url += `&entityType=${entityType}`;
     if (entityId) url += `&entityId=${entityId}`;
     if (filters) {
+      if (filters.page) url += `&page=${filters.page}`;
+      if (filters.limit) url += `&limit=${filters.limit}`;
       if (filters.status) url += `&status=${filters.status}`;
       if (filters.priority) url += `&priority=${filters.priority}`;
       if (filters.searchTerm) url += `&searchTerm=${encodeURIComponent(filters.searchTerm)}`;
@@ -196,6 +207,9 @@ export const getRemindersService = asyncHandlerClient(
       }
     }
     const response = await ApiClient.get(url);
+    if (response.data?.total !== undefined && (filters?.page || filters?.limit)) {
+      return response.data;
+    }
     return response.data?.data || [];
   },
 );
@@ -240,11 +254,44 @@ export const deleteReminderService = asyncHandlerClient(async (id: string) => {
 
 // --- Meetings ---
 export const getMeetingsService = asyncHandlerClient(
-  async (workspaceId: string, entityType?: string, entityId?: string) => {
+  async (
+    workspaceId: string,
+    entityType?: string,
+    entityId?: string,
+    filters?: {
+      page?: number;
+      limit?: number;
+      statuses?: string;
+      timeframe?: string;
+      searchTerm?: string;
+      createdAtFrom?: string;
+      createdAtTo?: string;
+      updatedAtFrom?: string;
+      updatedAtTo?: string;
+      createdByIds?: string[];
+    },
+  ) => {
     let url = `/meetings?workspaceId=${workspaceId}`;
     if (entityType) url += `&entityType=${entityType}`;
     if (entityId) url += `&entityId=${entityId}`;
+    if (filters) {
+      if (filters.page) url += `&page=${filters.page}`;
+      if (filters.limit) url += `&limit=${filters.limit}`;
+      if (filters.statuses) url += `&statuses=${filters.statuses}`;
+      if (filters.timeframe) url += `&timeframe=${filters.timeframe}`;
+      if (filters.searchTerm) url += `&searchTerm=${encodeURIComponent(filters.searchTerm)}`;
+      if (filters.createdAtFrom) url += `&createdAtFrom=${filters.createdAtFrom}`;
+      if (filters.createdAtTo) url += `&createdAtTo=${filters.createdAtTo}`;
+      if (filters.updatedAtFrom) url += `&updatedAtFrom=${filters.updatedAtFrom}`;
+      if (filters.updatedAtTo) url += `&updatedAtTo=${filters.updatedAtTo}`;
+      if (filters.createdByIds && filters.createdByIds.length > 0) {
+        url += `&createdByIds=${filters.createdByIds.join(',')}`;
+      }
+    }
     const response = await ApiClient.get(url);
+    if (response.data?.total !== undefined && (filters?.page || filters?.limit)) {
+      return response.data;
+    }
     return response.data?.data || [];
   },
 );
@@ -295,6 +342,8 @@ export const getDocumentsService = asyncHandlerClient(
     entityType?: string,
     entityId?: string,
     filters?: {
+      page?: number;
+      limit?: number;
       type?: string;
       searchTerm?: string;
       createdAtFrom?: string;
@@ -308,6 +357,8 @@ export const getDocumentsService = asyncHandlerClient(
     if (entityType) url += `&entityType=${entityType}`;
     if (entityId) url += `&entityId=${entityId}`;
     if (filters) {
+      if (filters.page) url += `&page=${filters.page}`;
+      if (filters.limit) url += `&limit=${filters.limit}`;
       if (filters.type) url += `&type=${filters.type}`;
       if (filters.searchTerm) url += `&searchTerm=${encodeURIComponent(filters.searchTerm)}`;
       if (filters.createdAtFrom) url += `&createdAtFrom=${filters.createdAtFrom}`;
@@ -319,6 +370,9 @@ export const getDocumentsService = asyncHandlerClient(
       }
     }
     const response = await ApiClient.get(url);
+    if (response.data?.total !== undefined && (filters?.page || filters?.limit)) {
+      return response.data;
+    }
     return response.data?.data || [];
   },
 );

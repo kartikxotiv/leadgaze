@@ -86,7 +86,7 @@ export function AddEmployessDialog(props: {
         className={'max-h-[90vh] overflow-hidden border-gray-200 bg-white p-0 sm:max-w-[720px] dark:border-slate-800 dark:bg-slate-950'}
       >
         <form className={'flex max-h-[90vh] flex-col'} onSubmit={onSubmit}>
-          <DialogHeader className={'border-b border-gray-200 bg-white p-6 pb-4 dark:border-slate-800 dark:bg-slate-950'}>
+          <DialogHeader>
             <DialogTitle className={'text-3xl pr-12'}>
               {isEditing ? 'Edit Employee' : 'Add Employee'}
             </DialogTitle>
@@ -369,7 +369,7 @@ export function AddEmployessDialog(props: {
             </div>
           </div>
 
-          <DialogFooter className={'border-t border-gray-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950'}>
+          <DialogFooter>
             <Button
               type={'button'}
               variant={'outline'}

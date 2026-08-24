@@ -1,2 +1,2 @@
-export { CoreEntityPanel } from '../pages';
-
+export * from './reminders.types';
+export * from './reminders.service';

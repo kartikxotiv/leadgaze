@@ -35,6 +35,7 @@ import { createContactService } from '~/services/contacts.service';
 import { CreateAccountDialog } from '../../accounts/components/create-account-dialog';
 
 interface CreateContactDialogProps {
+  asFormOnly?: boolean;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: (contact: any) => void;
@@ -46,6 +47,7 @@ export function CreateContactDialog({
   onOpenChange,
   onSuccess,
   defaultAccountId,
+  asFormOnly = false
 }: CreateContactDialogProps) {
   const { currentWorkspace: workspace } = useRBAC();
   const queryClient = useQueryClient();
@@ -111,6 +113,12 @@ export function CreateContactDialog({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const phoneRegex = /^\+?[0-9]+$/;
+    if (formData.phone_number && !phoneRegex.test(formData.phone_number)) {
+      toast.error('Phone number can only contain numbers, optionally starting with +');
+      return;
+    }
+
     if (!formData.first_name) {
       toast.error('First name is required');
       return;
@@ -118,24 +126,24 @@ export function CreateContactDialog({
     mutation.mutate(formData);
   };
 
-  return (
-    <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-[650px]">
-          <DialogHeader className="border-b p-6 pb-4">
-            <DialogTitle>Create New Contact</DialogTitle>
-            <DialogDescription>
-              Add a new person to your workspace.
-            </DialogDescription>
-          </DialogHeader>
+  const innerContent = (
+    <div className={asFormOnly ? "flex h-full flex-col overflow-auto" : ""}>
+          {!asFormOnly && (
+            <DialogHeader>
+              <DialogTitle>Create New Contact</DialogTitle>
+              <DialogDescription>
+                Add a new person to your workspace
+              </DialogDescription>
+            </DialogHeader>
+          )}
 
-          <form id="dialog-form" onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 py-4 space-y-6 py-4">
-            <div className="space-y-4">
-              <h3 className="primary-heading text-leadgaze-dark dark:text-white uppercase">
+          <form id="dialog-form" onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-2 space-y-6 py-4">
+            <div className="space-y-2">
+              <h3 className="primary-heading text-leadgaze-dark dark:text-white uppercase custom-sub-heading-dialog-form">
                 Personal Details
               </h3>
               <Separator />
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-2">
                   <Label htmlFor="first_name">First Name *</Label>
                   <Input
@@ -161,7 +169,7 @@ export function CreateContactDialog({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
                   <Input
@@ -188,12 +196,12 @@ export function CreateContactDialog({
               </div>
             </div>
 
-            <div className="space-y-4 pt-4">
-              <h3 className="primary-heading text-leadgaze-dark dark:text-white uppercase">
+            <div className="space-y-2 pt-4">
+              <h3 className="primary-heading text-leadgaze-dark dark:text-white uppercase custom-sub-heading-dialog-form">
                 Professional & Status
               </h3>
               <Separator />
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-2">
                   <Label htmlFor="job_title">Job Title</Label>
                   <Input
@@ -261,16 +269,15 @@ export function CreateContactDialog({
 
             
           </form>
-        <DialogFooter className="border-t p-2 mt-auto">
+        <DialogFooter className="p-4 bg-white dark:bg-slate-950 border-t border-gray-200 dark:border-slate-800">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => onOpenChange(false)}
-                className='mb-2'
               >
                 Cancel
               </Button>
-              <Button type="submit" form="dialog-form" disabled={mutation.isPending} className='mb-2'>
+              <Button type="submit" form="dialog-form" disabled={mutation.isPending}>
                 {mutation.isPending ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
@@ -279,7 +286,32 @@ export function CreateContactDialog({
                 Create Contact
               </Button>
             </DialogFooter>
-      </DialogContent>
+    </div>
+  );
+
+  if (asFormOnly) {
+    return (
+      <>
+        {innerContent}
+        {/* Nested Account Creation */}
+        <CreateAccountDialog
+          open={createAccountOpen}
+          onOpenChange={setCreateAccountOpen}
+          onSuccess={(newAccount) => {
+            refetchAccounts();
+            setFormData((prev) => ({ ...prev, account_id: newAccount.id }));
+          }}
+        />
+      </>
+    );
+  }
+
+  return (
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-[650px]">
+          {innerContent}
+        </DialogContent>
       </Dialog>
 
       {/* Nested Account Creation */}

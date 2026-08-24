@@ -76,7 +76,7 @@ export function PayrollRunsTab(props: {
                       <TableCell>
                         <PayrollStatusBadge label={item.status} />
                       </TableCell>
-                      <TableCell className="sticky right-0 px-4 text-right">
+                      <TableCell className="bg-card sticky right-0 px-4 text-right">
                         {props.canApprove && item.status === 'draft' && (
                           <Button
                             size="sm"

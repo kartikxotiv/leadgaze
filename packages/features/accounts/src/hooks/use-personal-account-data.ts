@@ -10,6 +10,7 @@ export function usePersonalAccountData(
     id: string | null;
     name: string | null;
     picture_url: string | null;
+    color?: string | null;
   },
 ) {
   const client = useSupabase();
@@ -36,7 +37,10 @@ export function usePersonalAccountData(
       throw response.error;
     }
 
-    return response.data;
+    return {
+      ...response.data,
+      color: partialAccount?.color ?? null,
+    };
   };
 
   return useQuery({
@@ -50,6 +54,7 @@ export function usePersonalAccountData(
           id: partialAccount.id,
           name: partialAccount.name,
           picture_url: partialAccount.picture_url,
+          color: partialAccount.color ?? null,
         }
       : undefined,
   });

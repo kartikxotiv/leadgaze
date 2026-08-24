@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { Check, FileUp, Loader2, Plus, User } from 'lucide-react';
+import { Check, Download, FileUp, Loader2, Plus, User } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { useLocalization } from '@kit/shared/localization';
@@ -30,8 +30,9 @@ import {
   SelectValue,
 } from '@kit/ui/select';
 import { Textarea } from '@kit/ui/textarea';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@kit/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@kit/ui/tooltip';
 import { useDateRangeFilter } from '@kit/ui/use-date-range-filter';
+import { cn } from '@kit/ui/utils';
 
 import {
   type ServiceCloudRecord,
@@ -45,6 +46,7 @@ import {
   useServiceCloudPermissions,
 } from '../../utils';
 import { ServiceCloudAccessDenied } from '../_components/access-denied';
+import { PageHeader } from '@kit/ui/page';
 import {
   ServiceCloudResourcePage,
   StatusBadge,
@@ -570,6 +572,27 @@ export function ServiceCloudTicketsPage({
     createTicketMutation.mutate();
   };
 
+  const queryParamsForCounts = { ...queryParams };
+  delete queryParamsForCounts.statusIds;
+  delete queryParamsForCounts.assignedToMe;
+
+  const { data: allTickets = [] } = useQuery({
+    queryKey: ['service-cloud', 'tickets', workspaceId, queryParamsForCounts],
+    queryFn: () =>
+      getServiceCloudResourceService('tickets', workspaceId, queryParamsForCounts),
+    enabled: Boolean(workspaceId),
+  });
+
+  const getStatusCount = (statusId: string) => {
+    return allTickets.filter((t: any) => t.status_id === statusId).length;
+  };
+
+  const getAssignedToMeCount = () => {
+    return allTickets.filter((t: any) =>
+      t.assignees?.some((a: any) => a.account_id === currentUserId || a.user_id === currentUserId)
+    ).length;
+  };
+
   if (isLoading)
     return (
       <div className="text-muted-foreground p-6 text-sm">
@@ -578,8 +601,94 @@ export function ServiceCloudTicketsPage({
     );
   if (!canView) return <ServiceCloudAccessDenied label="tickets" />;
 
+  const tabsSlot = (
+    <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide">
+      <button
+        onClick={() => {
+          setSelectedStatusIds([]);
+          setAssignedToMeOnly(false);
+        }}
+        className={`px-3 py-1 text-sm font-medium rounded-t-md border-b-2 whitespace-nowrap flex items-center gap-2 ${
+          selectedStatusIds.length === 0 && !assignedToMeOnly
+            ? 'border-leadgaze-primary text-leadgaze-primary'
+            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+        }`}
+      >
+        <span className="flex items-center gap-1">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+          All Tickets
+        </span>
+        <span className={cn(
+          "ml-1 rounded-full px-2 py-0.5 text-xs border",
+          selectedStatusIds.length === 0 && !assignedToMeOnly ? "border-blue-200 bg-blue-50 text-leadgaze-primary" : "border-gray-200 bg-gray-50 text-gray-600"
+        )}>
+          {allTickets.length}
+        </span>
+      </button>
+      
+      <button
+        onClick={() => {
+          setAssignedToMeOnly(true);
+          setSelectedStatusIds([]);
+        }}
+        className={`px-3 py-1 text-sm font-medium rounded-t-md border-b-2 whitespace-nowrap flex items-center gap-2 ${
+          assignedToMeOnly
+            ? 'border-leadgaze-primary text-leadgaze-primary'
+            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+        }`}
+      >
+        Assigned to me
+        <span className={cn(
+          "ml-1 rounded-full px-2 py-0.5 text-xs border",
+          assignedToMeOnly ? "border-blue-200 bg-blue-50 text-leadgaze-primary" : "border-gray-200 bg-gray-50 text-gray-600"
+        )}>
+          {getAssignedToMeCount()}
+        </span>
+      </button>
+
+      {statuses.map((status: any) => {
+        const isSelected = selectedStatusIds.includes(status.id) && !assignedToMeOnly;
+        return (
+          <button
+            key={status.id}
+            onClick={() => {
+              setSelectedStatusIds([status.id]);
+              setAssignedToMeOnly(false);
+            }}
+            className={`px-3 py-1 text-sm font-medium rounded-t-md border-b-2 whitespace-nowrap flex items-center gap-2 ${
+              isSelected
+                ? 'border-leadgaze-primary text-leadgaze-primary'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            {status.name}
+            <span className={cn(
+              "ml-1 rounded-full px-2 py-0.5 text-xs border",
+              isSelected ? "border-blue-200 bg-blue-50 text-leadgaze-primary" : "border-gray-200 bg-gray-50 text-gray-600"
+            )}>
+              {getStatusCount(status.id)}
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+
   return (
-    <>
+    <div className="flex w-full min-w-0 max-w-full flex-1 flex-col overflow-hidden gap-2">
+      <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden">
+        <PageHeader title="Tickets">
+          {canCreate && (
+            <Button
+              onClick={openCreateDialog}
+              className="secondary-text-small-bold gap-1.5 px-2 bg-leadgaze-primary hover:bg-leadgaze-primary text-white"
+            >
+              <Plus className="h-4 w-4" />
+              New Ticket
+            </Button>
+          )}
+        </PageHeader>
+      </div>
       <ServiceCloudResourcePage
         workspaceId={workspaceId}
         viewMode={viewMode}
@@ -603,8 +712,9 @@ export function ServiceCloudTicketsPage({
           />
         )}
         resource="tickets"
-        title="Tickets"
-        description="Create, assign, and track support requests."
+        title=""
+        description=""
+        tabsSlot={tabsSlot}
         canCreate={false}
         canEdit={canEdit}
         canDelete={canDelete}
@@ -633,25 +743,6 @@ export function ServiceCloudTicketsPage({
         toolbar={
           <div className="flex items-center gap-2">
             <ViewToggle view={viewMode} onChange={handleViewModeChange} />
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  type="button"
-                  variant={assignedToMeOnly ? 'default' : 'outline'}
-                  onClick={() => setAssignedToMeOnly((current) => !current)}
-                  className="h-9 shrink-0 gap-1.5"
-                >
-                  {assignedToMeOnly ? (
-                    <Check className="h-4 w-4" />
-                  ) : (
-                    <User className="h-4 w-4" />
-                  )}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">
-                <span>Assigned to me</span>
-              </TooltipContent>
-            </Tooltip>
           </div>
         }
         actions={[
@@ -660,20 +751,9 @@ export function ServiceCloudTicketsPage({
                 {
                   key: 'import',
                   label: 'Import',
-                  icon: FileUp,
+                  icon: Download,
                   onClick: onImportClick,
                   buttonVariant: 'outline' as const,
-                },
-              ]
-            : []),
-          ...(canCreate
-            ? [
-                {
-                  key: 'create',
-                  label: 'New Ticket',
-                  icon: Plus,
-                  onClick: openCreateDialog,
-                  buttonVariant: 'default' as const,
                 },
               ]
             : []),
@@ -707,19 +787,43 @@ export function ServiceCloudTicketsPage({
         ]}
         columns={[
           {
-            key: 'ticket_number',
-            label: getLabel('ticket_number', 'Ticket #'),
+            key: 'sno',
+            label: 'S. No.',
+            sortable: false,
+            width: 'w-12',
+            minWidth: 30,
+            className: 'text-muted-foreground w-12',
+            render: (_, index, pagination) => {
+              if (index === undefined || !pagination) return '-';
+              return (pagination.currentPage - 1) * pagination.pageSize + index + 1;
+            },
           },
           {
             key: 'subject',
             label: getLabel('subject', 'Subject'),
             render: (ticket) => (
-              <Link
-                href={`/home/services/tickets/${ticket.id}`}
-                className="text-primary font-medium hover:underline"
-              >
-                {ticket.subject}
-              </Link>
+              <div className="flex items-center gap-2">
+                <Link
+                  href={`/home/services/tickets/${ticket.id}`}
+                  className="text-primary font-medium hover:underline"
+                >
+                  {ticket.subject}
+                </Link>
+                {ticket.ticket_number && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="cursor-default inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">
+                          #{ticket.ticket_number}
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Ticket: #{ticket.ticket_number}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
+              </div>
             ),
           },
           {
@@ -767,14 +871,14 @@ export function ServiceCloudTicketsPage({
       >
         <DialogContent className="max-h-[90vh] overflow-hidden border-gray-200 bg-white p-0 sm:max-w-2xl dark:border-slate-800 dark:bg-slate-950">
           <div className="flex max-h-[90vh] flex-col">
-            <DialogHeader className="border-b border-gray-200 bg-white p-6 pb-4 dark:border-slate-800 dark:bg-slate-950">
+            <DialogHeader>
               <DialogTitle>New Ticket</DialogTitle>
             </DialogHeader>
 
-            <div className="flex-1 space-y-4 overflow-y-auto p-6 pb-8">
-              <div className="grid gap-4">
+            <div className="flex-1 space-y-2 overflow-y-auto p-2">
+              <div className="grid gap-2">
                 {(!canEditField || canEditField('subject')) && (
-                  <div className="grid gap-2">
+                  <div className="grid">
                     <Label>
                       Subject <span className="text-destructive">*</span>
                     </Label>
@@ -786,7 +890,7 @@ export function ServiceCloudTicketsPage({
                 )}
 
                 {(!canEditField || canEditField('description')) && (
-                  <div className="grid gap-2">
+                  <div className="grid">
                     <Label>Description</Label>
                     <Textarea
                       value={ticketDescription}
@@ -796,9 +900,9 @@ export function ServiceCloudTicketsPage({
                   </div>
                 )}
 
-                <div className="grid gap-4 sm:grid-cols-3">
+                <div className="grid gap-2 sm:grid-cols-3">
                   {(!canEditField || canEditField('status')) && (
-                    <div className="grid gap-2">
+                    <div className="grid">
                       <Label>
                         Status <span className="text-destructive">*</span>
                       </Label>
@@ -828,7 +932,7 @@ export function ServiceCloudTicketsPage({
                     </div>
                   )}
                   {(!canEditField || canEditField('priority')) && (
-                    <div className="grid gap-2">
+                    <div className="grid">
                       <Label>Priority</Label>
                       <Select
                         value={ticketPriorityId}
@@ -856,7 +960,7 @@ export function ServiceCloudTicketsPage({
                     </div>
                   )}
                   {(!canEditField || canEditField('category')) && (
-                    <div className="grid gap-2">
+                    <div className="grid">
                       <Label>Category</Label>
                       <Select
                         value={ticketCategoryId}
@@ -879,7 +983,7 @@ export function ServiceCloudTicketsPage({
 
                 {/* Customer Section */}
                 {(!canEditField || canEditField('customer')) && (
-                  <div className="grid gap-2">
+                  <div className="grid">
                     <Label>
                       Customer <span className="text-destructive">*</span>
                     </Label>
@@ -890,13 +994,17 @@ export function ServiceCloudTicketsPage({
                       }
                       className="grid gap-2 sm:grid-cols-2"
                     >
-                      <Label className="flex cursor-pointer items-center gap-2 rounded-md border p-3">
+                      <Label className="flex cursor-pointer items-center gap-2 rounded-md border p-2">
+                        <div className="flex gap-2 items-center">
                         <RadioGroupItem value="existing" />
                         <span>Link existing</span>
+                        </div>
                       </Label>
-                      <Label className="flex cursor-pointer items-center gap-2 rounded-md border p-3">
+                      <Label className="flex cursor-pointer items-center gap-2 rounded-md border p-2">
+                        <div className="flex gap-2 items-center">
                         <RadioGroupItem value="new" />
                         <span>Create new</span>
+                        </div>
                       </Label>
                     </RadioGroup>
                   </div>
@@ -925,8 +1033,8 @@ export function ServiceCloudTicketsPage({
                   </Select>
                 ) : (!canEditField || canEditField('customer')) &&
                   customerMode === 'new' ? (
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <div className="grid gap-2">
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <div className="grid">
                       <Label>
                         Name <span className="text-destructive">*</span>
                       </Label>
@@ -935,7 +1043,7 @@ export function ServiceCloudTicketsPage({
                         onChange={(e) => setNewCustomerName(e.target.value)}
                       />
                     </div>
-                    <div className="grid gap-2">
+                    <div className="grid">
                       <Label>
                         Email <span className="text-destructive">*</span>
                       </Label>
@@ -949,7 +1057,7 @@ export function ServiceCloudTicketsPage({
 
                 {/* Organization Section */}
                 {(!canEditField || canEditField('organization')) && (
-                  <div className="grid gap-2">
+                  <div className="grid">
                     <Label>Organization</Label>
                     <RadioGroup
                       value={organizationMode}
@@ -960,17 +1068,23 @@ export function ServiceCloudTicketsPage({
                       }
                       className="grid gap-2 sm:grid-cols-3"
                     >
-                      <Label className="flex cursor-pointer items-center gap-2 rounded-md border p-3">
+                      <Label className="flex cursor-pointer items-center gap-2 rounded-md border p-2">
+                        <div className="flex gap-2 items-center">
                         <RadioGroupItem value="none" />
                         <span>None</span>
+                        </div>
                       </Label>
-                      <Label className="flex cursor-pointer items-center gap-2 rounded-md border p-3">
+                      <Label className="flex cursor-pointer items-center gap-2 rounded-md border p-2">
+                        <div className="flex gap-2 items-center">
                         <RadioGroupItem value="existing" />
                         <span>Existing</span>
+                        </div>
                       </Label>
-                      <Label className="flex cursor-pointer items-center gap-2 rounded-md border p-3">
+                      <Label className="flex cursor-pointer items-center gap-2 rounded-md border p-2">
+                        <div className="flex gap-2 items-center">
                         <RadioGroupItem value="new" />
                         <span>Create new</span>
+                        </div>
                       </Label>
                     </RadioGroup>
                   </div>
@@ -995,7 +1109,7 @@ export function ServiceCloudTicketsPage({
                   </Select>
                 ) : (!canEditField || canEditField('organization')) &&
                   organizationMode === 'new' ? (
-                  <div className="grid gap-2">
+                  <div className="grid">
                     <Label>
                       Organization Name{' '}
                       <span className="text-destructive">*</span>
@@ -1009,9 +1123,8 @@ export function ServiceCloudTicketsPage({
               </div>
             </div>
 
-            <DialogFooter className="border-t border-gray-200 bg-white p-2 dark:border-slate-800 dark:bg-slate-950">
+            <DialogFooter>
               <Button
-                className="mb-2"
                 variant="outline"
                 onClick={() => setCreateOpen(false)}
               >
@@ -1020,7 +1133,6 @@ export function ServiceCloudTicketsPage({
               <Button
                 onClick={submitCreateTicket}
                 disabled={createTicketMutation.isPending}
-                className="mb-2"
               >
                 {createTicketMutation.isPending ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -1031,6 +1143,6 @@ export function ServiceCloudTicketsPage({
           </div>
         </DialogContent>
       </Dialog>
-    </>
+    </div>
   );
 }

@@ -11,11 +11,13 @@ import { CardWidgetContainer } from '@kit/ui/card-widget-container';
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from '@kit/ui/dialog';
 import { Textarea } from '@kit/ui/textarea';
+import { CustomDeleteDialog } from '@kit/ui/custom-delete-dialog';
 
 import { useLocalization } from '~/lib/localization/localization-provider';
 import { useHasPermission } from '~/lib/permissions/use-permissions';
@@ -54,6 +56,9 @@ export function EntityNotes({ entityType, entityId }: EntityNotesProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [newNoteContent, setNewNoteContent] = useState('');
   const [editingNote, setEditingNote] = useState<Note | null>(null);
+
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [noteToDelete, setNoteToDelete] = useState<string | null>(null);
 
   const { data: notes = [], isLoading } = useQuery({
     queryKey: ['notes', entityType, entityId, workspace?.id, statusFilter],
@@ -112,6 +117,8 @@ export function EntityNotes({ entityType, entityId }: EntityNotesProps) {
     mutationFn: deleteNoteService,
     onSuccess: () => {
       toast.success('Note deleted');
+      setIsDeleteDialogOpen(false);
+      setNoteToDelete(null);
       queryClient.invalidateQueries({
         queryKey: ['notes', entityType, entityId, workspace?.id],
       });
@@ -119,7 +126,11 @@ export function EntityNotes({ entityType, entityId }: EntityNotesProps) {
         queryKey: ['notes', workspace?.id],
       });
     },
-    onError: () => toast.error('Failed to delete note'),
+    onError: () => {
+      toast.error('Failed to delete note');
+      setIsDeleteDialogOpen(false);
+      setNoteToDelete(null);
+    },
   });
 
   const handleSave = () => {
@@ -140,7 +151,7 @@ export function EntityNotes({ entityType, entityId }: EntityNotesProps) {
   return (
     <CardWidgetContainer
       title="Notes"
-      hideHeaderBorder={true}
+      headerClassName="p-2 xl:p-2 2xl:p-2 mb-1"
       icon={<FileText className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
       icon2={
         canAddNote ? (
@@ -165,49 +176,49 @@ export function EntityNotes({ entityType, entityId }: EntityNotesProps) {
               </Button>
             </DialogTrigger>
             <DialogContent className="flex max-h-[90vh] flex-col p-0">
-              <DialogHeader className="border-b p-6 pb-4">
+              <DialogHeader>
                 <DialogTitle>
                   {editingNote ? 'Edit Note' : 'Add Note'}
                 </DialogTitle>
               </DialogHeader>
-              <div className="space-y-4 px-6 pb-4">
-                <Textarea
-                  placeholder="Enter note content..."
-                  value={newNoteContent}
-                  onChange={(e) => setNewNoteContent(e.target.value)}
-                  rows={4}
-                />
-                <div className="flex justify-end gap-2">
-                  <Button
-                    variant="outline"
-                    onClick={() => setIsOpen(false)}
-                    disabled={
-                      createMutation.isPending || updateMutation.isPending
-                    }
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    onClick={handleSave}
-                    disabled={
-                      createMutation.isPending || updateMutation.isPending
-                    }
-                  >
-                    {(createMutation.isPending || updateMutation.isPending) && (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    )}
-                    {editingNote ? 'Update Note' : 'Save Note'}
-                  </Button>
-                </div>
-              </div>
+          <div className="px-2">
+            <Textarea
+              placeholder="Enter note content..."
+              value={newNoteContent}
+              onChange={(e) => setNewNoteContent(e.target.value)}
+              rows={4}
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsOpen(false)}
+              disabled={
+                createMutation.isPending || updateMutation.isPending
+              }
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSave}
+              disabled={
+                createMutation.isPending || updateMutation.isPending
+              }
+            >
+              {(createMutation.isPending || updateMutation.isPending) && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              {editingNote ? 'Update Note' : 'Save Note'}
+            </Button>
+          </DialogFooter>              
             </DialogContent>
           </Dialog>
         ) : null
       }
     >
-      <div className="px-6 py-3">
+      <div className="px-2">
         {/* Compact Toggle Filter */}
-        <div className="flex bg-gray-100/60 dark:bg-gray-800/60 p-0.5 rounded-lg mb-4 w-fit border border-gray-200/20">
+        <div className="flex bg-gray-100/60 dark:bg-gray-800/60 p-0.5 rounded-lg mb-2 w-fit border border-gray-200/20">
           <button
             onClick={() => setStatusFilter('active')}
             className={`rounded px-2.5 py-1 text-[11px] font-medium transition-all ${
@@ -248,8 +259,8 @@ export function EntityNotes({ entityType, entityId }: EntityNotesProps) {
 
                 <div className="space-y-1">
                   <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-1.5 text-[11px]">
-                      <span className="font-semibold text-gray-800 dark:text-gray-200">
+                    <div className="flex items-center gap-1.5 text-[12px]">
+                      <span className="primary-text-medium text-leadgaze-dark dark:text-white">
                         {note.created_by_user?.name || 'Unknown User'}
                       </span>
                       <span className="text-gray-300 dark:text-gray-700">•</span>
@@ -294,9 +305,8 @@ export function EntityNotes({ entityType, entityId }: EntityNotesProps) {
                         size="icon"
                         variant="ghost"
                         onClick={() => {
-                          if (confirm('Are you sure you want to delete this note?')) {
-                            deleteMutation.mutate(note.id);
-                          }
+                          setNoteToDelete(note.id);
+                          setIsDeleteDialogOpen(true);
                         }}
                         className="h-6 w-6 rounded text-gray-400 hover:text-red-600 hover:bg-gray-100 dark:hover:bg-gray-800"
                         title="Delete Note"
@@ -331,12 +341,27 @@ export function EntityNotes({ entityType, entityId }: EntityNotesProps) {
             ))}
           </div>
         ) : (
-          <div className="py-8 text-center">
-            <FileText className="mx-auto mb-2 h-8 w-8 text-gray-300 dark:text-gray-700" />
-            <p className="text-xs text-gray-400 dark:text-gray-500">No notes yet</p>
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#F0F3FF]">
+              <FileText className="h-6 w-6 text-blue-500" />
+            </div>
+            <p className="mt-4 text-sm text-gray-500">No notes yet</p>
           </div>
         )}
       </div>
+
+      <CustomDeleteDialog
+        isOpen={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        title="Delete Note"
+        description="Are you sure you want to delete this note? This action cannot be undone."
+        onConfirm={() => {
+          if (noteToDelete) {
+            deleteMutation.mutate(noteToDelete);
+          }
+        }}
+        isDeleting={deleteMutation.isPending}
+      />
     </CardWidgetContainer>
   );
 }

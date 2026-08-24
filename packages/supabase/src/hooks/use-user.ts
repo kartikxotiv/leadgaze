@@ -14,7 +14,25 @@ const queryKey = ['supabase:user'];
 export function useUser(initialData?: JwtPayload | null) {
   const client = useSupabase();
 
+  const isImpersonatingCookie =
+    typeof document !== 'undefined' &&
+    document.cookie.includes('lg_impersonation=');
+
   const queryFn = async () => {
+    if (isImpersonatingCookie) {
+      try {
+        const res = await fetch('/api/user-context');
+        if (res.ok) {
+          const json = await res.json();
+          if (json?.user) {
+            return json.user as JwtPayload;
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching impersonated user context:', err);
+      }
+    }
+
     const response = await client.auth.getClaims();
 
     // this is most likely a session error or the user is not logged in
@@ -34,7 +52,7 @@ export function useUser(initialData?: JwtPayload | null) {
 
   return useQuery({
     queryFn,
-    queryKey,
+    queryKey: ['supabase:user', isImpersonatingCookie],
     initialData,
     refetchInterval: false,
     refetchOnMount: true,

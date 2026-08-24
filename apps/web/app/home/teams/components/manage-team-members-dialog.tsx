@@ -3,7 +3,7 @@
 import { useState } from 'react';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Loader2, Trash2, UserPlus } from 'lucide-react';
+import { Check, ChevronsUpDown, Loader2, Trash2, UserPlus, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Badge } from '@kit/ui/badge';
@@ -12,17 +12,26 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@kit/ui/dialog';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@kit/ui/select';
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@kit/ui/command';
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@kit/ui/popover';
+import { cn } from '@kit/ui/utils';
+import {
+  Table,
   TableBody,
   TableCell,
   TableHead,
@@ -40,6 +49,8 @@ import {
   getTeamMembersService,
   removeTeamMemberService,
 } from '~/services/teams.service';
+import { CustomDeleteDialog } from '@kit/ui/custom-delete-dialog';
+import { Label } from '@kit/ui/label';
 
 interface ManageTeamMembersDialogProps {
   team: Team;
@@ -54,8 +65,13 @@ export function ManageTeamMembersDialog({
 }: ManageTeamMembersDialogProps) {
   const { currentWorkspace } = useRBAC();
   const queryClient = useQueryClient();
-  const [selectedUserId, setSelectedUserId] = useState<string>('');
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
+  const [openMemberSelect, setOpenMemberSelect] = useState(false);
 
+  const [isRemoveMemberDialogOpen, setIsRemoveMemberDialogOpen] = useState(false);
+  const [memberToRemove, setMemberToRemove] = useState<string | null>(null);
+
+  // Fetch all workspace members
   // Fetch members for the Sales product used by workspace teams
   const { data: workspaceMembersData = [] } = useQuery({
     queryKey: ['workspaceMembers', currentWorkspace?.id, 'sales'],
@@ -103,12 +119,16 @@ export function ManageTeamMembersDialog({
 
   // Mutations
   const addMemberMutation = useMutation({
-    mutationFn: () => addTeamMemberService(team.id, selectedUserId, false),
-    onSuccess: () => {
+    mutationFn: async (userIds: string[]) => {
+      await Promise.all(
+        userIds.map((userId) => addTeamMemberService(team.id, userId, false))
+      );
+    },
+    onSuccess: (_data, userIds) => {
       queryClient.invalidateQueries({ queryKey: ['teamMembers', team.id] });
       queryClient.invalidateQueries({ queryKey: ['workspaceTeams', currentWorkspace?.id] });
-      toast.success('Member added to team');
-      setSelectedUserId('');
+      toast.success(userIds.length === 1 ? 'Member added to team' : 'Members added to team');
+      setSelectedUserIds([]);
     },
     onError: (error: any) => {
       toast.error(error?.message || 'Failed to add member');
@@ -121,15 +141,19 @@ export function ManageTeamMembersDialog({
       queryClient.invalidateQueries({ queryKey: ['teamMembers', team.id] });
       queryClient.invalidateQueries({ queryKey: ['workspaceTeams', currentWorkspace?.id] });
       toast.success('Member removed from team');
+      setIsRemoveMemberDialogOpen(false);
+      setMemberToRemove(null);
     },
     onError: (error: any) => {
       toast.error(error?.message || 'Failed to remove member');
+      setIsRemoveMemberDialogOpen(false);
+      setMemberToRemove(null);
     },
   });
 
   const handleAddMember = () => {
-    if (!selectedUserId) return;
-    addMemberMutation.mutate();
+    if (selectedUserIds.length === 0) return;
+    addMemberMutation.mutate(selectedUserIds);
   };
 
   // Filter out users who are already in the team
@@ -140,51 +164,105 @@ export function ManageTeamMembersDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[90vh] flex-col p-0 max-w-3xl">
-        <DialogHeader className="border-b p-6 pb-4">
+        <DialogHeader>
           <DialogTitle>Manage Members: {team.name}</DialogTitle>
           <DialogDescription>
             Add SDRs and Managers to this team.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex flex-col gap-6 pt-4">
+        <div className="flex flex-col gap-2">
           {/* Add Member Section */}
-          <div className="flex items-end gap-4 rounded-lg border bg-muted/30 p-4">
-            <div className="flex-1 space-y-2">
-              <label className="text-sm font-medium">Add Workspace Member</label>
-              <Select value={selectedUserId} onValueChange={setSelectedUserId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a member..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableMembers.map((member: WorkspaceMember) => (
-                    <SelectItem key={member.user_id} value={member.user_id}>
-                      {member.user?.user_metadata?.full_name || member.user?.email}
-                    </SelectItem>
-                  ))}
-                  {availableMembers.length === 0 && (
-                    <div className="py-2 text-center text-sm text-muted-foreground">
-                      No available members to add
+          <div className="flex items-end gap-2 rounded-lg border bg-muted/30 p-2">
+            <div>
+              <Label>Add Workspace Member</Label>
+              <Popover open={openMemberSelect} onOpenChange={setOpenMemberSelect}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={openMemberSelect}
+                    className="w-full justify-between h-[32px] font-normal"
+                  >
+                    <div className="flex flex-wrap gap-1">
+                      {selectedUserIds.length === 0 && (
+                        <span className="text-muted-foreground">Select members...</span>
+                      )}
+                      {selectedUserIds.map((userId) => {
+                        const member = salesWorkspaceMembers.find((m: WorkspaceMember) => m.user_id === userId);
+                        return (
+                          <Badge key={userId} variant="secondary" className="gap-1 pr-1">
+                            {member?.user?.user_metadata?.full_name || member?.user?.email || userId}
+                            <span
+                              role="button"
+                              tabIndex={0}
+                              className="rounded-full hover:bg-muted-foreground/20"
+                              onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setSelectedUserIds((prev) => prev.filter((id) => id !== userId));
+                              }}
+                            >
+                              <X className="h-3 w-3" />
+                            </span>
+                          </Badge>
+                        );
+                      })}
                     </div>
-                  )}
-                </SelectContent>
-              </Select>
+                    <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                  <Command>
+                    <CommandInput placeholder="Search members..." />
+                    <CommandList>
+                      <CommandEmpty>No available members to add</CommandEmpty>
+                      <CommandGroup>
+                        {availableMembers.map((member: WorkspaceMember) => (
+                          <CommandItem
+                            key={member.user_id}
+                            value={member.user?.user_metadata?.full_name || member.user?.email || member.user_id}
+                            onSelect={() => {
+                              setSelectedUserIds((prev) =>
+                                prev.includes(member.user_id)
+                                  ? prev.filter((id) => id !== member.user_id)
+                                  : [...prev, member.user_id]
+                              );
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                'mr-2 h-4 w-4',
+                                selectedUserIds.includes(member.user_id) ? 'opacity-100' : 'opacity-0'
+                              )}
+                            />
+                            {member.user?.user_metadata?.full_name || member.user?.email}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
 
-            <Button
-              onClick={handleAddMember}
-              disabled={!selectedUserId || addMemberMutation.isPending}
-              className="gap-2"
-            >
-              <UserPlus className="h-4 w-4" />
-              Add to Team
-            </Button>
+            <div className="">
+              <Button
+                onClick={handleAddMember}
+                disabled={selectedUserIds.length === 0 || addMemberMutation.isPending}
+                className="bg-leadgaze-primary hover:bg-leadgaze-primary text-white secondary-text-small-bold gap-1.5 px-2"
+              >
+                <UserPlus className="h-4 w-4" />
+                Add to Team
+              </Button>
+            </div>
           </div>
 
           {/* Members List */}
           <div className="rounded-md border">
-            <table className="w-full text-sm">
-              <TableHeader className="bg-muted/50">
+            <Table>
+              <TableHeader>
                 <TableRow>
                   <TableHead>Member</TableHead>
                   <TableHead>Email</TableHead>
@@ -210,7 +288,7 @@ export function ManageTeamMembersDialog({
                     const wsMember = salesWorkspaceMembers.find(
                       (wm) => wm.user_id === member.user_id
                     );
-                    
+
                     return (
                       <TableRow key={member.id}>
                         <TableCell className="font-medium">
@@ -220,7 +298,7 @@ export function ManageTeamMembersDialog({
                           {member.accounts?.email}
                         </TableCell>
                         <TableCell>
-                          <Badge variant="secondary">
+                          <Badge variant="secondary text-leadgaze-dark dark:text-white">
                             {wsMember?.role?.role_name || 'Member'}
                           </Badge>
                         </TableCell>
@@ -229,9 +307,8 @@ export function ManageTeamMembersDialog({
                             variant="ghost"
                             size="sm"
                             onClick={() => {
-                              if (confirm('Remove this member from the team?')) {
-                                removeMemberMutation.mutate(member.user_id);
-                              }
+                              setMemberToRemove(member.user_id);
+                              setIsRemoveMemberDialogOpen(true);
                             }}
                             disabled={removeMemberMutation.isPending}
                             className="text-destructive hover:bg-destructive/10 hover:text-destructive"
@@ -244,10 +321,40 @@ export function ManageTeamMembersDialog({
                   })
                 )}
               </TableBody>
-            </table>
+            </Table>
           </div>
         </div>
+        <DialogFooter className="flex justify-end gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            onClick={() => {
+              toast.success('Team member changes saved');
+              onOpenChange(false);
+            }}
+          >
+            Save Changes
+          </Button>
+        </DialogFooter>
       </DialogContent>
+      <CustomDeleteDialog
+        isOpen={isRemoveMemberDialogOpen}
+        onOpenChange={setIsRemoveMemberDialogOpen}
+        title="Remove Member"
+        description="Are you sure you want to remove this member from the team? This action cannot be undone."
+        onConfirm={() => {
+          if (memberToRemove) {
+            removeMemberMutation.mutate(memberToRemove);
+          }
+        }}
+        isDeleting={removeMemberMutation.isPending}
+      />
     </Dialog>
   );
 }

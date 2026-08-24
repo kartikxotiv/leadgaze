@@ -26,6 +26,7 @@ import {
   deleteWorkspaceVariableService,
   getWorkspaceVariablesService,
 } from '~/services/email-templates.service';
+import { CustomDeleteDialog } from '@kit/ui/custom-delete-dialog';
 
 import { VariableDialog } from './variable-dialog';
 
@@ -35,6 +36,10 @@ export function EmailVariablesTab() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isVariableDialogOpen, setIsVariableDialogOpen] = useState(false);
   const [selectedVariable, setSelectedVariable] = useState<any>(null);
+
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [variableToDelete, setVariableToDelete] = useState<number | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const canManage = canAccess('emails', 'manage_email');
 
@@ -55,17 +60,28 @@ export function EmailVariablesTab() {
     setIsVariableDialogOpen(true);
   };
 
-  const handleDeleteVariable = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this variable?')) return;
+  const handleDeleteClick = (id: number) => {
+    setVariableToDelete(id);
+    setIsDeleteDialogOpen(true);
+  };
 
+  const performDelete = async () => {
+    if (!variableToDelete) return;
+    setIsDeleting(true);
     try {
-      await deleteWorkspaceVariableService(id);
+      await deleteWorkspaceVariableService(variableToDelete);
       toast.success('Variable deleted successfully');
       queryClient.invalidateQueries({
         queryKey: ['workspace-variables', workspace?.id],
       });
+      setIsDeleteDialogOpen(false);
+      setVariableToDelete(null);
     } catch (error: any) {
       toast.error(error.message || 'Failed to delete variable');
+      setIsDeleteDialogOpen(false);
+      setVariableToDelete(null);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -160,7 +176,7 @@ export function EmailVariablesTab() {
                           variant="ghost"
                           size="sm"
                           className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                          onClick={() => handleDeleteVariable(variable.id)}
+                          onClick={() => handleDeleteClick(variable.id)}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -179,6 +195,15 @@ export function EmailVariablesTab() {
         onOpenChange={setIsVariableDialogOpen}
         variable={selectedVariable}
         workspaceId={workspace?.id || ''}
+      />
+      
+      <CustomDeleteDialog
+        isOpen={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        title="Delete Variable"
+        description="Are you sure you want to delete this variable? This action cannot be undone."
+        onConfirm={performDelete}
+        isDeleting={isDeleting}
       />
     </div>
   );

@@ -16,7 +16,11 @@ export function getSupabaseBrowserClient<GenericSchema = Database>() {
 
   const keys = getSupabaseClientKeys();
 
-  client = createBrowserClient<Database>(keys.url, keys.anonKey);
+  const cookieName = process.env.NEXT_PUBLIC_SUPABASE_COOKIE_NAME;
+
+  client = createBrowserClient<Database>(keys.url, keys.anonKey, {
+    ...(cookieName ? { cookieOptions: { name: cookieName } } : {}),
+  });
 
   return client as unknown as ReturnType<typeof createBrowserClient<GenericSchema>>;
 }

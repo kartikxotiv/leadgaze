@@ -109,4 +109,20 @@ const successListDataResponse = (
   return NextResponse.json(response, { status: 200 });
 };
 
-export { successDataResponse, successListDataResponse, catchAsync };
+const errorResponse = (
+  message: string,
+  statusCode: number = 500,
+  data: any = null,
+): NextResponse => {
+  return NextResponse.json(
+    {
+      success: false,
+      message,
+      statusCode,
+      data,
+    },
+    { status: statusCode },
+  );
+};
+
+export { successDataResponse, successListDataResponse, errorResponse, catchAsync };

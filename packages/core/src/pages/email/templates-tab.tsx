@@ -26,6 +26,7 @@ import {
 } from '@kit/ui/dialog';
 import { Input } from '@kit/ui/input';
 import { Label } from '@kit/ui/label';
+import { RichTextEditor, type RichTextEditorRef } from '@kit/ui/rich-text-editor';
 import {
   Table,
   TableBody,
@@ -48,8 +49,7 @@ import {
   getCoreEmailVariablesService,
   saveCoreEmailTemplateService,
 } from '../../services/email-templates.service';
-import { ListToolBar } from '@kit/ui/list-toolbar';
-import CustomTableContainer from '@kit/ui/custom-table-container';
+import { CardWidgetContainer } from '@kit/ui/card-widget-container';
 import { useColumnResize } from '@kit/ui/use-column-resize';
 import { useTableSort } from '@kit/ui/use-table-sort';
 import { SortableTableHead } from '@kit/ui/sortable-table-head';
@@ -102,26 +102,15 @@ export function CoreEmailTemplatesTab({
 
   return (
     <div className="flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col space-y-2">
-      {/* Full-width search / filter / actions toolbar */}
-              <div className="w-full max-w-full min-w-0 shrink-0 border-b">
-                <ListToolBar
-                  showSearch
-                  searchPlaceholder="Search templates..."
-                  searchValue={searchTerm}
-                  onSearchChange={setSearchTerm}
-                  actions={[
-                    {
-                      key: 'add',
-                      label: 'New Template',
-                      icon: Plus,
-                      onClick: () => {setSelectedTemplate(null); setIsDialogOpen(true);},
-                      show: true,
-                      buttonVariant: 'default',
-                    },
-                  ]}                  
-                />
-              </div>
-       <CustomTableContainer>      
+      <CardWidgetContainer headerClassName="p-2 xl:p-2 2xl:p-2" title="Templates" icon2={
+          <Button
+            className="bg-leadgaze-primary hover:bg-leadgaze-primary text-white secondary-text-small-bold gap-1.5 px-2"
+            onClick={() => {setSelectedTemplate(null); setIsDialogOpen(true);}}
+          >
+            <Plus className="h-4 w-4" /> Add
+          </Button>
+      }>
+          <div className="mb-2">
           <Table>
             <TableHeader>
               <TableRow>
@@ -186,7 +175,7 @@ export function CoreEmailTemplatesTab({
               ) : (
                 sortedData.map((template: any) => (
                   <TableRow key={template.id}>
-                    <TableCell className="font-medium">
+                    <TableCell className="font-medium text-leadgaze-primary">
                       {template.name}
                     </TableCell>
                     <TableCell className="text-muted-foreground max-w-md truncate">
@@ -220,7 +209,8 @@ export function CoreEmailTemplatesTab({
               )}
             </TableBody>
           </Table>
-        </CustomTableContainer>
+        </div>
+      </CardWidgetContainer>
 
       <CoreTemplateDialog
         open={isDialogOpen}
@@ -246,8 +236,9 @@ function CoreTemplateDialog({
   const queryClient = useQueryClient();
   const [name, setName] = useState('');
   const [subject, setSubject] = useState('');
+  const [htmlBody, setHtmlBody] = useState('');
   const [isSaving, setIsSaving] = useState(false);
-  const editorRef = useRef<HTMLDivElement>(null);
+  const editorRef = useRef<RichTextEditorRef>(null);
   const { data: customVariables = [] } = useQuery({
     queryKey: ['core-email-variables', workspaceId],
     queryFn: () => getCoreEmailVariablesService(workspaceId),
@@ -259,22 +250,22 @@ function CoreTemplateDialog({
 
     setName(template?.name ?? '');
     setSubject(template?.subject ?? '');
+    setHtmlBody(template?.html_body ?? '');
     setTimeout(() => {
-      if (editorRef.current) {
-        editorRef.current.innerHTML = template?.html_body ?? '';
-      }
+      editorRef.current?.setHTML(template?.html_body ?? '');
     }, 0);
   }, [open, template]);
 
   const insertVariable = (variable: string) => {
-    editorRef.current?.focus();
-    document.execCommand('insertText', false, variable);
+    if (editorRef.current) {
+      editorRef.current.insertText(variable);
+    }
   };
 
   const handleSave = async () => {
-    const htmlBody = editorRef.current?.innerHTML ?? '';
+    const content = editorRef.current?.getHTML() || htmlBody;
 
-    if (!name || !subject || !htmlBody) {
+    if (!name || !subject || !content.trim()) {
       toast.error('Please fill in all required fields');
       return;
     }
@@ -286,7 +277,7 @@ function CoreTemplateDialog({
         workspace_id: workspaceId,
         name,
         subject,
-        html_body: htmlBody,
+        html_body: content,
         variables: customVariables.map(
           (variable: any) => `{{${variable.key}}}`,
         ),
@@ -307,81 +298,76 @@ function CoreTemplateDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-hidden border-gray-200 bg-white p-0 sm:max-w-3xl dark:border-slate-800 dark:bg-slate-950">
         <div className="flex max-h-[90vh] flex-col">
-          <DialogHeader className="border-b border-gray-200 bg-white p-6 pb-4 dark:border-slate-800 dark:bg-slate-950">
+          <DialogHeader>
             <DialogTitle>
               {template ? 'Edit Template' : 'Create Template'}
             </DialogTitle>
           </DialogHeader>
-          <div className="flex-1 space-y-4 overflow-y-auto px-6 pb-8">
-          <div className="space-y-2">
-            <Label>Template Name</Label>
-            <Input
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Subject</Label>
-            <Input
-              value={subject}
-              onChange={(event) => setSubject(event.target.value)}
-            />
-          </div>
-          <div className="space-y-2">
-            <div className="flex flex-wrap items-center gap-2">
-              {customVariables.length > 0 ? (
-                customVariables.map((variable: any) => {
-                  const value = `{{${variable.key}}}`;
-
-                  return (
-                    <Button
-                      key={value}
-                      variant="outline"
-                      size="sm"
-                      onClick={() => insertVariable(value)}
-                    >
-                      {variable.key}
-                    </Button>
-                  );
-                })
-              ) : (
-                <span className="text-muted-foreground text-xs">
-                  Add workspace variables to insert them here.
-                </span>
-              )}
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger>
-                    <Info className="text-muted-foreground h-4 w-4" />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    Variables are replaced before sending.
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+          <div className="flex-1 space-y-2 overflow-y-auto p-2">
+            <div>
+              <Label>Template Name</Label>
+              <Input
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                placeholder="e.g., Intro Outreach"
+              />
             </div>
-            <div className="overflow-hidden rounded-md border">
-              <div className="border-b bg-zinc-50 p-1 dark:bg-zinc-800/50">
-                {['bold', 'italic', 'underline'].map((command) => (
-                  <Button
-                    key={command}
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => document.execCommand(command, false)}
-                  >
-                    {command[0]!.toUpperCase()}
-                  </Button>
-                ))}
+            <div>
+              <Label>Subject</Label>
+              <Input
+                value={subject}
+                onChange={(event) => setSubject(event.target.value)}
+                placeholder="e.g., Hello {{first_name}}!"
+              />
+            </div>
+            <div>
+              <div className="flex items-center justify-between">
+                <Label>Template Body</Label>
+                {customVariables.length > 0 && (
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-[11px] text-muted-foreground">Insert:</span>
+                    {customVariables.map((variable: any) => {
+                      const value = `{{${variable.key}}}`;
+                      return (
+                        <Button
+                          key={value}
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-6 text-[10px] px-2 bg-emerald-50/50 border-emerald-100 hover:bg-emerald-100 dark:bg-emerald-900/10 dark:border-emerald-900/20"
+                          onClick={() => insertVariable(value)}
+                        >
+                          {variable.key}
+                        </Button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
-              <div
+              <RichTextEditor
                 ref={editorRef}
-                contentEditable
-                className="min-h-[280px] bg-white p-4 text-sm outline-none dark:bg-zinc-950"
+                value={htmlBody}
+                onChange={setHtmlBody}
+                minHeight="16rem"
+                placeholder="Write your email template here..."
+                toolbarExtra={
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="flex items-center gap-1 cursor-pointer">
+                          <Info className="h-3.5 w-3.5 text-zinc-400" />
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="text-xs">Variables are replaced before sending.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                }
               />
             </div>
           </div>
-          </div>
-          <DialogFooter className="border-t border-gray-200 bg-white p-2 dark:border-slate-800 dark:bg-slate-950">
+          <DialogFooter>
             <Button
               variant="outline"
               onClick={() => onOpenChange(false)}
@@ -395,7 +381,7 @@ function CoreTemplateDialog({
               ) : (
                 <Save className="mr-2 h-4 w-4" />
               )}
-              Save
+              Save Template
             </Button>
           </DialogFooter>
         </div>

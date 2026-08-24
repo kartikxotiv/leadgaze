@@ -39,6 +39,7 @@ interface CreateContactDialogProps {
   onOpenChange: (open: boolean) => void;
   onSuccess?: (contact: any) => void;
   defaultAccountId?: string;
+  asFormOnly?: boolean;
 }
 
 export function CreateContactDialog({
@@ -46,6 +47,7 @@ export function CreateContactDialog({
   onOpenChange,
   onSuccess,
   defaultAccountId,
+  asFormOnly = false,
 }: CreateContactDialogProps) {
   const { currentWorkspace: workspace } = useRBAC();
   const queryClient = useQueryClient();
@@ -111,6 +113,12 @@ export function CreateContactDialog({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const phoneRegex = /^\+?[0-9]+$/;
+    if (formData.phone_number && !phoneRegex.test(formData.phone_number)) {
+      toast.error('Phone number can only contain numbers, optionally starting with +');
+      return;
+    }
+
     if (!formData.first_name) {
       toast.error('First name is required');
       return;
@@ -118,26 +126,25 @@ export function CreateContactDialog({
     mutation.mutate(formData);
   };
 
-  return (
-    <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-[650px]">
-          <DialogHeader className="border-b p-6 pb-4">
-            <DialogTitle>Create New Contact</DialogTitle>
-            <DialogDescription>
-              Add a new person to your workspace.
-            </DialogDescription>
-          </DialogHeader>
+  const innerContent = (
+    <div className={asFormOnly ? "flex h-full flex-col overflow-auto" : "flex max-h-[90vh] flex-col"}>
+      {!asFormOnly && (
+        <DialogHeader>
+          <DialogTitle>Create New Contact</DialogTitle>
+          <DialogDescription>
+            Add a new person to your workspace
+          </DialogDescription>
+        </DialogHeader>
+      )}
 
-          <form id="dialog-form" onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 py-4 space-y-6 py-4">
-            <div className="space-y-4">
-              <h3 className="primary-heading text-leadgaze-dark dark:text-white uppercase">
+      <form id="dialog-form" onSubmit={handleSubmit} className={`flex flex-col flex-1 overflow-y-auto px-2 space-y-2 ${asFormOnly && 'mb-2'}`}>
+            <div className={`space-y-2 ${asFormOnly && 'pt-2'}`}>
+              <h3 className="primary-heading text-leadgaze-dark dark:text-white uppercase custom-sub-heading-dialog-form">
                 Personal Details
-              </h3>
-              <Separator />
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="first_name">First Name *</Label>
+              </h3>              
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label htmlFor="first_name">First Name <span className="text-red-500">*</span></Label>
                   <Input
                     id="first_name"
                     value={formData.first_name}
@@ -148,7 +155,7 @@ export function CreateContactDialog({
                     required
                   />
                 </div>
-                <div className="space-y-2">
+                <div>
                   <Label htmlFor="last_name">Last Name</Label>
                   <Input
                     id="last_name"
@@ -161,8 +168,8 @@ export function CreateContactDialog({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
+              <div className="grid grid-cols-2 gap-2">
+                <div>
                   <Label htmlFor="email">Email</Label>
                   <Input
                     id="email"
@@ -174,7 +181,7 @@ export function CreateContactDialog({
                     placeholder="jane.doe@example.com"
                   />
                 </div>
-                <div className="space-y-2">
+                <div>
                   <Label htmlFor="phone_number">Phone</Label>
                   <Input
                     id="phone_number"
@@ -188,13 +195,12 @@ export function CreateContactDialog({
               </div>
             </div>
 
-            <div className="space-y-4 pt-4">
-              <h3 className="primary-heading text-leadgaze-dark dark:text-white uppercase">
+            <div className="space-y-2">
+              <h3 className="primary-heading text-leadgaze-dark dark:text-white uppercase custom-sub-heading-dialog-form">
                 Professional & Status
-              </h3>
-              <Separator />
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
+              </h3>              
+              <div className="grid grid-cols-2 gap-2">
+                <div>
                   <Label htmlFor="job_title">Job Title</Label>
                   <Input
                     id="job_title"
@@ -208,7 +214,7 @@ export function CreateContactDialog({
               </div>
 
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between mb-0">
                   <Label htmlFor="account_id">Account</Label>
                   <Button
                     type="button"
@@ -220,11 +226,12 @@ export function CreateContactDialog({
                     New Account
                   </Button>
                 </div>
+                <div className="mb-0">
                 <Select
                   value={formData.account_id}
                   onValueChange={(value) =>
                     setFormData({ ...formData, account_id: value })
-                  }
+                  }                  
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select associated account" />
@@ -243,10 +250,11 @@ export function CreateContactDialog({
                     ))}
                   </SelectContent>
                 </Select>
+                </div>
               </div>
             </div>
 
-            <div className="space-y-2 pt-4">
+            <div>
               <Label htmlFor="notes">Notes</Label>
               <Textarea
                 id="notes"
@@ -261,26 +269,37 @@ export function CreateContactDialog({
 
             
           </form>
-        <DialogFooter className="border-t p-2 mt-auto">
+        <DialogFooter>
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => onOpenChange(false)}
-                className='mb-2'
+                onClick={() => onOpenChange(false)}                
               >
                 Cancel
               </Button>
-              <Button type="submit" form="dialog-form" disabled={mutation.isPending} className='mb-2'>
+              <Button type="submit" form="dialog-form" disabled={mutation.isPending}>
                 {mutation.isPending ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Plus className="mr-2 h-4 w-4" />
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : !asFormOnly && (
+                  <Plus className="h-4 w-4" />
                 )}
                 Create Contact
               </Button>
             </DialogFooter>
-      </DialogContent>
-      </Dialog>
+    </div>
+  );
+
+  return (
+    <>
+      {!asFormOnly ? (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+          <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-[650px]">
+            {innerContent}
+          </DialogContent>
+        </Dialog>
+      ) : (
+        innerContent
+      )}
 
       {/* Nested Account Creation */}
       <CreateAccountDialog

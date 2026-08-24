@@ -34,7 +34,7 @@ export const CustomTableContainer: React.FC<CustomTableContainerProps> = ({
   footerExtras,
 }) => {
   return (
-    <div className={cn('flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col space-y-4', className)}>
+    <div className={cn('flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col', className)}>
       {headerActions && <div className="mb-2">{headerActions}</div>}
       <Card className="flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col border-none shadow-none mb-0">
         <CardContent className="flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col p-0">
@@ -48,8 +48,8 @@ export const CustomTableContainer: React.FC<CustomTableContainerProps> = ({
           </div>
         </CardContent>
       </Card>
-      {pagination && <div className="mt-1">{pagination}</div>}
-      {footerExtras && <div className="mt-1">{footerExtras}</div>}
+      {pagination && <div>{pagination}</div>}
+      {footerExtras && <div>{footerExtras}</div>}
     </div>
   );
 };

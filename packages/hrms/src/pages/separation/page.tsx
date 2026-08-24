@@ -383,7 +383,7 @@ export function SeparationPage(props: {
         </div>
 
         {activeCreateActionTab ? (
-          <div className="w-full max-w-full min-w-0 shrink-0 border-b pb-2">
+          <div className="w-full max-w-full min-w-0 shrink-0 border-b">
             <ListToolBar
               actions={[
                 {

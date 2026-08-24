@@ -190,9 +190,9 @@ export const updateCoreEmailAccountController = catchAsync(
       );
     }
 
-    if (typeof access_scope !== 'undefined' && !memberContext.isAdmin) {
+    if (typeof access_scope !== 'undefined' && !memberContext.isAdmin && !isOwner) {
       return NextResponse.json(
-        { success: false, message: 'Only admins can change account access' },
+        { success: false, message: 'Only admins or account owners can change account access' },
         { status: 403 },
       );
     }

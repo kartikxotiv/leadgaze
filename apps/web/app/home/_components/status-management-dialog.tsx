@@ -105,15 +105,25 @@ export function StatusManagementDialog({
     }
   }, [open, existingStatus]);
 
-  const queryKeys =
-    moduleKey === 'leads'
-      ? ['lead-statuses', workspaceId]
-      : moduleKey === 'opportunities'
-        ? ['opportunity-stages', workspaceId]
-        : ['account-types', workspaceId];
-
   const invalidate = () => {
-    queryClient.invalidateQueries({ queryKey: queryKeys });
+    if (moduleKey === 'leads') {
+      queryClient.invalidateQueries({ queryKey: ['lead-statuses', workspaceId] });
+      queryClient.invalidateQueries({ queryKey: ['lead-statuses-mgmt', workspaceId] });
+      queryClient.invalidateQueries({ queryKey: ['leads'] });
+      queryClient.invalidateQueries({ queryKey: ['leads-kanban'] });
+      queryClient.invalidateQueries({ queryKey: ['lead'] });
+    } else if (moduleKey === 'opportunities') {
+      queryClient.invalidateQueries({ queryKey: ['opportunity-stages', workspaceId] });
+      queryClient.invalidateQueries({ queryKey: ['opportunity-stages-mgmt', workspaceId] });
+      queryClient.invalidateQueries({ queryKey: ['opportunities'] });
+      queryClient.invalidateQueries({ queryKey: ['opportunities-kanban'] });
+      queryClient.invalidateQueries({ queryKey: ['opportunity'] });
+    } else {
+      queryClient.invalidateQueries({ queryKey: ['account-types', workspaceId] });
+      queryClient.invalidateQueries({ queryKey: ['account-types-mgmt', workspaceId] });
+      queryClient.invalidateQueries({ queryKey: ['accounts'] });
+      queryClient.invalidateQueries({ queryKey: ['account'] });
+    }
   };
 
   // ── CREATE ──
@@ -211,7 +221,7 @@ export function StatusManagementDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="p-0 sm:max-w-[440px]">
-        <DialogHeader className="border-b px-6 py-4">
+        <DialogHeader>
           <DialogTitle>
             {isEditMode ? `Edit ${entityLabel}` : `New ${entityLabel}`}
           </DialogTitle>
@@ -223,7 +233,7 @@ export function StatusManagementDialog({
         </DialogHeader>
 
         <form id="status-form" onSubmit={handleSubmit}>
-          <div className="space-y-4 px-6 py-0">
+          <div className="space-y-2 px-6 py-0">
             {/* Name */}
             <div className="space-y-2">
               <Label htmlFor="status_name">
@@ -357,7 +367,7 @@ export function StatusManagementDialog({
           </div>
         </form>
 
-        <DialogFooter className="border-t px-6 py-4">
+        <DialogFooter>
           <Button
             type="button"
             variant="outline"

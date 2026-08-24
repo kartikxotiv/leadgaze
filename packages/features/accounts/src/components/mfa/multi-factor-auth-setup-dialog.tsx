@@ -19,6 +19,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -179,11 +180,12 @@ function MultiFactorAuthSetupForm({
 
       <If condition={factorId}>
         <Form {...verificationCodeForm}>
-          <form
-            onSubmit={verificationCodeForm.handleSubmit(onSubmit)}
-            className={'w-full'}
-          >
-            <div className={'flex flex-col space-y-8'}>
+          <div className={'flex flex-col space-y-8'}>
+            <form
+              id="verification-code-form"
+              onSubmit={verificationCodeForm.handleSubmit(onSubmit)}
+              className={'w-full'}
+            >
               <FormField
                 render={({ field }) => {
                   return (
@@ -220,27 +222,28 @@ function MultiFactorAuthSetupForm({
                 }}
                 name={'verificationCode'}
               />
+            </form>
 
-              <div className={'flex justify-end space-x-2'}>
-                <Button type={'button'} variant={'ghost'} onClick={onCancel}>
-                  <Trans i18nKey={'common:cancel'} />
-                </Button>
+            <DialogFooter>
+              <Button type={'button'} variant={'ghost'} onClick={onCancel}>
+                <Trans i18nKey={'common:cancel'} />
+              </Button>
 
-                <Button
-                  disabled={
-                    !verificationCodeForm.formState.isValid || state.loading
-                  }
-                  type={'submit'}
-                >
-                  {state.loading ? (
-                    <Trans i18nKey={'account:verifyingCode'} />
-                  ) : (
-                    <Trans i18nKey={'account:enableMfaFactor'} />
-                  )}
-                </Button>
-              </div>
-            </div>
-          </form>
+              <Button
+                disabled={
+                  !verificationCodeForm.formState.isValid || state.loading
+                }
+                type={'submit'}
+                form="verification-code-form"
+              >
+                {state.loading ? (
+                  <Trans i18nKey={'account:verifyingCode'} />
+                ) : (
+                  <Trans i18nKey={'account:enableMfaFactor'} />
+                )}
+              </Button>
+            </DialogFooter>
+          </div>
         </Form>
       </If>
     </div>
@@ -362,13 +365,14 @@ function FactorNameForm(
 
   return (
     <Form {...form}>
-      <form
-        className={'w-full'}
-        onSubmit={form.handleSubmit((data) => {
-          props.onSetFactorName(data.name);
-        })}
-      >
-        <div className={'flex flex-col space-y-4'}>
+      <div className={'flex flex-col space-y-4'}>
+        <form
+          id="factor-name-form"
+          className={'w-full px-2'}
+          onSubmit={form.handleSubmit((data) => {
+            props.onSetFactorName(data.name);
+          })}
+        >
           <FormField
             name={'name'}
             render={({ field }) => {
@@ -382,7 +386,7 @@ function FactorNameForm(
                     <Input autoComplete={'off'} required {...field} />
                   </FormControl>
 
-                  <FormDescription>
+                  <FormDescription className="mt-2">
                     <Trans i18nKey={'account:factorNameHint'} />
                   </FormDescription>
 
@@ -391,18 +395,18 @@ function FactorNameForm(
               );
             }}
           />
+        </form>
 
-          <div className={'flex justify-end space-x-2'}>
-            <Button type={'button'} variant={'ghost'} onClick={props.onCancel}>
-              <Trans i18nKey={'common:cancel'} />
-            </Button>
+        <DialogFooter>
+          <Button type={'button'} variant={'ghost'} onClick={props.onCancel}>
+            <Trans i18nKey={'common:cancel'} />
+          </Button>
 
-            <Button type={'submit'}>
-              <Trans i18nKey={'account:factorNameSubmitLabel'} />
-            </Button>
-          </div>
-        </div>
-      </form>
+          <Button type={'submit'} form="factor-name-form">
+            <Trans i18nKey={'account:factorNameSubmitLabel'} />
+          </Button>
+        </DialogFooter>
+      </div>
     </Form>
   );
 }

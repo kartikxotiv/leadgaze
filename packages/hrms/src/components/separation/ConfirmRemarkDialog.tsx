@@ -40,8 +40,8 @@ export function ConfirmRemarkDialog({ config, onClose, isSubmitting }: ConfirmRe
     <Dialog open={Boolean(config)} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-h-[90vh] overflow-hidden border-gray-200 bg-white p-0 sm:max-w-md dark:border-slate-800 dark:bg-slate-950">
         <div className="flex max-h-[90vh] flex-col">
-          <DialogHeader className="border-b border-gray-200 bg-white p-6 pb-4 dark:border-slate-800 dark:bg-slate-950">
-            <DialogTitle className="text-2xl pr-12">{config.title}</DialogTitle>
+          <DialogHeader>
+            <DialogTitle>{config.title}</DialogTitle>
             <DialogDescription className="text-base">{config.description}</DialogDescription>
           </DialogHeader>
 
@@ -57,7 +57,7 @@ export function ConfirmRemarkDialog({ config, onClose, isSubmitting }: ConfirmRe
             </div>
           </div>
 
-          <DialogFooter className="border-t border-gray-200 bg-white p-2 dark:border-slate-800 dark:bg-slate-950">
+          <DialogFooter>
             <Button
               variant="outline"
               onClick={onClose}

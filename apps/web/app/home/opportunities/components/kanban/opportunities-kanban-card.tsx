@@ -16,6 +16,7 @@ import {
 } from '@kit/ui/dropdown-menu';
 import { cn } from '@kit/ui/utils';
 
+import { usePreloadStrategies, usePreloadHoverHandlers } from '~/lib/hooks/use-preload-strategies';
 import { Opportunity } from '~/services/opportunities.service';
 
 interface OpportunitiesKanbanCardProps {
@@ -33,6 +34,8 @@ export function OpportunitiesKanbanCard({
   onClick,
   onDelete,
 }: OpportunitiesKanbanCardProps) {
+  const { preloadOpportunityDetail } = usePreloadStrategies();
+  const { handleMouseEnter, handleMouseLeave } = usePreloadHoverHandlers();
   const { attributes, listeners, setNodeRef, transform, isDragging } =
     useDraggable({
       id: opportunity.id,
@@ -59,6 +62,12 @@ export function OpportunitiesKanbanCard({
       )}
       {...attributes}
       {...listeners}
+      onMouseEnter={() =>
+        handleMouseEnter(() =>
+          preloadOpportunityDetail(opportunity.workspace_id || '', opportunity)
+        )
+      }
+      onMouseLeave={handleMouseLeave}
       onPointerDown={(e) => {
         // Let dnd-kit handle the pointer down, but we don't prevent default 
         // so clicks can still fire if it's not a drag.

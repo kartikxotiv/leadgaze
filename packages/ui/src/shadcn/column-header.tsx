@@ -184,39 +184,44 @@ export function ColumnHeader({
             title="Custom Field"
           />
         )}
-        <span className="flex min-w-0 flex-1 items-center gap-1 truncate">
+        <span className="flex min-w-0 flex-1 items-center truncate">
           <span className="truncate">{label}</span>
+        </span>
+
+        <div className="flex items-center gap-1.5 shrink-0">
+          {(isAdmin || isDynamicField) && resolvedEditClick && !isFrontendOnly && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="hover:bg-muted h-4 w-4 p-0 opacity-0 transition-opacity group-hover:opacity-100 shrink-0"
+              onClick={(e) => {
+                e.stopPropagation();
+                resolvedEditClick();
+              }}
+              title="Edit column settings"
+            >
+              <Pencil className="h-3 w-3" />
+            </Button>
+          )}
+
           {isRestricted && !isFrontendOnly && (
             <Lock
-              className="text-muted-foreground h-3 w-3"
+              className="text-muted-foreground h-3 w-3 shrink-0"
               aria-label="Restricted field"
             />
           )}
-        </span>
-        {sortable && (
-          <SortIcon
-            className={cn(
-              'h-3 w-3 shrink-0 flex-none transition-all duration-200',
-              isActive
-                ? 'text-leadgaze-primary opacity-100'
-                : 'text-muted-foreground opacity-35',
-            )}
-          />
-        )}
-        {(isAdmin || isDynamicField) && resolvedEditClick && !isFrontendOnly && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="hover:bg-muted ml-2 h-6 w-6 p-0 opacity-0 transition-opacity group-hover:opacity-100"
-            onClick={(e) => {
-              e.stopPropagation();
-              resolvedEditClick();
-            }}
-            title="Edit column settings"
-          >
-            <Pencil className="h-3 w-3" />
-          </Button>
-        )}
+
+          {sortable && (
+            <SortIcon
+              className={cn(
+                'h-3 w-3 shrink-0 transition-all duration-200',
+                isActive
+                  ? 'text-leadgaze-primary opacity-100'
+                  : 'text-muted-foreground opacity-35',
+              )}
+            />
+          )}
+        </div>
       </div>
 
       {/* Resize handle or other children */}

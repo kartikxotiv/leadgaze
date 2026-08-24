@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
 import { NotificationService } from './notification-service';
@@ -69,7 +70,7 @@ export class MeetingChecker {
    * Returns the number of notifications sent
    */
   static async checkAndNotify(): Promise<number> {
-    const supabase = getSupabaseServerClient();
+    const supabase = getSupabaseServerAdminClient();
     let notificationCount = 0;
 
     try {

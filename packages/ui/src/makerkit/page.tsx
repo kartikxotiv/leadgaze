@@ -92,7 +92,7 @@ function PageWithHeader(props: PageProps) {
           {/* ── Sticky Header ── */}
           <div
             className={cn(
-              'bg-leadgaze-primary text-white flex h-16 shrink-0 items-center justify-between border-b border-header-primary/20 px-6 justify-start',
+              'bg-leadgaze-primary text-white flex h-8 2xl:h-10 shrink-0 items-center justify-between border-b border-header-primary/20 px-2 justify-start',
               {
                 'sticky top-0 z-50 backdrop-blur-md': props.sticky ?? true,
               },
@@ -110,7 +110,7 @@ function PageWithHeader(props: PageProps) {
             parent growing and creating a second scrollbar.
           */}
           <div className={'flex flex-1 flex-col min-h-0 bg-graylight dark:dark-background-color'}>
-            <div className="flex flex-1 flex-col min-h-0 overflow-y-auto px-6 py-4">
+            <div className="flex flex-1 flex-col min-h-0 overflow-y-auto px-2 pt-2 gap-2">
               {Children}
             </div>
           </div>

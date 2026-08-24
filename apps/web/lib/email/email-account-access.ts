@@ -40,32 +40,34 @@ export async function getWorkspaceMemberContext(
     return null;
   }
 
-  const { data: membership, error: membershipError } = await supabase
+  const { data: memberships, error: membershipError } = await supabase
     .from('workspace_members')
     .select(
       `
         user_id,
+        product_key,
         role:workspace_roles!workspace_members_role_id_fkey(
-          role_key
+          role_key,
+          hierarchy_level
         )
       `,
     )
     .eq('workspace_id', workspaceId)
     .eq('user_id', user.id)
-    .eq('status', 'accepted')
-    .single();
+    .eq('status', 'accepted');
 
-  if (membershipError || !membership) {
+  if (membershipError || !memberships || memberships.length === 0) {
     return null;
   }
 
-  const role = Array.isArray((membership as any).role)
-    ? (membership as any).role[0]
-    : (membership as any).role;
+  const isAdmin = memberships.some((m: any) => {
+    const role = Array.isArray(m.role) ? m.role[0] : m.role;
+    return role?.role_key === 'admin' || (role?.hierarchy_level ?? 0) >= 100;
+  });
 
   return {
     userId: user.id,
-    isAdmin: role?.role_key === 'admin',
+    isAdmin,
   };
 }
 

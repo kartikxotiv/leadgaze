@@ -5,7 +5,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { FileUp, Plus } from 'lucide-react';
+import { Download, FileUp, Plus } from 'lucide-react';
 
 import { convertFromUSD, findLatestRateToUsd } from '@kit/shared/currency';
 import type { ExchangeRateRecord } from '@kit/shared/currency';
@@ -27,6 +27,12 @@ import { ListToolBar } from '@kit/ui/list-toolbar';
 import type { FilterGroup } from '@kit/ui/list-toolbar';
 import { PageBody, PageHeader } from '@kit/ui/page';
 import { Skeleton } from '@kit/ui/skeleton';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@kit/ui/tooltip';
 import {
   Table,
   TableBody,
@@ -57,6 +63,7 @@ import {
 } from '~/lib/hooks/use-leads-column-preferences';
 import { usePackageMembers } from '~/lib/hooks/use-package-members';
 import { useTeamMembers } from '~/lib/hooks/use-team-members';
+import { usePreloadStrategies, usePreloadHoverHandlers } from '~/lib/hooks/use-preload-strategies';
 import { useLocalization } from '~/lib/localization/localization-provider';
 import { ModuleGuard } from '~/lib/rbac/module-guard';
 import { useModuleRoles, useRBAC } from '~/lib/rbac/rbac-provider';
@@ -172,6 +179,8 @@ export default function OpportunitiesPage() {
   const queryClient = useQueryClient();
   const { currentWorkspace: workspace, user, canAccess } = useRBAC();
   const { formatDate, formatCurrency } = useLocalization();
+  const { preloadOpportunityDetail } = usePreloadStrategies();
+  const { handleMouseEnter, handleMouseLeave } = usePreloadHoverHandlers();
   const supabase = useSupabase();
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'table' | 'kanban'>(() => {
@@ -189,6 +198,7 @@ export default function OpportunitiesPage() {
   const [selectedStage, setSelectedStage] = useState<string>('all');
   const [selectedCreatedId, setSelectedCreatedId] = useState<string>('all');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [createOppDefaultStageId, setCreateOppDefaultStageId] = useState<string | undefined>(undefined);
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [opportunityToDelete, setOpportunityToDelete] =
@@ -196,7 +206,7 @@ export default function OpportunitiesPage() {
   const [editingField, setEditingField] = useState<EntityField | null>(null);
   const [addColumnModalOpen, setAddColumnModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(15);
+  const [pageSize, setPageSize] = useState(25);
   const itemsPerPage = pageSize;
 
   // Row selection state (for CSV export)
@@ -302,6 +312,7 @@ export default function OpportunitiesPage() {
     visibleCustomFields,
     ctx: _fieldPermissionCtx,
     isLoading: _fieldPermissionsLoading,
+    refetch: refetchPermissions,
   } = useFieldPermissions({
     entityType: 'opportunities',
     workspaceId: workspace?.id,
@@ -451,18 +462,22 @@ export default function OpportunitiesPage() {
     } as EntityField);
   };
 
-  const renderCustomFieldValue = (value: unknown) => {
-    if (value === undefined || value === null) {
-      return '-';
+  const renderCustomFieldValue = (
+    customFieldsObj: Record<string, unknown> | null | undefined,
+    field: { field_key: string; field_name?: string; id?: string; field_label?: string },
+  ) => {
+    if (!customFieldsObj || typeof customFieldsObj !== 'object') return '-';
+    const val =
+      customFieldsObj[field.field_key] ??
+      (field.field_name ? customFieldsObj[field.field_name] : undefined) ??
+      (field.id ? customFieldsObj[field.id] : undefined) ??
+      (field.field_label ? customFieldsObj[field.field_label] : undefined);
+    if (val === null || val === undefined || val === '') return '-';
+    if (typeof val === 'boolean') return val ? 'Yes' : 'No';
+    if (typeof val === 'object') {
+      try { return JSON.stringify(val); } catch { return '-'; }
     }
-    if (typeof value === 'object') {
-      try {
-        return JSON.stringify(value);
-      } catch {
-        return '-';
-      }
-    }
-    return String(value);
+    return String(val);
   };
 
   const canAddColumn = useMemo(() => {
@@ -542,6 +557,9 @@ export default function OpportunitiesPage() {
   const handleDeleteField = async (fieldId: string) => {
     try {
       await deleteField.mutateAsync({ fieldId });
+      refetchEntityFields();
+      refetchPermissions?.();
+      refetch();
     } catch (error) {
       console.error('Error deleting field:', error);
     }
@@ -716,22 +734,7 @@ export default function OpportunitiesPage() {
   });
 
   // Fetch exchange rates for currency conversion
-  const { data: exchangeRates = [] } = useQuery({
-    queryKey: ['exchange-rates'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .schema('core')
-        .from('currency_exchange_rates')
-        .select('*')
-        .eq('base_currency', 'USD');
-      if (error) {
-        console.error('Failed to fetch exchange rates:', error);
-        return [];
-      }
-      return data;
-    },
-    staleTime: 24 * 60 * 60 * 1000, // 24 hours
-  });
+  const exchangeRates = workspace?.localization?.exchange_rates || [];
 
   // Fetch team members filtered by package access (for Created By filter)
   const { members } = usePackageMembers();
@@ -982,7 +985,8 @@ export default function OpportunitiesPage() {
       // Append custom fields
       customFields.forEach((cf) => {
         base[cf.field_key] = renderCustomFieldValue(
-          (opportunity as any).custom_fields?.[cf.field_key],
+          (opportunity as any).custom_fields,
+          cf,
         );
       });
 
@@ -1138,16 +1142,92 @@ export default function OpportunitiesPage() {
     <ModuleGuard module="opportunities">
       <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden">
         <PageHeader
-          title={`Opportunities (${totalCount})`}
-          description="Manage your sales pipeline"
-        />
+          title={`Opportunities`}          
+        >
+          {canAccess('opportunities', 'create') && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    onClick={() => setIsCreateDialogOpen(true)}
+                    className="secondary-text-small-bold gap-1.5 px-2 bg-leadgaze-primary hover:bg-leadgaze-primary text-white"
+                  >
+                    <Plus className="h-4 w-4" />
+                    New Opportunity
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  <span>New Opportunity</span>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+        </PageHeader>
       </div>
 
       {/* Full-width search / filter / actions toolbar */}
-      <div className="w-full max-w-full min-w-0 shrink-0 border-b pb-2">
+      <div className="flex w-full max-w-full min-w-0 shrink-0 items-center justify-between border-top-bottom-gray">
+        <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide">
+          <button
+            onClick={() => {
+              setSelectedStage('all');
+              setCurrentPage(1);
+            }}
+            className={cn(
+              "flex items-center gap-1 whitespace-nowrap border-b-2 px-3 py-1 primary-text-medium",
+              selectedStage === 'all'
+                ? "border-leadgaze-primary text-leadgaze-primary"
+                : "border-transparent text-gray-500 hover:text-gray-700"
+            )}
+          >
+            <span className="flex items-center gap-1">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+              All opportunities
+            </span>
+            <span className={cn(
+              "ml-1 rounded-full px-2 py-0.5 text-xs border",
+              selectedStage === 'all' ? "border-blue-200 bg-blue-50 text-leadgaze-primary" : "border-gray-200 bg-gray-50 text-gray-600"
+            )}>
+              {totalCount}
+            </span>
+          </button>
+          
+          {stages.map((stage: any) => {
+            const breakdown = opportunitiesData.stageBreakdown?.[stage.id] as { count: number } | undefined;
+            const count = breakdown?.count || 0;
+            const isSelected = selectedStage === stage.id;
+            return (
+              <button
+                key={stage.id}
+                onClick={() => {
+                  setSelectedStage(stage.id);
+                  setCurrentPage(1);
+                }}
+                className={cn(
+                  "flex items-center gap-1 whitespace-nowrap border-b-2 px-3 py-1 primary-text-regular",
+                  isSelected
+                    ? "border-leadgaze-primary text-leadgaze-primary"
+                    : "border-transparent text-gray-500 hover:text-gray-700"
+                )}
+              >
+                {stage.status_name}
+                <span className={cn(
+                  "ml-1 rounded-full px-2 py-0.5 text-xs border",
+                  isSelected ? "border-blue-200 bg-blue-50 text-leadgaze-primary" : "border-gray-200 bg-gray-50 text-gray-600"
+                )}>
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
         <ListToolBar
+          align="right"
+          className="border-none bg-transparent p-0"
           showSearch
-          searchPlaceholder="Search by name or account..."
+          expandableSearch
+          searchPlaceholder="Search"
           searchValue={searchTerm}
           onSearchChange={setSearchTerm}
           showFilter
@@ -1159,18 +1239,10 @@ export default function OpportunitiesPage() {
             {
               key: 'import',
               label: 'Import',
-              icon: FileUp,
+              icon: Download,
               onClick: () => setIsImportDialogOpen(true),
               show: canAccess('opportunities', 'import'),
               buttonVariant: 'outline',
-            },
-            {
-              key: 'add',
-              label: 'New Opportunity',
-              icon: Plus,
-              onClick: () => setIsCreateDialogOpen(true),
-              show: canAccess('opportunities', 'create'),
-              buttonVariant: 'default',
             },
           ]}
           exportSlot={
@@ -1215,7 +1287,10 @@ export default function OpportunitiesPage() {
               setDeleteDialogOpen(true);
             }}
             onStageChange={handleKanbanStageChange}
-            onCreateOpportunity={() => setIsCreateDialogOpen(true)}
+            onCreateOpportunity={(stageId) => {
+              setCreateOppDefaultStageId(stageId);
+              setIsCreateDialogOpen(true);
+            }}
           />
         ) : (
           <div className="flex min-h-0 w-full max-w-full min-w-0 flex-1 gap-0">
@@ -1320,19 +1395,19 @@ export default function OpportunitiesPage() {
                   })}
 
                   {canAddColumn ? (
-                    <TableHead className="sticky-right-header bg-background z-10 w-12 px-1 text-center">
+                    <TableHead className="sticky-right-header z-10 w-12 px-1 text-center">
                       <Button
-                        variant="outline"
+                        type="button"
                         size="icon"
-                        className="mx-auto flex h-8 w-8 items-center justify-center border-dashed"
+                        className="mx-auto flex h-5 w-5 items-center justify-center rounded-full bg-leadgaze-primary text-white hover:bg-leadgaze-primary/90 border-0 p-0 shadow-xs"
                         onClick={() => setAddColumnModalOpen(true)}
                         title="Add Column"
                       >
-                        <Plus className="h-4 w-4" />
+                        <Plus className="h-3.5 w-3.5 stroke-[2.5]" />
                       </Button>
                     </TableHead>
                   ) : (
-                    <TableHead className="sticky-right-header bg-background z-10 w-12" />
+                    <TableHead className="sticky-right-header z-10 w-12" />
                   )}
                 </TableRow>
               </TableHeader>
@@ -1385,6 +1460,12 @@ export default function OpportunitiesPage() {
                             `/home/sales/opportunities/${opportunity.id}`,
                           )
                         }
+                        onMouseEnter={() =>
+                          handleMouseEnter(() =>
+                            preloadOpportunityDetail(workspace?.id || '', opportunity)
+                          )
+                        }
+                        onMouseLeave={handleMouseLeave}
                       >
                         {/* Checkbox */}
                         <TableCell
@@ -1513,17 +1594,14 @@ export default function OpportunitiesPage() {
                           showColumn(field.field_key) ? (
                             <TableCell key={field.id}>
                               {renderCustomFieldValue(
-                                (
-                                  opportunity as {
-                                    custom_fields?: Record<string, unknown>;
-                                  }
-                                ).custom_fields?.[field.field_key],
+                                (opportunity as { custom_fields?: Record<string, unknown> }).custom_fields,
+                                field,
                               )}
                             </TableCell>
                           ) : null,
                         )}
 
-                        <TableCell className="bg-card group sticky right-0 px-4 text-right">
+                        <TableCell className="group sticky right-0 px-4 text-right">
                           <div className="flex items-center justify-end gap-2">
                             <EntityActionsDropdown
                               id={opportunity.id}
@@ -1548,7 +1626,13 @@ export default function OpportunitiesPage() {
 
         <OpportunityDialog
           isOpen={isCreateDialogOpen}
-          onOpenChange={setIsCreateDialogOpen}
+          onOpenChange={(open) => {
+            setIsCreateDialogOpen(open);
+            if (!open) {
+              setCreateOppDefaultStageId(undefined);
+            }
+          }}
+          defaultStageId={createOppDefaultStageId}
         />
 
         <CsvImportDialog
@@ -1598,6 +1682,10 @@ export default function OpportunitiesPage() {
           teamMembers={teamMembersForModal}
           isAdmin={canAddColumn}
           isSubmitting={createField.isPending}
+          columns={columns}
+          visibility={visibility}
+          onToggleColumn={toggleVisibility}
+          onResetColumns={reset}
           onSubmit={async (payload) => {
             await createField.mutateAsync({
               ...payload,

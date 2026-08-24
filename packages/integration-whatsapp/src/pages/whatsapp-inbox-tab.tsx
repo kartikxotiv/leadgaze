@@ -259,7 +259,7 @@ export function WhatsAppInboxTab({
                   key={conv.id}
                   onClick={() => setActiveConvId(conv.id)}
                   className={`w-full text-left p-3 flex gap-3 transition-colors hover:bg-accent/10 ${
-                    isActive ? 'bg-primary/5 border-l-2 border-primary' : ''
+                    isActive ? 'bg-primary/5' : ''
                   }`}
                 >
                   <div className="relative shrink-0">
@@ -275,7 +275,7 @@ export function WhatsAppInboxTab({
 
                   <div className="flex-1 min-w-0">
                     <div className="flex justify-between items-baseline mb-0.5">
-                      <span className="text-xs font-semibold truncate text-foreground">
+                      <span className="text-xs font-semibold truncate text-leadgaze-dark dark:text-white ">
                         {conv.customer_name || conv.customer_phone}
                       </span>
                       {conv.last_message_at && (
@@ -404,7 +404,7 @@ export function WhatsAppInboxTab({
 
             {/* Reply area */}
             <div className="p-3 border-t bg-background shrink-0">
-              <div className="flex items-end gap-2 max-w-3xl mx-auto w-full">
+              <div className="flex items-center gap-2 max-w-3xl mx-auto w-full">
                 <Textarea
                   value={reply}
                   onChange={(e) => setReply(e.target.value)}
@@ -422,7 +422,7 @@ export function WhatsAppInboxTab({
                   size="icon"
                   onClick={handleSend}
                   disabled={!reply.trim() || isSending || activeConv.status === 'closed'}
-                  className="h-9 w-9 shrink-0 bg-[#25D366] hover:bg-[#20b858] text-white"
+                  className="h-9 w-9 shrink-0 bg-leadgaze-primary text-white"
                 >
                   {isSending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
                 </Button>
