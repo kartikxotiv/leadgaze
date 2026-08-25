@@ -336,7 +336,7 @@ export function CoreEmailSettingsPage({
                           <DialogTitle>Connect Email Account</DialogTitle>
                         </DialogHeader>
                         <Tabs value={connectTab} onValueChange={(v) => setConnectTab(v as 'google' | 'smtp')} className="flex flex-1 flex-col overflow-hidden">
-                          <div className="shrink-0 p-2">
+                          <div className="shrink-0 custom-spacing-x-y pb-2">
                           <TabsList className="grid w-full grid-cols-2">
                             <TabsTrigger value="google">
                               Google / Gmail
@@ -344,7 +344,7 @@ export function CoreEmailSettingsPage({
                             <TabsTrigger value="smtp">SMTP / IMAP</TabsTrigger>
                           </TabsList>
                           </div>
-                          <div className="flex-1 overflow-y-auto p-2 pt-0">
+                          <div className="flex-1 overflow-y-auto custom-spacing-x-y pt-0">
                           <TabsContent
                             value="google"
                             className="space-y-2 pt-0 mt-0"

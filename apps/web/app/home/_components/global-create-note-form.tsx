@@ -69,7 +69,7 @@ export function GlobalCreateNoteForm({ onSuccess, onCancel, asFormOnly = false }
   return (
     <div className="flex h-full flex-col overflow-auto">
       
-      <div className="flex-1 space-y-2 overflow-y-auto px-2">
+      <div className="flex-1 space-y-2 overflow-y-auto custom-spacing-x-y">
         <div className="space-y-2">
           <Label>Associate with</Label>
           <RadioGroup

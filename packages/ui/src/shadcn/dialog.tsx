@@ -56,7 +56,7 @@ const DialogHeader = ({
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     className={cn(
-      'flex flex-col text-center sm:text-left bg-leadgaze-primary py-2 px-2',
+      'flex flex-col text-center sm:text-left bg-leadgaze-primary p-4',
       className,
     )}
     {...props}
@@ -70,7 +70,7 @@ const DialogFooter = ({
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     className={cn(
-      'flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 dialog-footer-border-top p-2 dialog-footer',
+      'flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 dialog-footer-border-top p-4 dialog-footer',
       className,
     )}
     {...props}

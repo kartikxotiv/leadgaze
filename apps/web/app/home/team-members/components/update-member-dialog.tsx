@@ -123,7 +123,7 @@ export function UpdateMemberDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <form id="dialog-form" onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-2 space-y-2">
+        <form id="dialog-form" onSubmit={handleSubmit} className="flex-1 overflow-y-auto space-y-2 custom-spacing-x-y py-2">
           {isEditDisabled && (
             <div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive font-medium">
               The workspace owner role cannot be modified by other team members.

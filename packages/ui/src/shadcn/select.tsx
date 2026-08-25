@@ -23,7 +23,7 @@ const SelectTrigger: React.FC<
 > = ({ className, children, ...props }) => (
   <SelectPrimitive.Trigger
     className={cn(
-      'border-input ring-offset-background data-[placeholder]:text-muted-foreground focus:ring-ring flex h-[35.3px] w-full items-center justify-between rounded-[4px] border bg-transparent px-3 py-2 text-sm whitespace-nowrap shadow-2xs focus:ring-1 focus:outline-hidden disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1',
+      'border-input ring-offset-background data-[placeholder]:text-muted-foreground focus:ring-ring flex h-[36px] w-full items-center justify-between rounded-[4px] border bg-transparent px-2 py-2 text-sm whitespace-nowrap shadow-2xs focus:ring-1 focus:outline-hidden disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1',
       className,
     )}
     {...props}

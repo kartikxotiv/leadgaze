@@ -446,7 +446,7 @@ function NavDropdown({
             'px-1.5 py-1.5 outline-none focus:outline-none',
             active
               ? 'bg-header-primary !text-white'
-              : '!text-blue-100 hover:bg-white/10 hover:text-white',
+              : '!text-blue-100',
           )}
           onMouseEnter={() => {
             if (!workspaceId) return;
@@ -471,7 +471,7 @@ function NavDropdown({
             <button
               type="button"
               aria-label={`Open ${formattedLabel} quick-view`}
-              className="flex cursor-pointer items-center border-0 bg-transparent py-1.5 pr-2 pl-0 outline-none focus:outline-none"
+              className="flex cursor-pointer items-center border-0 bg-transparent py-1.5 pr-1 pl-1 outline-none focus:outline-none"
               onClick={(e) => e.stopPropagation()}
             >
               <ChevronDown className="h-3.5 w-3.5 opacity-70" />
@@ -1465,7 +1465,7 @@ export function HomeMenuNavigation() {
             {moreRoutes.length > 0 && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="flex cursor-pointer items-center gap-1 rounded-md px-3 py-1.5 secondary-text-small-bold 2xl:primary-text-medium text-blue-100 transition-colors hover:bg-white/10 hover:text-white">
+                  <button className="flex cursor-pointer items-center gap-1 px-3 py-1.5 secondary-text-small-bold 2xl:primary-text-medium text-blue-100 transition-colors hover:bg-white/10 hover:text-white">
                     <span>More</span>
                     <ChevronDown className="h-3.5 w-3.5 opacity-70" />
                   </button>
