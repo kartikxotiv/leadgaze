@@ -17,6 +17,7 @@ import {
   DialogTrigger,
 } from '@kit/ui/dialog';
 import { Textarea } from '@kit/ui/textarea';
+import { Tabs, TabsList, TabsTrigger } from '@kit/ui/tabs';
 import { CustomDeleteDialog } from '@kit/ui/custom-delete-dialog';
 
 import { useLocalization } from '~/lib/localization/localization-provider';
@@ -154,92 +155,83 @@ export function EntityNotes({ entityType, entityId }: EntityNotesProps) {
       headerClassName="p-2 xl:p-2 2xl:p-2 mb-1"
       icon={<FileText className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
       icon2={
-        canAddNote ? (
-          <Dialog
-            open={isOpen}
-            onOpenChange={(open) => {
-              setIsOpen(open);
-              if (!open) {
-                setEditingNote(null);
-                setNewNoteContent('');
-              }
-            }}
+        <div className="flex items-center gap-2">
+          <Tabs
+            value={statusFilter}
+            onValueChange={(val) => setStatusFilter(val as 'active' | 'closed')}
+            className="w-fit"
           >
-            <DialogTrigger asChild>
+            <TabsList className="h-8 p-1">
+              <TabsTrigger value="active" className="h-6 text-xs px-3">Active</TabsTrigger>
+              <TabsTrigger value="closed" className="h-6 text-xs px-3">Closed</TabsTrigger>
+            </TabsList>
+          </Tabs>
+
+          {canAddNote && (
+            <Dialog
+              open={isOpen}
+              onOpenChange={(open) => {
+                setIsOpen(open);
+                if (!open) {
+                  setEditingNote(null);
+                  setNewNoteContent('');
+                }
+              }}
+            >
+              <DialogTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="gap-1 text-sm text-blue-500 hover:text-blue-600"
+                >
+                  <Plus className="h-4 w-4" />
+                  Add
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="flex max-h-[90vh] flex-col p-0">
+                <DialogHeader>
+                  <DialogTitle>
+                    {editingNote ? 'Edit Note' : 'Add Note'}
+                  </DialogTitle>
+                </DialogHeader>
+            <div className="custom-spacing-x-y py-2">
+              <Textarea
+                placeholder="Enter note content..."
+                value={newNoteContent}
+                onChange={(e) => setNewNoteContent(e.target.value)}
+                rows={4}
+              />
+            </div>
+            <DialogFooter>
               <Button
-                size="sm"
-                variant="ghost"
-                className="gap-1 text-sm text-blue-500 hover:text-blue-600"
+                variant="outline"
+                onClick={() => setIsOpen(false)}
+                disabled={
+                  createMutation.isPending || updateMutation.isPending
+                }
               >
-                <Plus className="h-4 w-4" />
-                Add
+                Cancel
               </Button>
-            </DialogTrigger>
-            <DialogContent className="flex max-h-[90vh] flex-col p-0">
-              <DialogHeader>
-                <DialogTitle>
-                  {editingNote ? 'Edit Note' : 'Add Note'}
-                </DialogTitle>
-              </DialogHeader>
-          <div className="custom-spacing-x-y py-2">
-            <Textarea
-              placeholder="Enter note content..."
-              value={newNoteContent}
-              onChange={(e) => setNewNoteContent(e.target.value)}
-              rows={4}
-            />
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setIsOpen(false)}
-              disabled={
-                createMutation.isPending || updateMutation.isPending
-              }
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSave}
-              disabled={
-                createMutation.isPending || updateMutation.isPending
-              }
-            >
-              {(createMutation.isPending || updateMutation.isPending) && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              )}
-              {editingNote ? 'Update Note' : 'Save Note'}
-            </Button>
-          </DialogFooter>              
-            </DialogContent>
-          </Dialog>
-        ) : null
+              <Button
+                onClick={handleSave}
+                disabled={
+                  createMutation.isPending || updateMutation.isPending
+                }
+              >
+                {(createMutation.isPending || updateMutation.isPending) && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
+                {editingNote ? 'Update Note' : 'Save Note'}
+              </Button>
+            </DialogFooter>              
+              </DialogContent>
+            </Dialog>
+          )}
+        </div>
       }
     >
       <div className="p-2">
-        {/* Compact Toggle Filter */}
-        <div className="flex bg-gray-100/60 dark:bg-gray-800/60 p-0.5 rounded-lg mb-2 w-fit border border-gray-200/20">
-          <button
-            onClick={() => setStatusFilter('active')}
-            className={`rounded px-2.5 py-1 text-[11px] font-medium transition-all ${
-              statusFilter === 'active'
-                ? 'bg-white dark:bg-gray-900 text-blue-600 dark:text-blue-400 shadow-sm'
-                : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
-            }`}
-          >
-            Active
-          </button>
-          <button
-            onClick={() => setStatusFilter('closed')}
-            className={`rounded px-2.5 py-1 text-[11px] font-medium transition-all ${
-              statusFilter === 'closed'
-                ? 'bg-white dark:bg-gray-900 text-blue-600 dark:text-blue-400 shadow-sm'
-                : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
-            }`}
-          >
-            Closed
-          </button>
-        </div>
+
 
         {isLoading ? (
           <div className="flex justify-center py-4">
