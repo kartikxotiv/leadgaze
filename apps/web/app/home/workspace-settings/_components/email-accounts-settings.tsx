@@ -289,13 +289,13 @@ export function EmailAccountsSettings({ workspace }: { workspace: any }) {
                     <DialogTitle>Connect Email Account</DialogTitle>
                   </DialogHeader>
                   <Tabs value={connectTab} onValueChange={(v) => setConnectTab(v as 'google' | 'smtp')} className="flex flex-1 flex-col overflow-hidden">
-                    <div className="shrink-0 px-6 pt-4">
+                    <div className="shrink-0 custom-spacing-x-y pb-2">
                     <TabsList className="grid w-full grid-cols-2">
                       <TabsTrigger value="google">Google / Gmail</TabsTrigger>
                       <TabsTrigger value="smtp">SMTP</TabsTrigger>
                     </TabsList>
                     </div>
-                    <div className="flex-1 overflow-y-auto p-6">
+                    <div className="flex-1 overflow-y-auto custom-spacing-x-y pt-0">
                     <TabsContent value="google" className="space-y-2 pt-4">
                       <div className="mb-4 rounded-md bg-blue-50 p-4 text-sm text-blue-800 dark:bg-blue-950 dark:text-blue-200">
                         Connect your Gmail or Google Workspace account to send

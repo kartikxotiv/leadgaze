@@ -5,7 +5,7 @@ import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { GripVertical } from 'lucide-react';
-import { MoreHorizontal, Trash } from 'lucide-react';
+import { Edit2, MoreHorizontal, Trash } from 'lucide-react';
 
 import {
   DropdownMenu,
@@ -19,7 +19,7 @@ function assigneeInitials(assignee: any) {
   const account = assignee?.account;
   const label = account?.name || account?.email || '?';
   return label
-    .split(/\\s|@/)
+    .split(/\s|@/)
     .filter(Boolean)
     .slice(0, 2)
     .map((part: string) => part[0]?.toUpperCase())
@@ -31,6 +31,7 @@ interface TicketsKanbanCardProps {
   priorityById: Map<string, any>;
   canUpdate: boolean;
   canDelete: boolean;
+  onEdit?: (ticket: any) => void;
   onDelete: (ticket: any) => void;
   onClick: (id: string) => void;
 }
@@ -40,6 +41,7 @@ export function TicketsKanbanCard({
   priorityById,
   canUpdate,
   canDelete,
+  onEdit,
   onDelete,
   onClick,
 }: TicketsKanbanCardProps) {
@@ -99,7 +101,7 @@ export function TicketsKanbanCard({
           ) : null}
         </div>
 
-        {canDelete && (
+        {(canUpdate || canDelete) && (
           <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -111,16 +113,30 @@ export function TicketsKanbanCard({
                 </div>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  className="text-destructive focus:text-destructive cursor-pointer"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDelete(ticket);
-                  }}
-                >
-                  <Trash className="mr-2 h-4 w-4" />
-                  Delete
-                </DropdownMenuItem>
+                {canUpdate && (
+                  <DropdownMenuItem
+                    className="cursor-pointer gap-2"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEdit?.(ticket);
+                    }}
+                  >
+                    <Edit2 className="h-4 w-4" />
+                    Edit
+                  </DropdownMenuItem>
+                )}
+                {canDelete && (
+                  <DropdownMenuItem
+                    className="text-destructive focus:text-destructive cursor-pointer gap-2"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDelete(ticket);
+                    }}
+                  >
+                    <Trash className="mr-2 h-4 w-4" />
+                    Delete
+                  </DropdownMenuItem>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

@@ -322,7 +322,7 @@ export default function EditLeadDialog({
             onSubmit={handleSubmit}
             className="flex flex-1 flex-col overflow-hidden"
           >
-            <div className="flex flex-col flex-1 overflow-y-auto p-2 gap-2">
+            <div className="flex flex-col flex-1 overflow-y-auto gap-2 custom-spacing-x-y">
               {/* ── Contact Information ── */}
               <div className="space-y-2">
                 <h3 className="primary-heading text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">
@@ -461,14 +461,14 @@ export default function EditLeadDialog({
                   <FieldGuard fieldKey="industry" canEdit={canEdit}>
                     <div>
                       <Label htmlFor="industry_id">Industry (Optional)</Label>
-                      <div>
+                      
                         <IndustrySelect
                           value={formData.industry_id}
                           onValueChange={(value) => handleInputChange('industry_id', value)}
                           disabled={isLoading}
                           className="border-gray-300 bg-white text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
                         />
-                      </div>
+                      
                     </div>
                   </FieldGuard>
                   <FieldGuard fieldKey="company_size" canEdit={canEdit}>

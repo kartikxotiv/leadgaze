@@ -246,7 +246,7 @@ export function OpportunityDialog({
         </DialogHeader>
       )}
       <Form {...form}>
-        <form id="dialog-form" onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1 overflow-y-auto px-2 space-y-2 mb-2">
+        <form id="dialog-form" onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1 overflow-y-auto space-y-2 custom-spacing-x-y">
           <FormField
             control={form.control}
             name="opportunity_name"

@@ -67,6 +67,7 @@ export function CoreEmailComposeDialog({
   entityType,
   entityId,
   initialTo,
+  onSuccess,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -76,6 +77,7 @@ export function CoreEmailComposeDialog({
   entityType?: string;
   entityId?: string;
   initialTo?: string;
+  onSuccess?: (data?: any) => void;
 }) {
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -155,12 +157,18 @@ export function CoreEmailComposeDialog({
         throw error;
       }
     },
-    onSuccess: async () => {
+    onSuccess: async (data) => {
       toast.success('Email sent');
       clearAttachmentFiles();
       await queryClient.invalidateQueries({
         queryKey: ['core-email-activity', workspaceId],
       });
+      if (entityType && entityId) {
+        await queryClient.invalidateQueries({
+          queryKey: ['core-entity-emails', workspaceId, entityType, entityId],
+        });
+      }
+      onSuccess?.(data);
       onOpenChange(false);
     },
     onError: (error: any) =>
@@ -202,8 +210,8 @@ export function CoreEmailComposeDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         className={`flex flex-col p-0 overflow-hidden border-gray-200 bg-white dark:border-slate-800 dark:bg-slate-950 ${isMaximized
-            ? 'w-[95vw] max-w-[95vw] h-[92vh] max-h-[92vh] rounded-lg'
-            : 'max-h-[90vh] sm:max-w-[800px] h-[640px] rounded-lg'
+            ? 'w-[95vw] max-w-[95vw] h-[92vh] max-h-[92vh]'
+            : 'max-h-[90vh] sm:max-w-[800px] h-[640px]'
           }`}
       >
         <TooltipProvider delayDuration={300}>
@@ -224,7 +232,7 @@ export function CoreEmailComposeDialog({
           {/* Clean Flat Headers (From, To, Cc, Bcc, Subject) */}
           <div className="flex flex-col text-sm divide-y divide-zinc-100 dark:divide-zinc-800/80 bg-white dark:bg-zinc-950">
             {/* From Selector */}
-            <div className="flex items-center px-4 py-1.5 gap-2">
+            <div className="flex items-center custom-spacing-x-y py-2 gap-2">
               <span className="text-xs text-muted-foreground w-12 shrink-0">From</span>
               {sendableAccounts.length > 1 ? (
                 <DropdownMenu>
@@ -257,7 +265,7 @@ export function CoreEmailComposeDialog({
             </div>
 
             {/* To Line with Cc/Bcc triggers */}
-            <div className="flex items-center px-4 py-2 gap-2">
+            <div className="flex items-center custom-spacing-x-y py-2 gap-2">
               <span className="text-xs text-muted-foreground w-12 shrink-0 font-medium">To</span>
               <input
                 type="text"
@@ -290,7 +298,7 @@ export function CoreEmailComposeDialog({
 
             {/* CC Line (collapsible) */}
             {showCc && (
-              <div className="flex items-center px-4 py-1.5 gap-2">
+              <div className="flex items-center custom-spacing-x-y py-2 gap-2">
                 <span className="text-xs text-muted-foreground w-12 shrink-0 font-medium">Cc</span>
                 <input
                   type="text"
@@ -314,7 +322,7 @@ export function CoreEmailComposeDialog({
 
             {/* BCC Line (collapsible) */}
             {showBcc && (
-              <div className="flex items-center px-4 py-1.5 gap-2">
+              <div className="flex items-center custom-spacing-x-y py-2 gap-2">
                 <span className="text-xs text-muted-foreground w-12 shrink-0 font-medium">Bcc</span>
                 <input
                   type="text"
@@ -337,7 +345,7 @@ export function CoreEmailComposeDialog({
             )}
 
             {/* Subject Line */}
-            <div className="flex items-center px-4 py-2 gap-2">
+            <div className="flex items-center custom-spacing-x-y py-2 gap-2">
               <span className="text-xs text-muted-foreground w-12 shrink-0 font-medium">Subject</span>
               <input
                 type="text"
@@ -359,7 +367,7 @@ export function CoreEmailComposeDialog({
               toolbarPosition="bottom"
               borderless
               className="flex-1 border-0 shadow-none"
-              editorClassName="px-4 py-3 min-h-[16rem]"
+              editorClassName="custom-spacing-x-y py-2 min-h-[16rem]"
             />
           </div>
 
@@ -371,7 +379,7 @@ export function CoreEmailComposeDialog({
           />
 
           {/* Bottom Gmail/Outlook Action Bar */}
-          <DialogFooter className="flex flex-row items-center justify-between sm:justify-between px-4 py-2 shrink-0 bg-white dark:bg-zinc-950">
+          <DialogFooter className="flex flex-row items-center justify-between sm:justify-between custom-spacing-x-y shrink-0 bg-white dark:bg-zinc-950">
             <div className="flex items-center gap-2">
               {/* Send Button */}
               <Button
@@ -533,7 +541,7 @@ export function CoreEmailComposeDialog({
                     onClick={() => onOpenChange(false)}
                     title="Discard draft"
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="h-4 w-4 text-red-500" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>Discard draft</TooltipContent>

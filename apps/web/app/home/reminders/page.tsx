@@ -433,12 +433,14 @@ export default function RemindersPage() {
   const handleSave = () => {
     if (!editingReminder || !formData.title.trim() || !formData.due_date)
       return;
+    const parsedDate = new Date(formData.due_date);
     updateMutation.mutate({
+      id: editingReminder.id,
       title: formData.title,
       description: formData.description,
       priority: formData.priority,
-      due_date: formData.due_date
-        ? new Date(formData.due_date).toISOString()
+      due_date: !isNaN(parsedDate.getTime())
+        ? parsedDate.toISOString()
         : null,
     });
   };
@@ -1174,7 +1176,7 @@ export default function RemindersPage() {
           <DialogHeader>
             <DialogTitle>Add New Reminder</DialogTitle>
           </DialogHeader>
-          <div className="flex-1 space-y-2 overflow-y-auto px-2">
+          <div className="flex-1 space-y-2 overflow-y-auto custom-spacing-x-y py-2">
             <div className="space-y-2">
               <Label>Associate with</Label>
               <RadioGroup
@@ -1261,7 +1263,7 @@ export default function RemindersPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
+            <div>
               <Label>Title</Label>
               <Input
                 value={formData.title}
@@ -1271,7 +1273,7 @@ export default function RemindersPage() {
                 placeholder="Call client..."
               />
             </div>
-            <div className="space-y-2">
+            <div>
               <Label>Description</Label>
               <Input
                 value={formData.description}
@@ -1281,7 +1283,7 @@ export default function RemindersPage() {
                 placeholder="Add more details..."
               />
             </div>
-            <div className="space-y-2">
+            <div>
               <Label>Priority</Label>
               <Select
                 value={formData.priority}
@@ -1299,7 +1301,7 @@ export default function RemindersPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
+            <div>
               <Label>Due Date</Label>
               <DateTimePicker
                   showTime
@@ -1342,7 +1344,7 @@ export default function RemindersPage() {
           <DialogHeader>
             <DialogTitle>Edit Reminder</DialogTitle>
           </DialogHeader>
-          <div className="flex-1 space-y-2 px-2">
+          <div className="flex-1 space-y-2 custom-spacing-x-y py-2">
             <div>
               <Label>Title</Label>
               <Input

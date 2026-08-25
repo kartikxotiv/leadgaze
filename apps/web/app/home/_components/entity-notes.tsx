@@ -181,7 +181,7 @@ export function EntityNotes({ entityType, entityId }: EntityNotesProps) {
                   {editingNote ? 'Edit Note' : 'Add Note'}
                 </DialogTitle>
               </DialogHeader>
-          <div className="px-2">
+          <div className="custom-spacing-x-y py-2">
             <Textarea
               placeholder="Enter note content..."
               value={newNoteContent}
@@ -216,7 +216,7 @@ export function EntityNotes({ entityType, entityId }: EntityNotesProps) {
         ) : null
       }
     >
-      <div className="px-2">
+      <div className="p-2">
         {/* Compact Toggle Filter */}
         <div className="flex bg-gray-100/60 dark:bg-gray-800/60 p-0.5 rounded-lg mb-2 w-fit border border-gray-200/20">
           <button

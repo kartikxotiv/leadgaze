@@ -68,8 +68,8 @@ export function GlobalCreateDocumentForm({ onSuccess, onCancel, asFormOnly = fal
 
   return (
     <div className="flex h-full flex-col overflow-auto">
-      <div className="flex-1 space-y-2 overflow-y-auto px-2">
-        <div>
+      <div className="flex-1 space-y-2 overflow-y-auto custom-spacing-x-y">
+        <div className="space-y-2">
           <Label>Associate with</Label>
           <RadioGroup
             value={formData.entity_type}

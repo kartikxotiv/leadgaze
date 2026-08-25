@@ -35,6 +35,9 @@ import {
   CloudUpload,
   UserPlus,
   RefreshCw,
+  Check,
+  RotateCcw,
+  Loader2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { DateTimePicker } from '@kit/ui/datetime-picker';
@@ -44,6 +47,7 @@ import {
   CoreEmailReplyDialog,
   CoreEntityPanel,
 } from '@kit/core/pages';
+import { getCoreEmailAccountsService } from '@kit/core/services';
 import { useSupabase } from '@kit/supabase/hooks/use-supabase';
 import { useLocalization } from '@kit/shared/localization';
 import {
@@ -397,6 +401,7 @@ export function ServiceCloudTicketDetailPage({
   });
   const [replyEmail, setReplyEmail] = useState<any | null>(null);
   const [isComposeOpen, setIsComposeOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<'active' | 'closed'>('active');
   const [openAccordions, setOpenAccordions] = useState<string[]>([
     'ticket-properties',
     'sla-snapshot',
@@ -565,10 +570,10 @@ export function ServiceCloudTicketDetailPage({
       toast.error(error.message || 'Failed to update assignees'),
   });
 
-  const notesQueryKey = ['service-cloud', 'ticket-notes', workspaceId, ticketId];
+  const notesQueryKey = ['service-cloud', 'ticket-notes', workspaceId, ticketId, statusFilter];
   const { data: notes = [], isLoading: notesLoading } = useQuery({
     queryKey: notesQueryKey,
-    queryFn: () => getNotesService(workspaceId, 'service_cloud_ticket', ticketId),
+    queryFn: () => getNotesService(workspaceId, 'service_cloud_ticket', ticketId, statusFilter),
     enabled: Boolean(workspaceId && ticketId),
   });
 
@@ -590,10 +595,14 @@ export function ServiceCloudTicketDetailPage({
   });
 
   const updateNoteMutation = useMutation({
-    mutationFn: (payload: { id: string; note: string }) =>
-      updateNoteService({ id: payload.id, workspace_id: workspaceId, note: payload.note }),
-    onSuccess: () => {
-      toast.success('Note updated');
+    mutationFn: (payload: { id: string; note?: string; content?: string; is_closed?: boolean }) =>
+      updateNoteService({ id: payload.id, workspace_id: workspaceId, note: payload.note, content: payload.content, is_closed: payload.is_closed }),
+    onSuccess: (data, variables) => {
+      if (variables.is_closed !== undefined) {
+        toast.success(variables.is_closed ? 'Note closed' : 'Note reopened');
+      } else {
+        toast.success('Note updated');
+      }
       setIsNoteModalOpen(false);
       setEditingNote(null);
       setNoteContent('');
@@ -1219,13 +1228,13 @@ export function ServiceCloudTicketDetailPage({
                 <TabsContent value="notes" className="max-h-[500px] overflow-y-auto mb-2">
                   <CardWidgetContainer
                     title="Notes"
-                    headerClassName="p-2 xl:p-2 2xl:p-2"
-                    icon={<Clock className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
+                    headerClassName="p-2 xl:p-2 2xl:p-2 mb-1"
+                    icon={<FileText className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
                     icon2={
                       <Button
                         size="sm"
                         variant="ghost"
-                        className="gap-2 text-sm text-blue-500 hover:text-blue-600"
+                        className="gap-1 text-sm text-blue-500 hover:text-blue-600"
                         onClick={() => {
                           setEditingNote(null);
                           setNoteContent('');
@@ -1237,45 +1246,118 @@ export function ServiceCloudTicketDetailPage({
                       </Button>
                     }
                   >
-                    <div className="px-2 pb-2 pt-2">
+                    <div className="p-2">
+                      <div className="flex bg-gray-100/60 dark:bg-gray-800/60 p-0.5 rounded-lg mb-2 w-fit border border-gray-200/20">
+                        <button
+                          onClick={() => setStatusFilter('active')}
+                          className={`rounded px-2.5 py-1 text-[11px] font-medium transition-all ${
+                            statusFilter === 'active'
+                              ? 'bg-white dark:bg-gray-900 text-blue-600 dark:text-blue-400 shadow-sm'
+                              : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                          }`}
+                        >
+                          Active
+                        </button>
+                        <button
+                          onClick={() => setStatusFilter('closed')}
+                          className={`rounded px-2.5 py-1 text-[11px] font-medium transition-all ${
+                            statusFilter === 'closed'
+                              ? 'bg-white dark:bg-gray-900 text-blue-600 dark:text-blue-400 shadow-sm'
+                              : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                          }`}
+                        >
+                          Closed
+                        </button>
+                      </div>
+
                       {notesLoading ? (
                         <div className="flex justify-center py-4">
-                          <Skeleton className="h-8 w-8 rounded-full" />
+                          <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
                         </div>
                       ) : notes.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-8 text-center">
                           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#F0F3FF] dark:bg-slate-900">
-                            <Clock className="h-6 w-6 text-gray-500" />
+                            <FileText className="h-6 w-6 text-blue-500" />
                           </div>
-                          <p className="mt-4 text-sm font-medium text-gray-700 dark:text-gray-300">No Notes write yet</p>
+                          <p className="mt-4 text-sm font-medium text-gray-700 dark:text-gray-300">No notes yet</p>
                         </div>
                       ) : (
-                        <div className="space-y-2">
-                          {notes.map((n: any) => (
-                            <div key={n.id} className="border border-gray-200 dark:border-slate-800 p-2 mb-2 flex justify-between items-start bg-white dark:bg-zinc-950">
-                              <div>
-                                <div className="primary-text-big-regular text-leadgaze-dark dark:text-white !font-normal">{n.note || n.content}</div>
-                                <div className="secondary-text-small-regular text-leadgaze-muted dark:text-white">
-                                  Created on {formatDateOnly(n.created_at)} | {new Date(n.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        <div className="relative border-l border-gray-200 dark:border-gray-800 ml-2.5 pl-4 space-y-5 py-1">
+                          {notes.map((note: any) => (
+                            <div key={note.id} className="relative group">
+                              <div className={`absolute -left-[22.5px] top-1.5 h-2 w-2 rounded-full border border-white dark:border-gray-950 ${
+                                note.is_closed
+                                  ? 'bg-gray-300 dark:bg-gray-700'
+                                  : 'bg-blue-500'
+                              }`} />
+
+                              <div className="space-y-1">
+                                <div className="flex items-center justify-between gap-2">
+                                  <div className="flex items-center gap-1.5 text-[12px]">
+                                    <span className="primary-text-medium text-leadgaze-dark dark:text-white">
+                                      {note.created_by_user?.name || members.find((m: any) => m.id === note.created_by)?.name || 'Unknown User'}
+                                    </span>
+                                    <span className="text-gray-300 dark:text-gray-700">•</span>
+                                    <span className="text-gray-400 dark:text-gray-500">
+                                      {formatDate(note.created_at)}
+                                    </span>
+                                  </div>
+
+                                  <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+                                    {statusFilter === 'active' ? (
+                                      <Button
+                                        size="icon"
+                                        variant="ghost"
+                                        onClick={() => updateNoteMutation.mutate({ id: note.id, is_closed: true })}
+                                        className="h-6 w-6 rounded text-gray-400 hover:text-green-600 hover:bg-gray-100 dark:hover:bg-gray-800"
+                                        title="Close Note"
+                                      >
+                                        <Check className="h-3 w-3" />
+                                      </Button>
+                                    ) : (
+                                      <Button
+                                        size="icon"
+                                        variant="ghost"
+                                        onClick={() => updateNoteMutation.mutate({ id: note.id, is_closed: false })}
+                                        className="h-6 w-6 rounded text-gray-400 hover:text-blue-600 hover:bg-gray-100 dark:hover:bg-gray-800"
+                                        title="Reopen Note"
+                                      >
+                                        <RotateCcw className="h-3 w-3" />
+                                      </Button>
+                                    )}
+                                    <Button
+                                      size="icon"
+                                      variant="ghost"
+                                      onClick={() => openEditNoteDialog(note)}
+                                      className="h-6 w-6 rounded text-gray-400 hover:text-blue-600 hover:bg-gray-100 dark:hover:bg-gray-800"
+                                      title="Edit Note"
+                                    >
+                                      <Pencil className="h-3 w-3" />
+                                    </Button>
+                                    <Button
+                                      size="icon"
+                                      variant="ghost"
+                                      onClick={() => {
+                                        setDeletingNoteId(note.id);
+                                      }}
+                                      className="h-6 w-6 rounded text-gray-400 hover:text-red-600 hover:bg-gray-100 dark:hover:bg-gray-800"
+                                      title="Delete Note"
+                                    >
+                                      <Trash2 className="h-3 w-3" />
+                                    </Button>
+                                  </div>
                                 </div>
-                              </div>
-                              <div className="flex gap-1 shrink-0 ml-4">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                                  onClick={() => openEditNoteDialog(n)}
+
+                                <p
+                                  className={`cursor-pointer text-xs text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-wrap ${
+                                    note.is_closed
+                                      ? 'text-gray-400 line-through dark:text-gray-500'
+                                      : ''
+                                  }`}
+                                  onClick={() => openEditNoteDialog(note)}
                                 >
-                                  <Pencil className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/50"
-                                  onClick={() => setDeletingNoteId(n.id)}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
+                                  {note.note || note.content}
+                                </p>
                               </div>
                             </div>
                           ))}
@@ -1765,8 +1847,13 @@ export function ServiceCloudTicketDetailPage({
             onOpenChange={(open) => {
               if (!open) {
                 setReplyEmail(null);
+                refetchTicketDetail();
                 void queryClient.invalidateQueries({ queryKey });
               }
+            }}
+            onSuccess={() => {
+              refetchTicketDetail();
+              void queryClient.invalidateQueries({ queryKey });
             }}
             workspaceId={workspaceId}
             email={replyEmail}
@@ -1780,8 +1867,13 @@ export function ServiceCloudTicketDetailPage({
             onOpenChange={(open) => {
               setIsComposeOpen(open);
               if (!open) {
+                refetchTicketDetail();
                 void queryClient.invalidateQueries({ queryKey });
               }
+            }}
+            onSuccess={() => {
+              refetchTicketDetail();
+              void queryClient.invalidateQueries({ queryKey });
             }}
             workspaceId={workspaceId}
             accounts={emailAccounts}
@@ -1872,7 +1964,7 @@ export function ServiceCloudTicketDetailPage({
                           {editingNote ? 'Edit Note' : 'Add Note'}
                         </DialogTitle>
               </DialogHeader>          
-          <div className="p-2 pt-0">
+          <div className="custom-spacing-x-y py-2">
             <Label htmlFor="note_content" className="text-sm font-medium">Write Note</Label>
             <Textarea
               id="note_content"
@@ -1943,7 +2035,7 @@ export function ServiceCloudTicketDetailPage({
           <DialogHeader>
             <DialogTitle>Add Document</DialogTitle>
           </DialogHeader>          
-          <div className="p-2 pt-0 space-y-2 overflow-y-auto">
+          <div className="space-y-2 overflow-y-auto custom-spacing-x-y py-2">
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <Label htmlFor="doc_name" className="text-sm font-medium text-gray-700 dark:text-gray-300">Document Name</Label>

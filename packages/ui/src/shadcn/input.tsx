@@ -21,7 +21,7 @@ const Input: React.FC<InputProps> = ({
       <input
         type={isPassword && showPassword ? 'text' : type}
         className={cn(
-          'border-gray-300 bg-transparent text-gray-900 placeholder:text-muted-foreground focus-visible:ring-0 flex h-[36px] w-full rounded-[4px] border px-3 py-1 text-base shadow-none transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:border-primary/50 focus-visible:outline-hidden disabled:cursor-not-allowed disabled:opacity-50 md:text-sm dark:text-white dark:border-slate-700',
+          'border-gray-300 bg-transparent text-gray-900 placeholder:text-muted-foreground focus-visible:ring-0 flex h-[36px] w-full rounded-[4px] border px-2 py-1 text-base shadow-none transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:border-primary/50 focus-visible:outline-hidden disabled:cursor-not-allowed disabled:opacity-50 md:text-sm dark:text-white dark:border-slate-700',
           isPassword && 'pr-10',
           className,
         )}
