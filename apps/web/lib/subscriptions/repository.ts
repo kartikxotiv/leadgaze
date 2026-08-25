@@ -79,7 +79,7 @@ export class SubscriptionRepository {
   }
 
   async getWorkspacePlanRows(workspaceId: string) {
-    const [subscription, modules, changes] = await Promise.all([
+    const [subscription, modules, changes, seats] = await Promise.all([
       this.client
         .from('workspace_subscriptions')
         .select('*')
@@ -100,14 +100,20 @@ export class SubscriptionRepository {
         .eq('workspace_id', workspaceId)
         .eq('status', 'pending')
         .order('effective_at'),
+      this.client
+        .from('workspace_module_seats')
+        .select('id, product_id, seats_purchased, seats_used')
+        .eq('workspace_id', workspaceId),
     ]);
     assertDatabaseResult(subscription.error, 'Unable to load current plan');
     assertDatabaseResult(modules.error, 'Unable to load module plans');
     assertDatabaseResult(changes.error, 'Unable to load pending changes');
+    assertDatabaseResult(seats.error, 'Unable to load workspace seats');
     return {
       subscription: subscription.data,
       modules: modules.data ?? [],
       changes: changes.data ?? [],
+      seats: seats.data ?? [],
     };
   }
 

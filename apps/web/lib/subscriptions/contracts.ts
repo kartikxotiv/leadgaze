@@ -156,6 +156,9 @@ const workspaceModulePlanSchema = z.object({
   monthlyAmount: amountSchema.nullable(),
   yearlyAmount: amountSchema.nullable(),
   bundleKey: z.string().nullable(),
+  seatId: uuidSchema.nullable(),
+  seatsPurchased: z.number().int().positive(),
+  seatsUsed: z.number().int().nonnegative(),
   userCount: z.number().int().nonnegative(),
   currentPeriodStart: nullableTimestampSchema,
   currentPeriodEnd: nullableTimestampSchema,
@@ -259,6 +262,23 @@ export const pricingCheckoutRequestSchema = addModuleRequestSchema.extend({
   returnUrl: z.string().startsWith('/').optional(),
 });
 
+export const bundleCheckoutRequestSchema = z.object({
+  workspaceId: uuidSchema,
+  bundleKey: z.string().trim().min(1).max(80),
+  billingCycle: billingCycleSchema,
+  seats: z.number().int().positive(),
+  discountCode: z.string().trim().min(1).max(80).optional(),
+  requestId: uuidSchema.optional(),
+  returnUrl: z.string().startsWith('/').optional(),
+});
+
+export const bundleSeatChangeRequestSchema = z.object({
+  workspaceId: uuidSchema,
+  bundleKey: z.string().trim().min(1).max(80),
+  newQuantity: z.number().int().positive(),
+  discountCode: z.string().trim().min(1).max(80).optional(),
+});
+
 export const providerSyncRequestSchema = z.object({
   workspaceId: uuidSchema,
   provider: z.literal('razorpay').default('razorpay'),
@@ -358,6 +378,10 @@ export type AddModuleRequest = z.infer<typeof addModuleRequestSchema>;
 export type RemoveModuleRequest = z.infer<typeof removeModuleRequestSchema>;
 export type PricingCheckoutRequest = z.infer<
   typeof pricingCheckoutRequestSchema
+>;
+export type BundleCheckoutRequest = z.infer<typeof bundleCheckoutRequestSchema>;
+export type BundleSeatChangeRequest = z.infer<
+  typeof bundleSeatChangeRequestSchema
 >;
 export type ProviderSyncRequest = z.infer<typeof providerSyncRequestSchema>;
 export type PlanChangeResponseData = z.infer<

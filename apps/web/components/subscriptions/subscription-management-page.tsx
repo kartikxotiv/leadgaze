@@ -24,6 +24,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@kit/ui/card';
+import { Input } from '@kit/ui/input';
 
 import {
   ModuleUsers,
@@ -33,15 +34,20 @@ import { useEntitlements } from '~/lib/entitlements/entitlement-provider';
 import type { EntitlementModuleKey } from '~/lib/entitlements/types';
 import type { EntitlementPlanKey } from '~/lib/entitlements/types';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
+import type { PricingResponseData } from '~/lib/subscriptions/contracts';
 import {
   addModuleService,
+  createBundleCheckoutService,
   createPricingCheckoutService,
   downgradePlanService,
   getBillingInvoicesService,
+  getPublicPricingService,
   getSubscriptionNotificationsService,
   getWorkspacePlansService,
   removeModuleService,
   startTrialService,
+  updateBundleSeatsService,
+  updateModuleSeatsService,
   upgradePlanService,
 } from '~/services/pricing-subscription.service';
 
@@ -60,6 +66,10 @@ type ModulePlan = {
   status: string;
   monthlyAmount: number | null;
   yearlyAmount: number | null;
+  bundleKey: string | null;
+  seatId: string | null;
+  seatsPurchased: number;
+  seatsUsed: number;
   userCount: number;
 };
 
@@ -106,6 +116,11 @@ export function SubscriptionManagementPage() {
   const invoicesQuery = useQuery({
     queryKey: ['subscription-invoices', workspaceId],
     queryFn: () => getBillingInvoicesService(workspaceId),
+    enabled: Boolean(workspaceId && canView),
+  });
+  const pricingQuery = useQuery({
+    queryKey: ['public-pricing'],
+    queryFn: () => getPublicPricingService() as Promise<PricingResponseData>,
     enabled: Boolean(workspaceId && canView),
   });
 
@@ -226,10 +241,78 @@ export function SubscriptionManagementPage() {
     onError: (error: Error) => toast.error(error.message),
   });
 
+  const seatChange = useMutation({
+    mutationFn: async (input: {
+      module?: ModulePlan;
+      bundleKey?: string;
+      newQuantity: number;
+    }) => {
+      const result = input.bundleKey
+        ? await updateBundleSeatsService({
+            workspaceId,
+            bundleKey: input.bundleKey,
+            newQuantity: input.newQuantity,
+          })
+        : await updateModuleSeatsService({
+            seatId: input.module!.seatId!,
+            newQuantity: input.newQuantity,
+          });
+      if (result?.paymentRequired && result.url) {
+        window.location.assign(result.url);
+      }
+      return result;
+    },
+    onSuccess: async (result) => {
+      toast.success(
+        result?.paymentRequired
+          ? 'Invoice created. Seats activate after payment.'
+          : result?.changeStatus === 'pending'
+            ? 'Seat reduction scheduled for period end.'
+            : 'Seat count updated.',
+      );
+      await invalidate();
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
+  const bundleCheckout = useMutation({
+    mutationFn: async (input: { bundleKey: string; seats: number }) => {
+      const result = await createBundleCheckoutService({
+        workspaceId,
+        bundleKey: input.bundleKey,
+        billingCycle,
+        seats: input.seats,
+        returnUrl: '/org/subscription',
+      });
+      if (result.paymentRequired && result.url) {
+        window.location.assign(result.url);
+      }
+      return result;
+    },
+    onSuccess: invalidate,
+    onError: (error: Error) => toast.error(error.message),
+  });
+
   const activeKeys = useMemo(
     () => new Set(plansQuery.data?.modules.map((item) => item.moduleKey) ?? []),
     [plansQuery.data?.modules],
   );
+  const activeBundle = useMemo(() => {
+    const modules = plansQuery.data?.modules ?? [];
+    const salesAndService = modules.filter((module) =>
+      ['sales', 'service_cloud'].includes(module.moduleKey),
+    );
+    const bundleKey = salesAndService[0]?.bundleKey;
+    return bundleKey &&
+      salesAndService.length === 2 &&
+      salesAndService.every((module) => module.bundleKey === bundleKey)
+      ? {
+          key: bundleKey,
+          seats: salesAndService[0]!.seatsPurchased,
+          planKey: salesAndService[0]!.planKey,
+        }
+      : null;
+  }, [plansQuery.data?.modules]);
 
   if (!canView) {
     return (
@@ -315,6 +398,32 @@ export function SubscriptionManagementPage() {
 
       <section id="active-modules" className="scroll-mt-6 space-y-3">
         <h2 className="text-xl font-semibold">Active modules</h2>
+        {activeBundle && (
+          <Card className="border-blue-300 bg-blue-50/50 dark:bg-blue-950/20">
+            <CardContent className="flex flex-wrap items-center gap-4 p-5">
+              <div className="min-w-0 flex-1">
+                <p className="font-semibold">Sales + Service bundle</p>
+                <p className="text-muted-foreground text-sm">
+                  One shared seat quantity and one invoice cover both modules.
+                </p>
+              </div>
+              <SeatChangeControl
+                currentQuantity={activeBundle.seats}
+                minimumQuantity={Math.max(
+                  1,
+                  ...(data?.modules.map((module) => module.seatsUsed) ?? [1]),
+                )}
+                disabled={!canBill || seatChange.isPending}
+                onSave={(newQuantity) =>
+                  seatChange.mutate({
+                    bundleKey: activeBundle.key,
+                    newQuantity,
+                  })
+                }
+              />
+            </CardContent>
+          </Card>
+        )}
         <div className="grid gap-4 lg:grid-cols-2">
           {data?.modules.map((module) => (
             <Card key={module.moduleKey}>
@@ -334,6 +443,23 @@ export function SubscriptionManagementPage() {
               </CardHeader>
               <CardContent className="space-y-5">
                 <UsageSummary moduleKey={module.moduleKey} />
+                {!activeBundle && module.seatId && (
+                  <div className="rounded-lg border p-3">
+                    <p className="mb-2 text-sm font-medium">Module seats</p>
+                    <SeatChangeControl
+                      currentQuantity={module.seatsPurchased}
+                      minimumQuantity={Math.max(
+                        1,
+                        module.seatsUsed,
+                        module.userCount,
+                      )}
+                      disabled={!canBill || seatChange.isPending}
+                      onSave={(newQuantity) =>
+                        seatChange.mutate({ module, newQuantity })
+                      }
+                    />
+                  </div>
+                )}
                 <div className="flex flex-wrap gap-2">
                   {PLAN_ORDER.filter((plan) => plan !== module.planKey).map(
                     (plan) => (
@@ -341,8 +467,13 @@ export function SubscriptionManagementPage() {
                         key={plan}
                         size="sm"
                         variant="outline"
-                        disabled={!canBill || planChange.isPending}
+                        disabled={
+                          !canBill ||
+                          planChange.isPending ||
+                          Boolean(activeBundle)
+                        }
                         onClick={() =>
+                          !activeBundle &&
                           planChange.mutate({ module, targetPlan: plan })
                         }
                       >
@@ -357,7 +488,11 @@ export function SubscriptionManagementPage() {
                   <Button
                     size="sm"
                     variant="destructive"
-                    disabled={!canBill || removeModule.isPending}
+                    disabled={
+                      !canBill ||
+                      removeModule.isPending ||
+                      Boolean(activeBundle)
+                    }
                     onClick={() => removeModule.mutate(module.moduleKey)}
                   >
                     <Trash2 className="mr-1 h-4 w-4" /> Remove
@@ -373,6 +508,44 @@ export function SubscriptionManagementPage() {
           ))}
         </div>
       </section>
+
+      {pricingQuery.data?.bundles.length ? (
+        <section className="space-y-3">
+          <div>
+            <h2 className="text-xl font-semibold">Sales + Service bundles</h2>
+            <p className="text-muted-foreground text-sm">
+              Use one plan, one shared seat count, and one invoice for both
+              modules.
+            </p>
+          </div>
+          <div className="grid gap-4 md:grid-cols-3">
+            {pricingQuery.data.bundles.map((bundle) => (
+              <BundlePurchaseCard
+                key={bundle.bundleKey}
+                bundle={bundle}
+                billingCycle={billingCycle}
+                current={activeBundle?.key === bundle.bundleKey}
+                defaultSeats={activeBundle?.seats ?? 1}
+                disabled={
+                  !canBill ||
+                  bundleCheckout.isPending ||
+                  Boolean(
+                    activeBundle &&
+                      PLAN_ORDER.indexOf(bundle.planKey) <
+                        PLAN_ORDER.indexOf(activeBundle.planKey),
+                  )
+                }
+                onPurchase={(seats) =>
+                  bundleCheckout.mutate({
+                    bundleKey: bundle.bundleKey,
+                    seats,
+                  })
+                }
+              />
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       {(['sales', 'service_cloud'] as EntitlementModuleKey[]).some(
         (key) => !activeKeys.has(key),
@@ -536,5 +709,102 @@ export function SubscriptionManagementPage() {
         Server-side entitlement checks remain authoritative.
       </p>
     </div>
+  );
+}
+
+function SeatChangeControl({
+  currentQuantity,
+  minimumQuantity,
+  disabled,
+  onSave,
+}: {
+  currentQuantity: number;
+  minimumQuantity: number;
+  disabled: boolean;
+  onSave: (quantity: number) => void;
+}) {
+  const [quantity, setQuantity] = useState(currentQuantity);
+  const valid = Number.isInteger(quantity) && quantity >= minimumQuantity;
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <Input
+        className="w-24"
+        type="number"
+        min={minimumQuantity}
+        value={quantity}
+        disabled={disabled}
+        aria-label="Seat quantity"
+        onChange={(event) => setQuantity(Number(event.target.value))}
+      />
+      <Button
+        size="sm"
+        variant="outline"
+        disabled={disabled || !valid || quantity === currentQuantity}
+        onClick={() => onSave(quantity)}
+      >
+        Save seats
+      </Button>
+      <span className="text-muted-foreground text-xs">
+        Current: {currentQuantity}
+        {minimumQuantity > 1 ? ` · minimum ${minimumQuantity} assigned` : ''}
+      </span>
+    </div>
+  );
+}
+
+function BundlePurchaseCard({
+  bundle,
+  billingCycle,
+  current,
+  defaultSeats,
+  disabled,
+  onPurchase,
+}: {
+  bundle: PricingResponseData['bundles'][number];
+  billingCycle: 'monthly' | 'yearly';
+  current: boolean;
+  defaultSeats: number;
+  disabled: boolean;
+  onPurchase: (seats: number) => void;
+}) {
+  const [seats, setSeats] = useState(defaultSeats);
+  const amount =
+    billingCycle === 'yearly' ? bundle.yearlyPrice : bundle.monthlyPrice;
+  return (
+    <Card className={current ? 'border-blue-500 ring-1 ring-blue-500' : ''}>
+      <CardHeader>
+        <div className="flex items-start justify-between gap-2">
+          <CardTitle>{bundle.bundleName}</CardTitle>
+          {current && <Badge>Current</Badge>}
+        </div>
+        <CardDescription>
+          ${amount}/{billingCycle === 'yearly' ? 'year' : 'month'} per bundled
+          user
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="flex items-center gap-2">
+          <Input
+            className="w-24"
+            type="number"
+            min={1}
+            value={seats}
+            disabled={disabled || current}
+            aria-label={`${bundle.bundleName} seats`}
+            onChange={(event) => setSeats(Number(event.target.value))}
+          />
+          <span className="text-muted-foreground text-sm">shared seats</span>
+        </div>
+        <Button
+          className="w-full"
+          disabled={
+            disabled || current || !Number.isInteger(seats) || seats < 1
+          }
+          onClick={() => onPurchase(seats)}
+        >
+          {current ? 'Current bundle' : 'Choose bundle'}
+        </Button>
+      </CardContent>
+    </Card>
   );
 }

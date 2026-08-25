@@ -3,6 +3,8 @@ import test from 'node:test';
 
 import {
   addModuleRequestSchema,
+  bundleCheckoutRequestSchema,
+  bundleSeatChangeRequestSchema,
   pricingCheckoutRequestSchema,
   providerSyncRequestSchema,
   removeModuleRequestSchema,
@@ -67,6 +69,27 @@ test('provider synchronization uses Razorpay invoice collection', () => {
   assert.equal(
     providerSyncRequestSchema.safeParse({ workspaceId, provider: 'manual' })
       .success,
+    false,
+  );
+});
+
+test('bundle checkout and seat changes require positive shared seats', () => {
+  assert.equal(
+    bundleCheckoutRequestSchema.safeParse({
+      workspaceId,
+      bundleKey: 'sales_service_growth_bundle',
+      billingCycle: 'yearly',
+      seats: 3,
+      returnUrl: '/org/subscription',
+    }).success,
+    true,
+  );
+  assert.equal(
+    bundleSeatChangeRequestSchema.safeParse({
+      workspaceId,
+      bundleKey: 'sales_service_growth_bundle',
+      newQuantity: 0,
+    }).success,
     false,
   );
 });

@@ -372,11 +372,12 @@ export class SubscriptionLifecycleJob {
     if (seats.error) throw seats.error;
     let created = 0;
     let skipped = 0;
+    const processedBundles = new Set<string>();
     for (const seat of seats.data ?? []) {
       try {
         const moduleSubscription = await this.billingClient
           .from('workspace_module_subscriptions')
-          .select('id, plans(plan_key)')
+          .select('id, bundle_id, plans(plan_key), bundles(bundle_key)')
           .eq('workspace_id', seat.workspace_id)
           .eq('module_id', seat.product_id)
           .eq('status', 'active')
@@ -391,6 +392,9 @@ export class SubscriptionLifecycleJob {
         const plan = Array.isArray(moduleSubscription.data.plans)
           ? moduleSubscription.data.plans[0]
           : moduleSubscription.data.plans;
+        const bundle = Array.isArray(moduleSubscription.data.bundles)
+          ? moduleSubscription.data.bundles[0]
+          : moduleSubscription.data.bundles;
         const workspace = Array.isArray(seat.workspaces)
           ? seat.workspaces[0]
           : seat.workspaces;
@@ -399,6 +403,29 @@ export class SubscriptionLifecycleJob {
           : workspace?.accounts;
         if (!product?.product_key || !plan?.plan_key || !workspace?.owner_id) {
           skipped += 1;
+          continue;
+        }
+        if (moduleSubscription.data.bundle_id) {
+          if (!bundle?.bundle_key) {
+            skipped += 1;
+            continue;
+          }
+          const bundleRunKey = `${seat.workspace_id}:${moduleSubscription.data.bundle_id}:${seat.current_period_end}`;
+          if (processedBundles.has(bundleRunKey)) continue;
+          processedBundles.add(bundleRunKey);
+
+          await new BackendBillingService(this.client).createBundleInvoice({
+            workspaceId: seat.workspace_id,
+            bundleKey: bundle.bundle_key,
+            billingCycle: seat.billing_cycle,
+            seats: seat.seats_purchased,
+            purpose: 'bundle_renewal',
+            actor: { id: workspace.owner_id, email: account?.email },
+            idempotencyKey: `bundle_renewal:${seat.workspace_id}:${moduleSubscription.data.bundle_id}:${seat.current_period_end}:${seat.seats_purchased}`,
+            periodStart: new Date(seat.current_period_end),
+            dueAt: new Date(seat.current_period_end),
+          });
+          created += 1;
           continue;
         }
         const [pendingSeatChange, pendingPlanChange] = await Promise.all([

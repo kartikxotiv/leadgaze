@@ -5,6 +5,7 @@ import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
 import { requireSubscriptionBillingPermission } from '~/lib/server/subscription-permissions';
 import { BackendBillingService } from '~/lib/subscriptions/backend-billing-service';
+import { matchSalesServiceBundle } from '~/lib/subscriptions/bundle-rules';
 import type {
   BillingCycle,
   PlanKey,
@@ -14,8 +15,9 @@ import type {
 import { catchAsync } from '../../../../utils/response-handler';
 
 /**
- * Compatibility route for older multi-module clients. Each module receives an
- * independent backend invoice so payment and activation stay idempotent.
+ * Compatibility route for older multi-module clients. Matching Sales +
+ * Service items use one bundle invoice; mixed plans or quantities remain
+ * independent module invoices.
  */
 export const createMultiProductCheckout = catchAsync(
   async ({
@@ -63,6 +65,31 @@ export const createMultiProductCheckout = catchAsync(
     const billing = new BackendBillingService(
       getSupabaseServerAdminClient() as never,
     );
+    const bundleMatch = matchSalesServiceBundle(body.items);
+    if (bundleMatch) {
+      const sales = body.items.find((item) => item.productKey === 'sales')!;
+      const service = body.items.find(
+        (item) => item.productKey === 'service_cloud',
+      )!;
+      const invoice = await billing.createBundleInvoice({
+        workspaceId: body.workspaceId,
+        bundleKey: bundleMatch.bundleKey,
+        billingCycle: body.billingCycle ?? 'monthly',
+        seats: bundleMatch.seats,
+        purpose: 'bundle_purchase',
+        actor: user,
+        discountCode: sales.discountCode ?? service.discountCode,
+      });
+      return NextResponse.json({
+        success: true,
+        data: {
+          url: invoice.url,
+          sessionId: invoice.sessionId,
+          invoices: [invoice],
+          bundle: true,
+        },
+      });
+    }
     const invoices = [];
     for (const item of body.items) {
       invoices.push(

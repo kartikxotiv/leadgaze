@@ -153,6 +153,13 @@ export class SubscriptionChangeService extends SubscriptionQueryService {
       input.workspaceId,
       productModule.id,
     );
+    if (current?.bundle_id) {
+      throw new SubscriptionApiError(
+        'This module belongs to a Sales + Service bundle. Change the bundle instead.',
+        409,
+        'CONFLICT',
+      );
+    }
     const currentPlan = asObject(current?.plans);
     const planChangeDirection = current
       ? getPlanChangeDirection(
@@ -197,6 +204,13 @@ export class SubscriptionChangeService extends SubscriptionQueryService {
         'Module subscription not found',
         404,
         'NOT_FOUND',
+      );
+    }
+    if (current.bundle_id) {
+      throw new SubscriptionApiError(
+        'This module belongs to a Sales + Service bundle. Bundle downgrades must be scheduled together.',
+        409,
+        'CONFLICT',
       );
     }
     const currentPlan = asObject(current.plans);
@@ -273,6 +287,13 @@ export class SubscriptionChangeService extends SubscriptionQueryService {
         'Active module subscription not found',
         404,
         'NOT_FOUND',
+      );
+    }
+    if (current.bundle_id) {
+      throw new SubscriptionApiError(
+        'This module belongs to a Sales + Service bundle and cannot be removed separately.',
+        409,
+        'CONFLICT',
       );
     }
     const subscription =

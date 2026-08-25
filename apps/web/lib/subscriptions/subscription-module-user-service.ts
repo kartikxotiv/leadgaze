@@ -57,6 +57,19 @@ export class SubscriptionModuleUserService extends SubscriptionChangeService {
       input.workspaceId,
       input.userId,
     );
+    if (subscription.bundle_id) {
+      const result = await (this.client as unknown as AdditiveRpcClient).rpc(
+        'assign_backend_bundle_user',
+        {
+          p_workspace_id: input.workspaceId,
+          p_bundle_id: subscription.bundle_id,
+          p_user_id: input.userId,
+          p_actor_id: actorId,
+        },
+      );
+      if (result.error) throw result.error;
+      return { ...input, status: 'active' as const, bundled: true };
+    }
     const now = new Date().toISOString();
     const [entitlement, activeUsers, seat] = await Promise.all([
       this.client
@@ -124,6 +137,30 @@ export class SubscriptionModuleUserService extends SubscriptionChangeService {
 
   async removeModuleUser(input: AssignModuleUserRequest, actorId?: string) {
     const productModule = await this.repository.getModule(input.moduleKey);
+    const subscription = await this.repository.getModuleSubscription(
+      input.workspaceId,
+      productModule.id,
+    );
+    if (subscription?.bundle_id) {
+      const result = await (this.client as unknown as AdditiveRpcClient).rpc(
+        'remove_backend_bundle_user',
+        {
+          p_workspace_id: input.workspaceId,
+          p_bundle_id: subscription.bundle_id,
+          p_user_id: input.userId,
+          p_actor_id: actorId ?? input.userId,
+        },
+      );
+      if (result.error) throw result.error;
+      if (!result.data) {
+        throw new SubscriptionApiError(
+          'Bundle user assignment not found',
+          404,
+          'NOT_FOUND',
+        );
+      }
+      return { ...input, status: 'removed' as const, bundled: true };
+    }
     const result = await this.client
       .from('workspace_module_users')
       .update({ status: 'removed', removed_at: new Date().toISOString() })

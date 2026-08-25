@@ -1,6 +1,8 @@
 import type {
   AddModuleRequest,
   AssignModuleUserRequest,
+  BundleCheckoutRequest,
+  BundleSeatChangeRequest,
   DowngradeSubscriptionRequest,
   PricingCheckoutRequest,
   StartTrialRequest,
@@ -90,6 +92,31 @@ export async function createPricingCheckoutService(
     Required<Pick<BillingChangeResponse, 'url' | 'sessionId'>> &
       BillingChangeResponse
   >(await ApiClient.post('/subscriptions/checkout', input));
+}
+
+export async function createBundleCheckoutService(
+  input: BundleCheckoutRequest,
+) {
+  return unwrap<
+    Required<Pick<BillingChangeResponse, 'url' | 'sessionId'>> &
+      BillingChangeResponse
+  >(await ApiClient.post('/subscriptions/bundle-checkout', input));
+}
+
+export async function updateModuleSeatsService(input: {
+  seatId: string;
+  newQuantity: number;
+  discountCode?: string;
+}) {
+  return unwrap<BillingChangeResponse>(
+    await ApiClient.post('/subscriptions/update-seats', input),
+  );
+}
+
+export async function updateBundleSeatsService(input: BundleSeatChangeRequest) {
+  return unwrap<BillingChangeResponse>(
+    await ApiClient.post('/subscriptions/bundle-seats', input),
+  );
 }
 
 export async function getModuleUsersService(
