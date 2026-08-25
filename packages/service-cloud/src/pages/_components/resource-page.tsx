@@ -176,7 +176,12 @@ type ResourcePageProps = {
   /** Logged in user's ID to restrict dynamic fields edits to their creators */
   currentUserId?: string;
   viewMode?: 'table' | 'kanban';
-  kanbanSlot?: (data: any[], refetch: () => void) => React.ReactNode;
+  kanbanSlot?: (
+    data: any[],
+    refetch: () => void,
+    openEdit?: (record: ServiceCloudRecord) => void,
+    openDelete?: (record: ServiceCloudRecord) => void,
+  ) => React.ReactNode;
   showSelection?: boolean;
   selectedIds?: Set<string>;
   onSelectAll?: () => void;
@@ -623,7 +628,7 @@ export function ServiceCloudResourcePage({
       <PageBody className="sticky flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col overflow-hidden">
         <div className="flex min-h-0 w-full min-w-0 max-w-full flex-1 gap-0">
           {viewMode === 'kanban' && kanbanSlot ? (
-            kanbanSlot(data, refetch)
+            kanbanSlot(data, refetch, openEdit, (record) => setDeletingRecord(record))
           ) : (
             <CustomTableContainer
               pagination={
