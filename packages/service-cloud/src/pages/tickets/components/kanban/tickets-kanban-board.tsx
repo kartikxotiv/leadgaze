@@ -189,14 +189,14 @@ export function TicketsKanbanBoard({
 
       <DragOverlay dropAnimation={{ duration: 250, easing: 'ease-out' }}>
         {activeTicket ? (
-          <div className="rotate-2 cursor-grabbing opacity-90 shadow-2xl z-[9999]">
+          <div className="cursor-grabbing opacity-90 shadow-2xl z-[9999]">
             <TicketsKanbanCard
               ticket={activeTicket}
               priorityById={priorityById}
               canUpdate={true}
               canDelete={false}
-              onDelete={() => {}}
-              onClick={() => {}}
+              onDelete={() => { }}
+              onClick={() => { }}
             />
           </div>
         ) : null}
