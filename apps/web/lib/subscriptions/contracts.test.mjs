@@ -3,6 +3,8 @@ import test from 'node:test';
 
 import {
   addModuleRequestSchema,
+  bundleCheckoutRequestSchema,
+  bundleSeatChangeRequestSchema,
   pricingCheckoutRequestSchema,
   providerSyncRequestSchema,
   removeModuleRequestSchema,
@@ -59,14 +61,35 @@ test('checkout only accepts local return paths', () => {
   );
 });
 
-test('provider synchronization is Stripe-only in v1', () => {
+test('provider synchronization uses Razorpay payment collection', () => {
   assert.equal(
     providerSyncRequestSchema.parse({ workspaceId }).provider,
-    'stripe',
+    'razorpay',
   );
   assert.equal(
     providerSyncRequestSchema.safeParse({ workspaceId, provider: 'manual' })
       .success,
+    false,
+  );
+});
+
+test('bundle checkout and seat changes require positive shared seats', () => {
+  assert.equal(
+    bundleCheckoutRequestSchema.safeParse({
+      workspaceId,
+      bundleKey: 'sales_service_growth_bundle',
+      billingCycle: 'yearly',
+      seats: 3,
+      returnUrl: '/org/subscription',
+    }).success,
+    true,
+  );
+  assert.equal(
+    bundleSeatChangeRequestSchema.safeParse({
+      workspaceId,
+      bundleKey: 'sales_service_growth_bundle',
+      newQuantity: 0,
+    }).success,
     false,
   );
 });

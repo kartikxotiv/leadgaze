@@ -104,7 +104,7 @@ export function ModuleUsers({
           }),
     onSuccess: () =>
       queryClient.invalidateQueries({
-        queryKey: ['module-users', workspaceId, moduleKey],
+        queryKey: ['module-users', workspaceId],
       }),
     onError: (error: Error) => toast.error(error.message),
   });
