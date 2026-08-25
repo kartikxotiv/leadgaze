@@ -352,7 +352,7 @@ export function CentralStatusManagementDialog({
             onValueChange={(val) => setActiveTab(val as StatusModuleKey)}
             className="flex-1 flex flex-col overflow-hidden"
           >
-            <div className="border-b px-2 flex items-center justify-between py-2 shrink-0">
+            <div className="border-b flex items-center justify-between shrink-0 custom-spacing-x-y pb-2">
               <TabsList className="grid grid-cols-3 w-[400px] h-[32px]">
                 <TabsTrigger value="leads" className="h-[24px]">Leads</TabsTrigger>
                 <TabsTrigger value="opportunities" className="h-[24px]">Opportunities</TabsTrigger>
@@ -571,7 +571,7 @@ function StatusRowDisplay({
   return (
     <div
       {...dragHandleProps}
-      className={`flex items-center justify-between px-2 py-1.5 transition-colors group cursor-grab active:cursor-grabbing touch-none select-none ${
+      className={`flex items-center justify-between transition-colors group cursor-grab active:cursor-grabbing touch-none select-none custom-spacing-x-y py-1 ${
         isOverlay
           ? 'bg-background shadow-lg border rounded-md opacity-95'
           : 'hover:bg-slate-50/50 dark:hover:bg-slate-900/10'

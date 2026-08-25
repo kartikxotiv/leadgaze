@@ -15,6 +15,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@kit/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@kit/ui/alert-dialog';
 import { Input } from '@kit/ui/input';
 import { Label } from '@kit/ui/label';
 import {
@@ -42,6 +53,7 @@ export function CoreEmailVariablesTab({ workspaceId }: { workspaceId: string }) 
   const [searchTerm, setSearchTerm] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedVariable, setSelectedVariable] = useState<any>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const { getHeaderProps, getResizeHandleProps } = useColumnResize('core-email-variables-table');
 
@@ -62,15 +74,16 @@ export function CoreEmailVariablesTab({ workspaceId }: { workspaceId: string }) 
     filteredVariables
   );
 
-  const handleDelete = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this variable?')) return;
-
+  const handleDelete = async (variable: any) => {
+    setIsDeleting(true);
     try {
-      await deleteCoreEmailVariableService(id, workspaceId);
+      await deleteCoreEmailVariableService(variable.id, workspaceId);
       toast.success('Variable deleted');
       await queryClient.invalidateQueries({ queryKey: ['core-email-variables', workspaceId] });
     } catch (error: any) {
       toast.error(error.message || 'Failed to delete variable');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -152,9 +165,33 @@ export function CoreEmailVariablesTab({ workspaceId }: { workspaceId: string }) 
                           >
                             <Edit2 className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleDelete(variable.id)}>
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="sm" className="text-destructive" disabled={isDeleting}>
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>
+                                  Delete Variable
+                                </AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Delete{' '}
+                                  <strong>{`{{${variable.key}}}`}</strong>? This
+                                  action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDelete(variable)}
+                                >
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         </TableCell>
                       </TableRow>
                     ))
@@ -225,7 +262,7 @@ function CoreVariableDialog({
           <DialogHeader>
             <DialogTitle>{variable ? 'Edit Variable' : 'Create Variable'}</DialogTitle>
           </DialogHeader>
-          <div className="flex-1 space-y-2 overflow-y-auto p-2">
+          <div className="flex-1 space-y-2 overflow-y-auto custom-spacing-x-y">
           <div>
             <Label>Variable Key</Label>
             <Input value={key} onChange={(event) => setKey(event.target.value)} placeholder="company_address" />

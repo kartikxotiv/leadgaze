@@ -1095,7 +1095,7 @@ export default function OrgSubscriptionPage({
             </DialogTitle>
             </DialogHeader>
             
-              <div className="flex flex-col flex-1 overflow-y-auto p-2 space-y-2 pt-0">
+              <div className="flex flex-col flex-1 overflow-y-auto space-y-2 custom-spacing-x-y py-2">
                 <p className="primary-text-regular text-leadgaze-dark dark:text-white">
                   Are you sure you want to cancel your subscription? All{' '}
                   <strong>

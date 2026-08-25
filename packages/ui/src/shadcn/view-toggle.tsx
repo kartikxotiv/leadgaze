@@ -32,10 +32,10 @@ export function ViewToggle({ view, onChange, className }: ViewToggleProps) {
         variant="ghost"
         size="sm"
         className={cn(
-          'h-[28px] w-[28px] rounded-none border-0 p-0 transition-colors',
+          'h-[28px] w-[28px] rounded-none border-0 p-0',
           view === 'table'
-            ? 'bg-primary text-primary-foreground hover:bg-primary/90'
-            : 'text-muted-foreground hover:text-foreground',
+            ? 'bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground'
+            : 'text-muted-foreground hover:bg-transparent hover:text-muted-foreground',
         )}
         onClick={() => onChange('table')}
         title="Table view"
@@ -50,10 +50,10 @@ export function ViewToggle({ view, onChange, className }: ViewToggleProps) {
         variant="ghost"
         size="sm"
         className={cn(
-          'h-[28px] w-[28px] rounded-none border-0 border-l p-0 transition-colors',
+          'h-[28px] w-[28px] rounded-none border-0 border-l p-0',
           view === 'kanban'
-            ? 'bg-primary text-primary-foreground hover:bg-primary/90'
-            : 'text-muted-foreground hover:text-foreground',
+            ? 'bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground'
+            : 'text-muted-foreground hover:bg-transparent hover:text-muted-foreground',
         )}
         onClick={() => onChange('kanban')}
         title="Kanban view"
