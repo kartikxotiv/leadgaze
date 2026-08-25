@@ -50,6 +50,7 @@ export const createMultiProductCheckout = catchAsync(
         discountCode?: string;
       }>;
       billingCycle?: BillingCycle;
+      returnUrl?: string;
     };
     if (!body.workspaceId || !body.items?.length) {
       return NextResponse.json(
@@ -79,6 +80,7 @@ export const createMultiProductCheckout = catchAsync(
         purpose: 'bundle_purchase',
         actor: user,
         discountCode: sales.discountCode ?? service.discountCode,
+        returnUrl: body.returnUrl,
       });
       return NextResponse.json({
         success: true,
@@ -102,6 +104,7 @@ export const createMultiProductCheckout = catchAsync(
           purpose: 'initial_purchase',
           actor: user,
           discountCode: item.discountCode,
+          returnUrl: body.returnUrl,
         }),
       );
     }

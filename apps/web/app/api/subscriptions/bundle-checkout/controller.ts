@@ -44,6 +44,7 @@ export const createBundleCheckout = catchAsync(
       idempotencyKey: input.requestId
         ? `bundle_checkout:${input.workspaceId}:${input.requestId}`
         : undefined,
+      returnUrl: input.returnUrl,
     });
     return success(result);
   },

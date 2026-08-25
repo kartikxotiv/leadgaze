@@ -61,7 +61,7 @@ test('checkout only accepts local return paths', () => {
   );
 });
 
-test('provider synchronization uses Razorpay invoice collection', () => {
+test('provider synchronization uses Razorpay payment collection', () => {
   assert.equal(
     providerSyncRequestSchema.parse({ workspaceId }).provider,
     'razorpay',

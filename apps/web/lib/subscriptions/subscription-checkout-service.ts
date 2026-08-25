@@ -47,6 +47,7 @@ export class SubscriptionCheckoutService extends SubscriptionModuleUserService {
       idempotencyKey: input.requestId
         ? `checkout:${input.workspaceId}:${input.requestId}`
         : undefined,
+      returnUrl: input.returnUrl,
     });
   }
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -101,6 +101,24 @@ export function SubscriptionManagementPage() {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>(
     'monthly',
   );
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('payment') !== 'success') return;
+    toast.success(
+      'Payment completed. Your subscription will update after secure webhook confirmation.',
+    );
+    params.delete('payment');
+    for (const key of [...params.keys()]) {
+      if (key.startsWith('razorpay_')) params.delete(key);
+    }
+    const query = params.toString();
+    window.history.replaceState(
+      null,
+      '',
+      `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash}`,
+    );
+  }, []);
 
   const plansQuery = useQuery({
     queryKey: ['pricing-workspace-plans', workspaceId],

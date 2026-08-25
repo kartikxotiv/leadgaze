@@ -43,6 +43,7 @@ type CreatePlanInvoiceInput = {
   idempotencyKey?: string;
   periodStart?: Date;
   dueAt?: Date;
+  returnUrl?: string;
 };
 
 type CreateBundleInvoiceInput = {
@@ -59,6 +60,7 @@ type CreateBundleInvoiceInput = {
   idempotencyKey?: string;
   periodStart?: Date;
   dueAt?: Date;
+  returnUrl?: string;
 };
 
 const DAY_MS = 86_400_000;
@@ -155,6 +157,7 @@ export class BackendBillingService {
       periodStart,
       periodEnd,
       dueAt: input.dueAt,
+      returnUrl: input.returnUrl,
       currency: context.price.currency,
       workspace: context.workspace,
     });
@@ -308,6 +311,7 @@ export class BackendBillingService {
       periodStart,
       periodEnd,
       dueAt: input.dueAt,
+      returnUrl: input.returnUrl,
       currency: context.bundle.currency,
       workspace: context.workspace,
       modules: context.modules,
@@ -827,6 +831,7 @@ export class BackendBillingService {
     periodStart: Date;
     periodEnd: Date;
     dueAt?: Date;
+    returnUrl?: string;
     currency: string;
     workspace: { name?: string | null; owner_id?: string };
     seatId?: string;
@@ -975,7 +980,6 @@ export class BackendBillingService {
         },
         currency: input.currency.toUpperCase(),
         amountMinor: total,
-        quantity: 1,
         expireBy: dueAt,
         notes: {
           backend_invoice_id: created.data.id,
@@ -983,6 +987,7 @@ export class BackendBillingService {
           module_id: input.moduleId,
           purpose: input.purpose,
         },
+        callbackUrl: this.paymentReturnUrl(input.returnUrl),
       });
       const update = await this.billingClient
         .from('backend_billing_invoices')
@@ -1052,6 +1057,7 @@ export class BackendBillingService {
     periodStart: Date;
     periodEnd: Date;
     dueAt?: Date;
+    returnUrl?: string;
     currency: string;
     workspace: { name?: string | null; owner_id?: string };
     modules: BillingClient[];
@@ -1215,7 +1221,6 @@ export class BackendBillingService {
         },
         currency: input.currency.toUpperCase(),
         amountMinor: total,
-        quantity: 1,
         expireBy: dueAt,
         notes: {
           backend_invoice_id: created.data.id,
@@ -1223,6 +1228,7 @@ export class BackendBillingService {
           bundle_id: input.bundleId,
           purpose: input.purpose,
         },
+        callbackUrl: this.paymentReturnUrl(input.returnUrl),
       });
       const update = await this.billingClient
         .from('backend_billing_invoices')
@@ -1704,5 +1710,21 @@ export class BackendBillingService {
 
   private subscriptionUrl() {
     return `${process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'}/org/subscription`;
+  }
+
+  private paymentReturnUrl(returnUrl?: string) {
+    const appUrl = new URL(
+      process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000',
+    );
+    const target = new URL(returnUrl ?? '/org/subscription', appUrl);
+    if (target.origin !== appUrl.origin) {
+      throw new SubscriptionApiError(
+        'The payment return URL must belong to this application',
+        400,
+        'BAD_REQUEST',
+      );
+    }
+    target.searchParams.set('payment', 'success');
+    return target.toString();
   }
 }

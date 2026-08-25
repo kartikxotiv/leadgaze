@@ -3,21 +3,10 @@ import 'server-only';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 
 import { SubscriptionApiError } from './errors';
-
-type RazorpayInvoiceInput = {
-  invoiceNumber: string;
-  description: string;
-  customer: {
-    name: string;
-    email: string;
-    contact?: string | null;
-  };
-  currency: string;
-  amountMinor: number;
-  quantity: number;
-  expireBy: Date;
-  notes: Record<string, string>;
-};
+import {
+  type RazorpayPaymentLinkInput,
+  buildRazorpayPaymentLinkPayload,
+} from './razorpay-payment-link';
 
 export type RazorpayInvoice = {
   id: string;
@@ -43,40 +32,15 @@ const getRequiredEnvironmentValue = (name: string) => {
 export class RazorpayInvoiceProvider {
   private readonly apiBaseUrl = 'https://api.razorpay.com/v1';
 
-  async createInvoice(input: RazorpayInvoiceInput) {
-    const currency = input.currency.trim().toUpperCase();
-    const response = await this.request<RazorpayInvoice>('/invoices', {
+  async createInvoice(input: RazorpayPaymentLinkInput) {
+    const response = await this.request<RazorpayInvoice>('/payment_links', {
       method: 'POST',
-      body: JSON.stringify({
-        type: 'invoice',
-        description: input.description,
-        currency,
-        customer: {
-          name: input.customer.name,
-          email: input.customer.email,
-          ...(input.customer.contact
-            ? { contact: input.customer.contact }
-            : {}),
-        },
-        line_items: [
-          {
-            name: input.description,
-            description: `Leadgaze invoice ${input.invoiceNumber}`,
-            amount: input.amountMinor,
-            currency,
-            quantity: input.quantity,
-          },
-        ],
-        expire_by: Math.floor(input.expireBy.getTime() / 1000),
-        email_notify: 0,
-        sms_notify: 0,
-        notes: input.notes,
-      }),
+      body: JSON.stringify(buildRazorpayPaymentLinkPayload(input)),
     });
 
     if (!response.id || !response.short_url) {
       throw new SubscriptionApiError(
-        'Razorpay did not return an invoice payment URL',
+        'Razorpay did not return a payment link URL',
         502,
         'PROVIDER_ERROR',
       );
@@ -86,6 +50,12 @@ export class RazorpayInvoiceProvider {
   }
 
   async fetchInvoice(invoiceId: string) {
+    if (invoiceId.startsWith('plink_')) {
+      return this.request<RazorpayInvoice>(
+        `/payment_links/${encodeURIComponent(invoiceId)}`,
+        { method: 'GET' },
+      );
+    }
     return this.request<RazorpayInvoice>(
       `/invoices/${encodeURIComponent(invoiceId)}`,
       { method: 'GET' },
@@ -93,6 +63,12 @@ export class RazorpayInvoiceProvider {
   }
 
   async cancelInvoice(invoiceId: string) {
+    if (invoiceId.startsWith('plink_')) {
+      return this.request<RazorpayInvoice>(
+        `/payment_links/${encodeURIComponent(invoiceId)}/cancel`,
+        { method: 'POST' },
+      );
+    }
     return this.request<RazorpayInvoice>(
       `/invoices/${encodeURIComponent(invoiceId)}/cancel`,
       { method: 'POST' },
