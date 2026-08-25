@@ -403,9 +403,19 @@ export function ServiceCloudCustomersPage({
       ?.field_label ?? fallback;
 
   const tabsSlot = (
-    <TabsList className="mb-0 shrink-0 w-fit self-start pl-0 h-9">
-      <TabsTrigger value="customers">Customers</TabsTrigger>
-      <TabsTrigger value="organizations">Organizations</TabsTrigger>
+    <TabsList className="mb-1 h-auto w-full justify-start gap-6 rounded-none border-b bg-transparent p-0">
+      <TabsTrigger 
+        value="customers"
+        className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
+      >
+        Customers
+      </TabsTrigger>
+      <TabsTrigger 
+        value="organizations"
+        className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
+      >
+        Organizations
+      </TabsTrigger>
     </TabsList>
   );
 

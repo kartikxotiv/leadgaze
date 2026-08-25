@@ -223,6 +223,9 @@ export function EditOpportunityDialog({
         </DialogHeader>
         <Form {...form}>
           <form id="dialog-form" onSubmit={form.handleSubmit(onSubmit)} className="flex-1 overflow-y-auto custom-spacing-x-y py-2 space-y-2">
+            <h3 className="primary-heading text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">
+              Basic Information
+            </h3>
             <FieldGuard fieldKey="opportunity_name" canEdit={canEdit}>
               <FormField
                 control={form.control}

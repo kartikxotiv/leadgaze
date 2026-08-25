@@ -133,7 +133,7 @@ export function LeadSourceSelect({
                             Create a new lead source for this workspace
                         </DialogDescription>
                     </DialogHeader>
-                    <div className="flex-1 space-y-2 px-2">
+                    <div className="flex-1 space-y-2 custom-spacing-x-y py-2">
                         <div>
                             <Label htmlFor="source-name">Source Name</Label>
                             <Input

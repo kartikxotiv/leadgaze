@@ -1165,7 +1165,7 @@ export default function DocumentPage() {
           <DialogHeader>
             <DialogTitle>Rename Document</DialogTitle>
           </DialogHeader>
-          <div className="flex-1 space-y-2 px-2">
+          <div className="flex-1 custom-spacing-x-y py-2">
             <div className="space-y-2">
               <Label>Document Name</Label>
               <Input
