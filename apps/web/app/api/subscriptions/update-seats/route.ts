@@ -1,7 +1,7 @@
 import { enhanceRouteHandler } from '@kit/next/routes';
 
-import { updateSeatsViaStripe } from './controller';
+import { updateSeats } from './controller';
 
-export const POST = enhanceRouteHandler(updateSeatsViaStripe, {
+export const POST = enhanceRouteHandler(updateSeats, {
   auth: true,
 });

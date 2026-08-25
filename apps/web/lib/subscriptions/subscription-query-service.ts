@@ -117,6 +117,9 @@ export class SubscriptionQueryService extends SubscriptionServiceBase {
       workspaceId,
       rows.modules.map((row) => row.module_id),
     );
+    const seatByModuleId = new Map(
+      rows.seats.map((seat) => [seat.product_id, seat]),
+    );
     const now = Date.now();
     const trialEnd = rows.subscription.trial_end_date;
     return {
@@ -136,6 +139,7 @@ export class SubscriptionQueryService extends SubscriptionServiceBase {
         const productModule = asObject(row.subscription_products);
         const plan = asObject(row.plans);
         const bundle = asObject(row.bundles);
+        const seat = seatByModuleId.get(row.module_id);
         return {
           moduleKey: productModule.product_key,
           moduleName: productModule.display_name,
@@ -146,6 +150,9 @@ export class SubscriptionQueryService extends SubscriptionServiceBase {
           monthlyAmount: toNumber(row.monthly_amount),
           yearlyAmount: toNumber(row.annual_amount),
           bundleKey: bundle.bundle_key ?? null,
+          seatId: seat?.id ?? null,
+          seatsPurchased: seat?.seats_purchased ?? 1,
+          seatsUsed: seat?.seats_used ?? 0,
           userCount: counts.get(row.module_id) ?? 0,
           currentPeriodStart: rows.subscription!.current_period_start,
           currentPeriodEnd: rows.subscription!.current_period_end,

@@ -75,22 +75,6 @@ export default function SystemPage() {
           <TabsContent value="billing-providers" className="m-0 h-full flex flex-col outline-none mt-2">
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 w-full">
               
-              {/* Stripe Card */}
-              <div className="bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-none p-5 shadow-sm flex flex-col">
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="text-[14px] font-bold text-gray-900 dark:text-gray-100">Stripe</h3>
-                  <Badge className="bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border-none font-semibold text-[10px] px-2.5 py-0.5 rounded-[12px] shadow-none">Active</Badge>
-                </div>
-                <p className="text-[12px] font-medium text-gray-400 dark:text-gray-500 mb-6">
-                  Primary payment processor for global customers
-                </p>
-                <div className="mt-auto flex">
-                  <Button variant="outline" className="h-[34px] px-4 text-[13px] font-bold text-gray-700 border-gray-200 hover:bg-gray-50 rounded-[4px] shadow-sm">
-                    Configure
-                  </Button>
-                </div>
-              </div>
-
               {/* Razorpay Card */}
               <div className="bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-none p-5 shadow-sm flex flex-col">
                 <div className="flex justify-between items-start mb-2">
@@ -98,7 +82,7 @@ export default function SystemPage() {
                   <Badge className="bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border-none font-semibold text-[10px] px-2.5 py-0.5 rounded-[12px] shadow-none">Active</Badge>
                 </div>
                 <p className="text-[12px] font-medium text-gray-400 dark:text-gray-500 mb-6">
-                  Payment processor for Indian customers
+                  Invoice and payment-link collection; packages and billing stay in Leadgaze
                 </p>
                 <div className="mt-auto flex">
                   <Button variant="outline" className="h-[34px] px-4 text-[13px] font-bold text-gray-700 border-gray-200 hover:bg-gray-50 rounded-[4px] shadow-sm">

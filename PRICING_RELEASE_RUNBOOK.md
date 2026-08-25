@@ -86,11 +86,11 @@ write leakage.
 
 - Deploy pricing/subscription APIs and webhook changes while the public UI stays
   hidden.
-- Configure `CRON_SECRET`, Stripe webhook secret, Stripe price mappings, and
-  SMTP credentials.
+- Configure `CRON_SECRET`, Razorpay API/webhook secrets, backend plan prices,
+  and SMTP credentials.
 - Invoke the subscription cron twice and confirm the second run creates no
   duplicate billing events, changes, or notifications.
-- Replay a Stripe test event and confirm `payment_events.provider_event_id`
+- Replay a Razorpay test event and confirm `payment_events.provider_event_id`
   prevents duplicate processing.
 
 Gate: authorization tests pass; retries are idempotent; failed email deliveries
@@ -113,7 +113,7 @@ Gate: billing-owner, administrator, and ordinary-member acceptance checks pass.
   totals, feature inheritance, and all CTA destinations.
 - Check mobile, dark mode, anonymous access, and caching/revalidation.
 
-Gate: displayed values exactly match the seeded catalog and Stripe mappings.
+Gate: displayed values exactly match the backend catalog and invoice amounts.
 
 ## 7. Enable enforcement gradually and monitor
 

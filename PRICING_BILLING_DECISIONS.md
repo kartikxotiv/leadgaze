@@ -10,36 +10,35 @@ steps must follow these decisions unless this record is explicitly revised.
 
 ## Confirmed Decisions
 
-| Topic                                        | v1 decision                          | Implementation rule                                                                                                                    |
-| -------------------------------------------- | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
-| Existing paid workspaces                     | Assign the `launch` plan             | An active paid seat is the migration signal.                                                                                           |
-| Internal, partner, or promotional workspaces | Assign the `growth` plan             | An active module entitlement is the migration signal when the workspace has no paid seat.                                              |
-| Workspaces without existing access           | Assign `free_forever`                | Every workspace receives an explicit plan; runtime fallback plans are forbidden.                                                       |
-| Trial scope                                  | One workspace-wide 14-day trial      | All selected modules start and expire together. A workspace can use the trial only once.                                               |
-| Trial plan                                   | `growth`                             | Trial modules receive Growth entitlements for the trial period.                                                                        |
-| Bundle billing                               | Dedicated provider prices            | Each bundle and billing cycle maps to its own Stripe price. Module subscription rows remain separate and reference the applied bundle. |
-| Catalog administration                       | Seeded migrations for v1             | A super-admin pricing editor is outside the v1 scope.                                                                                  |
-| Payment provider rollout                     | Stripe first                         | The data model remains compatible with `razorpay` and `manual`, but their live workflows are deferred.                                 |
-| Billing Owner                                | The account in `workspaces.owner_id` | Billing mutations require an authenticated workspace owner. A separate Billing Owner role is outside v1 scope.                         |
-| Billing-cycle key                            | `yearly`                             | The database and API retain the existing enum value. The UI may label it “Annual.”                                                     |
-| Service product key                          | `service_cloud`                      | Contracts use the stable key already stored in `subscription_products`.                                                                |
+| Topic                                        | v1 decision                          | Implementation rule                                                                                                                  |
+| -------------------------------------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
+| Existing paid workspaces                     | Assign the `launch` plan             | An active paid seat is the migration signal.                                                                                         |
+| Internal, partner, or promotional workspaces | Assign the `growth` plan             | An active module entitlement is the migration signal when the workspace has no paid seat.                                            |
+| Workspaces without existing access           | Assign `free_forever`                | Every workspace receives an explicit plan; runtime fallback plans are forbidden.                                                     |
+| Trial scope                                  | One workspace-wide 14-day trial      | All selected modules start and expire together. A workspace can use the trial only once.                                             |
+| Trial plan                                   | `growth`                             | Trial modules receive Growth entitlements for the trial period.                                                                      |
+| Bundle billing                               | Backend-calculated invoice items     | Bundle and mixed-plan prices are calculated and snapshotted by Leadgaze; Razorpay only collects the final invoice amount.            |
+| Catalog administration                       | Seeded migrations for v1             | A super-admin pricing editor is outside the v1 scope.                                                                                |
+| Payment provider rollout                     | Razorpay collection only             | Leadgaze owns packages, seats, discounts, periods, renewal, and expiry. Razorpay creates invoice/payment links and collects payment. |
+| Billing Owner                                | The account in `workspaces.owner_id` | Billing mutations require an authenticated workspace owner. A separate Billing Owner role is outside v1 scope.                       |
+| Billing-cycle key                            | `yearly`                             | The database and API retain the existing enum value. The UI may label it “Annual.”                                                   |
+| Service product key                          | `service_cloud`                      | Contracts use the stable key already stored in `subscription_products`.                                                              |
 
 ## Billing Data Ownership
 
 Provider catalog identifiers and workspace billing identifiers must not share a
 table because they have different owners and lifecycles.
 
-| Data                                | Owner                          | Step 2 table                      |
-| ----------------------------------- | ------------------------------ | --------------------------------- |
-| Provider product and price IDs      | Module-plan price or bundle    | `billing_provider_prices`         |
-| Provider customer ID                | Workspace and provider         | `workspace_billing_accounts`      |
-| Provider subscription ID and status | Workspace billing subscription | `workspace_billing_subscriptions` |
-| Processed provider event ID         | Webhook event                  | Existing `payment_events`         |
+| Data                            | Owner                       | Step 2 table                    |
+| ------------------------------- | --------------------------- | ------------------------------- |
+| Backend plan and price          | Module-plan price or bundle | `module_plan_prices`, `bundles` |
+| Invoice and immutable amount    | Workspace billing invoice   | `backend_billing_invoices`      |
+| Scheduled paid/free seat change | Workspace and module        | `backend_seat_changes`          |
+| Processed provider event ID     | Razorpay webhook            | Existing `payment_events`       |
 
-Consequently, `billing_provider_prices` will not contain
-`provider_customer_id` or `provider_subscription_id`. The workspace billing
-tables will include `workspace_id`, provider-scoped unique constraints, RLS,
-and audit timestamps.
+Razorpay plan, package, price, and subscription IDs are not used. Provider IDs
+on backend invoices are collection references only. Backend billing tables
+include `workspace_id`, idempotency constraints, RLS, and audit timestamps.
 
 ## Permission Contract
 
@@ -85,8 +84,8 @@ error envelope and delegate business logic to services or transactional RPCs.
 - All schema changes are additive during the v1 rollout.
 - Existing seat and entitlement tables remain intact until a separate removal
   plan is approved.
-- Existing Stripe billing stays active until the new engine is feature-flagged
-  on.
+- Existing provider identifiers remain historical data; new billing activity
+  uses backend invoices and Razorpay collection links only.
 - The server and database are the enforcement boundary; frontend gates provide
   user guidance only.
 - Payment webhooks are idempotent through the existing `payment_events` log.
