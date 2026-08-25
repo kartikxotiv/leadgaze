@@ -692,7 +692,7 @@ export function ServiceCloudTicketsPage({
       <ServiceCloudResourcePage
         workspaceId={workspaceId}
         viewMode={viewMode}
-        kanbanSlot={(data, refetch) => (
+        kanbanSlot={(data, refetch, openEdit, openDelete) => (
           <TicketsKanbanBoard
             workspaceId={workspaceId}
             tickets={data}
@@ -703,7 +703,8 @@ export function ServiceCloudTicketsPage({
             canCreate={canCreate}
             canDelete={canDelete}
             onClick={(id) => router.push(`/home/services/tickets/${id}`)}
-            onDelete={() => {}}
+            onEdit={(ticket) => openEdit?.(ticket)}
+            onDelete={(ticket) => openDelete?.(ticket)}
             onCreateTicket={(statusId) => {
               setTicketStatusId(statusId);
               setCreateOpen(true);
