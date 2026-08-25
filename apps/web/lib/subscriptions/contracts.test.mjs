@@ -59,10 +59,10 @@ test('checkout only accepts local return paths', () => {
   );
 });
 
-test('provider synchronization is Stripe-only in v1', () => {
+test('provider synchronization uses Razorpay invoice collection', () => {
   assert.equal(
     providerSyncRequestSchema.parse({ workspaceId }).provider,
-    'stripe',
+    'razorpay',
   );
   assert.equal(
     providerSyncRequestSchema.safeParse({ workspaceId, provider: 'manual' })

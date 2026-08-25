@@ -115,6 +115,9 @@ export class SubscriptionChangeService extends SubscriptionQueryService {
         moduleKey: input.moduleKey,
         planKey: input.newPlanKey,
         billingCycle: input.billingCycle,
+        seats: input.seats,
+        discountCode: input.discountCode,
+        requestId: input.requestId,
       },
       actorId,
       'plan_upgrade',
@@ -142,22 +145,10 @@ export class SubscriptionChangeService extends SubscriptionQueryService {
     actorId: string,
     changeType: 'plan_upgrade' | 'module_add',
   ) {
-    const [subscription, productModule, plan] = await Promise.all([
-      this.repository.getWorkspaceSubscription(input.workspaceId),
+    const [productModule, plan] = await Promise.all([
       this.repository.getModule(input.moduleKey),
       this.repository.getPlan(input.planKey),
     ]);
-    if (!subscription) {
-      throw new SubscriptionApiError(
-        'The workspace does not have an explicit subscription',
-        404,
-        'ENTITLEMENT_CONTEXT_MISSING',
-      );
-    }
-    const price = await this.repository.getModulePrice(
-      productModule.id,
-      plan.id,
-    );
     const current = await this.repository.getModuleSubscription(
       input.workspaceId,
       productModule.id,
@@ -177,119 +168,21 @@ export class SubscriptionChangeService extends SubscriptionQueryService {
       );
     }
 
-    if (plan.is_paid) {
-      const providerPrice = await this.repository.getProviderPrice(
-        price.id,
-        input.billingCycle,
-      );
-      const billing = await this.repository.getBillingSubscription(
-        input.workspaceId,
-      );
-      if (!billing) {
-        throw new SubscriptionApiError(
-          'Checkout is required before activating a paid plan',
-          402,
-          'PAYMENT_REQUIRED',
-          { checkoutRequired: true },
-        );
-      }
-      const items = asObject(billing.metadata).items as
-        | Record<string, string>
-        | undefined;
-      if (changeType === 'module_add') {
-        await this.provider.addItem({
-          providerSubscriptionId: billing.provider_subscription_id,
-          providerPriceId: providerPrice.provider_price_id!,
-          quantity: await this.getBillingQuantity(
-            input.workspaceId,
-            productModule.id,
-          ),
-        });
-      } else {
-        const itemId = items?.[input.moduleKey];
-        if (!itemId) {
-          throw new SubscriptionApiError(
-            'The Stripe subscription item mapping is missing',
-            409,
-            'ENTITLEMENT_CONFIGURATION_ERROR',
-          );
-        }
-        await this.provider.applyItemPrice({
-          providerSubscriptionId: billing.provider_subscription_id,
-          providerSubscriptionItemId: itemId,
-          providerPriceId: providerPrice.provider_price_id!,
-        });
-      }
-    }
-
-    const now = new Date().toISOString();
-    const upsert = await this.client
-      .from('workspace_module_subscriptions')
-      .upsert(
-        {
-          workspace_subscription_id: subscription.id,
-          workspace_id: input.workspaceId,
-          module_id: productModule.id,
-          plan_id: plan.id,
-          status: 'active',
-          monthly_amount: price.monthly_price,
-          annual_amount: price.annual_price,
-          started_at: current?.started_at ?? now,
-          cancelled_at: null,
-        },
-        { onConflict: 'workspace_id,module_id' },
-      );
-    if (upsert.error) throw upsert.error;
-    const workspaceUpdate = await this.client
-      .from('workspace_subscriptions')
-      .update({
-        subscription_status: plan.is_paid
-          ? 'active'
-          : subscription.subscription_status,
-        billing_cycle: input.billingCycle,
-      })
-      .eq('id', subscription.id);
-    if (workspaceUpdate.error) throw workspaceUpdate.error;
-    const refreshed = await this.repository.getModuleSubscription(
-      input.workspaceId,
-      productModule.id,
-    );
-    const change = await this.client.from('subscription_changes').insert({
-      workspace_module_subscription_id: refreshed!.id,
-      workspace_id: input.workspaceId,
-      change_type: changeType,
-      from_plan_id: current?.plan_id ?? null,
-      to_plan_id: plan.id,
-      effective_at: now,
-      status: 'applied',
-      created_by: actorId,
-      applied_at: now,
-    });
-    if (change.error) throw change.error;
-    await this.recordEvent({
-      workspaceId: input.workspaceId,
-      eventType: changeType === 'module_add' ? 'module_added' : 'plan_upgraded',
-      eventKey: `${changeType}:${refreshed!.id}:${plan.id}:${now}`,
-      title:
-        changeType === 'module_add'
-          ? `${productModule.display_name} added`
-          : `${productModule.display_name} upgraded to ${plan.plan_name}`,
-      message:
-        changeType === 'module_add'
-          ? `${productModule.display_name} is active on the ${plan.plan_name} plan.`
-          : 'The plan upgrade is active immediately and updated limits now apply.',
-      email: false,
-      metadata: { moduleKey: input.moduleKey, planKey: plan.plan_key, actorId },
-    });
-    return {
+    return this.billing.createPlanInvoice({
       workspaceId: input.workspaceId,
       moduleKey: input.moduleKey,
-      fromPlanKey: currentPlan.plan_key ?? plan.plan_key,
-      toPlanKey: plan.plan_key,
-      planKey: plan.plan_key,
-      effectiveAt: now,
-      changeStatus: 'applied' as const,
-    };
+      planKey: input.planKey,
+      billingCycle: input.billingCycle,
+      seats:
+        input.seats ??
+        (await this.getBillingQuantity(input.workspaceId, productModule.id)),
+      purpose: changeType,
+      actor: { id: actorId },
+      discountCode: input.discountCode,
+      idempotencyKey: input.requestId
+        ? `${changeType}:${input.workspaceId}:${input.requestId}`
+        : undefined,
+    });
   }
 
   async downgrade(input: DowngradeSubscriptionRequest, actorId: string) {
@@ -324,41 +217,12 @@ export class SubscriptionChangeService extends SubscriptionQueryService {
     );
     const effectiveAt =
       subscription?.current_period_end ?? new Date().toISOString();
-    const price = await this.repository.getModulePrice(
-      productModule.id,
-      target.id,
-    );
-    const billing = await this.repository.getBillingSubscription(
-      input.workspaceId,
-    );
-    if (billing) {
-      const itemId = (
-        asObject(billing.metadata).items as Record<string, string>
-      )?.[input.moduleKey];
-      if (!itemId) {
-        throw new SubscriptionApiError(
-          'The Stripe subscription item mapping is missing',
-          409,
-          'ENTITLEMENT_CONFIGURATION_ERROR',
-        );
-      }
-      if (target.is_paid) {
-        const providerPrice = await this.repository.getProviderPrice(
-          price.id,
-          subscription!.billing_cycle,
-        );
-        await this.provider.scheduleItemPrice({
-          providerSubscriptionId: billing.provider_subscription_id,
-          providerSubscriptionItemId: itemId,
-          providerPriceId: providerPrice.provider_price_id!,
-        });
-      } else {
-        await this.provider.scheduleItemRemoval({
-          providerSubscriptionId: billing.provider_subscription_id,
-          providerSubscriptionItemId: itemId,
-        });
-      }
-    }
+    await this.billing.cancelOpenInvoices(input.workspaceId, productModule.id, [
+      'initial_purchase',
+      'plan_upgrade',
+      'module_add',
+      'renewal',
+    ]);
     await this.cancelPendingChange(current.id);
     const result = await this.client.from('subscription_changes').insert({
       workspace_module_subscription_id: current.id,
@@ -415,23 +279,12 @@ export class SubscriptionChangeService extends SubscriptionQueryService {
       await this.repository.getWorkspaceSubscription(workspaceId);
     const effectiveAt =
       subscription?.current_period_end ?? new Date().toISOString();
-    const billing = await this.repository.getBillingSubscription(workspaceId);
-    if (billing && asObject(current.plans).is_paid) {
-      const itemId = (
-        asObject(billing.metadata).items as Record<string, string>
-      )?.[moduleKey];
-      if (!itemId) {
-        throw new SubscriptionApiError(
-          'The Stripe subscription item mapping is missing',
-          409,
-          'ENTITLEMENT_CONFIGURATION_ERROR',
-        );
-      }
-      await this.provider.scheduleItemRemoval({
-        providerSubscriptionId: billing.provider_subscription_id,
-        providerSubscriptionItemId: itemId,
-      });
-    }
+    await this.billing.cancelOpenInvoices(workspaceId, productModule.id, [
+      'initial_purchase',
+      'plan_upgrade',
+      'module_add',
+      'renewal',
+    ]);
     await this.cancelPendingChange(current.id);
     const result = await this.client.from('subscription_changes').insert({
       workspace_module_subscription_id: current.id,

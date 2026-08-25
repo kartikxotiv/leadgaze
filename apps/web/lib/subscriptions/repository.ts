@@ -224,45 +224,6 @@ export class SubscriptionRepository {
     return result.data;
   }
 
-  async getProviderPrice(
-    modulePriceId: string,
-    billingCycle: 'monthly' | 'yearly',
-  ) {
-    const result = await this.client
-      .from('billing_provider_prices')
-      .select('*')
-      .eq('price_ref_type', 'module_plan')
-      .eq('price_ref_id', modulePriceId)
-      .eq('billing_cycle', billingCycle)
-      .eq('provider', 'stripe')
-      .eq('is_active', true)
-      .maybeSingle();
-    assertDatabaseResult(result.error, 'Unable to load provider price');
-    if (!result.data?.provider_price_id) {
-      throw new SubscriptionApiError(
-        'No Stripe price is configured for this plan',
-        409,
-        'ENTITLEMENT_CONFIGURATION_ERROR',
-      );
-    }
-    return result.data;
-  }
-
-  async getBillingSubscription(workspaceId: string) {
-    const result = await this.client
-      .from('workspace_billing_subscriptions')
-      .select(
-        '*, workspace_billing_accounts!workspace_billing_subscriptions_billing_account_fkey(*)',
-      )
-      .eq('workspace_id', workspaceId)
-      .eq('workspace_billing_accounts.provider', 'stripe')
-      .order('updated_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    assertDatabaseResult(result.error, 'Unable to load billing subscription');
-    return result.data;
-  }
-
   async getModuleUsers(workspaceId: string, moduleId: string) {
     const result = await this.client
       .from('workspace_module_users')

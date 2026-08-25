@@ -37,6 +37,7 @@ import {
   addModuleService,
   createPricingCheckoutService,
   downgradePlanService,
+  getBillingInvoicesService,
   getSubscriptionNotificationsService,
   getWorkspacePlansService,
   removeModuleService,
@@ -102,6 +103,11 @@ export function SubscriptionManagementPage() {
     queryFn: () => getSubscriptionNotificationsService(workspaceId),
     enabled: Boolean(workspaceId && canView),
   });
+  const invoicesQuery = useQuery({
+    queryKey: ['subscription-invoices', workspaceId],
+    queryFn: () => getBillingInvoicesService(workspaceId),
+    enabled: Boolean(workspaceId && canView),
+  });
 
   const invalidate = async () => {
     await Promise.all([
@@ -152,12 +158,16 @@ export function SubscriptionManagementPage() {
           window.location.assign(checkout.url);
           return checkout;
         }
-        return upgradePlanService({
+        const result = await upgradePlanService({
           workspaceId,
           moduleKey: input.module.moduleKey,
           newPlanKey: input.targetPlan,
           billingCycle,
         });
+        if (result?.paymentRequired && result.url) {
+          window.location.assign(result.url);
+        }
+        return result;
       }
       return downgradePlanService({
         workspaceId,
@@ -191,12 +201,16 @@ export function SubscriptionManagementPage() {
         window.location.assign(checkout.url);
         return checkout;
       }
-      return addModuleService({
+      const result = await addModuleService({
         workspaceId,
         moduleKey: input.moduleKey,
         planKey: input.planKey,
         billingCycle,
       });
+      if (result?.paymentRequired && result.url) {
+        window.location.assign(result.url);
+      }
+      return result;
     },
     onSuccess: invalidate,
     onError: (error: Error) => toast.error(error.message),
@@ -409,6 +423,49 @@ export function SubscriptionManagementPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
+              <CreditCard className="h-5 w-5" /> Invoices
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {(invoicesQuery.data ?? []).slice(0, 6).map((invoice) => (
+              <div key={invoice.id} className="rounded-lg border p-3 text-sm">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="font-medium">{invoice.invoice_number}</p>
+                    <p className="text-muted-foreground text-xs">
+                      {(invoice.total_amount_minor / 100).toLocaleString(
+                        undefined,
+                        {
+                          style: 'currency',
+                          currency: invoice.currency,
+                        },
+                      )}{' '}
+                      · {titleCase(invoice.status)}
+                    </p>
+                  </div>
+                  {invoice.status === 'issued' && invoice.payment_url && (
+                    <Button asChild size="sm">
+                      <a
+                        href={invoice.payment_url}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        Pay
+                      </a>
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ))}
+            {!invoicesQuery.data?.length && (
+              <p className="text-muted-foreground text-sm">No invoices yet.</p>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
               <CalendarClock className="h-5 w-5" /> Pending changes
             </CardTitle>
           </CardHeader>
@@ -474,9 +531,9 @@ export function SubscriptionManagementPage() {
       </div>
 
       <p className="text-muted-foreground flex items-center gap-2 text-xs">
-        <CreditCard className="h-4 w-4" /> Upgrades apply immediately.
-        Downgrades and removals apply at the next billing boundary. Server-side
-        entitlement checks remain authoritative.
+        <CreditCard className="h-4 w-4" /> Paid upgrades apply after payment is
+        confirmed. Downgrades and removals apply at the next billing boundary.
+        Server-side entitlement checks remain authoritative.
       </p>
     </div>
   );

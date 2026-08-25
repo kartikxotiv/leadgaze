@@ -11,6 +11,15 @@ import ApiClient from '~/utils/axios-client';
 
 const unwrap = <T>(response: { data: { data: T } }) => response.data.data;
 
+type BillingChangeResponse = {
+  url?: string;
+  sessionId?: string;
+  invoiceId?: string | null;
+  paymentRequired?: boolean;
+  entitled?: boolean;
+  changeStatus?: 'applied' | 'pending';
+};
+
 export async function getPublicPricingService() {
   return unwrap(await ApiClient.get('/pricing'));
 }
@@ -48,7 +57,9 @@ export async function startTrialService(input: StartTrialRequest) {
 }
 
 export async function upgradePlanService(input: UpgradeSubscriptionRequest) {
-  return unwrap(await ApiClient.post('/subscriptions/upgrade', input));
+  return unwrap<BillingChangeResponse>(
+    await ApiClient.post('/subscriptions/upgrade', input),
+  );
 }
 
 export async function downgradePlanService(
@@ -58,7 +69,9 @@ export async function downgradePlanService(
 }
 
 export async function addModuleService(input: AddModuleRequest) {
-  return unwrap(await ApiClient.post('/subscriptions/modules', input));
+  return unwrap<BillingChangeResponse>(
+    await ApiClient.post('/subscriptions/modules', input),
+  );
 }
 
 export async function removeModuleService(input: {
@@ -73,9 +86,10 @@ export async function removeModuleService(input: {
 export async function createPricingCheckoutService(
   input: PricingCheckoutRequest,
 ) {
-  return unwrap<{ url: string; sessionId: string }>(
-    await ApiClient.post('/subscriptions/checkout', input),
-  );
+  return unwrap<
+    Required<Pick<BillingChangeResponse, 'url' | 'sessionId'>> &
+      BillingChangeResponse
+  >(await ApiClient.post('/subscriptions/checkout', input));
 }
 
 export async function getModuleUsersService(
@@ -121,6 +135,29 @@ export async function getSubscriptionNotificationsService(workspaceId: string) {
     }>
   >(
     await ApiClient.get('/subscriptions/notifications', {
+      params: { workspaceId },
+    }),
+  );
+}
+
+export async function getBillingInvoicesService(workspaceId: string) {
+  return unwrap<
+    Array<{
+      id: string;
+      invoice_number: string;
+      purpose: string;
+      status: string;
+      currency: string;
+      total_amount_minor: number;
+      seats_before: number;
+      seats_after: number;
+      due_at: string;
+      paid_at: string | null;
+      payment_url: string | null;
+      created_at: string;
+    }>
+  >(
+    await ApiClient.get('/subscriptions/invoices', {
       params: { workspaceId },
     }),
   );
