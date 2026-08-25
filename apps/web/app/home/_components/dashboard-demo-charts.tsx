@@ -146,10 +146,10 @@ function SortableWidgetWrapper({ id, children, isFullWidth, onRemove }: { id: st
       {onRemove && (
         <button 
           onClick={onRemove}
-          className="absolute top-2 right-1 z-50 p-1.5 bg-red-50 text-red-500 hover:bg-red-100 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
+          className="absolute top-2 right-1.5 z-50 p-1 text-gray-400 hover:text-red-500 rounded-md opacity-0 group-hover:opacity-100 transition-opacity bg-transparent"
           title="Remove widget"
         >
-          <X className="w-4 h-4" />
+          <X className="w-3.5 h-3.5" />
         </button>
       )}
       {children}
@@ -186,10 +186,10 @@ function SortableKpiWrapper({ id, children, onRemove }: { id: string; children: 
       {onRemove && (
         <button 
           onClick={onRemove}
-          className="absolute top-1 right-1 z-50 p-1.5 bg-red-50 text-red-500 hover:bg-red-100 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
+          className="absolute top-1.5 right-1.5 z-50 p-1 text-gray-400 hover:text-red-500 rounded-md opacity-0 group-hover:opacity-100 transition-opacity bg-transparent"
           title="Remove KPI"
         >
-          <X className="w-4 h-4" />
+          <X className="w-3.5 h-3.5" />
         </button>
       )}
       {children}
@@ -1198,10 +1198,10 @@ function AccountGrowthTrends({ heightClass = "h-[320px]", data = [] }: { heightC
              <div className="w-2 h-2 rounded-full bg-slate-300"></div>
              <span className="text-[10px] font-bold text-slate-500 uppercase">Active Users</span>
           </div> */}
-          <div className="ml-2 w-32">
+          <div className="ml-2 w-[105px] pr-4">
              <Select value={timeRange} onValueChange={setTimeRange}>
-                <SelectTrigger className="h-7 text-[11px] font-bold text-slate-600 dark:text-zinc-400 border-0 shadow-none">
-                  <SelectValue placeholder="Select Range" />
+                <SelectTrigger className="h-7 px-2 text-[11px] font-bold text-slate-600 dark:text-zinc-400 border-0 shadow-none">
+                  <SelectValue placeholder="Range" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="1">1 Month</SelectItem>

@@ -957,7 +957,7 @@ export default function AccountDetailsPage() {
                                   if (!open) setIsEditingAccountType(false);
                                 }}
                                 disabled={!canEdit}
-                                triggerClassName="text-right justify-end"
+                                triggerClassName=""
                               />
                             </div>
                           ) : (

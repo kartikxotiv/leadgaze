@@ -82,7 +82,7 @@ export function VariableDialog({
           <DialogTitle>{variable ? 'Edit Variable' : 'Create New Variable'}</DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 space-y-2 px-2">
+        <div className="flex-1 space-y-2 custom-spacing-x-y py-2">
           <div>
             <Label htmlFor="key">Variable Key</Label>
             <div className="relative">

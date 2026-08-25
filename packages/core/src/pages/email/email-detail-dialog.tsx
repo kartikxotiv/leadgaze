@@ -186,7 +186,7 @@ export function CoreEmailDetailDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[85vh] w-full max-w-2xl flex-col p-0 overflow-hidden border-gray-200 bg-white sm:max-w-[800px] dark:border-slate-800 dark:bg-slate-950">
-        <DialogHeader className="flex flex-row items-center justify-between px-4 py-3 bg-leadgaze-primary">
+        <DialogHeader className="flex flex-row items-center justify-between custom-spacing-x-y bg-leadgaze-primary">
           <DialogTitle className="text-white truncate max-w-[80%]">
             {email.subject || '(No Subject)'}
             {threadEmails.length > 0 && (
