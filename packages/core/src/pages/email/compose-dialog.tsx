@@ -215,7 +215,7 @@ export function CoreEmailComposeDialog({
           }`}
       >
         <TooltipProvider delayDuration={300}>
-          <DialogHeader className="flex flex-row items-center justify-between px-4 py-3 bg-leadgaze-primary">
+          <DialogHeader className="flex flex-row items-center justify-between custom-spacing-x-y bg-leadgaze-primary">
             <DialogTitle className="text-white">New Message</DialogTitle>
             <div className="flex items-center gap-1">
               <button
@@ -233,13 +233,13 @@ export function CoreEmailComposeDialog({
           <div className="flex flex-col text-sm divide-y divide-zinc-100 dark:divide-zinc-800/80 bg-white dark:bg-zinc-950">
             {/* From Selector */}
             <div className="flex items-center custom-spacing-x-y py-2 gap-2">
-              <span className="text-xs text-muted-foreground w-12 shrink-0">From</span>
+              <span className="primary-text-regular text-muted-foreground w-12 shrink-0">From</span>
               {sendableAccounts.length > 1 ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button
                       type="button"
-                      className="text-xs text-zinc-800 dark:text-zinc-200 hover:underline font-medium focus:outline-none flex items-center gap-1.5"
+                      className="primary-text-regular text-zinc-800 dark:text-zinc-200 hover:underline font-medium focus:outline-none flex items-center gap-1.5"
                     >
                       {selectedAccount?.email || 'Select sending account'}
                       <span className="text-[10px] text-muted-foreground">▼</span>
@@ -250,7 +250,7 @@ export function CoreEmailComposeDialog({
                       <DropdownMenuItem
                         key={acc.id}
                         onClick={() => setEmailAccountId(String(acc.id))}
-                        className="text-xs cursor-pointer"
+                        className="primary-text-regular cursor-pointer"
                       >
                         {acc.email}
                       </DropdownMenuItem>
@@ -258,7 +258,7 @@ export function CoreEmailComposeDialog({
                   </DropdownMenuContent>
                 </DropdownMenu>
               ) : (
-                <span className="text-xs font-medium text-zinc-800 dark:text-zinc-200">
+                <span className="primary-text-regular font-medium text-zinc-800 dark:text-zinc-200">
                   {selectedAccount?.email || 'No sending account available'}
                 </span>
               )}
@@ -266,15 +266,15 @@ export function CoreEmailComposeDialog({
 
             {/* To Line with Cc/Bcc triggers */}
             <div className="flex items-center custom-spacing-x-y py-2 gap-2">
-              <span className="text-xs text-muted-foreground w-12 shrink-0 font-medium">To</span>
+              <span className="primary-text-regular text-muted-foreground w-12 shrink-0 font-medium">To</span>
               <input
                 type="text"
                 value={to}
                 onChange={(e) => setTo(e.target.value)}
                 placeholder="Recipients (comma separated)"
-                className="flex-1 bg-transparent text-xs text-zinc-900 placeholder:text-zinc-400 focus:outline-none dark:text-zinc-100"
+                className="flex-1 bg-transparent primary-text-regular text-zinc-900 placeholder:text-zinc-400 focus:outline-none dark:text-zinc-100"
               />
-              <div className="flex items-center gap-2 text-xs text-muted-foreground shrink-0">
+              <div className="flex items-center gap-2 primary-text-regular text-muted-foreground shrink-0">
                 {!showCc && (
                   <button
                     type="button"
@@ -299,13 +299,13 @@ export function CoreEmailComposeDialog({
             {/* CC Line (collapsible) */}
             {showCc && (
               <div className="flex items-center custom-spacing-x-y py-2 gap-2">
-                <span className="text-xs text-muted-foreground w-12 shrink-0 font-medium">Cc</span>
+                <span className="primary-text-regular text-muted-foreground w-12 shrink-0 font-medium">Cc</span>
                 <input
                   type="text"
                   value={cc}
                   onChange={(e) => setCc(e.target.value)}
                   placeholder="Cc recipients"
-                  className="flex-1 bg-transparent text-xs text-zinc-900 placeholder:text-zinc-400 focus:outline-none dark:text-zinc-100"
+                  className="flex-1 bg-transparent primary-text-regular text-zinc-900 placeholder:text-zinc-400 focus:outline-none dark:text-zinc-100"
                 />
                 <button
                   type="button"
@@ -323,13 +323,13 @@ export function CoreEmailComposeDialog({
             {/* BCC Line (collapsible) */}
             {showBcc && (
               <div className="flex items-center custom-spacing-x-y py-2 gap-2">
-                <span className="text-xs text-muted-foreground w-12 shrink-0 font-medium">Bcc</span>
+                <span className="primary-text-regular text-muted-foreground w-12 shrink-0 font-medium">Bcc</span>
                 <input
                   type="text"
                   value={bcc}
                   onChange={(e) => setBcc(e.target.value)}
                   placeholder="Bcc recipients"
-                  className="flex-1 bg-transparent text-xs text-zinc-900 placeholder:text-zinc-400 focus:outline-none dark:text-zinc-100"
+                  className="flex-1 bg-transparent primary-text-regular text-zinc-900 placeholder:text-zinc-400 focus:outline-none dark:text-zinc-100"
                 />
                 <button
                   type="button"
@@ -346,13 +346,13 @@ export function CoreEmailComposeDialog({
 
             {/* Subject Line */}
             <div className="flex items-center custom-spacing-x-y py-2 gap-2">
-              <span className="text-xs text-muted-foreground w-12 shrink-0 font-medium">Subject</span>
+              <span className="primary-text-regular text-muted-foreground w-12 shrink-0 font-medium">Subject</span>
               <input
                 type="text"
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
                 placeholder="Subject"
-                className="flex-1 bg-transparent text-xs text-zinc-900 placeholder:text-zinc-400 focus:outline-none font-normal dark:text-zinc-100"
+                className="flex-1 bg-transparent primary-text-regular text-zinc-900 placeholder:text-zinc-400 focus:outline-none font-normal dark:text-zinc-100"
               />
             </div>
           </div>
@@ -475,7 +475,7 @@ export function CoreEmailComposeDialog({
                 </Tooltip>
                 <DropdownMenuContent align="start" className="max-h-64 overflow-y-auto w-56">
                   {templates.length === 0 ? (
-                    <DropdownMenuItem disabled className="text-xs text-muted-foreground">
+                    <DropdownMenuItem disabled className="primary-text-regular text-muted-foreground">
                       No templates found
                     </DropdownMenuItem>
                   ) : (
@@ -483,7 +483,7 @@ export function CoreEmailComposeDialog({
                       <DropdownMenuItem
                         key={template.id}
                         onClick={() => applyTemplate(String(template.id))}
-                        className="text-xs cursor-pointer truncate"
+                        className="primary-text-regular cursor-pointer truncate"
                       >
                         {template.name}
                       </DropdownMenuItem>
@@ -511,7 +511,7 @@ export function CoreEmailComposeDialog({
                 </Tooltip>
                 <DropdownMenuContent align="start" className="max-h-64 overflow-y-auto w-52">
                   {variables.length === 0 ? (
-                    <DropdownMenuItem disabled className="text-xs text-muted-foreground">
+                    <DropdownMenuItem disabled className="primary-text-regular text-muted-foreground">
                       No variables found
                     </DropdownMenuItem>
                   ) : (
@@ -519,7 +519,7 @@ export function CoreEmailComposeDialog({
                       <DropdownMenuItem
                         key={variable.id}
                         onClick={() => insertVariable(`{{${variable.key}}}`)}
-                        className="text-xs cursor-pointer font-mono"
+                        className="primary-text-regular cursor-pointer font-mono"
                       >
                         {`{{${variable.key}}}`}
                       </DropdownMenuItem>

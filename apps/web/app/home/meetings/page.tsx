@@ -875,7 +875,7 @@ export function CreateMeetingDialog({
       }`}>
           {/* Meeting Type */}
           <div>
-            <Label className="text-xs font-semibold text-leadgaze-dark tracking-wider uppercase">
+            <Label>
               Meeting Type
             </Label>
             <MeetingTypeToggle value={meetingType} onChange={setMeetingType} />
@@ -883,7 +883,7 @@ export function CreateMeetingDialog({
 
           {/* Provider Selection */}
           <div>
-            <Label className="text-xs font-semibold tracking-wider text-leadgaze-dark uppercase">
+            <Label>
               Meeting Provider
             </Label>
             <ProviderSelector
@@ -898,7 +898,7 @@ export function CreateMeetingDialog({
           {/* Account Selection */}
           {meetingType === 'scheduled' && provider === 'GOOGLE' && (
             <div>
-              <Label className="text-xs font-semibold tracking-wider text-gray-500 uppercase">
+              <Label>
                 Connect As
               </Label>
               {googleAccounts.length === 0 ? (
@@ -934,7 +934,7 @@ export function CreateMeetingDialog({
           )}
           {meetingType === 'scheduled' && provider === 'ZOOM' && (
             <div>
-              <Label className="text-xs font-semibold tracking-wider text-gray-500 uppercase">
+              <Label>
                 Connect As
               </Label>
               {zoomAccounts.length === 0 ? (
@@ -971,7 +971,7 @@ export function CreateMeetingDialog({
 
           {/* Title */}
           <div>
-            <Label className="font-medium">
+            <Label>
               Title <span className="text-red-500">*</span>
             </Label>
             <Input
@@ -983,7 +983,7 @@ export function CreateMeetingDialog({
 
           {/* Description */}
           <div>
-            <Label className="font-medium">Description</Label>
+            <Label>Description</Label>
             <Textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -996,7 +996,7 @@ export function CreateMeetingDialog({
           {meetingType === 'scheduled' ? (
             <div className="grid gap-2 md:grid-cols-2">
               <div>
-                <Label className="font-medium">
+                <Label>
                   Meeting Date & Time <span className="text-red-500">*</span>
                 </Label>
                 <DateTimePicker
@@ -1013,7 +1013,7 @@ export function CreateMeetingDialog({
                 />
               </div>
               <div>
-                <Label className="font-medium">Duration</Label>
+                <Label>Duration</Label>
                 <Select
                   value={String(duration)}
                   onValueChange={(val) => setDuration(Number(val))}
@@ -1034,7 +1034,7 @@ export function CreateMeetingDialog({
           ) : (
             <div className="grid gap-2 md:grid-cols-2">
               <div>
-                <Label className="font-medium">
+                <Label>
                   Actual Start <span className="text-red-500">*</span>
                 </Label>
                 <DateTimePicker
@@ -1050,7 +1050,7 @@ export function CreateMeetingDialog({
                 />
               </div>
               <div>
-                <Label className="font-medium">
+                <Label>
                   Actual End <span className="text-red-500">*</span>
                 </Label>
                 <DateTimePicker
@@ -1071,7 +1071,7 @@ export function CreateMeetingDialog({
           {/* Timezone + Location/URL */}
           <div className="grid gap-2 md:grid-cols-2">
             <div>
-              <Label className="font-medium">Timezone</Label>
+              <Label>Timezone</Label>
               <Select value={timezone} onValueChange={setTimezone}>
                 <SelectTrigger>
                   <SelectValue />
@@ -1087,7 +1087,7 @@ export function CreateMeetingDialog({
             </div>
             {provider === 'MANUAL' ? (
               <div>
-                <Label className="font-medium">Meeting URL</Label>
+                <Label>Meeting URL</Label>
                 <Input
                   value={meetingUrl}
                   onChange={(e) => setMeetingUrl(e.target.value)}
@@ -1096,7 +1096,7 @@ export function CreateMeetingDialog({
               </div>
             ) : (
               <div>
-                <Label className="font-medium">Location</Label>
+                <Label>Location</Label>
                 <div className="relative">
                   <MapPin className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
                   <Input
@@ -1113,7 +1113,7 @@ export function CreateMeetingDialog({
           {/* Meeting URL for logged meetings (optional) */}
           {meetingType === 'logged' && provider !== 'MANUAL' && (
             <div>
-              <Label className="font-medium">Meeting URL (Optional)</Label>
+              <Label>Meeting URL (Optional)</Label>
               <Input
                 value={meetingUrl}
                 onChange={(e) => setMeetingUrl(e.target.value)}
@@ -1125,7 +1125,7 @@ export function CreateMeetingDialog({
           {/* External Invitees */}
           {meetingType === 'scheduled' && (
             <div>
-              <Label className="font-medium">External Invitees</Label>
+              <Label>External Invitees</Label>
               <div className="flex gap-2">
                 <Input
                   value={newEmail}
@@ -1172,7 +1172,7 @@ export function CreateMeetingDialog({
           {/* Reminders */}
           {meetingType === 'scheduled' && (
             <div>
-              <Label className="font-medium">Reminders</Label>
+              <Label>Reminders</Label>
               <div className="flex flex-wrap gap-2">
                 {REMINDER_OPTIONS.map((opt) => (
                   <Badge
@@ -1200,7 +1200,7 @@ export function CreateMeetingDialog({
           {!initialEntityId && (
             <div className="grid gap-2 md:grid-cols-2 mb-2">
               <div>
-                <Label className="font-medium">Related To</Label>
+                <Label>Related To</Label>
                 <Select value={entityType} onValueChange={setEntityType}>
                   <SelectTrigger>
                     <SelectValue />
@@ -1214,7 +1214,7 @@ export function CreateMeetingDialog({
                 </Select>
               </div>
               <div>
-                <Label className="font-medium">Entity</Label>
+                <Label>Entity</Label>
                 <Select
                   value={entityId || undefined}
                   onValueChange={setEntityId}
@@ -1932,7 +1932,7 @@ export function MeetingDetailsDialog({
               </div>
               {meeting.description && (
                 <div className="space-y-1">
-                  <Label className="primary-text-medium text-leadgaze-dark dark:text-white uppercase">
+                  <Label className="primary-text-medium text-leadgaze-dark dark:text-white">
                     Description
                   </Label>
                   <p className="text-sm text- leadgaze-dark dark:text-white">{meeting.description}</p>

@@ -301,9 +301,13 @@ export function CoreEmailSettingsPage({
           </Alert>
         ) : (
           <Tabs defaultValue={settingsTabs[0]!.value} className="flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col space-y-6">
-            <TabsList className="mb-0 shrink-0 w-fit self-start">
+            <TabsList className="mb-1 h-auto w-full justify-start gap-6 rounded-none border-b bg-transparent p-0">
               {settingsTabs.map((tab) => (
-                <TabsTrigger key={tab.value} value={tab.value}>
+                <TabsTrigger 
+                  key={tab.value} 
+                  value={tab.value}
+                  className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
+                >
                   {tab.label}
                 </TabsTrigger>
               ))}
@@ -576,7 +580,7 @@ export function CoreEmailSettingsPage({
                           >
                             <span className="col-resize-handle" {...getResizeHandleProps('sync')} />
                           </SortableTableHead>
-                          <TableHead>Actions</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>

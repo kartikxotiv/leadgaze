@@ -9,6 +9,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Activity,
   ArrowLeft,
+  ArrowUp,
+  ArrowDown,
+  ArrowUpDown,
   Building2,
   Globe,
   Factory,
@@ -1037,7 +1040,7 @@ export function ServiceCloudTicketDetailPage({
                 </TabsContent>
                 ) : null}
 
-                <TabsContent value="work" className="mt-0 flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col data-[state=active]:flex data-[state=active]:flex-1 data-[state=active]:flex-col data-[state=active]:min-h-0 gap-2">
+                <TabsContent value="work" className="max-h-[500px] overflow-y-auto mb-2">
                   <div className="flex min-h-0 flex-1 flex-col w-full">
                     <CardWidgetContainer
                       title="Time loged"
@@ -1098,49 +1101,83 @@ export function ServiceCloudTicketDetailPage({
                                           />
                                         </TableHead>
                                         <TableHead
-                                          className="relative max-w-[150px]"
+                                          className="relative max-w-[150px] cursor-pointer group select-none hover:bg-muted/50"
                                           {...getHeaderProps('activities')}
+                                          onClick={() => timeToggleSort('activities')}
                                         >
-                                          <ColumnHeader columnId="activities" sortColumn={timeSortColumn} sortDirection={timeSortDirection} onSort={timeToggleSort} label="Activities" />
+                                          <div className="flex w-full items-center justify-between gap-1.5 pr-1">
+                                            <span className="flex min-w-0 flex-1 items-center truncate">
+                                              <span className="truncate">Activities</span>
+                                            </span>
+                                            {timeSortColumn === 'activities' ? (
+                                              timeSortDirection === 'asc' ? <ArrowUp className="h-3 w-3 shrink-0 text-leadgaze-primary" /> : <ArrowDown className="h-3 w-3 shrink-0 text-leadgaze-primary" />
+                                            ) : (
+                                              <ArrowUpDown className="h-3 w-3 shrink-0 text-muted-foreground opacity-35 transition-opacity group-hover:opacity-100" />
+                                            )}
+                                          </div>
                                           <span
                                             className="col-resize-handle"
-                                            {...getResizeHandleProps(
-                                              'activities',
-                                            )}
+                                            {...getResizeHandleProps('activities')}
                                           />
                                         </TableHead>
                                         <TableHead
-                                          className="relative max-w-[200px]"
+                                          className="relative max-w-[200px] cursor-pointer group select-none hover:bg-muted/50"
                                           {...getHeaderProps('description')}
+                                          onClick={() => timeToggleSort('description')}
                                         >
-                                          <ColumnHeader columnId="description" sortColumn={timeSortColumn} sortDirection={timeSortDirection} onSort={timeToggleSort} label="Description" />
+                                          <div className="flex w-full items-center justify-between gap-1.5 pr-1">
+                                            <span className="flex min-w-0 flex-1 items-center truncate">
+                                              <span className="truncate">Description</span>
+                                            </span>
+                                            {timeSortColumn === 'description' ? (
+                                              timeSortDirection === 'asc' ? <ArrowUp className="h-3 w-3 shrink-0 text-leadgaze-primary" /> : <ArrowDown className="h-3 w-3 shrink-0 text-leadgaze-primary" />
+                                            ) : (
+                                              <ArrowUpDown className="h-3 w-3 shrink-0 text-muted-foreground opacity-35 transition-opacity group-hover:opacity-100" />
+                                            )}
+                                          </div>
                                           <span
                                             className="col-resize-handle"
-                                            {...getResizeHandleProps(
-                                              'description',
-                                            )}
+                                            {...getResizeHandleProps('description')}
                                           />
                                         </TableHead>
                                         <TableHead
-                                          className="relative w-[150px]"
+                                          className="relative w-[150px] cursor-pointer group select-none hover:bg-muted/50"
                                           {...getHeaderProps('author')}
+                                          onClick={() => timeToggleSort('author')}
                                         >
-                                          <ColumnHeader columnId="author" sortColumn={timeSortColumn} sortDirection={timeSortDirection} onSort={timeToggleSort} label="Author" />
+                                          <div className="flex w-full items-center justify-between gap-1.5 pr-1">
+                                            <span className="flex min-w-0 flex-1 items-center truncate">
+                                              <span className="truncate">Author</span>
+                                            </span>
+                                            {timeSortColumn === 'author' ? (
+                                              timeSortDirection === 'asc' ? <ArrowUp className="h-3 w-3 shrink-0 text-leadgaze-primary" /> : <ArrowDown className="h-3 w-3 shrink-0 text-leadgaze-primary" />
+                                            ) : (
+                                              <ArrowUpDown className="h-3 w-3 shrink-0 text-muted-foreground opacity-35 transition-opacity group-hover:opacity-100" />
+                                            )}
+                                          </div>
                                           <span
                                             className="col-resize-handle"
                                             {...getResizeHandleProps('author')}
                                           />
                                         </TableHead>
                                         <TableHead
-                                          className="relative w-[180px]"
+                                          className="relative w-[180px] cursor-pointer group select-none hover:bg-muted/50"
                                           {...getHeaderProps('logged_date')}
+                                          onClick={() => timeToggleSort('logged_date')}
                                         >
-                                          <ColumnHeader columnId="logged_date" sortColumn={timeSortColumn} sortDirection={timeSortDirection} onSort={timeToggleSort} label="Date & Time Log" />
+                                          <div className="flex w-full items-center justify-between gap-1.5 pr-1">
+                                            <span className="flex min-w-0 flex-1 items-center truncate">
+                                              <span className="truncate">Date & Time Log</span>
+                                            </span>
+                                            {timeSortColumn === 'logged_date' ? (
+                                              timeSortDirection === 'asc' ? <ArrowUp className="h-3 w-3 shrink-0 text-leadgaze-primary" /> : <ArrowDown className="h-3 w-3 shrink-0 text-leadgaze-primary" />
+                                            ) : (
+                                              <ArrowUpDown className="h-3 w-3 shrink-0 text-muted-foreground opacity-35 transition-opacity group-hover:opacity-100" />
+                                            )}
+                                          </div>
                                           <span
                                             className="col-resize-handle"
-                                            {...getResizeHandleProps(
-                                              'logged_date',
-                                            )}
+                                            {...getResizeHandleProps('logged_date')}
                                           />
                                         </TableHead>
                                         <TableHead className="w-[100px] text-center">Actions</TableHead>
@@ -1231,44 +1268,35 @@ export function ServiceCloudTicketDetailPage({
                     headerClassName="p-2 xl:p-2 2xl:p-2 mb-1"
                     icon={<FileText className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
                     icon2={
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="gap-1 text-sm text-blue-500 hover:text-blue-600"
-                        onClick={() => {
-                          setEditingNote(null);
-                          setNoteContent('');
-                          setIsNoteModalOpen(true);
-                        }}
-                      >
-                        <Plus className="h-4 w-4" />
-                        Add Note
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Tabs
+                          value={statusFilter}
+                          onValueChange={(val) => setStatusFilter(val as 'active' | 'closed')}
+                          className="w-fit"
+                        >
+                          <TabsList className="h-8 p-1">
+                            <TabsTrigger value="active" className="h-6 text-xs px-3">Active</TabsTrigger>
+                            <TabsTrigger value="closed" className="h-6 text-xs px-3">Closed</TabsTrigger>
+                          </TabsList>
+                        </Tabs>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="gap-1 text-sm text-blue-500 hover:text-blue-600"
+                          onClick={() => {
+                            setEditingNote(null);
+                            setNoteContent('');
+                            setIsNoteModalOpen(true);
+                          }}
+                        >
+                          <Plus className="h-4 w-4" />
+                          Add Note
+                        </Button>
+                      </div>
                     }
                   >
                     <div className="p-2">
-                      <div className="flex bg-gray-100/60 dark:bg-gray-800/60 p-0.5 rounded-lg mb-2 w-fit border border-gray-200/20">
-                        <button
-                          onClick={() => setStatusFilter('active')}
-                          className={`rounded px-2.5 py-1 text-[11px] font-medium transition-all ${
-                            statusFilter === 'active'
-                              ? 'bg-white dark:bg-gray-900 text-blue-600 dark:text-blue-400 shadow-sm'
-                              : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
-                          }`}
-                        >
-                          Active
-                        </button>
-                        <button
-                          onClick={() => setStatusFilter('closed')}
-                          className={`rounded px-2.5 py-1 text-[11px] font-medium transition-all ${
-                            statusFilter === 'closed'
-                              ? 'bg-white dark:bg-gray-900 text-blue-600 dark:text-blue-400 shadow-sm'
-                              : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
-                          }`}
-                        >
-                          Closed
-                        </button>
-                      </div>
+
 
                       {notesLoading ? (
                         <div className="flex justify-center py-4">
@@ -2231,7 +2259,7 @@ function EditableSelect({
             }}
             disabled={disabled || (!allowNone && options.length === 0)}
           >
-            <SelectTrigger className="ml-auto w-[220px] justify-end text-right">
+            <SelectTrigger className="ml-auto w-[220px]">
               <div className="flex items-center gap-2 justify-end">
                 {selectedOption?.color ? (
                   <span
