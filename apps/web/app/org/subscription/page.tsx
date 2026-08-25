@@ -1173,8 +1173,9 @@ export default function OrgSubscriptionPage({
               <Trash2 className="text-destructive h-5 w-5" />
               Remove Module
             </DialogTitle>
-            <DialogDescription asChild>
-              <div className="space-y-3 pt-1">
+            </DialogHeader>
+            
+              <div className="space-y-3 custom-spacing-x-y py-2">
                 <p>
                   Are you sure you want to remove{' '}
                   <strong>{removeModuleDialog.displayName}</strong> from your
@@ -1203,9 +1204,8 @@ export default function OrgSubscriptionPage({
                     your entire subscription.
                   </p>
                 )}
-              </div>
-            </DialogDescription>
-          </DialogHeader>
+              </div>           
+          
           <DialogFooter>
             <Button
               variant="outline"
@@ -1376,7 +1376,7 @@ function ActiveModuleRow({
   return (
     <TableRow className="hover:bg-muted/50">
       {/* Module name + icon */}
-      <TableCell className="p-3">
+      <TableCell className="p-3 py-1">
         <div className="flex items-center gap-3">
           <div
             className={cn(

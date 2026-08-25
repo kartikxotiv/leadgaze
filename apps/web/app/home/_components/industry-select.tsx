@@ -127,7 +127,7 @@ export function IndustrySelect({
                             Create a new industry for this workspace
                         </DialogDescription>
                     </DialogHeader>
-                    <div className="flex-1 space-y-2 px-2">
+                    <div className="flex-1 space-y-2 custom-spacing-x-y py-2">
                         <div>
                             <Label htmlFor="industry-name">Industry Name</Label>
                             <Input

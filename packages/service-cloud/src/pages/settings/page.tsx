@@ -42,10 +42,25 @@ export function ServiceCloudSettingsPage({
     return <ServiceCloudAccessDenied label="Service Cloud settings" />;
 
   const tabsSlot = (
-    <TabsList className="mb-0 shrink-0 w-fit self-start pl-0 h-9">
-      <TabsTrigger value="statuses">Statuses</TabsTrigger>
-      <TabsTrigger value="priorities">Priorities</TabsTrigger>
-      <TabsTrigger value="categories">Categories</TabsTrigger>
+    <TabsList className="mb-1 h-auto w-full justify-start gap-6 rounded-none border-b bg-transparent p-0">
+      <TabsTrigger 
+        value="statuses"
+        className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
+      >
+        Statuses
+      </TabsTrigger>
+      <TabsTrigger 
+        value="priorities"
+        className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
+      >
+        Priorities
+      </TabsTrigger>
+      <TabsTrigger 
+        value="categories"
+        className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
+      >
+        Categories
+      </TabsTrigger>
     </TabsList>
   );
 

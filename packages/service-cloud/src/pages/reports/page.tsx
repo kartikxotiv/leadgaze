@@ -330,7 +330,7 @@ export function ServiceCloudReportsPage({
                       <div key={priority.id} className={itemClass}>
                         <div>
                           <div className="secondary-text-small-semibold" style={{ color: textColor || 'inherit' }}>{priority.name}</div>
-                          <div className="text-[10px] mt-1" style={{ color: subTextColor || 'var(--color-leadgaze-muted)' }}>{`${priority.openCount} open`}</div>
+                          <div className="secondary-text-small mt-1" style={{ color: subTextColor || 'var(--color-leadgaze-muted)' }}>{`${priority.openCount} open`}</div>
                         </div>
                         <Badge 
                           className="px-2 py-1 !secondary-text-small-semibold rounded-sm hover:opacity-100"

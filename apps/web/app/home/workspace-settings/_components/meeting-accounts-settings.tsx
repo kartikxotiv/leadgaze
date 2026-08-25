@@ -228,7 +228,7 @@ export function MeetingAccountsSettings({
           <DialogHeader>
             <DialogTitle>Connect {selectedProvider?.name}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-2 px-2">
+          <div className="space-y-2 custom-spacing-x-y py-2">
             <p className="primary-text-regular text-leadgaze-dark dark:text-white">You will be redirected to authenticate your{' '}
               {selectedProvider?.name} account.</p>
             <div className="flex items-center gap-4 rounded-lg border p-4">

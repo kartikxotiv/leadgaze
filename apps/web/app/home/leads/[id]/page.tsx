@@ -958,7 +958,7 @@ export default function LeadDetailsPage() {
                             }}
                             disabled={!canEdit}
                           >
-                            <SelectTrigger className="ml-auto w-[220px] justify-end text-right">
+                            <SelectTrigger className="ml-auto w-[220px]">
                               <SelectValue placeholder="Select company size" />
                             </SelectTrigger>
                             <SelectContent align="end">
