@@ -465,7 +465,7 @@ export function ServiceCloudCustomersPage({
                 label: getCustomerLabel('email', 'Email'),
                 type: 'email',
               },
-              { key: 'phone', label: getCustomerLabel('phone', 'Phone') },
+              { key: 'phone', label: getCustomerLabel('phone', 'Phone'), type: 'phone' },
               {
                 key: 'job_title',
                 label: getCustomerLabel('job_title', 'Job Title'),
@@ -565,7 +565,7 @@ export function ServiceCloudCustomersPage({
                 label: getOrganizationLabel('email', 'Email'),
                 type: 'email',
               },
-              { key: 'phone', label: getOrganizationLabel('phone', 'Phone') },
+              { key: 'phone', label: getOrganizationLabel('phone', 'Phone'), type: 'phone' },
             ]}
             columns={[
               {
