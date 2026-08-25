@@ -1364,7 +1364,7 @@ export function WebsiteConnectorDetailPage({
                 Copy this key and save it in a secure password manager. For security reasons, <strong>this key will not be shown again</strong>.
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-2 px-2 pb-2">
+            <div className="space-y-2 custom-spacing-x-y py-2">
               <div className="flex items-center gap-2 rounded border bg-muted/20 p-2.5 font-mono text-sm">
                 <span className="flex-1 truncate">{generatedSecretKey}</span>
                 <Button

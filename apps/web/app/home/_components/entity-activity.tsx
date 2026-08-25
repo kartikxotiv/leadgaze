@@ -308,7 +308,7 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
                 {editingReminder ? 'Edit Reminder' : 'Set Reminder'}
               </DialogTitle>
             </DialogHeader>
-            <div className="flex-1 space-y-2 px-2">
+            <div className="flex-1 space-y-2 custom-spacing-x-y py-2">
               <div>
                 <Label>Title</Label>
                 <Input
@@ -388,7 +388,7 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
         </Dialog>
       }
     >
-      <div className="px-2 mb-2">
+      <div className="px-2 py-2 mb-2">
         {/* Active / Sent toggle (mirrors Notes pattern) */}
         <div className="flex bg-gray-100/60 dark:bg-gray-800/60 p-0.5 rounded-lg mb-2 w-fit border border-gray-200/20">
           <button
@@ -1047,9 +1047,9 @@ export function EntityDocuments({ entityType, entityId }: EntityActivityProps) {
                 {editingDoc ? 'Rename Document' : 'Upload Document'}
               </DialogTitle>
             </DialogHeader>
-            <div className="flex-1 space-y-2 px-2">
+            <div className="flex-1 space-y-2 custom-spacing-x-y py-2">
               {editingDoc ? (
-                <div className="space-y-2">
+                <div>
                   <Label>Document Name</Label>
                   <Input
                     value={newName}
@@ -1057,7 +1057,7 @@ export function EntityDocuments({ entityType, entityId }: EntityActivityProps) {
                   />
                 </div>
               ) : (
-                <div className="space-y-2">
+                <div>
                   <Label>Select File</Label>
                   <Input
                     type="file"

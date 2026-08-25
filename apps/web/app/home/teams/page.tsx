@@ -347,7 +347,19 @@ export default function TeamsPage() {
                     <TableRow key={team.id}>
                       {isVisible('name') && (
                         <TableCell>
-                          <span className="primary-text-medium text-leadgaze-primary dark:text-leadgaze-primary">{team.name}</span>
+                          <span 
+                            className={cn(
+                              "primary-text-medium text-leadgaze-primary dark:text-leadgaze-primary",
+                              canAccess('team_members', 'edit') && "cursor-pointer hover:underline"
+                            )}
+                            onClick={() => {
+                              if (canAccess('team_members', 'edit')) {
+                                handleManageMembers(team);
+                              }
+                            }}
+                          >
+                            {team.name}
+                          </span>
                         </TableCell>
                       )}
                       {isVisible('description') && (

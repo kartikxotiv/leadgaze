@@ -485,7 +485,7 @@ export const RichTextEditor = React.forwardRef<RichTextEditorRef, RichTextEditor
 
     const renderToolbar = () => (
       <div className={cn(
-        "flex flex-wrap items-center gap-0.5 px-2 py-1 select-none",
+        "flex flex-wrap items-center gap-0.5 custom-spacing-x-y py-2 select-none",
         toolbarPosition === 'bottom'
           ? "border-t border-zinc-200/80 bg-zinc-50/70 rounded-b-lg dark:border-zinc-800 dark:bg-zinc-900/50"
           : "border-b border-zinc-200/80 bg-zinc-50/70 rounded-t-lg dark:border-zinc-800 dark:bg-zinc-900/50"

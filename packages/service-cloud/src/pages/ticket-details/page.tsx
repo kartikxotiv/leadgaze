@@ -1872,7 +1872,7 @@ export function ServiceCloudTicketDetailPage({
                           {editingNote ? 'Edit Note' : 'Add Note'}
                         </DialogTitle>
               </DialogHeader>          
-          <div className="p-2 pt-0">
+          <div className="custom-spacing-x-y py-2">
             <Label htmlFor="note_content" className="text-sm font-medium">Write Note</Label>
             <Textarea
               id="note_content"
@@ -1943,7 +1943,7 @@ export function ServiceCloudTicketDetailPage({
           <DialogHeader>
             <DialogTitle>Add Document</DialogTitle>
           </DialogHeader>          
-          <div className="p-2 pt-0 space-y-2 overflow-y-auto">
+          <div className="space-y-2 overflow-y-auto custom-spacing-x-y py-2">
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <Label htmlFor="doc_name" className="text-sm font-medium text-gray-700 dark:text-gray-300">Document Name</Label>

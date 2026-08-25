@@ -222,7 +222,7 @@ export function EditOpportunityDialog({
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form id="dialog-form" onSubmit={form.handleSubmit(onSubmit)} className="flex-1 overflow-y-auto px-2 space-y-2">
+          <form id="dialog-form" onSubmit={form.handleSubmit(onSubmit)} className="flex-1 overflow-y-auto custom-spacing-x-y py-2 space-y-2">
             <FieldGuard fieldKey="opportunity_name" canEdit={canEdit}>
               <FormField
                 control={form.control}

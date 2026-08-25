@@ -356,7 +356,7 @@ export default function CreateLeadDialog({
 
       <form id="dialog-form"
         onSubmit={handleSubmit}
-        className="flex flex-col flex-1 overflow-y-auto p-2 gap-2"
+        className="flex flex-col flex-1 overflow-y-auto gap-2 custom-spacing-x-y"
       >
         {/* Contact Information Section */}
         <div className="space-y-2">
@@ -507,7 +507,7 @@ export default function CreateLeadDialog({
                 htmlFor="industry_id">
                 Industry (Optional)
               </Label>
-              <div>
+              
                 <IndustrySelect
                   value={formData.industry_id}
                   onValueChange={(value) =>
@@ -516,7 +516,7 @@ export default function CreateLeadDialog({
                   disabled={isLoading}
                   className="border-gray-300 bg-white text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
                 />
-              </div>
+              
             </div>
           </div>
 
