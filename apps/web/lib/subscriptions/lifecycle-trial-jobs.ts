@@ -2,6 +2,7 @@ import 'server-only';
 
 import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
 
+import { type BillingSettings, loadBillingSettings } from './billing-settings';
 import {
   getTrialReminderDays,
   getUsageWarningThreshold,
@@ -17,6 +18,12 @@ export class SubscriptionTrialLifecycleJobs {
   protected readonly client = getSupabaseServerAdminClient();
   protected readonly billingClient = this.client as LifecycleBillingClient;
   protected readonly notifications = new SubscriptionNotificationService();
+  private billingSettingsPromise?: Promise<BillingSettings>;
+
+  protected getBillingSettings() {
+    this.billingSettingsPromise ??= loadBillingSettings(this.billingClient);
+    return this.billingSettingsPromise;
+  }
 
   protected async processTrialReminders(now: Date) {
     const result = await this.client

@@ -6,6 +6,7 @@ import type {
   CreatePlanInvoiceInput,
   InvoicePurpose,
 } from './backend-billing-types';
+import { type BillingSettings, loadBillingSettings } from './billing-settings';
 import { SubscriptionApiError } from './errors';
 import { SubscriptionNotificationService } from './notification-service';
 import { RazorpayInvoiceProvider } from './razorpay-provider';
@@ -14,6 +15,7 @@ export abstract class BackendBillingBase {
   protected readonly billingClient: BillingClient;
   protected readonly provider: RazorpayInvoiceProvider;
   protected readonly notifications = new SubscriptionNotificationService();
+  private billingSettingsPromise?: Promise<BillingSettings>;
 
   constructor(client: BackendClient, provider = new RazorpayInvoiceProvider()) {
     this.billingClient = client;
@@ -224,11 +226,9 @@ export abstract class BackendBillingBase {
     return account.email;
   }
 
-  protected invoiceDueDays() {
-    const configured = Number(process.env.BILLING_INVOICE_DUE_DAYS ?? 7);
-    return Number.isFinite(configured) && configured > 0
-      ? Math.floor(configured)
-      : 7;
+  protected getBillingSettings() {
+    this.billingSettingsPromise ??= loadBillingSettings(this.billingClient);
+    return this.billingSettingsPromise;
   }
 
   protected subscriptionUrl() {

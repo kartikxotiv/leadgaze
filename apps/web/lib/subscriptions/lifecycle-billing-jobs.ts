@@ -113,10 +113,7 @@ export class SubscriptionBillingLifecycleJobs extends SubscriptionTrialLifecycle
   }
 
   protected async createRenewalInvoices(now: Date) {
-    const leadDays = Math.max(
-      1,
-      Number(process.env.BILLING_RENEWAL_INVOICE_DAYS ?? 7),
-    );
+    const { renewalInvoiceDays: leadDays } = await this.getBillingSettings();
     const end = new Date(now.getTime() + leadDays * LIFECYCLE_DAY_MS);
     const seats = await this.billingClient
       .from('workspace_module_seats')

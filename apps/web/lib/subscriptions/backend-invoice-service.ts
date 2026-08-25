@@ -115,7 +115,10 @@ export abstract class BackendInvoiceService extends BackendBillingContextService
     const now = new Date();
     const dueAt =
       input.dueAt ??
-      new Date(now.getTime() + this.invoiceDueDays() * BILLING_DAY_MS);
+      new Date(
+        now.getTime() +
+          (await this.getBillingSettings()).invoiceDueDays * BILLING_DAY_MS,
+      );
     const invoiceNumber = `LG-${now.toISOString().slice(0, 10).replaceAll('-', '')}-${randomUUID().slice(0, 8).toUpperCase()}`;
     const created = await this.billingClient
       .from('backend_billing_invoices')

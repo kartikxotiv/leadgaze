@@ -84,10 +84,7 @@ export class SubscriptionExpiryLifecycleJobs extends SubscriptionBillingLifecycl
 
   protected async processSubscriptionExpiry(now: Date) {
     const client = this.billingClient;
-    const graceDays = Math.max(
-      0,
-      Number(process.env.BILLING_GRACE_PERIOD_DAYS ?? 7),
-    );
+    const { gracePeriodDays: graceDays } = await this.getBillingSettings();
     const seats = await client
       .from('workspace_module_seats')
       .select('id, workspace_id, product_id, status, current_period_end')

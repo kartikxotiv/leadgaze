@@ -10,6 +10,10 @@ Back up the database, dry-run, and then apply:
 
 `supabase/migrations/20260824120000_add_backend_razorpay_billing.sql`
 
+Then apply the database-backed timing settings migration:
+
+`supabase/migrations/20260825180000_add_database_billing_settings.sql`
+
 The migration does not edit any earlier migration. It adds:
 
 - `backend_billing_invoices` and `backend_billing_invoice_items`
@@ -27,15 +31,28 @@ RAZORPAY_KEY_SECRET=
 RAZORPAY_WEBHOOK_SECRET=
 CRON_SECRET=
 
-BILLING_INVOICE_DUE_DAYS=7
-BILLING_RENEWAL_INVOICE_DAYS=7
-BILLING_GRACE_PERIOD_DAYS=7
-
 SMTP_HOST=
 SMTP_PORT=
 SMTP_USER=
 SMTP_PASSWORD=
 SMTP_FROM=
+```
+
+Billing timing is managed in `public.billing_settings`, not environment
+variables. The additive database migration seeds these rows:
+
+| `setting_key`          | Default | Meaning                                           |
+| ---------------------- | ------: | ------------------------------------------------- |
+| `invoice_due_days`     |       7 | Days allowed to pay a newly issued invoice        |
+| `renewal_invoice_days` |       7 | Days before period end to create renewal invoices |
+| `grace_period_days`    |       7 | Days after period end before access expires       |
+
+Update them through a privileged database connection, for example:
+
+```sql
+UPDATE public.billing_settings
+SET value_days = 10
+WHERE setting_key = 'invoice_due_days';
 ```
 
 Never expose the Razorpay key secret or webhook secret through a
