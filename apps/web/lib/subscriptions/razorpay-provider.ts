@@ -44,11 +44,13 @@ export class RazorpayInvoiceProvider {
   private readonly apiBaseUrl = 'https://api.razorpay.com/v1';
 
   async createInvoice(input: RazorpayInvoiceInput) {
+    const currency = input.currency.trim().toUpperCase();
     const response = await this.request<RazorpayInvoice>('/invoices', {
       method: 'POST',
       body: JSON.stringify({
         type: 'invoice',
         description: input.description,
+        currency,
         customer: {
           name: input.customer.name,
           email: input.customer.email,
@@ -61,7 +63,7 @@ export class RazorpayInvoiceProvider {
             name: input.description,
             description: `Leadgaze invoice ${input.invoiceNumber}`,
             amount: input.amountMinor,
-            currency: input.currency,
+            currency,
             quantity: input.quantity,
           },
         ],
