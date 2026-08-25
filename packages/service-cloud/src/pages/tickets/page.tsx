@@ -216,10 +216,15 @@ export function ServiceCloudTicketsPage({
     if (filterStatusParam === 'open') {
       return statuses.filter((s: any) => s.lifecycle === 'open').map((s: any) => s.id);
     }
-    return statuses
-      .filter((s: any) => s.lifecycle !== 'closed' && s.lifecycle !== 'resolved')
-      .map((s: any) => s.id);
-  }, [statuses, filterStatusParam]);
+    // List view excludes closed and resolved tickets by default unless explicitly filtered
+    if (viewMode === 'table') {
+      return statuses
+        .filter((s: any) => s.lifecycle !== 'closed' && s.lifecycle !== 'resolved')
+        .map((s: any) => s.id);
+    }
+    // Kanban/Grid view displays all tickets across all status columns by default
+    return [];
+  }, [statuses, filterStatusParam, viewMode]);
 
   const statusOptions = statuses.map((status: any) => ({
     label: status.name,
