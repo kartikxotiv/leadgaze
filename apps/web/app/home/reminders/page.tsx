@@ -1176,7 +1176,7 @@ export default function RemindersPage() {
           <DialogHeader>
             <DialogTitle>Add New Reminder</DialogTitle>
           </DialogHeader>
-          <div className="flex-1 space-y-2 overflow-y-auto px-2">
+          <div className="flex-1 space-y-2 overflow-y-auto custom-spacing-x-y py-2">
             <div className="space-y-2">
               <Label>Associate with</Label>
               <RadioGroup
@@ -1344,7 +1344,7 @@ export default function RemindersPage() {
           <DialogHeader>
             <DialogTitle>Edit Reminder</DialogTitle>
           </DialogHeader>
-          <div className="flex-1 space-y-2 px-2">
+          <div className="flex-1 space-y-2 custom-spacing-x-y py-2">
             <div>
               <Label>Title</Label>
               <Input

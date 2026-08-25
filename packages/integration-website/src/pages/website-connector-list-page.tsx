@@ -155,7 +155,7 @@ export function WebsiteConnectorListPage({
           Configure a new endpoint structure for web integration.
         </DialogDescription>
       </DialogHeader>
-      <div className="space-y-2 px-2 mt-2 mb-2">
+      <div className="space-y-2 custom-spacing-x-y">
         <div>
           <Label htmlFor="cname">Connector Name</Label>
           <Input

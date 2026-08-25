@@ -133,9 +133,9 @@ export function CreateAccountDialog({
       <form
         id="create-account-form"
         onSubmit={handleSubmit}
-        className={`flex flex-col flex-1 space-y-2 overflow-y-auto px-2 ${asFormOnly && 'mb-2'}`}
+        className={`flex flex-col flex-1 space-y-2 overflow-y-auto custom-spacing-x-y`}
       >
-          <div className={`space-y-2 ${asFormOnly && 'pt-2'}`}>
+          <div className={`space-y-2`}>
             <h3 className="primary-heading text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">
               Basic Information
             </h3>            

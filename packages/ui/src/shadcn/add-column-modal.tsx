@@ -319,7 +319,7 @@ export function AddColumnModal({
         <DialogHeader>
           <DialogTitle>Toggle Columns</DialogTitle>          
         </DialogHeader>
-        <div className='flex flex-col flex-1 p-2 gap-2'>
+        <div className='flex flex-col flex-1 gap-2 custom-spacing-x-y'>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -354,7 +354,7 @@ export function AddColumnModal({
 
         <div className="flex-1 flex flex-col overflow-hidden">
           {currentTab === 'existing' ? (
-            <div className="p-2 pt-0 space-y-1 flex-1 overflow-y-auto">
+            <div className="custom-spacing-x-y pt-0 space-y-1 flex-1 overflow-y-auto">
               <div className="flex items-center justify-between text-xs font-semibold text-muted-foreground uppercase">
                 <div className="flex items-center gap-1 text-[10px]">
                   SHOWN <ChevronDown className="h-3 w-3" />
@@ -381,7 +381,7 @@ export function AddColumnModal({
             </div>
           ) : (
             <div className="flex flex-col h-full overflow-hidden flex-1">
-              <div className="p-2 flex-1 overflow-y-auto pt-0 flex flex-col gap-2">
+              <div className="custom-spacing-x-y flex-1 overflow-y-auto pt-0 flex flex-col gap-2">
           {/* Field Name */}
           <div>
             <Label htmlFor="add-col-label">Column Name <span className="text-red-500">*</span></Label>
@@ -445,13 +445,13 @@ export function AddColumnModal({
               id="add-col-required"
               checked={isRequired}
               onCheckedChange={setIsRequired}
-              className="h-4"
+              className="h-5"
             />
           </div>
 
           {/* Access Type */}
           <div className="space-y-2">
-            <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Permission Schema</Label>
+            <Label className="text-xs font-semibold text-muted-foreground tracking-wider">Permission Schema</Label>
             <div className="flex flex-col">
               {availableAccessTypes.map((type, index) => (
                 <Button
