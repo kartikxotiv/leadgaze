@@ -29,6 +29,7 @@ interface TicketsKanbanBoardProps {
   canCreate: boolean;
   canDelete: boolean;
   onClick: (id: string) => void;
+  onEdit?: (ticket: any) => void;
   onDelete: (ticket: any) => void;
   onCreateTicket: (statusId: string) => void;
   refetch: () => void;
@@ -44,6 +45,7 @@ export function TicketsKanbanBoard({
   canCreate,
   canDelete,
   onClick,
+  onEdit,
   onDelete,
   onCreateTicket,
   refetch,
@@ -180,6 +182,7 @@ export function TicketsKanbanBoard({
               canCreate={canCreate}
               canDelete={canDelete}
               onClick={onClick}
+              onEdit={onEdit}
               onDelete={onDelete}
               onCreateTicket={onCreateTicket}
             />
