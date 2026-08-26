@@ -369,9 +369,9 @@ export const getServiceCloudResourceController = catchAsync(
       const { data: accounts, error: accountsError } =
         accountIds.length > 0
           ? await supabase
-              .from('accounts')
-              .select('id,name,email,picture_url')
-              .in('id', accountIds)
+            .from('accounts')
+            .select('id,name,email,picture_url')
+            .in('id', accountIds)
           : { data: [], error: null };
 
       if (accountsError) throw accountsError;
@@ -440,6 +440,10 @@ export const createServiceCloudResourceController = catchAsync(
       insertPayload.updated_by = user.id;
     }
 
+    if (resource === 'tickets' && !insertPayload.assigned_agent_id) {
+      insertPayload.assigned_agent_id = user.id;
+    }
+
     const payload = cleanPayload(insertPayload);
     delete (payload as any).workspaceId;
 
@@ -458,6 +462,24 @@ export const createServiceCloudResourceController = catchAsync(
       .single();
 
     if (insertError) throw insertError;
+
+    if (resource === 'tickets' && data?.id && data?.assigned_agent_id) {
+      const assignees = (supabase as any)
+        .schema('service_cloud')
+        .from('ticket_assignees');
+
+      await assignees.upsert(
+        {
+          workspace_id: workspaceId,
+          ticket_id: data.id,
+          account_id: data.assigned_agent_id,
+          assignment_role: 'owner',
+          is_primary: true,
+          created_by: user.id,
+        },
+        { onConflict: 'ticket_id,account_id' },
+      );
+    }
 
     return NextResponse.json(
       { success: true, message: `${resource} created successfully`, data },
@@ -587,13 +609,13 @@ export const deleteServiceCloudResourceController = catchAsync(
     const query = (supabase as any).schema('service_cloud').from(config.table);
     const { error: deleteError } = config.softDelete
       ? await query
-          .update({
-            is_deleted: true,
-            deleted_at: new Date().toISOString(),
-            deleted_by: user.id,
-          })
-          .eq('workspace_id', workspaceId)
-          .eq('id', id)
+        .update({
+          is_deleted: true,
+          deleted_at: new Date().toISOString(),
+          deleted_by: user.id,
+        })
+        .eq('workspace_id', workspaceId)
+        .eq('id', id)
       : await query.delete().eq('workspace_id', workspaceId).eq('id', id);
 
     if (deleteError) throw deleteError;
