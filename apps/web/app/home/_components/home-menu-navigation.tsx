@@ -76,6 +76,7 @@ import { Trans } from '@kit/ui/trans';
 import { cn, isRouteActive } from '@kit/ui/utils';
 
 import { AppLogo } from '~/components/app-logo';
+import { HeaderWorkspaceSelector } from './header-workspace-selector';
 import { ProfileAccountDropdownContainer } from '~/components/personal-account-dropdown-container';
 import pathsConfig from '~/config/paths.config';
 import { usePermissionBasedNavigationConfig } from '~/lib/permissions/use-navigation-permissions';
@@ -1194,8 +1195,8 @@ export function HomeMenuNavigation() {
     <div className="flex w-full flex-1 items-center justify-between">
       {/* Left side: Logo & App Launcher & Navigation Items */}
       <div className="flex min-w-0 flex-1 items-center space-x-3 overflow-hidden md:space-x-4">
-        <div className="flex shrink-0 items-center space-x-2 md:space-x-3">
-          <AppLogo className="max-h-8 w-auto py-1" />
+        <div className="flex shrink-0 items-center space-x-1.5 md:space-x-2">
+          <HeaderWorkspaceSelector />
           {!isOrgRoute && (
             <div className="hidden h-6 w-px bg-white/25 md:block" />
           )}
