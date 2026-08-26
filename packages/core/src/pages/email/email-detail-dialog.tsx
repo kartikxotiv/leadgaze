@@ -334,7 +334,7 @@ export function CoreEmailDetailDialog({
           </div>
 
           <div className="p-5 text-sm">
-            <div className="prose prose-sm dark:prose-invert max-w-none text-zinc-800 dark:text-zinc-200">
+            <div className="prose prose-sm dark:prose-invert max-w-none text-zinc-800 dark:text-zinc-200 [&_ol]:list-decimal [&_ol]:ml-4 [&_ul]:list-disc [&_ul]:ml-4">
               {email.html_body || email.body ? (
                 <div
                   className="email-content leading-relaxed"

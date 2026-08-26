@@ -234,31 +234,31 @@ function TicketCustomFieldsSection({
         </span>
       </AccordionTrigger>
       <AccordionContent className="px-2 pb-2">
-        
-          <LeadCustomFieldInputs
-            fields={fields}
-            values={values}
-            onChange={(key, value) => {
-              setValues((prev) => ({
-                ...prev,
-                [key]: value,
-              }));
-            }}
-            canEdit={canEditField || (() => true)}
-            canView={canViewField || (() => true)}
-          />
 
-          {isChanged && (
-            <div className="flex justify-end pt-2">
-              <Button
-                size="sm"
-                disabled={isSaving}
-                onClick={() => onSave(values)}
-              >
-                Save Changes
-              </Button>
-            </div>
-          )}        
+        <LeadCustomFieldInputs
+          fields={fields}
+          values={values}
+          onChange={(key, value) => {
+            setValues((prev) => ({
+              ...prev,
+              [key]: value,
+            }));
+          }}
+          canEdit={canEditField || (() => true)}
+          canView={canViewField || (() => true)}
+        />
+
+        {isChanged && (
+          <div className="flex justify-end pt-2">
+            <Button
+              size="sm"
+              disabled={isSaving}
+              onClick={() => onSave(values)}
+            >
+              Save Changes
+            </Button>
+          </div>
+        )}
       </AccordionContent>
     </AccordionItem>
   );
@@ -439,7 +439,7 @@ export function ServiceCloudTicketDetailPage({
   const rawTimeEntries = data?.timeEntries ?? [];
   const [timePage, setTimePage] = useState(1);
   const [timePageSize, setTimePageSize] = useState(25);
-  
+
   const {
     sortColumn: timeSortColumn,
     sortDirection: timeSortDirection,
@@ -687,7 +687,7 @@ export function ServiceCloudTicketDetailPage({
     if (description) payload.set('description', description);
     if (file_url) payload.set('file_url', file_url);
     if (file) payload.set('file', file);
-    
+
     uploadDocumentMutation.mutate(payload);
   };
 
@@ -782,20 +782,20 @@ export function ServiceCloudTicketDetailPage({
       {/* Top Header */}
       <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap sm:justify-between">
         <div className="flex items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    asChild
-                    className="w-6 h-6 border-leadgaze-border border p-0"
-                  >
-                    <Link href="/home/services/tickets">
-                      <ArrowLeft className="h-3 w-3" />
-                    </Link>
-                  </Button>
-                  <h1 className="primary-heading-extra text-leadgaze-dark dark:text-white">
-                    Ticket Detail
-                  </h1>
-        </div>        
-        
+          <Button
+            variant="ghost"
+            asChild
+            className="w-6 h-6 border-leadgaze-border border p-0"
+          >
+            <Link href="/home/services/tickets">
+              <ArrowLeft className="h-3 w-3" />
+            </Link>
+          </Button>
+          <h1 className="primary-heading-extra text-leadgaze-dark dark:text-white">
+            Ticket Detail
+          </h1>
+        </div>
+
         <div className="flex items-center gap-2">
           <Button variant="outline" className="secondary-text-small-bold text-leadgaze-dark dark:text-white gap-1.5 px-2">
             <span className="font-medium text-gray-700 dark:text-white">Logged:</span>
@@ -803,8 +803,8 @@ export function ServiceCloudTicketDetailPage({
           </Button>
           <Button variant="default" className="secondary-text-small-bold bg-leadgaze-primary hover:bg-leadgaze-primary text-white gap-1.5 px-2" onClick={() => setIsTimeLogOpen(true)}>
             <Edit2 className="h-4 w-4" />
-                      <span className="hidden sm:inline">Add Time</span>
-          </Button>          
+            <span className="hidden sm:inline">Add Time</span>
+          </Button>
         </div>
       </div>
 
@@ -817,12 +817,12 @@ export function ServiceCloudTicketDetailPage({
               <div className="flex flex-col">
                 <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-white">
                   <span>
-                    Created by <span className="font-bold">{ticket.created_by_account?.name || 'Unknown'}</span> on {formatDate(ticket.created_at)} | {ticket.created_at && new Date(ticket.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                    Created by <span className="font-bold">{ticket.created_by_account?.name || 'Unknown'}</span> on {formatDate(ticket.created_at)} | {ticket.created_at && new Date(ticket.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
-                </div>                
+                </div>
                 <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-1 dark:text-white">
                   <span>
-                    Assigned to <span className="font-bold">{assignedAgent?.name || 'Unassigned'}</span> on {ticket.updated_at ? formatDate(ticket.updated_at) : formatDate(ticket.created_at)} | {ticket.updated_at ? new Date(ticket.updated_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : new Date(ticket.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                    Assigned to <span className="font-bold">{assignedAgent?.name || 'Unassigned'}</span> on {ticket.updated_at ? formatDate(ticket.updated_at) : formatDate(ticket.created_at)} | {ticket.updated_at ? new Date(ticket.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : new Date(ticket.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
                 </div>
               </div>
@@ -836,94 +836,94 @@ export function ServiceCloudTicketDetailPage({
                   <span className="text-[11px] sm:text-xs font-bold text-gray-900 text-center leading-tight">
                     {ticket.priority?.resolution_due_minutes
                       ? (() => {
-                          const mins = ticket.priority.resolution_due_minutes;
-                          const h = Math.floor(mins / 60);
-                          const m = mins % 60;
-                          if (h > 0 && m > 0) return `${h}h\n${m}m`;
-                          if (h > 0) return `${h}h`;
-                          return `${m}m`;
-                        })()
+                        const mins = ticket.priority.resolution_due_minutes;
+                        const h = Math.floor(mins / 60);
+                        const m = mins % 60;
+                        if (h > 0 && m > 0) return `${h}h\n${m}m`;
+                        if (h > 0) return `${h}h`;
+                        return `${m}m`;
+                      })()
                       : 'N/A'}
                   </span>
                 </div>
               </div>
             }
           />
-          
-          
-            <Tabs
-              defaultValue={canManageInbox ? 'conversation' : 'work'}
-              className="space-y-4 mb-2"
-            >
-              <TabsList className="mb-0 h-auto w-full justify-start gap-3 overflow-x-auto rounded-none border-b bg-transparent p-0 [-ms-overflow-style:none] [scrollbar-width:none] sm:gap-6 [&::-webkit-scrollbar]:hidden">
-                {canManageInbox ? (
-                  <TabsTrigger
-                    value="conversation"
-                    className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
-                  >
-                    <Mail className="mr-2 h-4 w-4" />
-                    Conversation
-                  </TabsTrigger>
-                ) : null}
-                <TabsTrigger
-                  value="work"
-                  className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
-                >
-                  <Clock3 className="mr-2 h-4 w-4" />
-                  Time loged
-                </TabsTrigger>
-                <TabsTrigger
-                  value="notes"
-                  className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
-                >
-                  <FileText className="mr-2 h-4 w-4" />
-                  Notes
-                </TabsTrigger>
-                <TabsTrigger
-                  value="documents"
-                  className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
-                >
-                  <Paperclip className="mr-2 h-4 w-4" />
-                  Document
-                </TabsTrigger>
-                <TabsTrigger
-                  value="activity"
-                  className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
-                >
-                  <Clock className="mr-2 h-4 w-4" />
-                  Activity
-                </TabsTrigger>
-              </TabsList>
 
+
+          <Tabs
+            defaultValue={canManageInbox ? 'conversation' : 'work'}
+            className="space-y-4 mb-2"
+          >
+            <TabsList className="mb-0 h-auto w-full justify-start gap-3 overflow-x-auto rounded-none border-b bg-transparent p-0 [-ms-overflow-style:none] [scrollbar-width:none] sm:gap-6 [&::-webkit-scrollbar]:hidden">
               {canManageInbox ? (
-                <TabsContent value="conversation" className="max-h-[500px] overflow-y-auto mb-2">
-                  <CardWidgetContainer
-                    title="Conversation"
-                    headerClassName="p-2 xl:p-2 2xl:p-2"
-                    icon={<Mail className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
-                    icon2={
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="gap-2 text-sm text-blue-500 hover:text-blue-600"
-                        onClick={() => setIsComposeOpen(true)}
-                      >
-                        <Plus className="h-4 w-4" />
-                        Send Mail
-                      </Button>
-                    }
-                  >
-                    <div className="px-2">
-                      {emails.length === 0 ? (
-                        <div className="flex items-center justify-center py-8 text-center flex-col">
-                          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#F0F3FF]">
-                            <Mail className="mx-auto mb-2 h-6 w-6 text-blue-500 pt-1" />
-                            </div>                          
-                          <p className="text-sm text-gray-500 mt-4">No Conversation activity yet</p>
+                <TabsTrigger
+                  value="conversation"
+                  className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
+                >
+                  <Mail className="mr-2 h-4 w-4" />
+                  Conversation
+                </TabsTrigger>
+              ) : null}
+              <TabsTrigger
+                value="work"
+                className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
+              >
+                <Clock3 className="mr-2 h-4 w-4" />
+                Time loged
+              </TabsTrigger>
+              <TabsTrigger
+                value="notes"
+                className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
+              >
+                <FileText className="mr-2 h-4 w-4" />
+                Notes
+              </TabsTrigger>
+              <TabsTrigger
+                value="documents"
+                className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
+              >
+                <Paperclip className="mr-2 h-4 w-4" />
+                Document
+              </TabsTrigger>
+              <TabsTrigger
+                value="activity"
+                className="data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
+              >
+                <Clock className="mr-2 h-4 w-4" />
+                Activity
+              </TabsTrigger>
+            </TabsList>
+
+            {canManageInbox ? (
+              <TabsContent value="conversation" className="max-h-[500px] overflow-y-auto mb-2">
+                <CardWidgetContainer
+                  title="Conversation"
+                  headerClassName="p-2 xl:p-2 2xl:p-2"
+                  icon={<Mail className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
+                  icon2={
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="gap-2 text-sm text-blue-500 hover:text-blue-600"
+                      onClick={() => setIsComposeOpen(true)}
+                    >
+                      <Plus className="h-4 w-4" />
+                      Send Mail
+                    </Button>
+                  }
+                >
+                  <div className="px-2">
+                    {emails.length === 0 ? (
+                      <div className="flex items-center justify-center py-8 text-center flex-col">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#F0F3FF]">
+                          <Mail className="mx-auto mb-2 h-6 w-6 text-blue-500 pt-1" />
                         </div>
-                      ) : (
-                        <div className="scrollbar-thin max-h-[350px] space-y-2 overflow-y-auto pr-2">
-                          {emails.map((item: any) => {
+                        <p className="text-sm text-gray-500 mt-4">No Conversation activity yet</p>
+                      </div>
+                    ) : (
+                      <div className="scrollbar-thin max-h-[350px] space-y-2 overflow-y-auto pr-2">
+                        {emails.map((item: any) => {
                           const email = item.email;
                           return (
                             <article
@@ -970,7 +970,7 @@ export function ServiceCloudTicketDetailPage({
                                 </div>
                               </div>
                               <div className="p-5">
-                                <div className="prose prose-sm max-w-none dark:bg-white dark:text-leadgaze-dark dark:px-4">
+                                <div className="prose prose-sm max-w-none dark:bg-white dark:text-leadgaze-dark dark:px-4 [&_ol]:list-decimal [&_ol]:ml-4 [&_ul]:list-disc [&_ul]:ml-4">
                                   {email?.html_body || email?.body ? (
                                     <div
                                       dangerouslySetInnerHTML={{
@@ -1033,508 +1033,506 @@ export function ServiceCloudTicketDetailPage({
                             </article>
                           );
                         })}
-                        </div>
-                      )}
-                    </div>
-                  </CardWidgetContainer>
-                </TabsContent>
-                ) : null}
-
-                <TabsContent value="work" className="max-h-[500px] overflow-y-auto mb-2">
-                  <div className="flex min-h-0 flex-1 flex-col w-full">
-                    <CardWidgetContainer
-                      title="Time loged"
-                      className="flex min-h-0 flex-1 flex-col"
-                      contentClassName="flex min-h-0 flex-1 flex-col p-0"
-                      headerClassName="p-2 xl:p-2 2xl:p-2 mb-1"
-                      icon={<Clock3 className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
-                      icon2={
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="gap-2 text-sm text-blue-500 hover:text-blue-600"
-                          onClick={() => setIsTimeLogOpen(true)}
-                        >
-                          <Plus className="h-4 w-4" />
-                          Add Time
-                        </Button>
-                      }
-                    >
-                      <div className="flex flex-col min-h-0 flex-1">
-                        {timeEntries.length === 0 ? (
-                          <div className="flex flex-col items-center justify-center py-8 text-center">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#F0F3FF]">
-                              <Clock3 className="h-6 w-6 text-blue-500" />
-                            </div>
-                            <p className="mt-4 text-sm text-gray-500">No Time loged yet</p>
-                          </div>
-                        ) : (
-                          <PageBody className="sticky flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col overflow-hidden">
-                            <div className="flex min-h-0 w-full min-w-0 max-w-full flex-1 gap-0">
-                              <CustomTableContainer
-                                pagination={
-                                  <TablePagination
-                                    currentPage={timePage}
-                                    totalPages={Math.ceil(timeEntries.length / timePageSize)}
-                                    totalCount={timeEntries.length}
-                                    pageSize={timePageSize}
-                                    onPageChange={setTimePage}
-                                    onPageSizeChange={(val) => {
-                                      setTimePageSize(val);
-                                      setTimePage(1);
-                                    }}
-                                  />
-                                }
-                              >
-                                <div className="scrollbar-thin flex-1 overflow-y-auto">
-                                  <Table>
-                                    <TableHeader>
-                                      <TableRow>
-                                        <TableHead
-                                          className="relative w-[80px]"
-                                          {...getHeaderProps('s_no')}
-                                        >
-                                          <ColumnHeader columnId="s_no" sortColumn={timeSortColumn} sortDirection={timeSortDirection} onSort={() => {}} label="S. No." sortable={false} />
-                                          <span
-                                            className="col-resize-handle"
-                                            {...getResizeHandleProps('s_no')}
-                                          />
-                                        </TableHead>
-                                        <TableHead
-                                          className="relative max-w-[150px] cursor-pointer group select-none hover:bg-muted/50"
-                                          {...getHeaderProps('activities')}
-                                          onClick={() => timeToggleSort('activities')}
-                                        >
-                                          <div className="flex w-full items-center justify-between gap-1.5 pr-1">
-                                            <span className="flex min-w-0 flex-1 items-center truncate">
-                                              <span className="truncate">Activities</span>
-                                            </span>
-                                            {timeSortColumn === 'activities' ? (
-                                              timeSortDirection === 'asc' ? <ArrowUp className="h-3 w-3 shrink-0 text-leadgaze-primary" /> : <ArrowDown className="h-3 w-3 shrink-0 text-leadgaze-primary" />
-                                            ) : (
-                                              <ArrowUpDown className="h-3 w-3 shrink-0 text-muted-foreground opacity-35 transition-opacity group-hover:opacity-100" />
-                                            )}
-                                          </div>
-                                          <span
-                                            className="col-resize-handle"
-                                            {...getResizeHandleProps('activities')}
-                                          />
-                                        </TableHead>
-                                        <TableHead
-                                          className="relative max-w-[200px] cursor-pointer group select-none hover:bg-muted/50"
-                                          {...getHeaderProps('description')}
-                                          onClick={() => timeToggleSort('description')}
-                                        >
-                                          <div className="flex w-full items-center justify-between gap-1.5 pr-1">
-                                            <span className="flex min-w-0 flex-1 items-center truncate">
-                                              <span className="truncate">Description</span>
-                                            </span>
-                                            {timeSortColumn === 'description' ? (
-                                              timeSortDirection === 'asc' ? <ArrowUp className="h-3 w-3 shrink-0 text-leadgaze-primary" /> : <ArrowDown className="h-3 w-3 shrink-0 text-leadgaze-primary" />
-                                            ) : (
-                                              <ArrowUpDown className="h-3 w-3 shrink-0 text-muted-foreground opacity-35 transition-opacity group-hover:opacity-100" />
-                                            )}
-                                          </div>
-                                          <span
-                                            className="col-resize-handle"
-                                            {...getResizeHandleProps('description')}
-                                          />
-                                        </TableHead>
-                                        <TableHead
-                                          className="relative w-[150px] cursor-pointer group select-none hover:bg-muted/50"
-                                          {...getHeaderProps('author')}
-                                          onClick={() => timeToggleSort('author')}
-                                        >
-                                          <div className="flex w-full items-center justify-between gap-1.5 pr-1">
-                                            <span className="flex min-w-0 flex-1 items-center truncate">
-                                              <span className="truncate">Author</span>
-                                            </span>
-                                            {timeSortColumn === 'author' ? (
-                                              timeSortDirection === 'asc' ? <ArrowUp className="h-3 w-3 shrink-0 text-leadgaze-primary" /> : <ArrowDown className="h-3 w-3 shrink-0 text-leadgaze-primary" />
-                                            ) : (
-                                              <ArrowUpDown className="h-3 w-3 shrink-0 text-muted-foreground opacity-35 transition-opacity group-hover:opacity-100" />
-                                            )}
-                                          </div>
-                                          <span
-                                            className="col-resize-handle"
-                                            {...getResizeHandleProps('author')}
-                                          />
-                                        </TableHead>
-                                        <TableHead
-                                          className="relative w-[180px] cursor-pointer group select-none hover:bg-muted/50"
-                                          {...getHeaderProps('logged_date')}
-                                          onClick={() => timeToggleSort('logged_date')}
-                                        >
-                                          <div className="flex w-full items-center justify-between gap-1.5 pr-1">
-                                            <span className="flex min-w-0 flex-1 items-center truncate">
-                                              <span className="truncate">Date & Time Log</span>
-                                            </span>
-                                            {timeSortColumn === 'logged_date' ? (
-                                              timeSortDirection === 'asc' ? <ArrowUp className="h-3 w-3 shrink-0 text-leadgaze-primary" /> : <ArrowDown className="h-3 w-3 shrink-0 text-leadgaze-primary" />
-                                            ) : (
-                                              <ArrowUpDown className="h-3 w-3 shrink-0 text-muted-foreground opacity-35 transition-opacity group-hover:opacity-100" />
-                                            )}
-                                          </div>
-                                          <span
-                                            className="col-resize-handle"
-                                            {...getResizeHandleProps('logged_date')}
-                                          />
-                                        </TableHead>
-                                        <TableHead className="w-[100px] text-center">Actions</TableHead>
-                                      </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                      {paginatedTimeEntries.map(
-                                        (entry: any, index: number) => (
-                                          <TableRow key={entry.id}>
-                                            <TableCell>{(timePage - 1) * timePageSize + index + 1}</TableCell>
-                                            <TableCell
-                                              className="max-w-[150px] truncate"
-                                              title={entry.activities || ''}
-                                            >
-                                              {entry.activities || '-'}
-                                            </TableCell>
-                                            <TableCell
-                                              className="max-w-[200px] truncate"
-                                              title={entry.description || ''}
-                                            >
-                                              {entry.description || '-'}
-                                            </TableCell>
-                                            <TableCell className="w-[150px]">
-                                              <span
-                                                className="truncate text-sm"
-                                                title={
-                                                  entry.author?.name ||
-                                                  entry.author?.email ||
-                                                  ''
-                                                }
-                                              >
-                                                {entry.author?.name ||
-                                                  entry.author?.email ||
-                                                  '-'}
-                                              </span>
-                                            </TableCell>
-                                            <TableCell className="w-[180px]">
-                                              <div className="flex items-center gap-2">
-                                                <span className="whitespace-nowrap">
-                                                  {formatDate(
-                                                    entry.logged_date,
-                                                  )}
-                                                </span>
-                                                <span className="text-gray-400 whitespace-nowrap">({formatDuration(entry.duration_seconds)})</span>
-                                              </div>
-                                            </TableCell>
-                                            <TableCell className="w-[100px] text-center">
-                                              <div className="flex items-center justify-end gap-1">
-                                                <Button
-                                                  variant="ghost"
-                                                  size="icon"
-                                                  onClick={() =>
-                                                    handleEditClick(entry)
-                                                  }
-                                                >
-                                                  <Pencil className="h-4 w-4" />
-                                                </Button>
-                                                <Button
-                                                  variant="ghost"
-                                                  size="icon"
-                                                  className="text-destructive hover:bg-destructive/10"
-                                                  onClick={() =>
-                                                    setDeletingLogId(entry.id)
-                                                  }
-                                                >
-                                                  <Trash2 className="h-4 w-4" />
-                                                </Button>
-                                              </div>
-                                            </TableCell>
-                                          </TableRow>
-                                        ),
-                                      )}
-                                    </TableBody>
-                                  </Table>
-                                </div>
-                              </CustomTableContainer>
-                            </div>
-                          </PageBody>
-                        )}
                       </div>
-                    </CardWidgetContainer>
+                    )}
                   </div>
-                </TabsContent>
+                </CardWidgetContainer>
+              </TabsContent>
+            ) : null}
 
-                <TabsContent value="notes" className="max-h-[500px] overflow-y-auto mb-2">
-                  <CardWidgetContainer
-                    title="Notes"
-                    headerClassName="p-2 xl:p-2 2xl:p-2 mb-1"
-                    icon={<FileText className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
-                    icon2={
-                      <div className="flex items-center gap-2">
-                        <Tabs
-                          value={statusFilter}
-                          onValueChange={(val) => setStatusFilter(val as 'active' | 'closed')}
-                          className="w-fit"
-                        >
-                          <TabsList className="h-8 p-1">
-                            <TabsTrigger value="active" className="h-6 text-xs px-3">Active</TabsTrigger>
-                            <TabsTrigger value="closed" className="h-6 text-xs px-3">Closed</TabsTrigger>
-                          </TabsList>
-                        </Tabs>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="gap-1 text-sm text-blue-500 hover:text-blue-600"
-                          onClick={() => {
-                            setEditingNote(null);
-                            setNoteContent('');
-                            setIsNoteModalOpen(true);
-                          }}
-                        >
-                          <Plus className="h-4 w-4" />
-                          Add Note
-                        </Button>
+            <TabsContent value="work" className="max-h-[500px] overflow-y-auto mb-2">
+              <div className="flex min-h-0 flex-1 flex-col w-full">
+                <CardWidgetContainer
+                  title="Time loged"
+                  className="flex min-h-0 flex-1 flex-col"
+                  contentClassName="flex min-h-0 flex-1 flex-col p-0"
+                  headerClassName="p-2 xl:p-2 2xl:p-2 mb-1"
+                  icon={<Clock3 className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
+                  icon2={
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="gap-2 text-sm text-blue-500 hover:text-blue-600"
+                      onClick={() => setIsTimeLogOpen(true)}
+                    >
+                      <Plus className="h-4 w-4" />
+                      Add Time
+                    </Button>
+                  }
+                >
+                  <div className="flex flex-col min-h-0 flex-1">
+                    {timeEntries.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-8 text-center">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#F0F3FF]">
+                          <Clock3 className="h-6 w-6 text-blue-500" />
+                        </div>
+                        <p className="mt-4 text-sm text-gray-500">No Time loged yet</p>
                       </div>
-                    }
-                  >
-                    <div className="p-2">
-
-
-                      {notesLoading ? (
-                        <div className="flex justify-center py-4">
-                          <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
-                        </div>
-                      ) : notes.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-8 text-center">
-                          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#F0F3FF] dark:bg-slate-900">
-                            <FileText className="h-6 w-6 text-blue-500" />
-                          </div>
-                          <p className="mt-4 text-sm font-medium text-gray-700 dark:text-gray-300">No notes yet</p>
-                        </div>
-                      ) : (
-                        <div className="relative border-l border-gray-200 dark:border-gray-800 ml-2.5 pl-4 space-y-5 py-1">
-                          {notes.map((note: any) => (
-                            <div key={note.id} className="relative group">
-                              <div className={`absolute -left-[22.5px] top-1.5 h-2 w-2 rounded-full border border-white dark:border-gray-950 ${
-                                note.is_closed
-                                  ? 'bg-gray-300 dark:bg-gray-700'
-                                  : 'bg-blue-500'
-                              }`} />
-
-                              <div className="space-y-1">
-                                <div className="flex items-center justify-between gap-2">
-                                  <div className="flex items-center gap-1.5 text-[12px]">
-                                    <span className="primary-text-medium text-leadgaze-dark dark:text-white">
-                                      {note.created_by_user?.name || members.find((m: any) => m.id === note.created_by)?.name || 'Unknown User'}
-                                    </span>
-                                    <span className="text-gray-300 dark:text-gray-700">•</span>
-                                    <span className="text-gray-400 dark:text-gray-500">
-                                      {formatDate(note.created_at)}
-                                    </span>
-                                  </div>
-
-                                  <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
-                                    {statusFilter === 'active' ? (
-                                      <Button
-                                        size="icon"
-                                        variant="ghost"
-                                        onClick={() => updateNoteMutation.mutate({ id: note.id, is_closed: true })}
-                                        className="h-6 w-6 rounded text-gray-400 hover:text-green-600 hover:bg-gray-100 dark:hover:bg-gray-800"
-                                        title="Close Note"
-                                      >
-                                        <Check className="h-3 w-3" />
-                                      </Button>
-                                    ) : (
-                                      <Button
-                                        size="icon"
-                                        variant="ghost"
-                                        onClick={() => updateNoteMutation.mutate({ id: note.id, is_closed: false })}
-                                        className="h-6 w-6 rounded text-gray-400 hover:text-blue-600 hover:bg-gray-100 dark:hover:bg-gray-800"
-                                        title="Reopen Note"
-                                      >
-                                        <RotateCcw className="h-3 w-3" />
-                                      </Button>
-                                    )}
-                                    <Button
-                                      size="icon"
-                                      variant="ghost"
-                                      onClick={() => openEditNoteDialog(note)}
-                                      className="h-6 w-6 rounded text-gray-400 hover:text-blue-600 hover:bg-gray-100 dark:hover:bg-gray-800"
-                                      title="Edit Note"
+                    ) : (
+                      <PageBody className="sticky flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col overflow-hidden">
+                        <div className="flex min-h-0 w-full min-w-0 max-w-full flex-1 gap-0">
+                          <CustomTableContainer
+                            pagination={
+                              <TablePagination
+                                currentPage={timePage}
+                                totalPages={Math.ceil(timeEntries.length / timePageSize)}
+                                totalCount={timeEntries.length}
+                                pageSize={timePageSize}
+                                onPageChange={setTimePage}
+                                onPageSizeChange={(val) => {
+                                  setTimePageSize(val);
+                                  setTimePage(1);
+                                }}
+                              />
+                            }
+                          >
+                            <div className="scrollbar-thin flex-1 overflow-y-auto">
+                              <Table>
+                                <TableHeader>
+                                  <TableRow>
+                                    <TableHead
+                                      className="relative w-[80px]"
+                                      {...getHeaderProps('s_no')}
                                     >
-                                      <Pencil className="h-3 w-3" />
-                                    </Button>
-                                    <Button
-                                      size="icon"
-                                      variant="ghost"
-                                      onClick={() => {
-                                        setDeletingNoteId(note.id);
-                                      }}
-                                      className="h-6 w-6 rounded text-gray-400 hover:text-red-600 hover:bg-gray-100 dark:hover:bg-gray-800"
-                                      title="Delete Note"
+                                      <ColumnHeader columnId="s_no" sortColumn={timeSortColumn} sortDirection={timeSortDirection} onSort={() => { }} label="S. No." sortable={false} />
+                                      <span
+                                        className="col-resize-handle"
+                                        {...getResizeHandleProps('s_no')}
+                                      />
+                                    </TableHead>
+                                    <TableHead
+                                      className="relative max-w-[150px] cursor-pointer group select-none hover:bg-muted/50"
+                                      {...getHeaderProps('activities')}
+                                      onClick={() => timeToggleSort('activities')}
                                     >
-                                      <Trash2 className="h-3 w-3" />
-                                    </Button>
-                                  </div>
-                                </div>
-
-                                <p
-                                  className={`cursor-pointer text-xs text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-wrap ${
-                                    note.is_closed
-                                      ? 'text-gray-400 line-through dark:text-gray-500'
-                                      : ''
-                                  }`}
-                                  onClick={() => openEditNoteDialog(note)}
-                                >
-                                  {note.note || note.content}
-                                </p>
-                              </div>
+                                      <div className="flex w-full items-center justify-between gap-1.5 pr-1">
+                                        <span className="flex min-w-0 flex-1 items-center truncate">
+                                          <span className="truncate">Activities</span>
+                                        </span>
+                                        {timeSortColumn === 'activities' ? (
+                                          timeSortDirection === 'asc' ? <ArrowUp className="h-3 w-3 shrink-0 text-leadgaze-primary" /> : <ArrowDown className="h-3 w-3 shrink-0 text-leadgaze-primary" />
+                                        ) : (
+                                          <ArrowUpDown className="h-3 w-3 shrink-0 text-muted-foreground opacity-35 transition-opacity group-hover:opacity-100" />
+                                        )}
+                                      </div>
+                                      <span
+                                        className="col-resize-handle"
+                                        {...getResizeHandleProps('activities')}
+                                      />
+                                    </TableHead>
+                                    <TableHead
+                                      className="relative max-w-[200px] cursor-pointer group select-none hover:bg-muted/50"
+                                      {...getHeaderProps('description')}
+                                      onClick={() => timeToggleSort('description')}
+                                    >
+                                      <div className="flex w-full items-center justify-between gap-1.5 pr-1">
+                                        <span className="flex min-w-0 flex-1 items-center truncate">
+                                          <span className="truncate">Description</span>
+                                        </span>
+                                        {timeSortColumn === 'description' ? (
+                                          timeSortDirection === 'asc' ? <ArrowUp className="h-3 w-3 shrink-0 text-leadgaze-primary" /> : <ArrowDown className="h-3 w-3 shrink-0 text-leadgaze-primary" />
+                                        ) : (
+                                          <ArrowUpDown className="h-3 w-3 shrink-0 text-muted-foreground opacity-35 transition-opacity group-hover:opacity-100" />
+                                        )}
+                                      </div>
+                                      <span
+                                        className="col-resize-handle"
+                                        {...getResizeHandleProps('description')}
+                                      />
+                                    </TableHead>
+                                    <TableHead
+                                      className="relative w-[150px] cursor-pointer group select-none hover:bg-muted/50"
+                                      {...getHeaderProps('author')}
+                                      onClick={() => timeToggleSort('author')}
+                                    >
+                                      <div className="flex w-full items-center justify-between gap-1.5 pr-1">
+                                        <span className="flex min-w-0 flex-1 items-center truncate">
+                                          <span className="truncate">Author</span>
+                                        </span>
+                                        {timeSortColumn === 'author' ? (
+                                          timeSortDirection === 'asc' ? <ArrowUp className="h-3 w-3 shrink-0 text-leadgaze-primary" /> : <ArrowDown className="h-3 w-3 shrink-0 text-leadgaze-primary" />
+                                        ) : (
+                                          <ArrowUpDown className="h-3 w-3 shrink-0 text-muted-foreground opacity-35 transition-opacity group-hover:opacity-100" />
+                                        )}
+                                      </div>
+                                      <span
+                                        className="col-resize-handle"
+                                        {...getResizeHandleProps('author')}
+                                      />
+                                    </TableHead>
+                                    <TableHead
+                                      className="relative w-[180px] cursor-pointer group select-none hover:bg-muted/50"
+                                      {...getHeaderProps('logged_date')}
+                                      onClick={() => timeToggleSort('logged_date')}
+                                    >
+                                      <div className="flex w-full items-center justify-between gap-1.5 pr-1">
+                                        <span className="flex min-w-0 flex-1 items-center truncate">
+                                          <span className="truncate">Date & Time Log</span>
+                                        </span>
+                                        {timeSortColumn === 'logged_date' ? (
+                                          timeSortDirection === 'asc' ? <ArrowUp className="h-3 w-3 shrink-0 text-leadgaze-primary" /> : <ArrowDown className="h-3 w-3 shrink-0 text-leadgaze-primary" />
+                                        ) : (
+                                          <ArrowUpDown className="h-3 w-3 shrink-0 text-muted-foreground opacity-35 transition-opacity group-hover:opacity-100" />
+                                        )}
+                                      </div>
+                                      <span
+                                        className="col-resize-handle"
+                                        {...getResizeHandleProps('logged_date')}
+                                      />
+                                    </TableHead>
+                                    <TableHead className="w-[100px] text-center">Actions</TableHead>
+                                  </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                  {paginatedTimeEntries.map(
+                                    (entry: any, index: number) => (
+                                      <TableRow key={entry.id}>
+                                        <TableCell>{(timePage - 1) * timePageSize + index + 1}</TableCell>
+                                        <TableCell
+                                          className="max-w-[150px] truncate"
+                                          title={entry.activities || ''}
+                                        >
+                                          {entry.activities || '-'}
+                                        </TableCell>
+                                        <TableCell
+                                          className="max-w-[200px] truncate"
+                                          title={entry.description || ''}
+                                        >
+                                          {entry.description || '-'}
+                                        </TableCell>
+                                        <TableCell className="w-[150px]">
+                                          <span
+                                            className="truncate text-sm"
+                                            title={
+                                              entry.author?.name ||
+                                              entry.author?.email ||
+                                              ''
+                                            }
+                                          >
+                                            {entry.author?.name ||
+                                              entry.author?.email ||
+                                              '-'}
+                                          </span>
+                                        </TableCell>
+                                        <TableCell className="w-[180px]">
+                                          <div className="flex items-center gap-2">
+                                            <span className="whitespace-nowrap">
+                                              {formatDate(
+                                                entry.logged_date,
+                                              )}
+                                            </span>
+                                            <span className="text-gray-400 whitespace-nowrap">({formatDuration(entry.duration_seconds)})</span>
+                                          </div>
+                                        </TableCell>
+                                        <TableCell className="w-[100px] text-center">
+                                          <div className="flex items-center justify-end gap-1">
+                                            <Button
+                                              variant="ghost"
+                                              size="icon"
+                                              onClick={() =>
+                                                handleEditClick(entry)
+                                              }
+                                            >
+                                              <Pencil className="h-4 w-4" />
+                                            </Button>
+                                            <Button
+                                              variant="ghost"
+                                              size="icon"
+                                              className="text-destructive hover:bg-destructive/10"
+                                              onClick={() =>
+                                                setDeletingLogId(entry.id)
+                                              }
+                                            >
+                                              <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                          </div>
+                                        </TableCell>
+                                      </TableRow>
+                                    ),
+                                  )}
+                                </TableBody>
+                              </Table>
                             </div>
-                          ))}
+                          </CustomTableContainer>
                         </div>
-                      )}
-                    </div>
-                  </CardWidgetContainer>
-                </TabsContent>
+                      </PageBody>
+                    )}
+                  </div>
+                </CardWidgetContainer>
+              </div>
+            </TabsContent>
 
-                <TabsContent value="documents" className="max-h-[500px] overflow-y-auto mb-2">
-                  <CardWidgetContainer
-                    title="Document"
-                    headerClassName="p-2 xl:p-2 2xl:p-2"
-                    icon={<FileText className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
-                    icon2={
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="gap-2 text-sm text-blue-500 hover:text-blue-600"
-                        onClick={() => {
-                          setDocumentForm({ name: '', file: null, file_url: '', category: '', description: '' });
-                          setIsDocumentModalOpen(true);
-                        }}
-                      >
-                        <Plus className="h-4 w-4" />
-                        Add Document
-                      </Button>
-                    }
-                  >
-                    <div className="px-2 pb-2 pt-2">
-                      {documentsLoading ? (
-                        <div className="flex justify-center py-4">
-                          <Skeleton className="h-8 w-8 rounded-full" />
-                        </div>
-                      ) : documents.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-8 text-center">
-                          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#F0F3FF] dark:bg-slate-900">
-                            <Mail className="h-6 w-6 text-gray-400" />
-                          </div>
-                          <p className="mt-4 text-sm font-medium text-gray-700 dark:text-gray-300">No Document added yet</p>
-                        </div>
-                      ) : (
-                        <div className="space-y-2">
-                          {documents.map((d: any) => (
-                            <div key={d.id} className="border border-gray-200 dark:border-slate-800 p-2 mb-2 flex justify-between items-start bg-white dark:bg-zinc-950">
-                              <div>
-                                <div className="primary-text-big-regular text-leadgaze-dark dark:text-white !font-normal">
-                                  {d.file_url || d.file_path ? (
-                                    <a className="primary-text-big-regular underline-offset-4 hover:underline text-blue-600" href={d.file_url ?? d.file_path} target="_blank" rel="noreferrer">
-                                      {d.name}
-                                    </a>
-                                  ) : d.name}
-                                  {d.category && <Badge variant="outline" className="ml-2 font-normal text-xs">{d.category}</Badge>}
-                                </div>
-                                {d.description && <div className="secondary-text-small-regular text-leadgaze-muted dark:text-gray-400">{d.description}</div>}
-                                <div className="secondary-text-small-regular text-leadgaze-muted dark:text-white">
-                                  Added on {formatDateOnly(d.created_at)} | {new Date(d.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                </div>
+            <TabsContent value="notes" className="max-h-[500px] overflow-y-auto mb-2">
+              <CardWidgetContainer
+                title="Notes"
+                headerClassName="p-2 xl:p-2 2xl:p-2 mb-1"
+                icon={<FileText className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
+                icon2={
+                  <div className="flex items-center gap-2">
+                    <Tabs
+                      value={statusFilter}
+                      onValueChange={(val) => setStatusFilter(val as 'active' | 'closed')}
+                      className="w-fit"
+                    >
+                      <TabsList className="h-8 p-1">
+                        <TabsTrigger value="active" className="h-6 text-xs px-3">Active</TabsTrigger>
+                        <TabsTrigger value="closed" className="h-6 text-xs px-3">Closed</TabsTrigger>
+                      </TabsList>
+                    </Tabs>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="gap-1 text-sm text-blue-500 hover:text-blue-600"
+                      onClick={() => {
+                        setEditingNote(null);
+                        setNoteContent('');
+                        setIsNoteModalOpen(true);
+                      }}
+                    >
+                      <Plus className="h-4 w-4" />
+                      Add Note
+                    </Button>
+                  </div>
+                }
+              >
+                <div className="p-2">
+
+
+                  {notesLoading ? (
+                    <div className="flex justify-center py-4">
+                      <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
+                    </div>
+                  ) : notes.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-8 text-center">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#F0F3FF] dark:bg-slate-900">
+                        <FileText className="h-6 w-6 text-blue-500" />
+                      </div>
+                      <p className="mt-4 text-sm font-medium text-gray-700 dark:text-gray-300">No notes yet</p>
+                    </div>
+                  ) : (
+                    <div className="relative border-l border-gray-200 dark:border-gray-800 ml-2.5 pl-4 space-y-5 py-1">
+                      {notes.map((note: any) => (
+                        <div key={note.id} className="relative group">
+                          <div className={`absolute -left-[22.5px] top-1.5 h-2 w-2 rounded-full border border-white dark:border-gray-950 ${note.is_closed
+                            ? 'bg-gray-300 dark:bg-gray-700'
+                            : 'bg-blue-500'
+                            }`} />
+
+                          <div className="space-y-1">
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-1.5 text-[12px]">
+                                <span className="primary-text-medium text-leadgaze-dark dark:text-white">
+                                  {note.created_by_user?.name || members.find((m: any) => m.id === note.created_by)?.name || 'Unknown User'}
+                                </span>
+                                <span className="text-gray-300 dark:text-gray-700">•</span>
+                                <span className="text-gray-400 dark:text-gray-500">
+                                  {formatDate(note.created_at)}
+                                </span>
                               </div>
-                              <div className="flex gap-1 shrink-0 ml-4">
+
+                              <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+                                {statusFilter === 'active' ? (
+                                  <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    onClick={() => updateNoteMutation.mutate({ id: note.id, is_closed: true })}
+                                    className="h-6 w-6 rounded text-gray-400 hover:text-green-600 hover:bg-gray-100 dark:hover:bg-gray-800"
+                                    title="Close Note"
+                                  >
+                                    <Check className="h-3 w-3" />
+                                  </Button>
+                                ) : (
+                                  <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    onClick={() => updateNoteMutation.mutate({ id: note.id, is_closed: false })}
+                                    className="h-6 w-6 rounded text-gray-400 hover:text-blue-600 hover:bg-gray-100 dark:hover:bg-gray-800"
+                                    title="Reopen Note"
+                                  >
+                                    <RotateCcw className="h-3 w-3" />
+                                  </Button>
+                                )}
                                 <Button
-                                  variant="ghost"
                                   size="icon"
-                                  className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/50"
-                                  onClick={() => setDeletingDocumentId(d.id)}
+                                  variant="ghost"
+                                  onClick={() => openEditNoteDialog(note)}
+                                  className="h-6 w-6 rounded text-gray-400 hover:text-blue-600 hover:bg-gray-100 dark:hover:bg-gray-800"
+                                  title="Edit Note"
                                 >
-                                  <Trash2 className="h-4 w-4" />
+                                  <Pencil className="h-3 w-3" />
+                                </Button>
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  onClick={() => {
+                                    setDeletingNoteId(note.id);
+                                  }}
+                                  className="h-6 w-6 rounded text-gray-400 hover:text-red-600 hover:bg-gray-100 dark:hover:bg-gray-800"
+                                  title="Delete Note"
+                                >
+                                  <Trash2 className="h-3 w-3" />
                                 </Button>
                               </div>
                             </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </CardWidgetContainer>
-                </TabsContent>
 
-                <TabsContent value="activity" className="max-h-[500px] overflow-y-auto mb-2">
-                  <CardWidgetContainer
-                    title="Ticket Activity"
-                    headerClassName="p-2 xl:p-2 2xl:p-2"
-                    icon={<Clock className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
-                    icon2={
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => refetchTicketDetail()}
-                        disabled={isFetchingTicketDetail}
-                        className="h-7 gap-1 px-2 text-xs text-blue-500 hover:text-blue-600"
-                        title="Refresh activity logs"
-                      >
-                        <RefreshCw className={cn('h-3.5 w-3.5', isFetchingTicketDetail && 'animate-spin')} />
-                        <span>Refresh</span>
-                      </Button>
-                    }
-                  >
-                    <div className="px-0 mb-2">
-                      {(data.activities ?? []).length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-8 text-center">
-                          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#F0F3FF] dark:bg-slate-900">
-                            <Clock className="h-6 w-6 text-gray-500" />
+                            <p
+                              className={`cursor-pointer text-xs text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-wrap ${note.is_closed
+                                ? 'text-gray-400 line-through dark:text-gray-500'
+                                : ''
+                                }`}
+                              onClick={() => openEditNoteDialog(note)}
+                            >
+                              {note.note || note.content}
+                            </p>
                           </div>
-                          <p className="mt-4 text-sm font-medium text-gray-700 dark:text-gray-300">No Activity yet</p>
                         </div>
-                      ) : (
-                        <div className="max-h-[350px] overflow-y-auto divide-y divide-gray-100 border border-gray-200 bg-white dark:divide-gray-800/60 dark:border-gray-800 dark:bg-slate-950">
-                          {data.activities.map((activity: any) => {
-                            const details = getActivityUIDetails(activity);
-                            const name = activity.summary || eventLabel(activity.event_type);
-                            
-                            return (
-                              <div
-                                key={activity.id}
-                                className="flex flex-col justify-center gap-1.5 px-3 py-1.5 text-xs transition-colors hover:bg-slate-50/80 dark:hover:bg-slate-900/60"
-                              >
-                                <div className="flex items-center justify-between gap-1.5">
-                                  <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                                    <div className="shrink-0">{details.icon}</div>
-                                    <span className="font-semibold text-leadgaze-dark shrink-0 dark:text-white text-xs">
-                                      {details.module}
-                                    </span>
-                                    {(activity.from_value?.label || activity.to_value?.label) && (
-                                      <span className="text-muted-foreground text-xs shrink-0">
-                                        {activity.from_value?.label ?? 'None'} &rarr; {activity.to_value?.label ?? 'None'}
-                                      </span>
-                                    )}
-                                    {getActionBadge(details.action, details.color)}
-                                    {name && (
-                                      <span className="font-medium text-gray-800 truncate dark:text-gray-200 text-xs">
-                                        {name}
-                                      </span>
-                                    )}
-                                  </div>
-                                  <div className="flex items-center gap-2 shrink-0 text-xs text-gray-500 dark:text-gray-400">
-                                    <span>by {actorLabel(activity)}</span>
-                                    <span className="hidden sm:inline">•</span>
-                                    <span className="whitespace-nowrap">{formatDateOnly(activity.created_at)} | {new Date(activity.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
+                      ))}
                     </div>
-                  </CardWidgetContainer>
-                </TabsContent>
-              </Tabs>
-          
+                  )}
+                </div>
+              </CardWidgetContainer>
+            </TabsContent>
+
+            <TabsContent value="documents" className="max-h-[500px] overflow-y-auto mb-2">
+              <CardWidgetContainer
+                title="Document"
+                headerClassName="p-2 xl:p-2 2xl:p-2"
+                icon={<FileText className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
+                icon2={
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="gap-2 text-sm text-blue-500 hover:text-blue-600"
+                    onClick={() => {
+                      setDocumentForm({ name: '', file: null, file_url: '', category: '', description: '' });
+                      setIsDocumentModalOpen(true);
+                    }}
+                  >
+                    <Plus className="h-4 w-4" />
+                    Add Document
+                  </Button>
+                }
+              >
+                <div className="px-2 pb-2 pt-2">
+                  {documentsLoading ? (
+                    <div className="flex justify-center py-4">
+                      <Skeleton className="h-8 w-8 rounded-full" />
+                    </div>
+                  ) : documents.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-8 text-center">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#F0F3FF] dark:bg-slate-900">
+                        <Mail className="h-6 w-6 text-gray-400" />
+                      </div>
+                      <p className="mt-4 text-sm font-medium text-gray-700 dark:text-gray-300">No Document added yet</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {documents.map((d: any) => (
+                        <div key={d.id} className="border border-gray-200 dark:border-slate-800 p-2 mb-2 flex justify-between items-start bg-white dark:bg-zinc-950">
+                          <div>
+                            <div className="primary-text-big-regular text-leadgaze-dark dark:text-white !font-normal">
+                              {d.file_url || d.file_path ? (
+                                <a className="primary-text-big-regular underline-offset-4 hover:underline text-blue-600" href={d.file_url ?? d.file_path} target="_blank" rel="noreferrer">
+                                  {d.name}
+                                </a>
+                              ) : d.name}
+                              {d.category && <Badge variant="outline" className="ml-2 font-normal text-xs">{d.category}</Badge>}
+                            </div>
+                            {d.description && <div className="secondary-text-small-regular text-leadgaze-muted dark:text-gray-400">{d.description}</div>}
+                            <div className="secondary-text-small-regular text-leadgaze-muted dark:text-white">
+                              Added on {formatDateOnly(d.created_at)} | {new Date(d.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </div>
+                          </div>
+                          <div className="flex gap-1 shrink-0 ml-4">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/50"
+                              onClick={() => setDeletingDocumentId(d.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </CardWidgetContainer>
+            </TabsContent>
+
+            <TabsContent value="activity" className="max-h-[500px] overflow-y-auto mb-2">
+              <CardWidgetContainer
+                title="Ticket Activity"
+                headerClassName="p-2 xl:p-2 2xl:p-2"
+                icon={<Clock className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
+                icon2={
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => refetchTicketDetail()}
+                    disabled={isFetchingTicketDetail}
+                    className="h-7 gap-1 px-2 text-xs text-blue-500 hover:text-blue-600"
+                    title="Refresh activity logs"
+                  >
+                    <RefreshCw className={cn('h-3.5 w-3.5', isFetchingTicketDetail && 'animate-spin')} />
+                    <span>Refresh</span>
+                  </Button>
+                }
+              >
+                <div className="px-0 mb-2">
+                  {(data.activities ?? []).length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-8 text-center">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#F0F3FF] dark:bg-slate-900">
+                        <Clock className="h-6 w-6 text-gray-500" />
+                      </div>
+                      <p className="mt-4 text-sm font-medium text-gray-700 dark:text-gray-300">No Activity yet</p>
+                    </div>
+                  ) : (
+                    <div className="max-h-[350px] overflow-y-auto divide-y divide-gray-100 border border-gray-200 bg-white dark:divide-gray-800/60 dark:border-gray-800 dark:bg-slate-950">
+                      {data.activities.map((activity: any) => {
+                        const details = getActivityUIDetails(activity);
+                        const name = activity.summary || eventLabel(activity.event_type);
+
+                        return (
+                          <div
+                            key={activity.id}
+                            className="flex flex-col justify-center gap-1.5 px-3 py-1.5 text-xs transition-colors hover:bg-slate-50/80 dark:hover:bg-slate-900/60"
+                          >
+                            <div className="flex items-center justify-between gap-1.5">
+                              <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                                <div className="shrink-0">{details.icon}</div>
+                                <span className="font-semibold text-leadgaze-dark shrink-0 dark:text-white text-xs">
+                                  {details.module}
+                                </span>
+                                {(activity.from_value?.label || activity.to_value?.label) && (
+                                  <span className="text-muted-foreground text-xs shrink-0">
+                                    {activity.from_value?.label ?? 'None'} &rarr; {activity.to_value?.label ?? 'None'}
+                                  </span>
+                                )}
+                                {getActionBadge(details.action, details.color)}
+                                {name && (
+                                  <span className="font-medium text-gray-800 truncate dark:text-gray-200 text-xs">
+                                    {name}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2 shrink-0 text-xs text-gray-500 dark:text-gray-400">
+                                <span>by {actorLabel(activity)}</span>
+                                <span className="hidden sm:inline">•</span>
+                                <span className="whitespace-nowrap">{formatDateOnly(activity.created_at)} | {new Date(activity.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </CardWidgetContainer>
+            </TabsContent>
+          </Tabs>
+
         </div>
 
         <div className="w-full space-y-4 lg:w-[35%] lg:overflow-y-auto">
@@ -1986,12 +1984,12 @@ export function ServiceCloudTicketDetailPage({
         onOpenChange={(open) => !open && setIsNoteModalOpen(false)}
       >
         <DialogContent className="sm:max-w-[500px] flex max-h-[90vh] flex-col p-0 overflow-hidden border-gray-200 bg-white dark:border-slate-800 dark:bg-slate-950">
-          
-            <DialogHeader>
-                        <DialogTitle>
-                          {editingNote ? 'Edit Note' : 'Add Note'}
-                        </DialogTitle>
-              </DialogHeader>          
+
+          <DialogHeader>
+            <DialogTitle>
+              {editingNote ? 'Edit Note' : 'Add Note'}
+            </DialogTitle>
+          </DialogHeader>
           <div className="custom-spacing-x-y py-2">
             <Label htmlFor="note_content" className="text-sm font-medium">Write Note</Label>
             <Textarea
@@ -2062,7 +2060,7 @@ export function ServiceCloudTicketDetailPage({
         <DialogContent className="sm:max-w-[600px] flex max-h-[90vh] flex-col p-0 overflow-hidden border-gray-200 bg-white dark:border-slate-800 dark:bg-slate-950">
           <DialogHeader>
             <DialogTitle>Add Document</DialogTitle>
-          </DialogHeader>          
+          </DialogHeader>
           <div className="space-y-2 overflow-y-auto custom-spacing-x-y py-2">
             <div className="grid grid-cols-2 gap-2">
               <div>
@@ -2086,17 +2084,17 @@ export function ServiceCloudTicketDetailPage({
             </div>
 
             <div className="relative rounded-md border border-dashed border-gray-300 dark:border-slate-700 p-6 flex flex-col items-center justify-center bg-gray-50/50 dark:bg-slate-900/50 text-center">
-              <input 
-                type="file" 
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" 
+              <input
+                type="file"
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                 onChange={(e) => {
                   const file = e.target.files?.[0] ?? null;
-                  setDocumentForm(prev => ({ 
-                    ...prev, 
-                    file, 
-                    name: prev.name || file?.name || '' 
+                  setDocumentForm(prev => ({
+                    ...prev,
+                    file,
+                    name: prev.name || file?.name || ''
                   }));
-                }} 
+                }}
               />
               <div className="flex h-10 w-10 items-center justify-center shadow-sm mb-3 rounded-full border border-gray-100 bg-white dark:bg-slate-800 dark:border-slate-700">
                 <CloudUpload className="h-5 w-5 text-gray-600 dark:text-gray-300" />
@@ -2528,11 +2526,11 @@ function ServiceCloudTicketDetailSkeleton() {
         <div className="w-full space-y-4 lg:w-[65%] lg:overflow-y-auto">
           {/* DetailHeader Skeleton */}
           <div className="border border-gray-200 bg-white p-5 shadow-sm">
-             <div className="flex flex-col gap-2">
-               <Skeleton className="h-6 w-1/3" />
-               <Skeleton className="h-4 w-1/4" />
-               <Skeleton className="h-4 w-1/4" />
-             </div>
+            <div className="flex flex-col gap-2">
+              <Skeleton className="h-6 w-1/3" />
+              <Skeleton className="h-4 w-1/4" />
+              <Skeleton className="h-4 w-1/4" />
+            </div>
           </div>
 
           <div className="w-full">
