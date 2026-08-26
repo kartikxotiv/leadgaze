@@ -3,10 +3,14 @@
 import Link from 'next/link';
 
 import {
+  ArrowUpCircle,
+  Ban,
   Building2,
   CircleDollarSign,
+  CircleX,
   Clock,
   CreditCard,
+  Eye,
   TrendingDown,
   TrendingUp,
   UserCheck,
@@ -148,36 +152,41 @@ const chartConfig = {
 const RECENT_ACTIVITY = [
   {
     id: 1,
-    icon: '🏢',
-    iconBg: 'bg-blue-100 dark:bg-blue-900/40',
+    icon: Building2,
+    iconBg: 'bg-blue-50 dark:bg-blue-900/40',
+    iconColor: 'text-blue-500 dark:text-blue-400',
     text: 'Prestige Worldwide workspace created',
     time: '2h ago',
   },
   {
     id: 2,
-    icon: '↑',
-    iconBg: 'bg-emerald-100 dark:bg-emerald-900/40',
+    icon: ArrowUpCircle,
+    iconBg: 'bg-emerald-50 dark:bg-emerald-900/40',
+    iconColor: 'text-emerald-500 dark:text-emerald-400',
     text: 'Dunder Mifflin upgraded Starter → Growth',
     time: '5h ago',
   },
   {
     id: 3,
-    icon: '⊗',
-    iconBg: 'bg-red-100 dark:bg-red-900/40',
+    icon: CircleX,
+    iconBg: 'bg-red-50 dark:bg-red-900/40',
+    iconColor: 'text-red-500 dark:text-red-400',
     text: 'Payment failed · Initech ($149/mo)',
     time: '1d ago',
   },
   {
     id: 4,
-    icon: '👁',
-    iconBg: 'bg-zinc-100 dark:bg-zinc-800',
+    icon: Eye,
+    iconBg: 'bg-purple-50 dark:bg-purple-900/40',
+    iconColor: 'text-purple-500 dark:text-purple-400',
     text: 'Admin impersonated Wayne Corp workspace',
     time: '1d ago',
   },
   {
     id: 5,
-    icon: '⚠',
-    iconBg: 'bg-amber-100 dark:bg-amber-900/40',
+    icon: Ban,
+    iconBg: 'bg-amber-50 dark:bg-amber-900/40',
+    iconColor: 'text-amber-500 dark:text-amber-400',
     text: 'Bill Lumbergh account suspended',
     time: '2d ago',
   },
@@ -347,20 +356,23 @@ function RecentActivity() {
     >
       <div className="py-0 overflow-auto">
         <CardWidgetList className="gap-0 mb-1">
-          {RECENT_ACTIVITY.map((item) => (
-            <CardWidgetListItem
-              key={item.id}
-              icon={
-                <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm ${item.iconBg}`}>
-                  {item.icon}
-                </div>
-              }
-              title={item.text}
-              subtitle={item.time}
-              className="gap-0 border-l-0 border-r-0 border-t-0 rounded-none"
-              titleClassFormat="primary-text-medium text-leadgaze-dark dark:text-white leading-snug"
-            />
-          ))}
+          {RECENT_ACTIVITY.map((item) => {
+            const Icon = item.icon;
+            return (
+              <CardWidgetListItem
+                key={item.id}
+                icon={
+                  <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${item.iconBg}`}>
+                    <Icon className={`h-4 w-4 ${item.iconColor}`} />
+                  </div>
+                }
+                title={item.text}
+                subtitle={item.time}
+                className="gap-0 border-l-0 border-r-0 border-t-0 rounded-none"
+                titleClassFormat="primary-text-medium text-leadgaze-dark dark:text-white leading-snug"
+              />
+            );
+          })}
         </CardWidgetList>
       </div>
     </CardWidgetContainer>
