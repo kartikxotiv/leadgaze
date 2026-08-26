@@ -3,7 +3,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
-import { requireSubscriptionManagePermission } from '~/lib/server/subscription-permissions';
+import { requireSubscriptionBillingPermission } from '~/lib/server/subscription-permissions';
+import { BackendBillingService } from '~/lib/subscriptions/backend-billing-service';
 
 import { catchAsync } from '../../../../utils/response-handler';
 
@@ -60,10 +61,9 @@ export const getWorkspaceSeats = catchAsync(
  * Update seat count for an existing subscription.
  * Body: { seatId, seatsPurchased }
  *
- * NOTE: This is the direct DB update endpoint.
- * For Stripe-managed subscriptions, prefer POST /api/subscriptions/update-seats
- * which handles proration via Stripe. This endpoint serves as a fallback
- * for manual/non-Stripe subscriptions.
+ * Compatibility endpoint. It delegates to the same backend billing workflow
+ * as POST /api/subscriptions/update-seats so the period and payment rules
+ * cannot be bypassed.
  */
 export const updateWorkspaceSeats = catchAsync(
   async ({
@@ -116,7 +116,7 @@ export const updateWorkspaceSeats = catchAsync(
       );
     }
 
-    await requireSubscriptionManagePermission({
+    await requireSubscriptionBillingPermission({
       accountId: user.id,
       workspaceId: seat.workspace_id,
     });
@@ -132,24 +132,13 @@ export const updateWorkspaceSeats = catchAsync(
       );
     }
 
-    const { data, error } = await adminClient
-      .from('workspace_module_seats')
-      .update({
-        seats_purchased: seatsPurchased,
-        updated_by: user.id,
-      })
-      .eq('id', seatId)
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Update workspace seats error:', error);
-      return NextResponse.json(
-        { success: false, message: error.message },
-        { status: 500 },
-      );
-    }
-
+    const data = await new BackendBillingService(
+      adminClient as never,
+    ).changeSeats({
+      seatId,
+      newQuantity: seatsPurchased,
+      actor: { id: user.id },
+    });
     return NextResponse.json({ success: true, data });
   },
 );

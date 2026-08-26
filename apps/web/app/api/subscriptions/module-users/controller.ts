@@ -62,6 +62,6 @@ export const removeModuleUser = catchAsync(
       accountId: actor.id,
       workspaceId: input.workspaceId,
     });
-    return success(await service().removeModuleUser(input));
+    return success(await service().removeModuleUser(input, actor.id));
   },
 );

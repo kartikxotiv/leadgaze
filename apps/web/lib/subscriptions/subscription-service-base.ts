@@ -4,12 +4,12 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 
 import type { Database, Json } from '@kit/supabase/database';
 
+import { BackendBillingService } from './backend-billing-service';
 import {
   type SubscriptionNotificationEvent,
   SubscriptionNotificationService,
 } from './notification-service';
 import { SubscriptionRepository } from './repository';
-import { StripeSubscriptionProvider } from './stripe-provider';
 
 export type Client = SupabaseClient<Database>;
 // Supabase relation cardinality is represented as either an object or an array.
@@ -26,22 +26,30 @@ export const toNumber = (value: unknown): number | null =>
 
 export class SubscriptionServiceBase {
   readonly repository: SubscriptionRepository;
-  protected readonly provider: StripeSubscriptionProvider;
+  protected readonly billing: BackendBillingService;
   protected readonly notifications = new SubscriptionNotificationService();
 
-  constructor(
-    protected readonly client: Client,
-    provider?: StripeSubscriptionProvider,
-  ) {
+  constructor(protected readonly client: Client) {
     this.repository = new SubscriptionRepository(client);
-    this.provider = provider ?? new StripeSubscriptionProvider();
+    this.billing = new BackendBillingService(client);
   }
 
   protected async getBillingQuantity(workspaceId: string, moduleId: string) {
-    const counts = await this.repository.getModuleUserCount(workspaceId, [
-      moduleId,
+    const [counts, seat] = await Promise.all([
+      this.repository.getModuleUserCount(workspaceId, [moduleId]),
+      this.client
+        .from('workspace_module_seats')
+        .select('seats_purchased')
+        .eq('workspace_id', workspaceId)
+        .eq('product_id', moduleId)
+        .maybeSingle(),
     ]);
-    return Math.max(1, counts.get(moduleId) ?? 0);
+    if (seat.error) throw seat.error;
+    return Math.max(
+      1,
+      counts.get(moduleId) ?? 0,
+      seat.data?.seats_purchased ?? 0,
+    );
   }
 
   protected async cancelPendingChange(moduleSubscriptionId: string) {
