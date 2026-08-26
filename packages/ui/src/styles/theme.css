@@ -75,11 +75,16 @@
   --color-leadgaze-auth-surface: #f9fafb;
 
   /* Global text color on portal*/
-  --color-leadgaze-primary: #3953E7;
+  --color-leadgaze-primary: #3953e7;
   --color-leadgaze-dark: #333333;
-  --color-leadgaze-muted: #8A8A8A;
-  --color-leadgaze-success: #00A63E;
-  --color-leadgaze-border: #B0B0B0;
+  --color-leadgaze-muted: #8a8a8a;
+  --color-leadgaze-success: #00a63e;
+  --color-leadgaze-border: #b0b0b0;
+
+  --color-admin-dashboard-badge-green: #ecfdf5;
+  --color-admin-dashboard-badge-text-green: #108981;
+  --color-admin-dashboard-badge-red: #FEF2F2;
+  --color-admin-dashboard-badge-text-red: #EF4444;
 
   /* ========================================================================
    * LEADGAZE GLOBAL DESIGN SYSTEM TOKENS
@@ -94,58 +99,55 @@
      These universally apply to Tasks, Leads, Leave Requests, Inventory Status, etc. */
 
   /* Success (Green) - e.g., Qualified Lead, Approved Leave, In Stock */
-  --color-status-success-bg: #D1FAE5;
-  --color-status-success-text: #065F46;
+  --color-status-success-bg: #d1fae5;
+  --color-status-success-text: #065f46;
 
   /* Info / Primary (Blue) - e.g., New Lead, System Alert */
-  --color-status-info-bg: #C2CAF8;
-  --color-status-info-text: #3953E7;
+  --color-status-info-bg: #c2caf8;
+  --color-status-info-text: #3953e7;
 
   /* Warning (Yellow) - e.g., Medium Task, Pending Leave */
-  --color-status-warning-bg: #FEF9C2;
-  --color-status-warning-text: #A65F00;
+  --color-status-warning-bg: #fef9c2;
+  --color-status-warning-text: #a65f00;
 
   /* Pending / Notice (Amber) - e.g., Proposal Stage, Needs Review */
-  --color-status-pending-bg: #FEF3C7;
-  --color-status-pending-text: #92400E;
+  --color-status-pending-bg: #fef3c7;
+  --color-status-pending-text: #92400e;
 
   /* Alert / Attention (Orange) - e.g., Negotiation, Low Stock */
-  --color-status-alert-bg: #FED7AA;
-  --color-status-alert-text: #9A3412;
+  --color-status-alert-bg: #fed7aa;
+  --color-status-alert-text: #9a3412;
 
   /* Danger / Critical (Red) - e.g., High Priority Task, Rejected, Out of Stock */
-  --color-status-danger-bg: #FFE2E2;
-  --color-status-danger-text: #C10007;
+  --color-status-danger-bg: #ffe2e2;
+  --color-status-danger-text: #c10007;
 
   /* Neutral (Gray) - e.g., Low Priority Task, Draft */
-  --color-status-neutral-bg: #F3F4F6;
+  --color-status-neutral-bg: #f3f4f6;
   --color-status-neutral-text: #364153;
-
 
   /* --- 2. DATA VISUALIZATION BARS (Sequence-Based) ---
      Used for Pipelines, Progress Bars, or distinct pie chart slices.
      NOTE: These override the default Shadcn chart variables in shadcn-ui.css.
      We use chart-1 to chart-5 for the 5 pipeline stages. */
 
-
   /* --- 3. ACTIVITY TIMELINE DOTS (Sequence/Categorical) ---
      Used for timeline logs, calendar events, or generic markers. */
-  --color-activity-1: #2B7FFF; /* Blue - e.g., Email Sent */
-  --color-activity-2: #00C950; /* Green - e.g., Meeting Scheduled */
-  --color-activity-3: #AD46FF; /* Purple - e.g., System Event */
-  --color-activity-4: #FF6900; /* Orange - e.g., System Event */
-  --color-activity-5: #00A63E; /* Dark Green - e.g., System Event */
-  --color-activity-6: #6A7282; /* Gray - e.g., Task Created */
-
+  --color-activity-1: #2b7fff; /* Blue - e.g., Email Sent */
+  --color-activity-2: #00c950; /* Green - e.g., Meeting Scheduled */
+  --color-activity-3: #ad46ff; /* Purple - e.g., System Event */
+  --color-activity-4: #ff6900; /* Orange - e.g., System Event */
+  --color-activity-5: #00a63e; /* Dark Green - e.g., System Event */
+  --color-activity-6: #6a7282; /* Gray - e.g., Task Created */
 
   /* --- 4. LAYOUT & ACTIONS ---
      Specific universal UI areas. of HEADER*/
-  --color-header-primary: #283BA4;
-  --color-header-secondary: #344CD2;
-  --color-action-delete: #FF2626;
+  --color-header-primary: #283ba4;
+  --color-header-secondary: #344cd2;
+  --color-action-delete: #ff2626;
 
   /* --- 5. table header color and gray color --*/
-  --color-graylight: #F5F6F8;
+  --color-graylight: #f5f6f8;
 
   --animate-fade-up: fade-up 0.5s;
   --animate-fade-down: fade-down 0.5s;
@@ -211,55 +213,59 @@
 
 :root {
   /* Ensure these variables are always available on the root for dynamic inline styles */
-  --color-activity-1: #2B7FFF;
-  --color-activity-2: #00C950;
-  --color-activity-3: #AD46FF;
-  --color-activity-4: #FF6900;
-  --color-activity-5: #00A63E;
-  --color-activity-6: #6A7282;
+  --color-activity-1: #2b7fff;
+  --color-activity-2: #00c950;
+  --color-activity-3: #ad46ff;
+  --color-activity-4: #ff6900;
+  --color-activity-5: #00a63e;
+  --color-activity-6: #6a7282;
   /* --- 1. STATUS BADGES (Intent-Based Pairs) ---
      Always use these in pairs (e.g., bg-status-success-bg text-status-success-text).
      These universally apply to Tasks, Leads, Leave Requests, Inventory Status, etc. */
 
   /* Success (Green) - e.g., Qualified Lead, Approved Leave, In Stock */
-  --color-status-success-bg: #D1FAE5;
-  --color-status-success-text: #065F46;
+  --color-status-success-bg: #d1fae5;
+  --color-status-success-text: #065f46;
 
   /* Info / Primary (Blue) - e.g., New Lead, System Alert */
-  --color-status-info-bg: #C2CAF8;
-  --color-status-info-text: #3953E7;
+  --color-status-info-bg: #c2caf8;
+  --color-status-info-text: #3953e7;
 
   /* Warning (Yellow) - e.g., Medium Task, Pending Leave */
-  --color-status-warning-bg: #FEF9C2;
-  --color-status-warning-text: #A65F00;
+  --color-status-warning-bg: #fef9c2;
+  --color-status-warning-text: #a65f00;
 
   /* Pending / Notice (Amber) - e.g., Proposal Stage, Needs Review */
-  --color-status-pending-bg: #FEF3C7;
-  --color-status-pending-text: #92400E;
+  --color-status-pending-bg: #fef3c7;
+  --color-status-pending-text: #92400e;
 
   /* Alert / Attention (Orange) - e.g., Negotiation, Low Stock */
-  --color-status-alert-bg: #FED7AA;
-  --color-status-alert-text: #9A3412;
+  --color-status-alert-bg: #fed7aa;
+  --color-status-alert-text: #9a3412;
 
   /* Danger / Critical (Red) - e.g., High Priority Task, Rejected, Out of Stock */
-  --color-status-danger-bg: #FFE2E2;
-  --color-status-danger-text: #C10007;
+  --color-status-danger-bg: #ffe2e2;
+  --color-status-danger-text: #c10007;
 
   /* Neutral (Gray) - e.g., Low Priority Task, Draft */
-  --color-status-neutral-bg: #F3F4F6;
+  --color-status-neutral-bg: #f3f4f6;
   --color-status-neutral-text: #364153;
 
   /* --- 6. TICKET STATUS & PRIORITY COLORS --- */
-  --color-ticket-status-new: #003D9B;
-  --color-ticket-status-open: #0071E6;
-  --color-ticket-status-in-progress: #0052CC;
+  --color-ticket-status-new: #003d9b;
+  --color-ticket-status-open: #0071e6;
+  --color-ticket-status-in-progress: #0052cc;
   --color-ticket-status-waiting: #737685;
-  --color-ticket-status-resolved: #7B2600;
-  --color-ticket-status-closed: #6B4FA1;
+  --color-ticket-status-resolved: #7b2600;
+  --color-ticket-status-closed: #6b4fa1;
 
-  --color-ticket-priority-urgent-bg: #FFDAD6;
-  --color-ticket-priority-critical-bg: #BA1A1A;
-  --color-ticket-priority-critical-text: #BA1A1A;
-  --color-report-blue-text: #003D98;
+  --color-ticket-priority-urgent-bg: #ffdad6;
+  --color-ticket-priority-critical-bg: #ba1a1a;
+  --color-ticket-priority-critical-text: #ba1a1a;
+  --color-report-blue-text: #003d98;
   --color-card-widget-container-header-bg-gray: #c3c6d6;
+  --color-admin-dashboard-badge-green: #ecfdf5;
+  --color-admin-dashboard-badge-text-green: #108981;
+  --color-admin-dashboard-badge-red: #FEF2F2;
+  --color-admin-dashboard-badge-text-red: #EF4444;
 }

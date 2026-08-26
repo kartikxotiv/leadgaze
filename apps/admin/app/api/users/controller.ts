@@ -58,11 +58,34 @@ export const getUsers = catchAsync(
       throw error;
     }
 
+    // Fetch actual roles for these accounts
+    const accountIds = (accounts || []).map(a => a.id);
+    let roleMap = new Map<string, string>();
+    
+    if (accountIds.length > 0) {
+      const { data: adminRoles } = await adminClient
+        .schema('admin')
+        .from('admin_roles')
+        .select('admin_user_id, roles(name)')
+        .in('admin_user_id', accountIds)
+        .is('revoked_at', null);
+
+      if (adminRoles) {
+        adminRoles.forEach((ar: any) => {
+          if (ar.roles?.name) {
+            roleMap.set(ar.admin_user_id, ar.roles.name);
+          }
+        });
+      }
+    }
+
     // Map personal accounts to UserItem response structure
     const formattedData = (accounts || []).map((acc, index) => {
-      const roles = ['Super Admin', 'Admin', 'Member', 'Viewer'] as const;
+      // Use the actual role, fallback to 'Platform User' if no admin role is assigned
+      const role = roleMap.get(acc.id) || 'Platform User';
+      
+      // Mocking status, workspaces, last login as before since these aren't currently stored globally
       const statuses = ['Active', 'Active', 'Invited', 'Active'] as const;
-      const role = roles[index % roles.length]!;
       const status = statuses[index % statuses.length]!;
       const workspacesCount = (index % 4) + 1;
       const lastLoginDays = index % 14;
