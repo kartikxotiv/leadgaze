@@ -761,7 +761,7 @@ export default function AdminWorkspacesPage() {
                               <div className="flex items-center gap-2">
                                 {ws.modules?.map((mod, index) => (
                                   <Badge key={index} variant="outline" className={`rounded-none font-bold px-2 py-0.5 text-xs ${mod.name === 'CRM' ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800' : 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800'}`}>
-                                    {mod.name} <span className={`ml-1 flex h-4 w-4 items-center justify-center rounded-none text-[10px] ${mod.name === 'CRM' ? 'bg-blue-100 dark:bg-blue-800' : 'bg-purple-100 dark:bg-purple-800'}`}>{mod.seats}</span>
+                                    {mod.name} <span className={`ml-1 flex h-4 w-4 items-center justify-center rounded-full text-[10px] ${mod.name === 'CRM' ? 'bg-blue-100 dark:bg-blue-800' : 'bg-purple-100 dark:bg-purple-800'}`}>{mod.seats}</span>
                                   </Badge>
                                 ))}
                               </div>
