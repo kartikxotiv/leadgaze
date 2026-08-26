@@ -89,10 +89,10 @@ function SortableWidgetWrapper({ id, children, isFullWidth, onRemove }: { id: st
       {onRemove && (
         <button 
           onClick={onRemove}
-          className="absolute top-2 right-1 z-50 p-1.5 bg-red-50 text-red-500 hover:bg-red-100 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
+          className="absolute top-2 right-1.5 z-50 p-1 text-gray-400 hover:text-red-500 rounded-md opacity-0 group-hover:opacity-100 transition-opacity bg-transparent"
           title="Remove widget"
         >
-          <X className="w-4 h-4" />
+          <X className="w-3.5 h-3.5" />
         </button>
       )}
       {children}
@@ -128,10 +128,10 @@ function SortableKpiWrapper({ id, children, onRemove }: { id: string; children: 
       {onRemove && (
         <button 
           onClick={onRemove}
-          className="absolute top-1 right-1 z-50 p-1.5 bg-red-50 text-red-500 hover:bg-red-100 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
+          className="absolute top-1.5 right-1.5 z-50 p-1 text-gray-400 hover:text-red-500 rounded-md opacity-0 group-hover:opacity-100 transition-opacity bg-transparent"
           title="Remove KPI"
         >
-          <X className="w-4 h-4" />
+          <X className="w-3.5 h-3.5" />
         </button>
       )}
       {children}
@@ -415,11 +415,11 @@ export function ServiceCloudDashboardPage({
                     <div key={status.id}>
                       <div className="mb-2 flex items-center justify-between gap-4">
                         <div className="flex items-center gap-1.5 text-sm">
-                          <span className="secondary-text-small-semibold text-leadgaze-dark dark:text-white">{status.name}</span>
+                          <span className="primary-text-medium text-leadgaze-dark dark:text-white">{status.name}</span>
                           <span className="text-muted-foreground text-xs">•</span>
                           <span className="text-muted-foreground text-xs">{formatHours(status.loggedSeconds ?? 0)} logged</span>
                         </div>
-                        <div className="secondary-text-small-semibold font-bold text-leadgaze-dark dark:text-white">{status.count}</div>
+                        <div className="primary-text-medium font-bold text-leadgaze-dark dark:text-white">{status.count}</div>
                       </div>
                       <div className="bar-bg h-2 w-full overflow-hidden rounded-full bg-[#EDEEF0]">
                         <div
@@ -508,11 +508,11 @@ export function ServiceCloudDashboardPage({
                     return (
                       <div key={priority.id} className={itemClass}>
                         <div>
-                          <div className="secondary-text-small-semibold" style={{ color: textColor || 'inherit' }}>{priority.name}</div>
+                          <div className="primary-text-medium" style={{ color: textColor || 'inherit' }}>{priority.name}</div>
                           <div className="secondary-text-small mt-1" style={{ color: subTextColor || 'var(--color-leadgaze-muted)' }}>{`${priority.openCount} open`}</div>
                         </div>
                         <Badge 
-                          className="px-2 py-1 !secondary-text-small-semibold rounded-sm hover:opacity-100"
+                          className="px-2 py-1 !primary-text-medium rounded-sm hover:opacity-100"
                           style={{ backgroundColor: badgeBg, color: badgeColor, border: 'none' }}
                         >
                           {priority.count}
@@ -589,7 +589,7 @@ export function ServiceCloudDashboardPage({
                         title={`#${ticket.ticketNumber} ${ticket.subject}`}
                         subtitle={`${ticket.customer} · ${ticket.assignee}`}
                         className="gap-0 border-l-0 border-r-0 border-t-0 rounded-none"
-                        titleClassFormat="secondary-text-small-semibold !font-bold"
+                        titleClassFormat="primary-text-medium"
                         badge={
                           <span className={cn('text-[11px] font-normal', ticket.daysOpen >= 25 && 'text-[var(--color-ticket-priority-critical-text)] font-bold')}>
                             {ticket.daysOpen}d open
