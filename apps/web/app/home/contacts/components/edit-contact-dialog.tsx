@@ -204,11 +204,11 @@ export function EditContactDialog({
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form id="dialog-form" onSubmit={form.handleSubmit(onSubmit)} className="flex-1 overflow-y-auto custom-spacing-x-y py-2 space-y-2">
+          <form id="dialog-form" onSubmit={form.handleSubmit(onSubmit)} className="flex-1 overflow-y-auto custom-spacing-x-y py-1 space-y-2">
             <Tabs defaultValue="basic" className="w-full h-full flex flex-col">
-              <TabsList className="grid w-full grid-cols-2 h-9">
-                <TabsTrigger value="basic" className="py-1">Basic Info</TabsTrigger>
-                <TabsTrigger value="additional" className='py-1'>Additional Details</TabsTrigger>
+              <TabsList className="mb-2 h-auto w-full justify-start gap-6 rounded-none border-b bg-transparent p-0 overflow-x-auto hide-scrollbar">
+                <TabsTrigger value="basic" className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent">Basic Info</TabsTrigger>
+                <TabsTrigger value="additional" className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent">Additional Details</TabsTrigger>
               </TabsList>
               
               <TabsContent value="basic" className="space-y-2 flex-1 overflow-y-auto">
