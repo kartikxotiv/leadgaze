@@ -1,20 +1,26 @@
 'use client';
 
-import { useState, use, useRef } from 'react';
+import { useState, use, useRef, useMemo, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import {
   ArrowLeft,
+  BarChart3,
   Bell,
+  Blocks,
   Briefcase,
   Building2,
   Calendar,
   Check,
   CheckSquare,
   Clock,
+  CreditCard,
   Download,
   File,
   FileText,
+  History,
+  Layers,
+  LayoutDashboard,
   Loader2,
   Mail,
   MoreVertical,
@@ -22,6 +28,7 @@ import {
   Plus,
   User,
   UserCheck,
+  Users,
   X,
 } from 'lucide-react';
 
@@ -67,6 +74,12 @@ import { toast } from 'sonner';
 import { CustomDeleteDialog } from '@kit/ui/custom-delete-dialog';
 import { AddColumnModal } from '@kit/ui/add-column-modal';
 import { useColumnVisibility } from '@kit/ui/use-column-visibility';
+import { useColumnResize } from '@kit/ui/use-column-resize';
+import { useTableSort } from '@kit/ui/use-table-sort';
+import { cn } from '@kit/ui/utils';
+import { ColumnHeader } from '@kit/ui/column-header';
+import { CsvExportButton } from '@kit/ui/csv-export-button';
+import { useCsvExport } from '@kit/ui/use-csv-export';
 
 // ─── Static mock data ─────────────────────────────────────────────────────────
 
@@ -158,7 +171,7 @@ const STATUS_CLASSES: Record<string, string> = {
 
 function StatusBadge({ status }: { status: string }) {
   return (
-    <Badge className={`text-xs font-semibold ${STATUS_CLASSES[status] ?? 'bg-zinc-100 text-zinc-500 border-transparent'}`}>
+    <Badge className={`text-[10px] font-semibold rounded-full px-2 py-0.5 ${STATUS_CLASSES[status] ?? 'bg-zinc-100 text-zinc-500 border-transparent'}`}>
       {status}
     </Badge>
   );
@@ -166,7 +179,7 @@ function StatusBadge({ status }: { status: string }) {
 
 function PlanBadge({ plan }: { plan: string }) {
   return (
-    <Badge className="bg-indigo-100 text-indigo-700 border-transparent text-xs font-semibold">
+    <Badge className="bg-indigo-100 text-indigo-700 border-transparent text-[10px] font-semibold rounded-full px-2 py-0.5">
       {plan}
     </Badge>
   );
@@ -174,7 +187,7 @@ function PlanBadge({ plan }: { plan: string }) {
 
 // Shared tab trigger class — matches leads detail page exactly
 const TAB_TRIGGER =
-  'data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-3 py-2 data-[state=active]:bg-transparent data-[state=active]:shadow-none secondary-text-small-bold text-leadgaze-muted data-[state=active]:text-leadgaze-primary';
+  'data-[state=active]:border-primary shrink-0 rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent cursor-pointer';
 
 // ─── Tab: Overview ────────────────────────────────────────────────────────────
 
@@ -400,10 +413,20 @@ function MembersTab({ workspaceId, activeModules }: { workspaceId: string, activ
     DEFAULT_MEMBERS_VISIBILITY
   );
 
+  const { getHeaderProps, getResizeHandleProps } = useColumnResize('workspace-members');
+  const getColumnProps = (id: string) => getHeaderProps(id);
+  const getResizer = (id: string) => <span className="col-resize-handle" {...getResizeHandleProps(id)} />;
+  
   const { data, isLoading, isFetching } = useQuery({
     queryKey: ['workspace-members', workspaceId, activeModuleKey, page, pageSize],
     queryFn: () => getWorkspaceMembersService({ workspaceId, module: activeModuleKey, page, limit: pageSize }),
   });
+
+  const members = data?.data || [];
+  const totalCount = data?.count || 0;
+  const totalPages = Math.ceil(totalCount / pageSize) || 1;
+
+  const { sortColumn, sortDirection, toggleSort } = useTableSort('workspace-members', members);
 
   const removeMutation = useMutation({
     mutationFn: (id: string) => removeWorkspaceMemberService({ workspaceId, memberId: id }),
@@ -504,24 +527,20 @@ function MembersTab({ workspaceId, activeModules }: { workspaceId: string, activ
     }
   };
 
-  const members = data?.data || [];
-  const totalCount = data?.count || 0;
-  const totalPages = Math.ceil(totalCount / pageSize) || 1;
-
   const visibleColumns = new Set(Object.keys(visibility).filter((k) => visibility[k]));
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col gap-4">
       {activeModules.length > 0 && (
-        <div className="inline-flex h-9 w-fit items-center justify-center rounded-lg bg-zinc-100 dark:bg-zinc-800 p-1 text-muted-foreground border border-zinc-200 dark:border-zinc-700">
+        <div className="flex h-auto w-full justify-start gap-3 overflow-x-auto rounded-none border-b border-zinc-200 dark:border-zinc-800 bg-transparent p-0 sm:gap-6 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {activeModules.map((mod) => (
             <button
               key={mod.key}
               onClick={() => { setActiveModuleKey(mod.key); setPage(1); }}
-              className={`inline-flex items-center justify-center whitespace-nowrap rounded-md px-4 py-1 text-sm font-medium ring-offset-background transition-all ${
+              className={`shrink-0 cursor-pointer rounded-none border-b-2 px-0 py-2 text-sm font-medium transition-all ${
                 activeModuleKey === mod.key
-                  ? 'bg-white dark:bg-zinc-950 text-blue-600 shadow-sm'
-                  : 'hover:text-foreground'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-muted-foreground hover:text-foreground'
               }`}
             >
               {mod.name}
@@ -530,7 +549,8 @@ function MembersTab({ workspaceId, activeModules }: { workspaceId: string, activ
         </div>
       )}
       <CustomTableContainer
-      pagination={
+        className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
+        pagination={
         <TablePagination currentPage={page} totalPages={totalPages} totalCount={totalCount}
           pageSize={pageSize} onPageChange={setPage}
           onPageSizeChange={(s) => { setPageSize(s); setPage(1); }} entityLabel="entries" />
@@ -539,13 +559,36 @@ function MembersTab({ workspaceId, activeModules }: { workspaceId: string, activ
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-10 pl-4"><Checkbox /></TableHead>
-            {visibleColumns.has('sno') && <TableHead>S. No.</TableHead>}
-            {visibleColumns.has('name') && <TableHead>Name</TableHead>}
-            {visibleColumns.has('email') && <TableHead>Email</TableHead>}
-            {visibleColumns.has('role') && <TableHead>Role</TableHead>}
-            {visibleColumns.has('lastActive') && <TableHead>Last Active</TableHead>}
-            {visibleColumns.has('status') && <TableHead>Status</TableHead>}
+            {visibleColumns.has('sno') && (
+              <ColumnHeader columnId="sno" label="S. No." sortColumn={sortColumn} sortDirection={sortDirection} onSort={toggleSort} {...getColumnProps('sno')}>
+                {getResizer('sno')}
+              </ColumnHeader>
+            )}
+            {visibleColumns.has('name') && (
+              <ColumnHeader columnId="name" label="Name" sortColumn={sortColumn} sortDirection={sortDirection} onSort={toggleSort} {...getColumnProps('name')}>
+                {getResizer('name')}
+              </ColumnHeader>
+            )}
+            {visibleColumns.has('email') && (
+              <ColumnHeader columnId="email" label="Email" sortColumn={sortColumn} sortDirection={sortDirection} onSort={toggleSort} {...getColumnProps('email')}>
+                {getResizer('email')}
+              </ColumnHeader>
+            )}
+            {visibleColumns.has('role') && (
+              <ColumnHeader columnId="role" label="Role" sortColumn={sortColumn} sortDirection={sortDirection} onSort={toggleSort} {...getColumnProps('role')}>
+                {getResizer('role')}
+              </ColumnHeader>
+            )}
+            {visibleColumns.has('lastActive') && (
+              <ColumnHeader columnId="lastActive" label="Last Active" sortColumn={sortColumn} sortDirection={sortDirection} onSort={toggleSort} {...getColumnProps('lastActive')}>
+                {getResizer('lastActive')}
+              </ColumnHeader>
+            )}
+            {visibleColumns.has('status') && (
+              <ColumnHeader columnId="status" label="Status" sortColumn={sortColumn} sortDirection={sortDirection} onSort={toggleSort} {...getColumnProps('status')}>
+                {getResizer('status')}
+              </ColumnHeader>
+            )}
             <TableHead className="sticky-right-header z-10 w-12 px-1 text-center">
               <Button
                 type="button"
@@ -563,21 +606,20 @@ function MembersTab({ workspaceId, activeModules }: { workspaceId: string, activ
           {isFetching ? (
              [1, 2, 3, 4, 5].map((i) => (
                 <TableRow key={i}>
-                  <TableCell colSpan={8} className="p-4">
+                  <TableCell colSpan={7} className="p-4">
                     <Skeleton className="h-6 w-full rounded" />
                   </TableCell>
                 </TableRow>
              ))
           ) : members.length === 0 ? (
              <TableRow>
-                <TableCell colSpan={8} className="h-32 text-center text-muted-foreground">
+                <TableCell colSpan={7} className="h-32 text-center text-muted-foreground">
                   No members found.
                 </TableCell>
              </TableRow>
           ) : (
             members.map((m: any) => (
               <TableRow key={m.id} className="hover:bg-muted/50 cursor-pointer">
-                <TableCell className="pl-4" onClick={(e) => e.stopPropagation()}><Checkbox /></TableCell>
                 {visibleColumns.has('sno') && <TableCell className="primary-text-regular text-leadgaze-muted">{m.sno}</TableCell>}
                 {visibleColumns.has('name') && (
                   <TableCell className="primary-text-medium text-leadgaze-dark dark:text-white">
@@ -838,6 +880,12 @@ function AuditLogsTab({ workspaceId }: { workspaceId: string }) {
   const totalCount = data?.count || 0;
   const totalPages = Math.ceil(totalCount / pageSize) || 1;
 
+  const { getHeaderProps, getResizeHandleProps } = useColumnResize('workspace-audit-logs');
+  const getColumnProps = (id: string) => getHeaderProps(id);
+  const getResizer = (id: string) => <span className="col-resize-handle" {...getResizeHandleProps(id)} />;
+  const { sortColumn, sortDirection, toggleSort, sortedData: sortedLogs } = useTableSort('workspace-audit-logs', logs);
+
+
   const getModuleIcon = (moduleName: string) => {
     switch (moduleName) {
       case 'leads': return <User className="h-4 w-4 text-blue-500" />;
@@ -881,6 +929,7 @@ function AuditLogsTab({ workspaceId }: { workspaceId: string }) {
 
   return (
     <CustomTableContainer
+      className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
       pagination={
         <TablePagination currentPage={page} totalPages={totalPages} totalCount={totalCount}
           pageSize={pageSize} onPageChange={setPage}
@@ -890,11 +939,21 @@ function AuditLogsTab({ workspaceId }: { workspaceId: string }) {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>S. No.</TableHead>
-            <TableHead>User</TableHead>
-            <TableHead>Detail</TableHead>
-            <TableHead>Timestamp</TableHead>
-            <TableHead>Action</TableHead>
+            <ColumnHeader columnId="sno" label="S. No." sortColumn={sortColumn} sortDirection={sortDirection} onSort={toggleSort} {...getColumnProps('sno')}>
+              {getResizer('sno')}
+            </ColumnHeader>
+            <ColumnHeader columnId="user" label="User" sortKey="actor.name" sortColumn={sortColumn} sortDirection={sortDirection} onSort={toggleSort} {...getColumnProps('user')}>
+              {getResizer('user')}
+            </ColumnHeader>
+            <ColumnHeader columnId="detail" label="Detail" sortKey="module" sortColumn={sortColumn} sortDirection={sortDirection} onSort={toggleSort} {...getColumnProps('detail')}>
+              {getResizer('detail')}
+            </ColumnHeader>
+            <ColumnHeader columnId="timestamp" label="Timestamp" sortKey="created_at" sortColumn={sortColumn} sortDirection={sortDirection} onSort={toggleSort} {...getColumnProps('timestamp')}>
+              {getResizer('timestamp')}
+            </ColumnHeader>
+            <ColumnHeader columnId="action" label="Action" sortColumn={sortColumn} sortDirection={sortDirection} onSort={toggleSort} {...getColumnProps('action')}>
+              {getResizer('action')}
+            </ColumnHeader>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -912,7 +971,7 @@ function AuditLogsTab({ workspaceId }: { workspaceId: string }) {
                   No audit logs found.
                 </TableCell>
              </TableRow>
-          ) : logs.map((row: any, index: number) => (
+          ) : sortedLogs.map((row: any, index: number) => (
             <TableRow key={row.id} className="hover:bg-muted/50">
               <TableCell className="primary-text-regular text-leadgaze-muted pl-4">{(page - 1) * pageSize + index + 1}</TableCell>
               <TableCell className="primary-text-medium text-leadgaze-dark dark:text-white">
@@ -942,6 +1001,55 @@ function AuditLogsTab({ workspaceId }: { workspaceId: string }) {
 function BillingTimelineTab() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
+  const { getHeaderProps, getResizeHandleProps } = useColumnResize('workspace-billing');
+  const getColumnProps = (id: string) => getHeaderProps(id);
+  const getResizer = (id: string) => <span className="col-resize-handle" {...getResizeHandleProps(id)} />;
+  const { sortColumn, sortDirection, toggleSort, sortedData: sortedBilling } = useTableSort('workspace-billing', BILLING_ROWS);
+  
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === sortedBilling.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(sortedBilling.map((r) => r.id)));
+    }
+  };
+
+  const toggleRowSelect = (id: string) => {
+    const next = new Set(selectedIds);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setSelectedIds(next);
+  };
+
+  const exportColumns = useMemo(() => [
+    { key: 'invoice', label: 'Invoice' },
+    { key: 'detail', label: 'Detail' },
+    { key: 'plan', label: 'Plan' },
+    { key: 'amount', label: 'Amount' },
+    { key: 'status', label: 'Status' },
+    { key: 'date', label: 'Date' }
+  ], []);
+
+  const serializeRow = useCallback((row: any) => {
+    return exportColumns.map(c => row[c.key] ?? '');
+  }, [exportColumns]);
+
+  const { exportToCsv: exportAll, isExporting: isExportingAll } = useCsvExport({
+    filename: 'billing_export',
+    columns: exportColumns,
+    fetchData: async () => sortedBilling,
+    serializeRow,
+  });
+
+  const { exportToCsv: exportSelected, isExporting: isExportingSelected } = useCsvExport({
+    filename: 'billing_export_selected',
+    columns: exportColumns,
+    fetchData: async () => sortedBilling.filter(r => selectedIds.has(r.id)),
+    serializeRow,
+  });
+
   const summaryStats = [
     { value: '$19,200', label: 'Total Revenue', sub: '8 months of billing', cls: 'text-emerald-600' },
     { value: '$2400', label: 'Last Invoice', sub: 'Paid · Aug 1 2026', cls: 'text-zinc-900 dark:text-white' },
@@ -949,8 +1057,8 @@ function BillingTimelineTab() {
     { value: '$0', label: 'Refunds Issued', sub: 'No refunds on record', cls: 'text-zinc-900 dark:text-white' },
   ];
   return (
-    <div className="flex flex-col gap-2">
-      <div className="grid grid-cols-2 gap-2 xl:grid-cols-4">
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2">
+      <div className="grid grid-cols-2 gap-2 xl:grid-cols-4 shrink-0">
         {summaryStats.map(({ value, label, sub, cls }) => (
           <Card key={label} className="p-4">
             <p className={`text-2xl font-bold ${cls}`}>{value}</p>
@@ -961,11 +1069,15 @@ function BillingTimelineTab() {
       </div>
       <div className="flex items-center justify-between py-1">
         <span className="primary-heading text-leadgaze-dark dark:text-white">Invoice &amp; Event History</span>
-        <Button variant="outline" size="sm" className="gap-1.5 secondary-text-small-bold h-7">
-          <Download className="h-3.5 w-3.5" /> Export CSV
-        </Button>
+        <CsvExportButton
+          selectedCount={selectedIds.size}
+          onExportAll={exportAll}
+          onExportSelected={exportSelected}
+          isExporting={isExportingAll || isExportingSelected}
+        />
       </div>
       <CustomTableContainer
+        className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
         pagination={
           <TablePagination currentPage={page} totalPages={2} totalCount={25}
             pageSize={pageSize} onPageChange={setPage}
@@ -975,14 +1087,20 @@ function BillingTimelineTab() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-10 pl-4"><Checkbox /></TableHead>
-              <TableHead>S. No.</TableHead>
-              <TableHead>Invoice / Event</TableHead>
-              <TableHead>Detail</TableHead>
-              <TableHead>Plan</TableHead>
-              <TableHead>Amount</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Date</TableHead>
+              <TableHead className="w-10 pl-4">
+                <Checkbox 
+                  checked={selectedIds.size > 0 && selectedIds.size === sortedBilling.length ? true : selectedIds.size > 0 ? "indeterminate" : false} 
+                  onCheckedChange={toggleSelectAll} 
+                  aria-label="Select all rows"
+                />
+              </TableHead>
+              <ColumnHeader columnId="sno" label="S. No." sortColumn={sortColumn} sortDirection={sortDirection} onSort={toggleSort} {...getColumnProps('sno')}>{getResizer('sno')}</ColumnHeader>
+              <ColumnHeader columnId="invoice" label="Invoice / Event" sortColumn={sortColumn} sortDirection={sortDirection} onSort={toggleSort} {...getColumnProps('invoice')}>{getResizer('invoice')}</ColumnHeader>
+              <ColumnHeader columnId="detail" label="Detail" sortColumn={sortColumn} sortDirection={sortDirection} onSort={toggleSort} {...getColumnProps('detail')}>{getResizer('detail')}</ColumnHeader>
+              <ColumnHeader columnId="plan" label="Plan" sortColumn={sortColumn} sortDirection={sortDirection} onSort={toggleSort} {...getColumnProps('plan')}>{getResizer('plan')}</ColumnHeader>
+              <ColumnHeader columnId="amount" label="Amount" sortColumn={sortColumn} sortDirection={sortDirection} onSort={toggleSort} {...getColumnProps('amount')}>{getResizer('amount')}</ColumnHeader>
+              <ColumnHeader columnId="status" label="Status" sortColumn={sortColumn} sortDirection={sortDirection} onSort={toggleSort} {...getColumnProps('status')}>{getResizer('status')}</ColumnHeader>
+              <ColumnHeader columnId="date" label="Date" sortColumn={sortColumn} sortDirection={sortDirection} onSort={toggleSort} {...getColumnProps('date')}>{getResizer('date')}</ColumnHeader>
               <TableHead className="sticky right-0 bg-zinc-50 dark:bg-zinc-900 w-10 text-center">
                 <button className="flex h-5 w-5 items-center justify-center rounded-full bg-leadgaze-primary text-white mx-auto">
                   <Plus className="h-3.5 w-3.5" />
@@ -991,9 +1109,16 @@ function BillingTimelineTab() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {BILLING_ROWS.map((row) => (
+            {sortedBilling.map((row) => (
               <TableRow key={row.id} className="hover:bg-muted/50">
-                <TableCell className="pl-4"><Checkbox /></TableCell>
+                <TableCell className="pl-4">
+                  <Checkbox 
+                    checked={selectedIds.has(row.id)} 
+                    onCheckedChange={() => toggleRowSelect(row.id)}
+                    onClick={(e) => e.stopPropagation()} 
+                    aria-label="Select row"
+                  />
+                </TableCell>
                 <TableCell className="primary-text-regular text-leadgaze-muted">{row.sno}</TableCell>
                 <TableCell className="primary-text-medium text-leadgaze-dark dark:text-white">{row.invoice}</TableCell>
                 <TableCell><span className="secondary-text-small-bold text-blue-600">{row.detail}</span></TableCell>
@@ -1024,13 +1149,13 @@ function BillingTimelineTab() {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 const TABS = [
-  { value: 'overview', label: 'Overview' },
-  { value: 'modules', label: 'Modules' },
-  { value: 'members', label: 'Members' },
-  { value: 'usage', label: 'Usage Analytics' },
-  { value: 'integrations', label: 'Integrations' },
-  { value: 'audit-logs', label: 'Audit Logs' },
-  { value: 'billing', label: 'Billing Timeline' },
+  { value: 'overview', label: 'Overview', icon: LayoutDashboard },
+  { value: 'modules', label: 'Modules', icon: Layers },
+  { value: 'members', label: 'Members', icon: Users },
+  { value: 'usage', label: 'Usage Analytics', icon: BarChart3 },
+  { value: 'integrations', label: 'Integrations', icon: Blocks },
+  { value: 'audit-logs', label: 'Audit Logs', icon: History },
+  { value: 'billing', label: 'Billing Timeline', icon: CreditCard },
 ];
 
 export default function WorkspaceDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -1098,7 +1223,7 @@ export default function WorkspaceDetailPage({ params }: { params: Promise<{ id: 
             <Link href="/organization"><ArrowLeft className="h-3 w-3" /></Link>
           </Button>
           {/* Avatar */}
-          <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-sm font-bold text-white ${WS.color}`}>
+          <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-none text-sm font-bold text-white ml-2 ${WS.color}`}>
             {WS.initials}
           </div>
           {/* Name + badges + owner */}
@@ -1113,31 +1238,37 @@ export default function WorkspaceDetailPage({ params }: { params: Promise<{ id: 
             </p>
           </div>
         </div>
-        {/* <Button className="secondary-text-small-bold bg-leadgaze-primary hover:bg-leadgaze-primary/90 text-white px-3 h-8">
-          Login As Workspace
-        </Button> */}
+        <div className="flex items-center gap-2">
+          <Button className="secondary-text-small-bold bg-leadgaze-primary hover:bg-leadgaze-primary text-white gap-1.5 px-2">
+            Login As Workspace
+          </Button>
+        </div>
       </div>
 
       {/* ── Tabs bar + content ── */}
-      <PageBody className="pb-2">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col gap-2">
+      <PageBody className="flex min-h-0 min-w-0 flex-1 flex-col">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex min-h-0 min-w-0 flex-1 flex-col space-y-4">
           {/* Tab triggers — border-top-bottom-gray matches leads detail pattern */}
-          <TabsList className="h-auto w-full justify-start gap-0 overflow-x-auto rounded-none border-top-bottom-gray bg-transparent p-0 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {TABS.map((tab) => (
-              <TabsTrigger key={tab.value} value={tab.value} className={TAB_TRIGGER}>
-                {tab.label}
-              </TabsTrigger>
-            ))}
+          <TabsList className="h-auto w-full justify-start gap-3 overflow-x-auto rounded-none border-top-bottom-gray bg-transparent p-0 [-ms-overflow-style:none] [scrollbar-width:none] sm:gap-6 [&::-webkit-scrollbar]:hidden mb-2">
+            {TABS.map((tab) => {
+              const Icon = tab.icon;
+              return (
+                <TabsTrigger key={tab.value} value={tab.value} className={TAB_TRIGGER}>
+                  <Icon className="mr-2 h-4 w-4" />
+                  {tab.label}
+                </TabsTrigger>
+              );
+            })}
           </TabsList>
 
           {/* Tab content — no extra padding; content manages its own gap */}
-          <TabsContent value="overview" className="mt-0"><OverviewTab WS={WS} /></TabsContent>
-          <TabsContent value="modules" className="mt-0"><ModulesTab workspaceId={params.id as string} /></TabsContent>
-          <TabsContent value="members" className="mt-0"><MembersTab workspaceId={id} activeModules={WS.activeModules} /></TabsContent>
-          <TabsContent value="usage" className="mt-0"><UsageAnalyticsTab workspaceId={id} /></TabsContent>
-          <TabsContent value="integrations" className="mt-0"><IntegrationsTab workspaceId={id} /></TabsContent>
-          <TabsContent value="audit-logs" className="mt-0"><AuditLogsTab workspaceId={id} /></TabsContent>
-          <TabsContent value="billing" className="mt-0"><BillingTimelineTab /></TabsContent>
+          <TabsContent value="overview" className="mt-0 flex min-h-0 min-w-0 flex-1 flex-col data-[state=inactive]:hidden"><OverviewTab WS={WS} /></TabsContent>
+          <TabsContent value="modules" className="mt-0 flex min-h-0 min-w-0 flex-1 flex-col data-[state=inactive]:hidden"><ModulesTab workspaceId={id} /></TabsContent>
+          <TabsContent value="members" className="mt-0 flex min-h-0 min-w-0 flex-1 flex-col data-[state=inactive]:hidden mb-0"><MembersTab workspaceId={id} activeModules={WS.activeModules} /></TabsContent>
+          <TabsContent value="usage" className="mt-0 flex min-h-0 min-w-0 flex-1 flex-col data-[state=inactive]:hidden"><UsageAnalyticsTab workspaceId={id} /></TabsContent>
+          <TabsContent value="integrations" className="mt-0 flex min-h-0 min-w-0 flex-1 flex-col data-[state=inactive]:hidden"><IntegrationsTab workspaceId={id} /></TabsContent>
+          <TabsContent value="audit-logs" className="mt-0 flex min-h-0 min-w-0 flex-1 flex-col data-[state=inactive]:hidden mb-0"><AuditLogsTab workspaceId={id} /></TabsContent>
+          <TabsContent value="billing" className="mt-0 flex min-h-0 min-w-0 flex-1 flex-col data-[state=inactive]:hidden mb-0"><BillingTimelineTab /></TabsContent>
         </Tabs>
       </PageBody>
     </AppShell>
