@@ -352,11 +352,11 @@ export function CentralStatusManagementDialog({
             onValueChange={(val) => setActiveTab(val as StatusModuleKey)}
             className="flex-1 flex flex-col overflow-hidden"
           >
-            <div className="border-b flex items-center justify-between shrink-0 custom-spacing-x-y pb-2">
-              <TabsList className="grid grid-cols-3 w-[400px] h-[32px]">
-                <TabsTrigger value="leads" className="h-[24px]">Leads</TabsTrigger>
-                <TabsTrigger value="opportunities" className="h-[24px]">Opportunities</TabsTrigger>
-                <TabsTrigger value="accounts" className="h-[24px]">Account Types</TabsTrigger>
+            <div className="border-b flex items-center justify-between shrink-0 custom-spacing-x-y py-2">
+              <TabsList className="h-auto justify-start gap-6 rounded-none bg-transparent p-0">
+                <TabsTrigger value="leads" className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-3 data-[state=active]:bg-transparent h-auto">Leads</TabsTrigger>
+                <TabsTrigger value="opportunities" className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-3 data-[state=active]:bg-transparent h-auto">Opportunities</TabsTrigger>
+                <TabsTrigger value="accounts" className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-3 data-[state=active]:bg-transparent h-auto">Account Types</TabsTrigger>
               </TabsList>
 
               <Button onClick={openCreate} className="secondary-text-small-bold bg-leadgaze-primary hover:bg-leadgaze-primary text-white gap-1.5 px-2">
