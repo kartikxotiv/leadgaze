@@ -234,7 +234,7 @@ export function CoreInboxTab({
           </Select>
         </div>
 
-        <div className="p-[2px] flex flex-1 justify-end min-w-0">
+        <div className="flex flex-1 justify-end min-w-0">
           <ListToolBar
             className="border-none bg-transparent p-0"
             showSearch

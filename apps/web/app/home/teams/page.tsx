@@ -190,7 +190,7 @@ export default function TeamsPage() {
           title={`Teams`}
           // description="Manage your workspace teams and their members"
         >
-          <div className="p-[2px]">
+          <div>
             <ListToolBar
               align="right"
               className="border-none bg-transparent p-0"

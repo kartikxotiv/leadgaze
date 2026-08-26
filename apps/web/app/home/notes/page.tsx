@@ -539,7 +539,7 @@ export default function NotesPage() {
         <PageHeader
           title={`Notes`}          
         >
-          <div className="p-[2px]">
+          <div>
             <ListToolBar
               align="right"
               className="border-none bg-transparent p-0"
@@ -1085,6 +1085,13 @@ export default function NotesPage() {
               value={editContent}
               onChange={(e) => setEditContent(e.target.value)}
               rows={6}
+              autoFocus
+              onFocus={(e) => {
+                e.currentTarget.setSelectionRange(
+                  e.currentTarget.value.length,
+                  e.currentTarget.value.length
+                );
+              }}
             />
           </div>
           <DialogFooter>

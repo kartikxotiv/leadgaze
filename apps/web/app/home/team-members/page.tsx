@@ -442,7 +442,7 @@ export default function TeamMembersPage() {
           // }
         >
           
-          <div className="p-[2px] flex gap-2">
+          <div className="flex gap-2">
             <div className="flex">
             {currentModule && (
               <Card

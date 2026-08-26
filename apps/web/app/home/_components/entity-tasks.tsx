@@ -519,27 +519,27 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
           }
         }}
       >
-        <DialogContent className="sm:max-w-[500px] max-h-[80vh] flex flex-col p-6">
+        <DialogContent className="sm:max-w-[500px] max-h-[80vh]">
           <DialogHeader>
             <DialogTitle>Time Logs: {viewLogsTask?.title}</DialogTitle>
           </DialogHeader>
-          <div className="flex-1 overflow-y-auto space-y-3 pr-2">
+          <div className="flex-1 overflow-y-auto space-y-2 custom-spacing-x-y py-2">
             {isLoadingLogs ? (
               <div className="flex justify-center py-4">
                 <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
               </div>
             ) : timeLogs.length > 0 ? (
-              <div className="space-y-3">
-                <div className="p-3 bg-gray-50 dark:bg-slate-800 rounded-lg border flex justify-between items-center text-sm font-semibold">
+              <div className="space-y-2">
+                <div className="p-2 bg-gray-50 dark:bg-slate-800 border flex justify-between items-center text-sm font-semibold text-leadgaze-dark dark:text-white">
                   <span>Total Logged Time:</span>
                   <span className="text-blue-500">
                     {totalHours > 0 ? `${totalHours}h ` : ''}{remainingMinutes}m
                   </span>
                 </div>
                 {timeLogs.map((log) => (
-                  <div key={log.id} className="p-3 border rounded-lg text-sm space-y-1.5 bg-white dark:bg-slate-900">
+                  <div key={log.id} className="p-2 border text-sm space-y-1.5 bg-white dark:bg-slate-900">
                     <div className="flex justify-between items-center">
-                      <span className="font-semibold text-gray-800 dark:text-gray-200">
+                      <span className="font-semibold text-leadgaze-dark dark:text-white">
                         {log.user?.name || 'Unknown User'}
                       </span>
                       <span className="text-xs text-gray-500 font-medium bg-gray-100 dark:bg-slate-800 py-0.5 px-2 rounded-full">
