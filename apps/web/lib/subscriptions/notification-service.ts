@@ -16,6 +16,14 @@ export type SubscriptionNotificationEvent =
   | 'plan_downgrade_applied'
   | 'module_added'
   | 'module_removed'
+  | 'invoice_issued'
+  | 'invoice_paid'
+  | 'invoice_expired'
+  | 'payment_reminder'
+  | 'seat_increase_paid'
+  | 'seat_decrease_scheduled'
+  | 'seat_decrease_applied'
+  | 'entitlement_expired'
   | 'payment_failed'
   | 'subscription_cancelled'
   | 'usage_80'
@@ -29,6 +37,7 @@ type EmitInput = {
   message: string;
   email: boolean;
   actionUrl?: string;
+  actionLabel?: string;
   metadata?: Json;
 };
 
@@ -172,6 +181,74 @@ export class SubscriptionNotificationService {
     }
   }
 
+  async retryPendingEmails(limit = 100) {
+    const pending = await this.client
+      .from('subscription_notifications')
+      .select(
+        'id, event_type, title, message, action_url, metadata, accounts!subscription_notifications_recipient_id_fkey(email)',
+      )
+      .eq('channel', 'email')
+      .in('delivery_status', ['pending', 'failed'])
+      .order('created_at', { ascending: true })
+      .limit(limit);
+    if (pending.error) throw pending.error;
+    let sent = 0;
+    let failed = 0;
+    for (const row of pending.data ?? []) {
+      const account = Array.isArray(row.accounts)
+        ? row.accounts[0]
+        : row.accounts;
+      if (!account?.email) continue;
+      try {
+        await transporter.sendMail({
+          from:
+            process.env.SMTP_FROM ??
+            process.env.SMTP_USER ??
+            'noreply@leadgaze.com',
+          to: account.email,
+          subject: `${row.title} - Leadgaze`,
+          html: this.renderEmail({
+            workspaceId: '',
+            eventType: row.event_type as SubscriptionNotificationEvent,
+            eventKey: '',
+            title: row.title,
+            message: row.message,
+            email: true,
+            actionUrl: row.action_url ?? undefined,
+            actionLabel:
+              row.event_type === 'invoice_issued' ||
+              row.event_type === 'payment_reminder'
+                ? 'Pay invoice'
+                : undefined,
+            metadata: row.metadata,
+          }),
+        });
+        await this.client
+          .from('subscription_notifications')
+          .update({
+            delivery_status: 'sent',
+            delivered_at: new Date().toISOString(),
+            delivery_error: null,
+          })
+          .eq('id', row.id);
+        sent += 1;
+      } catch (error) {
+        await this.client
+          .from('subscription_notifications')
+          .update({
+            delivery_status: 'failed',
+            delivery_error:
+              error instanceof Error
+                ? error.message.slice(0, 1000)
+                : 'Unknown error',
+          })
+          .eq('id', row.id);
+        failed += 1;
+      }
+    }
+    return { sent, failed };
+  }
+
   private async getRecipients(workspaceId: string) {
     const workspace = await this.client
       .from('workspaces')
@@ -208,7 +285,10 @@ export class SubscriptionNotificationService {
 
   private renderEmail(input: EmitInput) {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
-    const actionUrl = `${appUrl}${input.actionUrl ?? '/org/subscription'}`;
-    return `<!doctype html><html><body style="font-family:Arial,sans-serif;color:#172033"><div style="max-width:560px;margin:32px auto;padding:28px;border:1px solid #e5e7eb;border-radius:16px"><h2>${escapeHtml(input.title)}</h2><p style="line-height:1.6">${escapeHtml(input.message)}</p><a href="${escapeHtml(actionUrl)}" style="display:inline-block;margin-top:12px;padding:11px 18px;border-radius:8px;background:#2563eb;color:white;text-decoration:none">Manage subscription</a><p style="margin-top:28px;color:#64748b;font-size:12px">Leadgaze subscription notification</p></div></body></html>`;
+    const requestedUrl = input.actionUrl ?? '/org/subscription';
+    const actionUrl = /^https?:\/\//i.test(requestedUrl)
+      ? requestedUrl
+      : `${appUrl}${requestedUrl}`;
+    return `<!doctype html><html><body style="font-family:Arial,sans-serif;color:#172033"><div style="max-width:560px;margin:32px auto;padding:28px;border:1px solid #e5e7eb;border-radius:16px"><h2>${escapeHtml(input.title)}</h2><p style="line-height:1.6">${escapeHtml(input.message)}</p><a href="${escapeHtml(actionUrl)}" style="display:inline-block;margin-top:12px;padding:11px 18px;border-radius:8px;background:#2563eb;color:white;text-decoration:none">${escapeHtml(input.actionLabel ?? 'Manage subscription')}</a><p style="margin-top:28px;color:#64748b;font-size:12px">Leadgaze subscription notification</p></div></body></html>`;
   }
 }

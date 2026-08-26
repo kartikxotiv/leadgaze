@@ -87,7 +87,7 @@ export function InlineEditableValue({
         autoFocus
         disabled={disabled || isSaving}
         className={cn(
-          'w-full min-h-[34px] resize-y text-right py-1.5 px-2 border-black/20 dark:border-white/20 focus-visible:border-gray-200 dark:focus-visible:border-gray-600 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0',
+          'w-full max-w-[300px] ml-auto min-h-[34px] resize-y text-right py-1.5 px-2 border-black/20 dark:border-white/20 focus-visible:border-gray-200 dark:focus-visible:border-gray-600 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0',
           inputClassName
         )}
         value={draft}
@@ -111,7 +111,7 @@ export function InlineEditableValue({
         autoFocus
         disabled={disabled || isSaving}
         className={cn(
-          'w-full text-right h-8 py-1 px-2 border-black/20 dark:border-white/20 focus-visible:border-gray-200 dark:focus-visible:border-gray-600 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0',
+          'w-full max-w-[300px] ml-auto text-right h-8 py-1 px-2 border-black/20 dark:border-white/20 focus-visible:border-gray-200 dark:focus-visible:border-gray-600 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0',
           inputClassName
         )}
         value={draft}

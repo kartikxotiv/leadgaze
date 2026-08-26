@@ -876,7 +876,7 @@ Google Key: (leave empty)`}
           <DialogHeader>
             <DialogTitle>Disconnect Google Ads Account</DialogTitle>            
           </DialogHeader>
-          <div className="space-y-2 px-2">
+          <div className="space-y-2 custom-spacing-x-y py-2">
             <p className="primary-text-regular text-leadgaze-dark dark:text-white">Are you sure you want to disconnect <span className="font-semibold">{accountToDisconnect?.email}</span>?</p>
             <div className="flex items-start gap-3 rounded-md bg-destructive/10 border border-destructive/20 p-3">
               <AlertTriangle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />

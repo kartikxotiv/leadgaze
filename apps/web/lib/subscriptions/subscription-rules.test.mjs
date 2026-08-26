@@ -31,7 +31,7 @@ test('trial starts only for a free workspace that has never used one', () => {
   );
 });
 
-test('upgrades are immediate and downgrades are scheduled', () => {
+test('plan ordering identifies upgrades and scheduled downgrades', () => {
   assert.equal(getPlanChangeDirection(1, 2), 'upgrade');
   assert.equal(getPlanChangeDirection(2, 1), 'downgrade');
   assert.equal(getPlanChangeDirection(2, 2), 'same');

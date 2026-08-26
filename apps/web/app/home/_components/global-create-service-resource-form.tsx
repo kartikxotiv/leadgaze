@@ -146,6 +146,7 @@ export function GlobalCreateServiceResourceForm({ title, endpoint, entityType, p
                 <div key={field.key}>
                   <Label className="flex items-center gap-1.5">
                     {field.label}
+                    {field.required && <span className="text-destructive"> *</span>}
                     {!isEditable && <span className="text-muted-foreground text-xs font-normal">(view only)</span>}
                   </Label>
                   {field.type === 'select' ? (
@@ -179,7 +180,7 @@ export function GlobalCreateServiceResourceForm({ title, endpoint, entityType, p
         </div>
       </form>
       
-      <DialogFooter className="p-2 bg-white dark:bg-slate-950 border-t border-gray-200 dark:border-slate-800 mt-2">
+      <DialogFooter className="bg-white dark:bg-slate-950 border-t border-gray-200 dark:border-slate-800 mt-2">
         <Button type="button" variant="outline" onClick={onCancel} disabled={createMutation.isPending}>Cancel</Button>
         <Button type="submit" form={`create-${endpoint}-form`} disabled={createMutation.isPending}>
           {createMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : (!asFormOnly && <Plus className="h-4 w-4" />)}

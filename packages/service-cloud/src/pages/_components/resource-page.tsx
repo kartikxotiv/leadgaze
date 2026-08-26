@@ -89,7 +89,7 @@ const PRESET_COLORS = [
 export type ResourceField = {
   key: string;
   label: string;
-  type?: 'text' | 'email' | 'number' | 'textarea' | 'select' | 'color';
+  type?: 'text' | 'email' | 'number' | 'textarea' | 'select' | 'color' | 'phone';
   required?: boolean;
   options?: Array<{ label: string; value: string; color?: string }>;
 };
@@ -176,7 +176,12 @@ type ResourcePageProps = {
   /** Logged in user's ID to restrict dynamic fields edits to their creators */
   currentUserId?: string;
   viewMode?: 'table' | 'kanban';
-  kanbanSlot?: (data: any[], refetch: () => void) => React.ReactNode;
+  kanbanSlot?: (
+    data: any[],
+    refetch: () => void,
+    openEdit?: (record: ServiceCloudRecord) => void,
+    openDelete?: (record: ServiceCloudRecord) => void,
+  ) => React.ReactNode;
   showSelection?: boolean;
   selectedIds?: Set<string>;
   onSelectAll?: () => void;
@@ -506,15 +511,24 @@ export function ServiceCloudResourcePage({
   };
 
   const save = async () => {
+    const sanitizedForm = { ...form };
+
     for (const field of fields) {
-      if (field.required && !form[field.key]) {
+      if (field.required && !sanitizedForm[field.key]) {
         toast.error(`${field.label} is required`);
         return;
+      }
+      if (field.key === 'phone' || field.type === 'phone') {
+        const rawPhone = String(sanitizedForm[field.key] ?? '').trim();
+        if (rawPhone) {
+          const digitsOnly = rawPhone.replace(/\D/g, '').slice(0, 10);
+          sanitizedForm[field.key] = digitsOnly;
+        }
       }
     }
 
     for (const field of uniqueFields) {
-      const value = form[field.key];
+      const value = sanitizedForm[field.key];
       if (value === undefined || value === null || value === '') continue;
 
       const hasDuplicate = data.some(
@@ -531,7 +545,7 @@ export function ServiceCloudResourcePage({
 
     setSaving(true);
     try {
-      const payload = { ...form, workspace_id: workspaceId };
+      const payload = { ...sanitizedForm, workspace_id: workspaceId };
       if (editing?.id) {
         await updateServiceCloudResourceService(resource, {
           ...payload,
@@ -623,7 +637,7 @@ export function ServiceCloudResourcePage({
       <PageBody className="sticky flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col overflow-hidden">
         <div className="flex min-h-0 w-full min-w-0 max-w-full flex-1 gap-0">
           {viewMode === 'kanban' && kanbanSlot ? (
-            kanbanSlot(data, refetch)
+            kanbanSlot(data, refetch, openEdit, (record) => setDeletingRecord(record))
           ) : (
             <CustomTableContainer
               pagination={
@@ -861,7 +875,7 @@ export function ServiceCloudResourcePage({
                   {editing ? `Edit ${title}` : `New ${title}`}
                 </DialogTitle>
               </DialogHeader>
-              <div className="flex-1 space-y-2 overflow-y-auto p-2">
+              <div className="flex-1 space-y-2 overflow-y-auto custom-spacing-x-y">
                 <div className="grid gap-2 sm:grid-cols-2">
                   {fields
                     // Hide field if canViewField is provided AND returns false
@@ -974,6 +988,63 @@ export function ServiceCloudResourcePage({
                                 />
                               </div>
                             </div>
+                          ) : field.key === 'phone' || field.type === 'phone' ? (
+                            <Input
+                              type="number"
+                              disabled={!isEditable}
+                              value={String(form[field.key] ?? '')}
+                              onKeyDown={(e) => {
+                                if (
+                                  e.key === 'Backspace' ||
+                                  e.key === 'Delete' ||
+                                  e.key === 'Tab' ||
+                                  e.key === 'ArrowLeft' ||
+                                  e.key === 'ArrowRight' ||
+                                  e.key === 'ArrowUp' ||
+                                  e.key === 'ArrowDown' ||
+                                  e.key === 'Home' ||
+                                  e.key === 'End' ||
+                                  e.ctrlKey ||
+                                  e.metaKey
+                                ) {
+                                  return;
+                                }
+                                if (!/^[0-9]$/.test(e.key)) {
+                                  e.preventDefault();
+                                  return;
+                                }
+                                const val = String(form[field.key] ?? '');
+                                const target = e.target as HTMLInputElement;
+                                const hasSelection =
+                                  target.selectionStart !== null &&
+                                  target.selectionEnd !== null &&
+                                  target.selectionStart !== target.selectionEnd;
+
+                                if (val.length >= 10 && !hasSelection) {
+                                  e.preventDefault();
+                                }
+                              }}
+                              onPaste={(e) => {
+                                e.preventDefault();
+                                const pasted = e.clipboardData.getData('text');
+                                const sanitized = pasted.replace(/\D/g, '').slice(0, 10);
+                                if (isEditable) {
+                                  setForm((prev: ServiceCloudRecord) => ({
+                                    ...prev,
+                                    [field.key]: sanitized,
+                                  }));
+                                }
+                              }}
+                              onChange={(event) => {
+                                if (!isEditable) return;
+                                const rawVal = event.target.value;
+                                const sanitized = rawVal.replace(/\D/g, '').slice(0, 10);
+                                setForm((prev: ServiceCloudRecord) => ({
+                                  ...prev,
+                                  [field.key]: sanitized,
+                                }));
+                              }}
+                            />
                           ) : (
                             <Input
                               type={

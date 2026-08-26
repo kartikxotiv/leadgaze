@@ -309,9 +309,9 @@ export default function ServiceCloudCustomersRoute() {
         onDelete={
           editingField && !editingField.is_system
             ? () => {
-                handleDeleteField(editingField.id);
-                setEditingField(null);
-              }
+              handleDeleteField(editingField.id);
+              setEditingField(null);
+            }
             : undefined
         }
       />

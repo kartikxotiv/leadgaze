@@ -159,12 +159,12 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
   // Split into active / sent views; limit sent to last 5 sorted by completion date
   const displayedReminders = reminderTab === 'sent'
     ? reminders
-        .filter((r: any) => r.is_completed)
-        .sort((a: any, b: any) =>
-          new Date(b.completed_at || b.updated_at).getTime() -
-          new Date(a.completed_at || a.updated_at).getTime(),
-        )
-        .slice(0, 5)
+      .filter((r: any) => r.is_completed)
+      .sort((a: any, b: any) =>
+        new Date(b.completed_at || b.updated_at).getTime() -
+        new Date(a.completed_at || a.updated_at).getTime(),
+      )
+      .slice(0, 5)
     : reminders.filter((r: any) => !r.is_completed);
 
   const createMutation = useMutation({
@@ -195,8 +195,8 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
   });
 
   const updateMutation = useMutation({
-    mutationFn: (payload: any) =>
-      updateReminderService(editingReminder.id, payload),
+    mutationFn: ({ id, ...payload }: { id: string;[key: string]: any }) =>
+      updateReminderService(id, payload),
     onSuccess: () => {
       toast.success('Reminder updated');
       setIsOpen(false);
@@ -233,16 +233,17 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
   });
 
   const handleSave = () => {
+    const parsedDate = formData.due_date ? new Date(formData.due_date) : null;
     const payload = {
       title: formData.title,
       description: formData.description,
       priority: formData.priority,
-      due_date: formData.due_date
-        ? new Date(formData.due_date).toISOString()
+      due_date: parsedDate && !isNaN(parsedDate.getTime())
+        ? parsedDate.toISOString()
         : undefined,
     };
     if (editingReminder) {
-      updateMutation.mutate(payload);
+      updateMutation.mutate({ id: editingReminder.id, ...payload });
     } else {
       createMutation.mutate();
     }
@@ -286,143 +287,122 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
       headerClassName="p-2 xl:p-2 2xl:p-2 mb-1"
       icon={<AlertCircle className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
       icon2={
-        <Dialog
-          open={isOpen}
-          onOpenChange={(open) => {
-            setIsOpen(open);
-            if (!open) {
-              setEditingReminder(null);
-              setFormData({ title: '', description: '', due_date: '', priority: 'medium' });
-            }
-          }}
-        >
-          <DialogTrigger asChild>
-            <Button size="sm" variant="ghost" className="gap-1 text-sm text-blue-500 hover:text-blue-600">
-              <Plus className="h-4 w-4" />
-              Add Reminder
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-[400px]">
-            <DialogHeader>
-              <DialogTitle>
-                {editingReminder ? 'Edit Reminder' : 'Set Reminder'}
-              </DialogTitle>
-            </DialogHeader>
-            <div className="flex-1 space-y-2 px-2">
-              <div>
-                <Label>Title</Label>
-                <Input
-                  value={formData.title}
-                  onChange={(e) =>
-                    setFormData({ ...formData, title: e.target.value })
-                  }
-                  placeholder="Call client..."
-                />
+        <div className="flex items-center gap-2">
+          <Tabs
+            value={reminderTab}
+            onValueChange={(val) => setReminderTab(val as 'active' | 'sent')}
+            className="w-fit"
+          >
+            <TabsList className="h-8 p-1">
+              <TabsTrigger value="active" className="h-6 text-xs px-3">Pending</TabsTrigger>
+              <TabsTrigger value="sent" className="h-6 text-xs px-3">Completed</TabsTrigger>
+            </TabsList>
+          </Tabs>
+          <Dialog
+            open={isOpen}
+            onOpenChange={(open) => {
+              setIsOpen(open);
+              if (!open) {
+                setEditingReminder(null);
+                setFormData({ title: '', description: '', due_date: '', priority: 'medium' });
+              }
+            }}
+          >
+            <DialogTrigger asChild>
+              <Button size="sm" variant="ghost" className="gap-1 text-sm text-blue-500 hover:text-blue-600">
+                <Plus className="h-4 w-4" />
+                Add Reminder
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-[400px]">
+              <DialogHeader>
+                <DialogTitle>
+                  {editingReminder ? 'Edit Reminder' : 'Set Reminder'}
+                </DialogTitle>
+              </DialogHeader>
+              <div className="flex-1 space-y-2 custom-spacing-x-y py-2">
+                <div>
+                  <Label>Title</Label>
+                  <Input
+                    value={formData.title}
+                    onChange={(e) =>
+                      setFormData({ ...formData, title: e.target.value })
+                    }
+                    placeholder="Call client..."
+                  />
+                </div>
+                <div>
+                  <Label>Description</Label>
+                  <Input
+                    value={formData.description}
+                    onChange={(e) =>
+                      setFormData({ ...formData, description: e.target.value })
+                    }
+                    placeholder="Add more details..."
+                  />
+                </div>
+                <div>
+                  <Label>Priority</Label>
+                  <Select
+                    value={formData.priority}
+                    onValueChange={(val) =>
+                      setFormData({ ...formData, priority: val })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select priority" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="low">Low</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="high">High</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Due Date</Label>
+                  <DateTimePicker
+                    showTime
+                    value={formData.due_date ? new Date(formData.due_date) : undefined}
+                    onChange={(date) =>
+                      setFormData({ ...formData, due_date: date ? format(date, "yyyy-MM-dd'T'HH:mm") : '' })
+                    }
+                  />
+                </div>
               </div>
-              <div>
-                <Label>Description</Label>
-                <Input
-                  value={formData.description}
-                  onChange={(e) =>
-                    setFormData({ ...formData, description: e.target.value })
-                  }
-                  placeholder="Add more details..."
-                />
-              </div>
-              <div>
-                <Label>Priority</Label>
-                <Select
-                  value={formData.priority}
-                  onValueChange={(val) =>
-                    setFormData({ ...formData, priority: val })
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => setIsOpen(false)}
+                  disabled={
+                    createMutation.isPending || updateMutation.isPending
                   }
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select priority" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="low">Low</SelectItem>
-                    <SelectItem value="medium">Medium</SelectItem>
-                    <SelectItem value="high">High</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>Due Date</Label>
-                <DateTimePicker
-                  showTime
-                  minDate={new Date()}
-                  value={formData.due_date ? new Date(formData.due_date) : undefined}
-                  onChange={(date) => {
-                    if (!date) {
-                      setFormData({ ...formData, due_date: '' });
-                      return;
-                    }
-                    if (date.getTime() < new Date().getTime()) {
-                      return;
-                    }
-                    setFormData({
-                      ...formData,
-                      due_date: format(date, "yyyy-MM-dd'T'HH:mm"),
-                    });
-                  }}
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => setIsOpen(false)}
-                disabled={
-                  createMutation.isPending || updateMutation.isPending
-                }
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleSave}
-                disabled={
-                  !formData.title ||
-                  !formData.due_date ||
-                  createMutation.isPending ||
-                  updateMutation.isPending
-                }
-              >
-                {createMutation.isPending || updateMutation.isPending
-                  ? 'Saving...'
-                  : editingReminder
-                    ? 'Update Reminder'
-                    : 'Set Reminder'}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleSave}
+                  disabled={
+                    !formData.title ||
+                    !formData.due_date ||
+                    createMutation.isPending ||
+                    updateMutation.isPending
+                  }
+                >
+                  {createMutation.isPending || updateMutation.isPending
+                    ? 'Saving...'
+                    : editingReminder
+                      ? 'Update Reminder'
+                      : 'Set Reminder'}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
       }
     >
-      <div className="px-2 mb-2">
-        {/* Active / Sent toggle (mirrors Notes pattern) */}
-        <div className="flex bg-gray-100/60 dark:bg-gray-800/60 p-0.5 rounded-lg mb-2 w-fit border border-gray-200/20">
-          <button
-            onClick={() => setReminderTab('active')}
-            className={`rounded px-2.5 py-1 text-[11px] font-medium transition-all ${
-              reminderTab === 'active'
-                ? 'bg-white dark:bg-gray-900 text-blue-600 dark:text-blue-400 shadow-sm'
-                : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
-            }`}
-          >
-            Pending
-          </button>
-          <button
-            onClick={() => setReminderTab('sent')}
-            className={`rounded px-2.5 py-1 text-[11px] font-medium transition-all ${
-              reminderTab === 'sent'
-                ? 'bg-white dark:bg-gray-900 text-blue-600 dark:text-blue-400 shadow-sm'
-                : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
-            }`}
-          >
-            Completed
-          </button>
-        </div>
+      <div className="px-2 py-2 mb-2">
+
 
         {isLoading ? (
           <div className="flex justify-center py-4">
@@ -476,7 +456,7 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
                       {reminder.due_date && (
                         <span className="flex items-center gap-1">
                           <Clock className="h-3 w-3" />
-                           Due: {formatDate(reminder.due_date)} {new Date(reminder.due_date).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}
+                          Due: {formatDate(reminder.due_date)} {new Date(reminder.due_date).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}
                         </span>
                       )}
                       <span>
@@ -633,9 +613,9 @@ export function EntityMeetings({ entityType, entityId }: EntityActivityProps) {
     const end = meeting.meeting_type === 'logged' ? meeting.actual_end : meeting.scheduled_end;
 
     if (!start) return 'No time set';
-    
+
     const startDate = new Date(start);
-    
+
     const formatDateForTz = (date: Date, targetTz: string) => {
       const dateStr = date.toLocaleDateString('en-US', {
         weekday: 'short',
@@ -749,93 +729,93 @@ export function EntityMeetings({ entityType, entityId }: EntityActivityProps) {
       <div className="max-h-[280px] overflow-y-auto mb-2 pr-1">
         <CardWidgetList>
           {items.map((meeting: CoreMeeting) => (
-          <CardWidgetListItem
-            key={meeting.id}
-            actionStyle="slide"
-            title={
-              <div className="flex items-center gap-2">
-                <span
-                  className="primary-text-medium text-leadgaze-dark dark:text-white cursor-pointer hover:text-blue-600"
-                  onClick={() => {
-                    setSelectedMeeting(meeting);
-                    setIsDetailsOpen(true);
-                  }}
-                >
-                  {meeting.title}
-                </span>
-                {getStatusBadge(meeting.status)}
-              </div>
-            }
-            content={
-              <div className="mt-0 flex items-center gap-2 text-xs text-gray-500">
-                {getProviderBadge(meeting)}
-                {meeting.location && (
-                  <>
-                    <span>•</span>
-                    <span className="flex items-center gap-1">
-                      <MapPin className="h-3 w-3" />
-                      {meeting.location}
+            <CardWidgetListItem
+              key={meeting.id}
+              actionStyle="slide"
+              title={
+                <div className="flex items-center gap-2">
+                  <span
+                    className="primary-text-medium text-leadgaze-dark dark:text-white cursor-pointer hover:text-blue-600"
+                    onClick={() => {
+                      setSelectedMeeting(meeting);
+                      setIsDetailsOpen(true);
+                    }}
+                  >
+                    {meeting.title}
+                  </span>
+                  {getStatusBadge(meeting.status)}
+                </div>
+              }
+              content={
+                <div className="mt-0 flex items-center gap-2 text-xs text-gray-500">
+                  {getProviderBadge(meeting)}
+                  {meeting.location && (
+                    <>
+                      <span>•</span>
+                      <span className="flex items-center gap-1">
+                        <MapPin className="h-3 w-3" />
+                        {meeting.location}
+                      </span>
+                    </>
+                  )}
+                </div>
+              }
+              metadata={
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <span className="flex items-center gap-1">
+                    <CalendarIcon className="h-3 w-3" />
+                    {formatMeetingDate(meeting)}
+                  </span>
+                  {meeting.host && (
+                    <span>
+                      Created by {meeting.host.name || meeting.host.email || 'Unknown'} on {formatDate(meeting.created_at)}
                     </span>
-                  </>
-                )}
-              </div>
-            }
-            metadata={
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                <span className="flex items-center gap-1">
-                  <CalendarIcon className="h-3 w-3" />
-                  {formatMeetingDate(meeting)}
-                </span>
-                {meeting.host && (
-                  <span>
-                    Created by {meeting.host.name || meeting.host.email || 'Unknown'} on {formatDate(meeting.created_at)}
-                  </span>
-                )}
-                {!meeting.host && (
-                  <span>Created on {formatDate(meeting.created_at)}</span>
-                )}
-                {meeting.entity_type && meeting.entity_type !== entityType && (
-                  <span className="text-blue-600 dark:text-blue-400">
-                    From {meeting.entity_type.charAt(0).toUpperCase() + meeting.entity_type.slice(1)}
-                    {meeting.entity_id ? `: ${meeting.entity_id}` : ''}
-                  </span>
-                )}
-              </div>
-            }
-            actions={
-              <div className="flex items-center gap-1">
-                {getMeetingLink(meeting)}
-                {canScheduleMeeting && (
-                  <>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => {
-                        setSelectedMeeting(meeting);
-                        setIsEditOpen(true);
-                      }}
-                      className="h-7 w-7 text-gray-400 hover:text-blue-500"
-                    >
-                      <Pencil className="h-3 w-3" />
-                    </Button>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => {
-                        setMeetingToDelete(meeting.id);
-                        setIsDeleteDialogOpen(true);
-                      }}
-                      className="h-7 w-7 text-gray-400 hover:text-red-500"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </>
-                )}
-              </div>
-            }
-          />
-        ))}
-      </CardWidgetList>
+                  )}
+                  {!meeting.host && (
+                    <span>Created on {formatDate(meeting.created_at)}</span>
+                  )}
+                  {meeting.entity_type && meeting.entity_type !== entityType && (
+                    <span className="text-blue-600 dark:text-blue-400">
+                      From {meeting.entity_type.charAt(0).toUpperCase() + meeting.entity_type.slice(1)}
+                      {meeting.entity_id ? `: ${meeting.entity_id}` : ''}
+                    </span>
+                  )}
+                </div>
+              }
+              actions={
+                <div className="flex items-center gap-1">
+                  {getMeetingLink(meeting)}
+                  {canScheduleMeeting && (
+                    <>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => {
+                          setSelectedMeeting(meeting);
+                          setIsEditOpen(true);
+                        }}
+                        className="h-7 w-7 text-gray-400 hover:text-blue-500"
+                      >
+                        <Pencil className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => {
+                          setMeetingToDelete(meeting.id);
+                          setIsDeleteDialogOpen(true);
+                        }}
+                        className="h-7 w-7 text-gray-400 hover:text-red-500"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </>
+                  )}
+                </div>
+              }
+            />
+          ))}
+        </CardWidgetList>
       </div>
     );
   };
@@ -1058,9 +1038,9 @@ export function EntityDocuments({ entityType, entityId }: EntityActivityProps) {
                 {editingDoc ? 'Rename Document' : 'Upload Document'}
               </DialogTitle>
             </DialogHeader>
-            <div className="flex-1 space-y-2 px-2">
+            <div className="flex-1 space-y-2 custom-spacing-x-y py-2">
               {editingDoc ? (
-                <div className="space-y-2">
+                <div>
                   <Label>Document Name</Label>
                   <Input
                     value={newName}
@@ -1068,7 +1048,7 @@ export function EntityDocuments({ entityType, entityId }: EntityActivityProps) {
                   />
                 </div>
               ) : (
-                <div className="space-y-2">
+                <div>
                   <Label>Select File</Label>
                   <Input
                     type="file"

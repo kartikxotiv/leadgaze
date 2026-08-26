@@ -216,10 +216,15 @@ export function ServiceCloudTicketsPage({
     if (filterStatusParam === 'open') {
       return statuses.filter((s: any) => s.lifecycle === 'open').map((s: any) => s.id);
     }
-    return statuses
-      .filter((s: any) => s.lifecycle !== 'closed' && s.lifecycle !== 'resolved')
-      .map((s: any) => s.id);
-  }, [statuses, filterStatusParam]);
+    // List view excludes closed and resolved tickets by default unless explicitly filtered
+    if (viewMode === 'table') {
+      return statuses
+        .filter((s: any) => s.lifecycle !== 'closed' && s.lifecycle !== 'resolved')
+        .map((s: any) => s.id);
+    }
+    // Kanban/Grid view displays all tickets across all status columns by default
+    return [];
+  }, [statuses, filterStatusParam, viewMode]);
 
   const statusOptions = statuses.map((status: any) => ({
     label: status.name,
@@ -692,7 +697,7 @@ export function ServiceCloudTicketsPage({
       <ServiceCloudResourcePage
         workspaceId={workspaceId}
         viewMode={viewMode}
-        kanbanSlot={(data, refetch) => (
+        kanbanSlot={(data, refetch, openEdit, openDelete) => (
           <TicketsKanbanBoard
             workspaceId={workspaceId}
             tickets={data}
@@ -703,7 +708,8 @@ export function ServiceCloudTicketsPage({
             canCreate={canCreate}
             canDelete={canDelete}
             onClick={(id) => router.push(`/home/services/tickets/${id}`)}
-            onDelete={() => {}}
+            onEdit={(ticket) => openEdit?.(ticket)}
+            onDelete={(ticket) => openDelete?.(ticket)}
             onCreateTicket={(statusId) => {
               setTicketStatusId(statusId);
               setCreateOpen(true);
@@ -875,7 +881,7 @@ export function ServiceCloudTicketsPage({
               <DialogTitle>New Ticket</DialogTitle>
             </DialogHeader>
 
-            <div className="flex-1 space-y-2 overflow-y-auto p-2">
+            <div className="flex-1 space-y-2 overflow-y-auto custom-spacing-x-y">
               <div className="grid gap-2">
                 {(!canEditField || canEditField('subject')) && (
                   <div className="grid">
@@ -902,7 +908,7 @@ export function ServiceCloudTicketsPage({
 
                 <div className="grid gap-2 sm:grid-cols-3">
                   {(!canEditField || canEditField('status')) && (
-                    <div className="grid">
+                    <div className="grid mt-[2px]">
                       <Label>
                         Status <span className="text-destructive">*</span>
                       </Label>
@@ -932,7 +938,7 @@ export function ServiceCloudTicketsPage({
                     </div>
                   )}
                   {(!canEditField || canEditField('priority')) && (
-                    <div className="grid">
+                    <div className="grid mt-[2px]">
                       <Label>Priority</Label>
                       <Select
                         value={ticketPriorityId}
@@ -960,7 +966,7 @@ export function ServiceCloudTicketsPage({
                     </div>
                   )}
                   {(!canEditField || canEditField('category')) && (
-                    <div className="grid">
+                    <div className="grid mt-[2px]">
                       <Label>Category</Label>
                       <Select
                         value={ticketCategoryId}
@@ -992,7 +998,7 @@ export function ServiceCloudTicketsPage({
                       onValueChange={(value) =>
                         setCustomerMode(value as 'existing' | 'new')
                       }
-                      className="grid gap-2 sm:grid-cols-2"
+                      className="grid gap-2 sm:grid-cols-2 mt-[2px]"
                     >
                       <Label className="flex cursor-pointer items-center gap-2 rounded-md border p-2">
                         <div className="flex gap-2 items-center">
@@ -1066,7 +1072,7 @@ export function ServiceCloudTicketsPage({
                           value as 'none' | 'existing' | 'new',
                         )
                       }
-                      className="grid gap-2 sm:grid-cols-3"
+                      className="grid gap-2 sm:grid-cols-3 mt-[2px]"
                     >
                       <Label className="flex cursor-pointer items-center gap-2 rounded-md border p-2">
                         <div className="flex gap-2 items-center">

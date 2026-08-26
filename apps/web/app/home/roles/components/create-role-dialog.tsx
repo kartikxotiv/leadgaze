@@ -170,7 +170,7 @@ export function CreateRoleDialog({
           onSubmit={handleSubmit}
           className="flex flex-1 flex-col overflow-hidden"
         >
-          <div className="flex-1 overflow-y-auto p-2">
+          <div className="flex-1 overflow-y-auto custom-spacing-x-y">
             <div className="space-y-2">
               {/* Role Details Section */}
               <div className="space-y-2">

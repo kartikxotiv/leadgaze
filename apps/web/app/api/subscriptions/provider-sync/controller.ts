@@ -9,11 +9,9 @@ import {
   requireRouteUser,
   success,
 } from '~/lib/subscriptions/api';
+import { BackendBillingService } from '~/lib/subscriptions/backend-billing-service';
 import { providerSyncRequestSchema } from '~/lib/subscriptions/contracts';
-import { SubscriptionApiError } from '~/lib/subscriptions/errors';
-import { SubscriptionRepository } from '~/lib/subscriptions/repository';
-import { StripeSubscriptionProvider } from '~/lib/subscriptions/stripe-provider';
-import { synchronizeStripeSubscription } from '~/lib/subscriptions/stripe-sync';
+import { RazorpayInvoiceProvider } from '~/lib/subscriptions/razorpay-provider';
 import { catchAsync } from '~/utils/response-handler';
 
 export const synchronizeProvider = catchAsync(
@@ -24,79 +22,50 @@ export const synchronizeProvider = catchAsync(
       accountId: actor.id,
       workspaceId: input.workspaceId,
     });
-    const client = getSupabaseServerAdminClient();
-    const billing = await new SubscriptionRepository(
-      client,
-    ).getBillingSubscription(input.workspaceId);
-    let providerSubscriptionId = billing?.provider_subscription_id;
-    if (!billing) {
-      const legacy = await client
-        .from('workspace_module_seats')
-        .select('provider_subscription_id, provider_customer_id')
-        .eq('workspace_id', input.workspaceId)
-        .not('provider_subscription_id', 'is', null)
-        .neq('status', 'cancelled')
-        .limit(1)
-        .maybeSingle();
-      if (legacy.error) throw legacy.error;
-      if (!legacy.data?.provider_subscription_id) {
-        throw new SubscriptionApiError(
-          'Stripe subscription not found',
-          404,
-          'NOT_FOUND',
-        );
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const client = getSupabaseServerAdminClient() as any;
+    const invoices = await client
+      .from('backend_billing_invoices')
+      .select('id, razorpay_invoice_id')
+      .eq('workspace_id', input.workspaceId)
+      .eq('status', 'issued')
+      .not('razorpay_invoice_id', 'is', null)
+      .limit(100);
+    if (invoices.error) throw invoices.error;
+
+    const provider = new RazorpayInvoiceProvider();
+    const billing = new BackendBillingService(client, provider);
+    let synchronized = 0;
+    let failed = 0;
+    for (const invoice of invoices.data ?? []) {
+      try {
+        const remote = await provider.fetchInvoice(invoice.razorpay_invoice_id);
+        if (remote.status === 'paid') {
+          await billing.markInvoicePaid({
+            razorpayInvoiceId: invoice.razorpay_invoice_id,
+          });
+        } else if (['expired', 'cancelled'].includes(remote.status)) {
+          await client
+            .from('backend_billing_invoices')
+            .update({ status: remote.status })
+            .eq('id', invoice.id)
+            .eq('status', 'issued');
+        }
+        synchronized += 1;
+      } catch (error) {
+        failed += 1;
+        console.error('[RazorpaySync] invoice sync failed', {
+          invoiceId: invoice.id,
+          error,
+        });
       }
-      const workspaceSubscription = await client
-        .from('workspace_subscriptions')
-        .select('id')
-        .eq('workspace_id', input.workspaceId)
-        .single();
-      if (workspaceSubscription.error) throw workspaceSubscription.error;
-      const account = await client
-        .from('workspace_billing_accounts')
-        .upsert(
-          {
-            workspace_id: input.workspaceId,
-            provider: 'stripe',
-            provider_customer_id: legacy.data.provider_customer_id,
-            is_active: true,
-          },
-          { onConflict: 'workspace_id,provider' },
-        )
-        .select('id')
-        .single();
-      if (account.error) throw account.error;
-      const inserted = await client
-        .from('workspace_billing_subscriptions')
-        .upsert(
-          {
-            workspace_id: input.workspaceId,
-            workspace_subscription_id: workspaceSubscription.data.id,
-            billing_account_id: account.data.id,
-            provider_subscription_id: legacy.data.provider_subscription_id,
-            provider_status: 'syncing',
-            metadata: { migrated_from_legacy_seats: true, items: {} },
-          },
-          { onConflict: 'billing_account_id,provider_subscription_id' },
-        )
-        .select('*')
-        .single();
-      if (inserted.error) throw inserted.error;
-      providerSubscriptionId = inserted.data.provider_subscription_id;
     }
-    if (!providerSubscriptionId) {
-      throw new SubscriptionApiError(
-        'Stripe subscription not found',
-        404,
-        'NOT_FOUND',
-      );
-    }
-    const subscription =
-      await new StripeSubscriptionProvider().retrieveSubscription(
-        providerSubscriptionId,
-      );
-    return success(
-      await synchronizeStripeSubscription({ client, subscription }),
-    );
+    return success({
+      workspaceId: input.workspaceId,
+      provider: 'razorpay' as const,
+      synchronized,
+      failed,
+      synchronizedAt: new Date().toISOString(),
+    });
   },
 );

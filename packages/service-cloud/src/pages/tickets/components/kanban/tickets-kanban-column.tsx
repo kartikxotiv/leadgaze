@@ -18,6 +18,7 @@ interface TicketsKanbanColumnProps {
   canCreate: boolean;
   canDelete: boolean;
   onClick: (id: string) => void;
+  onEdit?: (ticket: any) => void;
   onDelete: (ticket: any) => void;
   onCreateTicket: (statusId: string) => void;
 }
@@ -30,6 +31,7 @@ export function TicketsKanbanColumn({
   canCreate,
   canDelete,
   onClick,
+  onEdit,
   onDelete,
   onCreateTicket,
 }: TicketsKanbanColumnProps) {
@@ -75,6 +77,7 @@ export function TicketsKanbanColumn({
               priorityById={priorityById}
               canUpdate={canUpdate}
               canDelete={canDelete}
+              onEdit={onEdit}
               onDelete={onDelete}
               onClick={onClick}
             />

@@ -18,7 +18,7 @@ export const subscriptionModuleKeySchema = z.enum(['sales', 'service_cloud']);
 
 export const billingCycleSchema = z.enum(['monthly', 'yearly']);
 
-export const paymentProviderSchema = z.enum(['stripe', 'razorpay', 'manual']);
+export const paymentProviderSchema = z.enum(['razorpay', 'manual']);
 
 export const subscriptionStatusSchema = z.enum([
   'free',
@@ -156,6 +156,9 @@ const workspaceModulePlanSchema = z.object({
   monthlyAmount: amountSchema.nullable(),
   yearlyAmount: amountSchema.nullable(),
   bundleKey: z.string().nullable(),
+  seatId: uuidSchema.nullable(),
+  seatsPurchased: z.number().int().positive(),
+  seatsUsed: z.number().int().nonnegative(),
   userCount: z.number().int().nonnegative(),
   currentPeriodStart: nullableTimestampSchema,
   currentPeriodEnd: nullableTimestampSchema,
@@ -229,6 +232,9 @@ export const upgradeSubscriptionRequestSchema = z.object({
   moduleKey: subscriptionModuleKeySchema,
   newPlanKey: planKeySchema,
   billingCycle: billingCycleSchema,
+  seats: z.number().int().positive().optional(),
+  discountCode: z.string().trim().min(1).max(80).optional(),
+  requestId: uuidSchema.optional(),
 });
 
 export const downgradeSubscriptionRequestSchema = z.object({
@@ -242,6 +248,9 @@ export const addModuleRequestSchema = z.object({
   moduleKey: subscriptionModuleKeySchema,
   planKey: planKeySchema,
   billingCycle: billingCycleSchema,
+  seats: z.number().int().positive().optional(),
+  discountCode: z.string().trim().min(1).max(80).optional(),
+  requestId: uuidSchema.optional(),
 });
 
 export const removeModuleRequestSchema = z.object({
@@ -253,14 +262,34 @@ export const pricingCheckoutRequestSchema = addModuleRequestSchema.extend({
   returnUrl: z.string().startsWith('/').optional(),
 });
 
+export const bundleCheckoutRequestSchema = z.object({
+  workspaceId: uuidSchema,
+  bundleKey: z.string().trim().min(1).max(80),
+  billingCycle: billingCycleSchema,
+  seats: z.number().int().positive(),
+  discountCode: z.string().trim().min(1).max(80).optional(),
+  requestId: uuidSchema.optional(),
+  returnUrl: z.string().startsWith('/').optional(),
+});
+
+export const bundleSeatChangeRequestSchema = z.object({
+  workspaceId: uuidSchema,
+  bundleKey: z.string().trim().min(1).max(80),
+  newQuantity: z.number().int().positive(),
+  discountCode: z.string().trim().min(1).max(80).optional(),
+});
+
 export const providerSyncRequestSchema = z.object({
   workspaceId: uuidSchema,
-  provider: z.literal('stripe').default('stripe'),
+  provider: z.literal('razorpay').default('razorpay'),
 });
 
 export const checkoutResponseDataSchema = z.object({
   url: z.string().url(),
   sessionId: z.string().min(1),
+  invoiceId: uuidSchema.nullable().optional(),
+  paymentRequired: z.boolean().optional(),
+  entitled: z.boolean().optional(),
 });
 
 export const moduleChangeResponseDataSchema = z.object({
@@ -273,9 +302,9 @@ export const moduleChangeResponseDataSchema = z.object({
 
 export const providerSyncResponseDataSchema = z.object({
   workspaceId: uuidSchema,
-  provider: z.literal('stripe'),
-  providerSubscriptionId: z.string().min(1),
-  providerStatus: z.string().min(1),
+  provider: z.literal('razorpay'),
+  synchronized: z.number().int().nonnegative(),
+  failed: z.number().int().nonnegative(),
   synchronizedAt: timestampSchema,
 });
 
@@ -349,6 +378,10 @@ export type AddModuleRequest = z.infer<typeof addModuleRequestSchema>;
 export type RemoveModuleRequest = z.infer<typeof removeModuleRequestSchema>;
 export type PricingCheckoutRequest = z.infer<
   typeof pricingCheckoutRequestSchema
+>;
+export type BundleCheckoutRequest = z.infer<typeof bundleCheckoutRequestSchema>;
+export type BundleSeatChangeRequest = z.infer<
+  typeof bundleSeatChangeRequestSchema
 >;
 export type ProviderSyncRequest = z.infer<typeof providerSyncRequestSchema>;
 export type PlanChangeResponseData = z.infer<

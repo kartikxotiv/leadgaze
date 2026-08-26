@@ -220,7 +220,7 @@ export function EditRoleDialog({
           onSubmit={handleSubmit}
           className="flex flex-1 flex-col overflow-hidden"
         >
-          <div className="flex-1 overflow-y-auto p-2">
+          <div className="flex-1 overflow-y-auto custom-spacing-x-y">
             <h3 className="primary-heading text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">Role Details</h3>
             <div className="space-y-2">
               <div>

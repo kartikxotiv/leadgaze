@@ -890,7 +890,7 @@ Subscribe to: leadgen`}
               
             
           </DialogHeader>
-          <div className="space-y-2 px-2">
+          <div className="space-y-2 custom-spacing-x-y py-2">
             <p className="primary-text-regular text-leadgaze-dark dark:text-white">Are you sure you want to disconnect{' '}
               <strong>{pageToDisconnect?.display_name}</strong>? This will stop lead syncing
               for all forms on this page. This action cannot be undone.</p>

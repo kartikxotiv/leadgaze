@@ -188,7 +188,7 @@ export function EditAccountDialog({
           <form
             id="dialog-form"
             onSubmit={form.handleSubmit(onSubmit)}
-            className="flex-1 space-y-2 overflow-y-auto px-2"
+            className="flex-1 space-y-2 overflow-y-auto custom-spacing-x-y"
           >
             <Tabs defaultValue="general" className="w-full">
               <TabsList className="grid w-full grid-cols-4">

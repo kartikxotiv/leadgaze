@@ -489,7 +489,7 @@ export function WebsiteConnectorDetailPage({
         description="Configure embeddable forms and secure API endpoints to receive website leads."
       />
 
-      <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden py-4 p-2 h-[calc(100vh-120px)]">
+      <PageBody className="sticky flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col overflow-hidden py-4 pt-2 h-[calc(100vh-120px)]">
         <div className="grid gap-2 lg:grid-cols-4 h-full min-h-0 flex-1 overflow-hidden">
           {/* ----------------------------------------------------------------
               Sidebar
@@ -566,12 +566,12 @@ export function WebsiteConnectorDetailPage({
           ---------------------------------------------------------------- */}
           <div className="lg:col-span-3 h-full min-h-0 flex flex-col overflow-hidden">
             <Tabs defaultValue="dashboard" className="h-full flex flex-col min-h-0 overflow-hidden space-y-6">
-              <TabsList className="grid w-full grid-cols-5 bg-muted/40 p-1 shrink-0 mb-0">
-                <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-                <TabsTrigger value="form-builder">Form Builder</TabsTrigger>
-                <TabsTrigger value="api-credentials">API Credentials</TabsTrigger>
-                <TabsTrigger value="sandbox">Sandbox</TabsTrigger>
-                <TabsTrigger value="logs">Submissions Logs</TabsTrigger>
+              <TabsList className="mb-1 h-auto w-full justify-start gap-6 rounded-none border-b bg-transparent p-0 shrink-0 overflow-x-auto hide-scrollbar">
+                <TabsTrigger value="dashboard" className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent">Dashboard</TabsTrigger>
+                <TabsTrigger value="form-builder" className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent">Form Builder</TabsTrigger>
+                <TabsTrigger value="api-credentials" className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent">API Credentials</TabsTrigger>
+                <TabsTrigger value="sandbox" className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent">Sandbox</TabsTrigger>
+                <TabsTrigger value="logs" className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent">Submissions Logs</TabsTrigger>
               </TabsList>
 
               {/* ---- DASHBOARD ---- */}
@@ -1364,7 +1364,7 @@ export function WebsiteConnectorDetailPage({
                 Copy this key and save it in a secure password manager. For security reasons, <strong>this key will not be shown again</strong>.
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-2 px-2 pb-2">
+            <div className="space-y-2 custom-spacing-x-y py-2">
               <div className="flex items-center gap-2 rounded border bg-muted/20 p-2.5 font-mono text-sm">
                 <span className="flex-1 truncate">{generatedSecretKey}</span>
                 <Button

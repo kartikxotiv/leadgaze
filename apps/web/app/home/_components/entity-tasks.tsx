@@ -282,8 +282,8 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
                   {editingTask ? 'Edit Task' : 'Add Task'}
                 </DialogTitle>
               </DialogHeader>
-              <div className="flex-1 space-y-2 px-2 overflow-y-auto">
-                <div className="space-y-2">
+              <div className="flex-1 space-y-2 custom-spacing-x-y py-2 overflow-y-auto">
+                <div>
                   <Label>Title</Label>
                   <Input
                     placeholder="Enter task title"
@@ -291,7 +291,7 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                   />
                 </div>
-                <div className="space-y-2">
+                <div>
                   <Label>Description</Label>
                   <Textarea
                     placeholder="Enter description (optional)"
@@ -299,7 +299,7 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   />
                 </div>
-                <div className="space-y-2">
+                <div>
                   <Label>Due Date</Label>
                   <DateTimePicker
                     mode="date"
@@ -308,7 +308,7 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
                     onChange={(date) => setFormData({ ...formData, due_date: date ? format(date, 'yyyy-MM-dd') : '' })}
                   />
                 </div>
-                <div className="space-y-2 pb-1">
+                <div>
                   <Label>Priority</Label>
                   <Select
                     value={formData.priority}

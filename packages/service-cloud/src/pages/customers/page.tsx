@@ -403,9 +403,19 @@ export function ServiceCloudCustomersPage({
       ?.field_label ?? fallback;
 
   const tabsSlot = (
-    <TabsList className="mb-0 shrink-0 w-fit self-start pl-0 h-9">
-      <TabsTrigger value="customers">Customers</TabsTrigger>
-      <TabsTrigger value="organizations">Organizations</TabsTrigger>
+    <TabsList className="mb-1 h-auto w-full justify-start gap-6 rounded-none border-b bg-transparent p-0">
+      <TabsTrigger 
+        value="customers"
+        className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
+      >
+        Customers
+      </TabsTrigger>
+      <TabsTrigger 
+        value="organizations"
+        className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
+      >
+        Organizations
+      </TabsTrigger>
     </TabsList>
   );
 
@@ -465,7 +475,7 @@ export function ServiceCloudCustomersPage({
                 label: getCustomerLabel('email', 'Email'),
                 type: 'email',
               },
-              { key: 'phone', label: getCustomerLabel('phone', 'Phone') },
+              { key: 'phone', label: getCustomerLabel('phone', 'Phone'), type: 'phone' },
               {
                 key: 'job_title',
                 label: getCustomerLabel('job_title', 'Job Title'),
@@ -565,7 +575,7 @@ export function ServiceCloudCustomersPage({
                 label: getOrganizationLabel('email', 'Email'),
                 type: 'email',
               },
-              { key: 'phone', label: getOrganizationLabel('phone', 'Phone') },
+              { key: 'phone', label: getOrganizationLabel('phone', 'Phone'), type: 'phone' },
             ]}
             columns={[
               {
@@ -613,7 +623,7 @@ export function ServiceCloudCustomersPage({
                 </DialogTitle>
               </DialogHeader>
 
-              <div className="flex-1 space-y-2 overflow-y-auto p-2">
+              <div className="flex-1 space-y-2 overflow-y-auto custom-spacing-x-y">
                 <div className="grid gap-2 sm:grid-cols-2">
                   {/* Customer Selection */}
                   <div className="grid">
@@ -658,7 +668,7 @@ export function ServiceCloudCustomersPage({
                     />
                   </div>
                   </div>
-                  <div className="grid">
+                  <div className="grid gap-2">
 
                   {/* Description */}
                   <div className="grid">

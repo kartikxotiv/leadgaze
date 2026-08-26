@@ -111,16 +111,16 @@ export const UpdatePasswordForm = ({
                       <Trans i18nKey={'account:newPassword'} />
                     </Label>
                   </FormLabel>
-
-                  <FormControl>
-                    <Input
-                      data-test={'account-password-form-password-input'}
-                      required
-                      type={'password'}
-                      {...field}
-                    />
-                  </FormControl>
-
+                  <div className='relative'>
+                    <FormControl>
+                      <Input
+                        data-test={'account-password-form-password-input'}
+                        required
+                        type={'password'}
+                        {...field}
+                      />
+                    </FormControl>
+                  </div>
                   <FormMessage />
                 </FormItem>
               );
@@ -137,16 +137,16 @@ export const UpdatePasswordForm = ({
                       <Trans i18nKey={'account:repeatPassword'} />
                     </Label>
                   </FormLabel>
-
-                  <FormControl>
-                    <Input
-                      data-test={'account-password-form-repeat-password-input'}
-                      required
-                      type={'password'}
-                      {...field}
-                    />
-                  </FormControl>
-
+                  <div className='relative'>
+                    <FormControl>
+                      <Input
+                        data-test={'account-password-form-repeat-password-input'}
+                        required
+                        type={'password'}
+                        {...field}
+                      />
+                    </FormControl>
+                  </div>
                   <FormDescription>
                     <Trans i18nKey={'account:repeatPasswordDescription'} />
                   </FormDescription>

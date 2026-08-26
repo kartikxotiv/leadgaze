@@ -92,6 +92,7 @@ export function CoreEmailReplyDialog({
   templateContext = {},
   entityType,
   entityId,
+  onSuccess,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -101,6 +102,7 @@ export function CoreEmailReplyDialog({
   templateContext?: Record<string, unknown>;
   entityType?: string;
   entityId?: string;
+  onSuccess?: (data?: any) => void;
 }) {
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -172,12 +174,18 @@ export function CoreEmailReplyDialog({
         throw error;
       }
     },
-    onSuccess: async () => {
+    onSuccess: async (data) => {
       toast.success('Reply sent');
       clearAttachmentFiles();
       await queryClient.invalidateQueries({
         queryKey: ['core-email-activity', workspaceId],
       });
+      if (entityType && entityId) {
+        await queryClient.invalidateQueries({
+          queryKey: ['core-entity-emails', workspaceId, entityType, entityId],
+        });
+      }
+      onSuccess?.(data);
       onOpenChange(false);
     },
     onError: (error: any) =>
@@ -254,12 +262,12 @@ export function CoreEmailReplyDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         className={`flex flex-col p-0 overflow-hidden border-gray-200 bg-white dark:border-slate-800 dark:bg-slate-950 ${isMaximized
-            ? 'w-[95vw] max-w-[95vw] h-[92vh] max-h-[92vh] rounded-lg'
-            : 'max-h-[90vh] sm:max-w-[800px] h-[640px] rounded-lg'
+            ? 'w-[95vw] max-w-[95vw] h-[92vh] max-h-[92vh]'
+            : 'max-h-[90vh] sm:max-w-[800px] h-[640px]'
           }`}
       >
         <TooltipProvider delayDuration={300}>
-          <DialogHeader className="flex flex-row items-center justify-between px-4 py-3 bg-leadgaze-primary">
+          <DialogHeader className="flex flex-row items-center justify-between custom-spacing-x-y bg-leadgaze-primary">
             <DialogTitle className="text-white truncate max-w-[80%]">{subject || 'Reply'}</DialogTitle>
             <div className="flex items-center gap-1">
               <button
@@ -277,13 +285,13 @@ export function CoreEmailReplyDialog({
           <div className="flex flex-col text-sm divide-y divide-zinc-100 dark:divide-zinc-800/80 bg-white dark:bg-zinc-950">
             {/* From Account */}
             <div className="flex items-center px-4 py-1.5 gap-2">
-              <span className="text-xs text-muted-foreground w-12 shrink-0">From</span>
+              <span className="primary-text-regular text-muted-foreground w-12 shrink-0">From</span>
               {sendableAccounts.length > 1 ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button
                       type="button"
-                      className="text-xs text-zinc-800 dark:text-zinc-200 hover:underline font-medium focus:outline-none flex items-center gap-1.5"
+                      className="primary-text-regular text-zinc-800 dark:text-zinc-200 hover:underline font-medium focus:outline-none flex items-center gap-1.5"
                     >
                       {selectedAccountEmail || 'Select sending account'}
                       <span className="text-[10px] text-muted-foreground">▼</span>
@@ -294,7 +302,7 @@ export function CoreEmailReplyDialog({
                       <DropdownMenuItem
                         key={acc.id}
                         onClick={() => setEmailAccountId(String(acc.id))}
-                        className="text-xs cursor-pointer"
+                        className="primary-text-regular cursor-pointer"
                       >
                         {acc.email}
                       </DropdownMenuItem>
@@ -302,7 +310,7 @@ export function CoreEmailReplyDialog({
                   </DropdownMenuContent>
                 </DropdownMenu>
               ) : (
-                <span className="text-xs font-medium text-zinc-800 dark:text-zinc-200">
+                <span className="primary-text-regular font-medium text-zinc-800 dark:text-zinc-200">
                   {selectedAccountEmail || 'No sending account available'}
                 </span>
               )}
@@ -311,19 +319,19 @@ export function CoreEmailReplyDialog({
             {/* Recipient & Mode */}
             <div className="flex items-center justify-between px-4 py-2 gap-2">
               <div className="flex items-center gap-2 min-w-0">
-                <span className="text-xs text-muted-foreground w-12 shrink-0 font-medium">To</span>
-                <span className="text-xs text-zinc-800 dark:text-zinc-200 truncate font-medium">
+                <span className="primary-text-regular text-muted-foreground w-12 shrink-0 font-medium">To</span>
+                <span className="primary-text-regular text-zinc-800 dark:text-zinc-200 truncate font-medium">
                   {recipients.join(', ') || 'No recipient'}
                 </span>
                 {replyAllCcRecipients.length > 0 && (
-                  <span className="text-xs text-muted-foreground truncate">
+                  <span className="primary-text-regular text-muted-foreground truncate">
                     (Cc: {replyAllCcRecipients.join(', ')})
                   </span>
                 )}
               </div>
 
               {/* Reply Mode Toggle */}
-              <div className="flex items-center gap-1 shrink-0 text-xs">
+              <div className="flex items-center gap-1 shrink-0 primary-text-regular">
                 <button
                   type="button"
                   onClick={() => setReplyMode('reply')}
@@ -473,7 +481,7 @@ export function CoreEmailReplyDialog({
                 </Tooltip>
                 <DropdownMenuContent align="start" className="max-h-64 overflow-y-auto w-56">
                   {templates.length === 0 ? (
-                    <DropdownMenuItem disabled className="text-xs text-muted-foreground">
+                    <DropdownMenuItem disabled className="primary-text-regular text-muted-foreground">
                       No templates found
                     </DropdownMenuItem>
                   ) : (
@@ -481,7 +489,7 @@ export function CoreEmailReplyDialog({
                       <DropdownMenuItem
                         key={template.id}
                         onClick={() => applyTemplate(String(template.id))}
-                        className="text-xs cursor-pointer truncate"
+                        className="primary-text-regular cursor-pointer truncate"
                       >
                         {template.name}
                       </DropdownMenuItem>
@@ -508,7 +516,7 @@ export function CoreEmailReplyDialog({
                 </Tooltip>
                 <DropdownMenuContent align="start" className="max-h-64 overflow-y-auto w-52">
                   {variables.length === 0 ? (
-                    <DropdownMenuItem disabled className="text-xs text-muted-foreground">
+                    <DropdownMenuItem disabled className="primary-text-regular text-muted-foreground">
                       No variables found
                     </DropdownMenuItem>
                   ) : (
@@ -516,7 +524,7 @@ export function CoreEmailReplyDialog({
                       <DropdownMenuItem
                         key={variable.id}
                         onClick={() => insertVariable(`{{${variable.key}}}`)}
-                        className="text-xs cursor-pointer font-mono"
+                        className="primary-text-regular cursor-pointer font-mono"
                       >
                         {`{{${variable.key}}}`}
                       </DropdownMenuItem>
@@ -537,7 +545,7 @@ export function CoreEmailReplyDialog({
                     onClick={() => onOpenChange(false)}
                     title="Discard"
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="h-4 w-4 text-red-500" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>Discard</TooltipContent>
