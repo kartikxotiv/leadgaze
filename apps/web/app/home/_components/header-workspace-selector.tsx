@@ -21,7 +21,10 @@ export function HeaderWorkspaceSelector() {
   const [isOpen, setIsOpen] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  const hasMultipleWorkspaces = Boolean(workspaces && workspaces.length > 1);
+
   const handleOpen = () => {
+    if (!hasMultipleWorkspaces) return;
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
@@ -50,6 +53,19 @@ export function HeaderWorkspaceSelector() {
     return <AppLogo className="max-h-8 w-auto py-1" />;
   }
 
+  // 1 Workspace Case: Static logo + workspace name, no arrow, no dropdown trigger
+  if (!hasMultipleWorkspaces) {
+    return (
+      <div className="flex items-center space-x-2 p-1">
+        <AppLogo href={null} className="max-h-8 w-auto py-1" />
+        {/* <span className="max-w-[150px] truncate text-xs font-semibold tracking-wide text-white/90">
+          {currentWorkspace.name}
+        </span> */}
+      </div>
+    );
+  }
+
+  // 2+ Workspaces Case: Combined logo + workspace name + arrow trigger opening single dropdown
   return (
     <div
       className="relative flex items-center"
@@ -59,11 +75,14 @@ export function HeaderWorkspaceSelector() {
       <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
         <DropdownMenuTrigger asChild>
           <div
-            className="flex cursor-pointer items-center space-x-1.5 rounded-lg p-1 transition-colors hover:bg-white/10"
+            className="flex cursor-pointer items-center space-x-2 rounded-lg p-1 transition-colors hover:bg-white/10"
             role="button"
             tabIndex={0}
           >
             <AppLogo href={null} className="max-h-8 w-auto py-1" />
+            {/* <span className="max-w-[150px] truncate text-xs font-semibold tracking-wide text-white/90">
+              {currentWorkspace.name}
+            </span> */}
             <ChevronDown
               className={cn(
                 'h-4 w-4 text-white/80 transition-transform duration-200 hover:text-white',
