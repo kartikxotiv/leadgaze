@@ -1168,9 +1168,9 @@ export default function OrgSubscriptionPage({
         }}
       >
         <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-md">
-          <DialogHeader>
+          <DialogHeader className="bg-red-500">
             <DialogTitle className="flex items-center gap-2">
-              <Trash2 className="text-destructive h-5 w-5" />
+              
               Remove Module
             </DialogTitle>
             </DialogHeader>
