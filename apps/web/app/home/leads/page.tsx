@@ -69,7 +69,6 @@ import { ModuleGuard } from '~/lib/rbac/module-guard';
 import { useModuleRoles, useRBAC } from '~/lib/rbac/rbac-provider';
 import { getModuleKeyFromPath } from '~/lib/rbac/route-module-map';
 import {
-  getLeadStatusesService,
   getLeadsService,
   updateLeadService,
   importLeadsService,
@@ -299,8 +298,11 @@ export default function LeadsPage() {
 
   // =========================================================================
   // OPTIMIZATION: Fetch consolidated leads meta data and seed React Query cache
+  // Statuses, fields, and column preferences all come from a single call here.
+  // Sub-hooks (useFieldPermissions, useDynamicColumns, useLeadsColumnPreferences)
+  // share the same queryKey so React Query deduplicates the network request.
   // =========================================================================
-  const { isLoading: isMetaLoading } = useQuery({
+  const { data: metaData, isLoading: isMetaLoading } = useQuery({
     queryKey: ['leads-meta', workspace?.id, user?.id, productKey],
     queryFn: async () => {
       if (!workspace?.id || !user?.id) return null;
@@ -320,17 +322,24 @@ export default function LeadsPage() {
         ['user-column-preferences', workspace.id, user.id, 'leads'],
         data.preferences?.preferences ?? null
       );
+      // No longer needed as a separate query — statuses live inside metaData
       queryClient.setQueryData(
         ['lead-statuses', workspace.id],
         data.statuses
       );
-      // Optional: If role_permissions is cached independently, seed it here
 
       return data;
     },
     enabled: !!workspace?.id && !!user?.id,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
+
+  // Derive statuses directly from leads-meta — no separate API call needed.
+  // When metaData arrives, statuses are immediately available.
+  const statuses = useMemo(
+    () => (metaData as any)?.statuses ?? [],
+    [metaData],
+  );
 
   const {
     canViewColumn,
@@ -341,7 +350,9 @@ export default function LeadsPage() {
   } = useFieldPermissions({
     entityType: 'leads',
     workspaceId: workspace?.id,
-    enabled: !!workspace?.id && !!user?.id && !isMetaLoading,
+    // Remove !isMetaLoading gate — React Query deduplicates the shared leads-meta
+    // network request, so all hooks fire concurrently without extra fetches.
+    enabled: !!workspace?.id && !!user?.id,
     staleTime: 5 * 60 * 1000,
   });
 
@@ -350,7 +361,7 @@ export default function LeadsPage() {
     workspaceId: workspace?.id,
     userId: user?.id,
     defaultVisibility: DEFAULT_VISIBILITY,
-    enabled: !!workspace?.id && !!user?.id && !isMetaLoading,
+    enabled: !!workspace?.id && !!user?.id,
     staleTime: 5 * 60 * 1000,
   });
 
@@ -366,7 +377,7 @@ export default function LeadsPage() {
     workspaceId: workspace?.id,
     userId: user?.id,
     productKey,
-    enabled: !!workspace?.id && !!user?.id && !isMetaLoading,
+    enabled: !!workspace?.id && !!user?.id,
     staleTime: 5 * 60 * 1000,
   });
   const createField = useCreateField();
@@ -558,14 +569,7 @@ export default function LeadsPage() {
   // Fetch team members filtered by package access (for Created By filter)
   const { members } = usePackageMembers();
 
-  // Fetch lead statuses
-  const { data: statuses = [], isSuccess: isStatusesLoaded } = useQuery({
-    queryKey: ['lead-statuses', workspace?.id],
-    queryFn: () => getLeadStatusesService({ workspaceId: workspace?.id || '' }),
-    enabled: !!workspace?.id,
-    staleTime: 5 * 60 * 1000,
-  });
-
+  // Statuses are derived from leads-meta (see top of component) — no separate API call.
   const defaultStatusIds = useMemo(() => {
     return statuses
       .filter((s: any) => !s.is_closed)
@@ -577,6 +581,12 @@ export default function LeadsPage() {
   }, [statuses]);
 
   // Fetch leads data (table view — paginated)
+  // Enabled once leads-meta finishes (which provides statuses, fields, and prefs in one call).
+  // placeholderData keeps the previous page's results visible during navigation/refetch.
+  //
+  // NOTE: defaultStatusIds is intentionally NOT in the queryKey — it is workspace-level
+  // metadata that never changes per-session, so it must not invalidate the cache when
+  // it loads. It is used only inside queryFn as a default filter value.
   const {
     data: leadsData = { data: [], count: 0, statusBreakdown: {} },
     isLoading,
@@ -594,7 +604,6 @@ export default function LeadsPage() {
       sortState,
       computedCreatedOnDates,
       computedUpdatedOnDates,
-      defaultStatusIds,
     ],
     queryFn: () =>
       getLeadsService({
@@ -611,7 +620,13 @@ export default function LeadsPage() {
         updatedAtFrom: computedUpdatedOnDates?.from ?? undefined,
         updatedAtTo: computedUpdatedOnDates?.to ?? undefined,
       }),
-    enabled: !!workspace?.id && isStatusesLoaded && viewMode === 'table',
+    // Fire as soon as meta finishes (statuses come from meta, not a separate call).
+    enabled: !!workspace?.id && !isMetaLoading && defaultStatusIds.length > 0 && viewMode === 'table',
+    // Keep previous data visible while filter/page changes re-fetch in background.
+    placeholderData: (prev) => prev,
+    // Match the preload staleTime so hover-preloaded data is used as a cache hit
+    // on navigation instead of being immediately refetched.
+    staleTime: 30 * 1000,
   });
 
   // Fetch ALL leads for kanban view (no pagination, includes all statuses including unqualified by default unless filtered)
@@ -643,7 +658,7 @@ export default function LeadsPage() {
         updatedAtFrom: computedUpdatedOnDates?.from ?? undefined,
         updatedAtTo: computedUpdatedOnDates?.to ?? undefined,
       }),
-    enabled: !!workspace?.id && isStatusesLoaded && viewMode === 'kanban',
+    enabled: !!workspace?.id && !isMetaLoading && allStatusIds.length > 0 && viewMode === 'kanban',
   });
 
   const leads = leadsData.data;
@@ -1268,7 +1283,7 @@ export default function LeadsPage() {
             <LeadsKanbanBoard
               leads={kanbanLeads}
               statuses={statuses}
-              isLoading={kanbanIsLoading || !isStatusesLoaded}
+              isLoading={kanbanIsLoading || isMetaLoading}
               canUpdate={canAccess('leads', 'update')}
               canDelete={canAccess('leads', 'delete')}
               canCreate={canAccess('leads', 'create')}

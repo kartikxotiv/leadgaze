@@ -226,10 +226,32 @@ export function useDynamicColumns({
         throw error;
       }
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ['user-column-preferences', workspaceId, userId, entityType],
-      });
+    onSuccess: (_, newPreferences) => {
+      // Update the cache directly instead of invalidating (which would re-fetch → loop).
+      // The merge mirrors exactly what the mutationFn sends to the DB.
+      const key = ['user-column-preferences', workspaceId, userId, entityType];
+      queryClient.setQueryData(key, (prev: ColumnPreference | null | undefined) => ({
+        ...prev,
+        ...newPreferences,
+      } as ColumnPreference));
+
+      // Also keep the entity-meta cache in sync when preferences are written.
+      // queryKey must match exactly: [entityType-meta, workspaceId, userId, productKey]
+      if (isMetaSupported) {
+        queryClient.setQueryData(
+          [entityType + '-meta', workspaceId, userId, productKey],
+          (prev: any) => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              preferences: {
+                ...prev.preferences,
+                preferences: { ...prev.preferences?.preferences, ...newPreferences },
+              },
+            };
+          }
+        );
+      }
     },
   });
 

@@ -267,17 +267,19 @@ export default function LeadDetailsPage() {
       return getLeadByIdService(leadId);
     },
     enabled: !!leadId && !!workspace,
+    placeholderData: (prev) => prev,
+    staleTime: 30 * 1000,
   });
   const { data: coreEmailAccounts = [] } = useQuery({
     queryKey: ['core-email-accounts', workspace?.id],
     queryFn: () => getCoreEmailAccountsService(workspace!.id),
-    enabled: canManageEmail && !!workspace?.id && !!lead,
+    enabled: canManageEmail && !!workspace?.id,
   });
 
   const { data: industries = [] } = useQuery({
     queryKey: ['industries', workspace?.id],
     queryFn: () => getIndustriesService(workspace?.id || ''),
-    enabled: !!workspace?.id && !!lead,
+    enabled: !!workspace?.id,
   });
 
   const { data: user } = useUser();
@@ -297,7 +299,7 @@ export default function LeadDetailsPage() {
       if (!workspace?.id) return Promise.resolve([]);
       return getLeadStatusesService({ workspaceId: workspace.id });
     },
-    enabled: !!workspace?.id && !!lead,
+    enabled: !!workspace?.id,
   });
 
   const scoringResult = useMemo(() => {
@@ -321,14 +323,14 @@ export default function LeadDetailsPage() {
   const { canView } = useFieldPermissions({
     entityType: 'leads',
     workspaceId: workspace?.id,
-    enabled: !!workspace?.id && !!lead,
+    enabled: !!workspace?.id,
   });
 
   const { fields = [] } = useDynamicColumns({
     entityType: 'leads',
     workspaceId: workspace?.id,
     userId: user?.id,
-    enabled: !!workspace?.id && !!lead,
+    enabled: !!workspace?.id,
     staleTime: 5 * 60 * 1000,
   });
 

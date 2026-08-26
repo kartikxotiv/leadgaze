@@ -16,12 +16,36 @@ export const usePreloadStrategies = () => {
 
   // --- LEADS PRELOADING ---
   const preloadLeadsList = useCallback(
-    (workspaceId: string, limit: number = 20) => {
+    (workspaceId: string) => {
       if (!workspaceId) return;
 
+      // IMPORTANT: This queryKey must exactly match the flat array used by the leads page
+      // useQuery, so that the prefetched data is a cache hit on navigation.
+      //
+      // Page key: ['leads', workspaceId, page, searchTerm, selectedStatuses,
+      //   selectedCreatedByIds, pageSize, sortState, createdOnDates, updatedOnDates]
+      //
+      // Defaults must match page initial state:
+      //   - pageSize = 25  (useState(25) in page)
+      //   - sortState = { column: null, direction: null }  (useTableSort with persistSort:false)
+      //   - everything else empty / null
+      const pageSize = 25;
+      const preloadKey = [
+        'leads',
+        workspaceId,
+        1,                              // currentPage default
+        '',                             // debouncedSearchTerm default
+        [],                             // selectedStatuses default
+        [],                             // selectedCreatedByIds default
+        pageSize,                       // pageSize default
+        { column: null, direction: null }, // sortState default (useTableSort initial value)
+        null,                           // computedCreatedOnDates default
+        null,                           // computedUpdatedOnDates default
+      ];
+
       queryClient.prefetchQuery({
-        queryKey: ['leads', workspaceId, { page: 1, limit, searchTerm: '', statusId: [] }],
-        queryFn: () => getLeadsService({ workspaceId, page: 1, limit, searchTerm: '', statusId: [] }),
+        queryKey: preloadKey,
+        queryFn: () => getLeadsService({ workspaceId, page: 1, limit: pageSize, searchTerm: '', statusId: [] }),
         staleTime: 60000, // Cache for 1 minute
       });
     },
@@ -33,7 +57,7 @@ export const usePreloadStrategies = () => {
       if (!workspaceId || !lead?.id) return;
 
       queryClient.prefetchQuery({
-        queryKey: ['lead', workspaceId, lead.id],
+        queryKey: ['lead', lead.id],
         queryFn: () => getLeadByIdService(lead.id!),
         staleTime: 60000,
       });
@@ -43,12 +67,25 @@ export const usePreloadStrategies = () => {
 
   // --- CONTACTS PRELOADING ---
   const preloadContactsList = useCallback(
-    (workspaceId: string, limit: number = 20) => {
+    (workspaceId: string) => {
       if (!workspaceId) return;
 
+      const pageSize = 25;
+      const preloadKey = [
+        'contacts',
+        workspaceId,
+        1,                              // currentPage
+        '',                             // debouncedSearchTerm
+        pageSize,                       // pageSize
+        { column: null, direction: null }, // sortState
+        null,                           // computedCreatedOnDates
+        null,                           // computedUpdatedOnDates
+        [],                             // selectedCreatedByIds
+      ];
+
       queryClient.prefetchQuery({
-        queryKey: ['contacts', workspaceId, { page: 1, limit, searchTerm: '' }],
-        queryFn: () => getContactsService({ workspaceId, page: 1, limit, searchTerm: '' }),
+        queryKey: preloadKey,
+        queryFn: () => getContactsService({ workspaceId, page: 1, limit: pageSize, searchTerm: '' }),
         staleTime: 60000,
       });
     },
@@ -70,12 +107,25 @@ export const usePreloadStrategies = () => {
 
   // --- ACCOUNTS PRELOADING ---
   const preloadAccountsList = useCallback(
-    (workspaceId: string, limit: number = 20) => {
+    (workspaceId: string) => {
       if (!workspaceId) return;
 
+      const pageSize = 25;
+      const preloadKey = [
+        'accounts',
+        workspaceId,
+        1,                              // currentPage
+        '',                             // debouncedSearchTerm
+        pageSize,                       // pageSize
+        { column: null, direction: null }, // sortState
+        null,                           // computedCreatedOnDates
+        null,                           // computedUpdatedOnDates
+        [],                             // selectedCreatedByIds
+      ];
+
       queryClient.prefetchQuery({
-        queryKey: ['accounts', workspaceId, { page: 1, limit, searchTerm: '' }],
-        queryFn: () => getAccountsService({ workspaceId, page: 1, limit, searchTerm: '' }),
+        queryKey: preloadKey,
+        queryFn: () => getAccountsService({ workspaceId, page: 1, limit: pageSize, searchTerm: '' }),
         staleTime: 60000,
       });
     },
@@ -97,12 +147,26 @@ export const usePreloadStrategies = () => {
 
   // --- OPPORTUNITIES PRELOADING ---
   const preloadOpportunitiesList = useCallback(
-    (workspaceId: string, limit: number = 20) => {
+    (workspaceId: string) => {
       if (!workspaceId) return;
 
+      const pageSize = 25;
+      const preloadKey = [
+        'opportunities',
+        workspaceId,
+        1,                              // currentPage
+        '',                             // debouncedSearchTerm
+        [],                             // selectedStage
+        [],                             // selectedCreatedId
+        pageSize,                       // pageSize
+        { column: null, direction: null }, // sortState
+        null,                           // computedCreatedOnDates
+        null,                           // computedUpdatedOnDates
+      ];
+
       queryClient.prefetchQuery({
-        queryKey: ['opportunities', workspaceId, { page: 1, limit, searchTerm: '' }],
-        queryFn: () => getOpportunitiesService({ workspaceId, page: 1, limit, searchTerm: '' }),
+        queryKey: preloadKey,
+        queryFn: () => getOpportunitiesService({ workspaceId, page: 1, limit: pageSize, searchTerm: '' }),
         staleTime: 60000,
       });
     },

@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { usePathname } from 'next/navigation';
 import { useMemo } from 'react';
 
@@ -43,7 +43,8 @@ export function usePackageMembers(options?: {
   forceFresh?: boolean;
 }) {
   const pathname = usePathname();
-  const { currentWorkspace, isInitialized, isLoading: rbacLoading } = useRBAC();
+  const { currentWorkspace, isInitialized, isLoading: rbacLoading, user } = useRBAC();
+  const queryClient = useQueryClient();
 
   // Auto-detect productKey from current route
   const autoDetectedProductKey = useMemo(
@@ -65,10 +66,11 @@ export function usePackageMembers(options?: {
   const optimizedQuery = useQuery({
     queryKey: ['workspace-init', 'package-members', currentWorkspace?.id, productKey],
     queryFn: () => {
-      // This is a synchronous operation using already-loaded data
-      const cachedData = JSON.parse(
-        sessionStorage.getItem(`workspace-${currentWorkspace?.id}-init`) || '{}'
-      );
+      // Read directly from React Query in-memory cache (populated by RBAC init).
+      // Use prefix match since the third key element (productKey) can vary.
+      // This avoids the sessionStorage timing gap where data isn't yet written.
+      const matches = queryClient.getQueriesData<any>({ queryKey: ['workspace-init', user?.id] });
+      const cachedData = matches.find(([, data]) => data?.current_workspace?.team_members)?.[1] ?? null;
       
       if (cachedData?.current_workspace?.team_members) {
         const allMembers = cachedData.current_workspace.team_members;

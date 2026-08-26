@@ -64,7 +64,7 @@ export function useLeadsColumnPreferences({
 
       updatePreferences.mutate({ visibleColumns });
     },
-    [workspaceId, userId, updatePreferences],
+    [workspaceId, userId, updatePreferences, preferences],
   );
 
   const persistWidths = useCallback(
