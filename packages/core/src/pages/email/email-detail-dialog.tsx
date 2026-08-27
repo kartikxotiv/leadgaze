@@ -333,13 +333,8 @@ export function CoreEmailDetailDialog({
             </div>
           </div>
 
-<<<<<<< HEAD
-          <div className="p-5 text-sm">
-            <div className="prose prose-sm dark:prose-invert max-w-none text-zinc-800 dark:text-zinc-200 [&_ol]:list-decimal [&_ol]:ml-4 [&_ul]:list-disc [&_ul]:ml-4">
-=======
           <div className="custom-spacing-x-y py-2 text-sm">
             <div className="prose prose-sm dark:prose-invert max-w-none text-zinc-800 dark:text-zinc-200">
->>>>>>> 62f1afb8a4a6ca2f36c1d80aa8e98e3800e996ec
               {email.html_body || email.body ? (
                 <div
                   className="email-content leading-relaxed"
