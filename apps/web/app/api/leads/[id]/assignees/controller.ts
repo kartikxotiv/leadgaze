@@ -4,6 +4,9 @@ import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client'
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
 import { Database } from '@kit/supabase/database';
+import ASSIGNMENT_NOTIFICATION_EMAIL_TEMPLATE from '~/constants/email.templates/assignment-notification.template';
+import { NotificationService } from '~/lib/cron/notification-service';
+import { transporter } from '~/utils/send-mail';
 import { catchAsync, successDataResponse } from '~/utils/response-handler';
 
 type LeadAssignee = Database['public']['Tables']['lead_assignees']['Row'];
@@ -20,7 +23,7 @@ const getLeadAssignees = catchAsync(
     request: NextRequest;
     params?: Record<string, string>;
   }) => {
-    const supabase = getSupabaseServerClient();
+    const adminClient = getSupabaseServerAdminClient();
     const leadId = params?.id;
 
     if (!leadId) {
@@ -30,7 +33,7 @@ const getLeadAssignees = catchAsync(
       );
     }
 
-    const { data: assignees, error } = await supabase
+    const { data: assignees, error } = await adminClient
       .from('lead_assignees_with_details')
       .select('*')
       .eq('lead_id', leadId)
@@ -80,25 +83,33 @@ const assignLeadToUser = catchAsync(
       );
     }
 
-    // Get the lead to verify it exists and get workspace_id
-    const { data: lead, error: leadError } = await supabase
-      .from('crm_leads')
-      .select('id, workspace_id')
-      .eq('id', leadId)
-      .single();
+    const adminClient = getSupabaseServerAdminClient();
 
-    if (leadError || !lead) {
+    // Get the lead using adminClient to verify it exists and get workspace_id and lead details
+    const { data: lead, error: leadError } = await adminClient
+      .from('crm_leads')
+      .select('id, workspace_id, first_name, last_name, company_name, email')
+      .eq('id', leadId)
+      .eq('is_deleted', false)
+      .maybeSingle();
+
+    if (leadError) {
+      console.error('Lead lookup error:', leadError);
+      throw leadError;
+    }
+
+    if (!lead) {
       return NextResponse.json({ message: 'Lead not found' }, { status: 404 });
     }
 
     // Check if an active assignment already exists
-    const { data: existingActive } = await supabase
+    const { data: existingActive } = await adminClient
       .from('lead_assignees')
       .select('id')
       .eq('lead_id', leadId)
       .eq('assigned_to_user_id', assigned_to_user_id)
       .eq('assignment_status', 'active')
-      .single();
+      .maybeSingle();
 
     if (existingActive) {
       return NextResponse.json(
@@ -117,15 +128,14 @@ const assignLeadToUser = catchAsync(
     }
 
     // Check if an inactive assignment exists - reactivate it instead of inserting
-    const { data: existingInactive } = await supabase
+    const { data: existingInactive } = await adminClient
       .from('lead_assignees')
       .select('id')
       .eq('lead_id', leadId)
       .eq('assigned_to_user_id', assigned_to_user_id)
       .eq('assignment_status', 'inactive')
-      .single();
+      .maybeSingle();
 
-    const adminClient = getSupabaseServerAdminClient();
     let assigneeId: string;
 
     if (existingInactive) {
@@ -172,8 +182,53 @@ const assignLeadToUser = catchAsync(
       assigneeId = assignee.id;
     }
 
+    // AWAT void non-blocking email dispatch (no DB persistence / subscription tables written)
+    void (async () => {
+      try {
+        const recipientEmail = await NotificationService.getUserEmail(assigned_to_user_id);
+        if (!recipientEmail) return;
+
+        const { data: assignerAccount } = await adminClient
+          .from('accounts')
+          .select('name')
+          .eq('id', user.id)
+          .maybeSingle();
+
+        const assignerName = assignerAccount?.name || 'A team member';
+        const leadName =
+          [lead.first_name, lead.last_name].filter(Boolean).join(' ') ||
+          'Lead';
+        const appBaseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+        const leadUrl = `${appBaseUrl}/home/sales/leads/${leadId}`;
+
+        const emailHtml = ASSIGNMENT_NOTIFICATION_EMAIL_TEMPLATE({
+          entityType: 'Lead',
+          entityName: leadName,
+          assignerName,
+          entityUrl: leadUrl,
+          details: [
+            { label: 'Company', value: lead.company_name },
+            { label: 'Email', value: lead.email },
+          ],
+          productName: 'Leadgaze',
+          appUrl: appBaseUrl,
+        });
+
+        await transporter.sendMail({
+          from: process.env.SMTP_FROM || process.env.SMTP_USER || 'noreply@leadgaze.com',
+          to: recipientEmail,
+          subject: `You have been assigned a Lead - Leadgaze`,
+          html: emailHtml,
+        });
+
+        console.log('[LeadAssigneeNotification] Non-blocking email sent successfully to:', recipientEmail);
+      } catch (notificationError) {
+        console.error('[LeadAssigneeNotification] Non-blocking email dispatch error:', notificationError);
+      }
+    })();
+
     // Return with full details
-    const { data: fullAssignee } = await supabase
+    const { data: fullAssignee } = await adminClient
       .from('lead_assignees_with_details')
       .select('*')
       .eq('id', assigneeId)
