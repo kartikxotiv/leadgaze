@@ -94,7 +94,7 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
     queryKey: ['tasks', entityType, entityId, workspace?.id, taskTab],
     queryFn: () => {
       if (!workspace?.id) return [];
-      return getTasksService(workspace.id, entityType, entityId, taskTab);
+      return getTasksService(workspace.id, entityType, entityId, taskTab, { module: 'sales' });
     },
     enabled: !!workspace?.id,
   });

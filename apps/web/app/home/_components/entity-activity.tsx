@@ -151,7 +151,7 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
       if (!workspace?.id) return [];
       // 'active' tab → fetch only non-completed; 'sent' tab → fetch only completed
       const apiStatus = reminderTab === 'sent' ? 'completed' : 'active';
-      return getRemindersService(workspace.id, entityType, entityId, apiStatus);
+      return getRemindersService(workspace.id, entityType, entityId, { status: apiStatus, module: 'sales' });
     },
     enabled: !!workspace?.id,
     // Avoid re-fetching on every focus — reminders are stable for 60 seconds.
@@ -566,7 +566,7 @@ export function EntityMeetings({ entityType, entityId }: EntityActivityProps) {
     queryFn: async () => {
       if (!workspace?.id) return [];
       // Always include meetings where current user is a participant/host
-      return getCoreMeetingsService(workspace.id, entityType, entityId, undefined, true);
+      return getCoreMeetingsService(workspace.id, entityType, entityId, { module: 'sales' });
     },
     enabled: !!workspace?.id,
     // Cache for 60 seconds to avoid re-fetching on every tab switch.
@@ -926,7 +926,7 @@ export function EntityDocuments({ entityType, entityId }: EntityActivityProps) {
     queryKey: ['documents', entityType, entityId, workspace?.id],
     queryFn: () => {
       if (!workspace?.id) return [];
-      return getDocumentsService(workspace.id, entityType, entityId);
+      return getDocumentsService(workspace.id, entityType, entityId, { module: 'sales' });
     },
     enabled: !!workspace?.id,
   });

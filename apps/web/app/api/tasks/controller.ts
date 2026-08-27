@@ -43,6 +43,7 @@ export const getTasks = catchAsync(
     const entityId = url.searchParams.get('entityId');
     const workspaceId = url.searchParams.get('workspaceId');
     const status = url.searchParams.get('status') || 'active'; // active or completed
+    const moduleParam = url.searchParams.get('module');
     const isCompletedFilter = status === 'completed';
 
     if (!workspaceId) {
@@ -69,6 +70,7 @@ export const getTasks = catchAsync(
           p_entity_type: entityType,
           p_entity_id: entityId,
           p_status: status,
+          p_module: moduleParam,
         });
 
       if (error) throw error;
@@ -76,15 +78,14 @@ export const getTasks = catchAsync(
       uniqueTasks = (data as any)?.data || data || [];
     } else {
       const { data, error } = await supabase
-        .schema('core')
-        .from('tasks')
-        .select('*, task_relations(*)')
-        .eq('workspace_id', workspaceId)
-        .eq('is_deleted', false)
-        .eq('is_completed', isCompletedFilter);
+        .rpc('get_core_tasks', {
+          p_workspace_id: workspaceId,
+          p_status: status,
+          p_module: moduleParam,
+        });
 
       if (error) throw error;
-      uniqueTasks = data || [];
+      uniqueTasks = (data as any)?.data || data || [];
     }
 
     // Retrieve creator names

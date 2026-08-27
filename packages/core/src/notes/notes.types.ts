@@ -13,6 +13,7 @@ export interface GetNotesParams {
   userId?: string;
   page?: number | null;
   limit?: number | null;
+  module?: string;
 }
 
 export interface NoteItem {

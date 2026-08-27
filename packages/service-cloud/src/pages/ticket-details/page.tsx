@@ -576,7 +576,7 @@ export function ServiceCloudTicketDetailPage({
   const notesQueryKey = ['service-cloud', 'ticket-notes', workspaceId, ticketId, statusFilter];
   const { data: notes = [], isLoading: notesLoading } = useQuery({
     queryKey: notesQueryKey,
-    queryFn: () => getNotesService(workspaceId, 'service_cloud_ticket', ticketId, statusFilter),
+    queryFn: () => getNotesService(workspaceId, 'service_cloud_ticket', ticketId, statusFilter, { module: 'service' }),
     enabled: Boolean(workspaceId && ticketId),
   });
 
@@ -642,7 +642,7 @@ export function ServiceCloudTicketDetailPage({
   const documentsQueryKey = ['service-cloud', 'ticket-documents', workspaceId, ticketId];
   const { data: documents = [], isLoading: documentsLoading } = useQuery({
     queryKey: documentsQueryKey,
-    queryFn: () => getDocumentsService(workspaceId, 'service_cloud_ticket', ticketId),
+    queryFn: () => getDocumentsService(workspaceId, 'service_cloud_ticket', ticketId, { module: 'service' }),
     enabled: Boolean(workspaceId && ticketId),
   });
 

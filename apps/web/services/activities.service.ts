@@ -187,6 +187,7 @@ export const getRemindersService = asyncHandlerClient(
       updatedAtFrom?: string;
       updatedAtTo?: string;
       createdByIds?: string[];
+      module?: string;
     },
   ) => {
     let url = `/reminders?workspaceId=${workspaceId}`;
@@ -205,6 +206,7 @@ export const getRemindersService = asyncHandlerClient(
       if (filters.createdByIds && filters.createdByIds.length > 0) {
         url += `&createdByIds=${filters.createdByIds.join(',')}`;
       }
+      if (filters.module) url += `&module=${filters.module}`;
     }
     const response = await ApiClient.get(url);
     if (response.data?.total !== undefined && (filters?.page || filters?.limit)) {
@@ -269,6 +271,7 @@ export const getMeetingsService = asyncHandlerClient(
       updatedAtFrom?: string;
       updatedAtTo?: string;
       createdByIds?: string[];
+      module?: string;
     },
   ) => {
     let url = `/meetings?workspaceId=${workspaceId}`;
@@ -287,6 +290,7 @@ export const getMeetingsService = asyncHandlerClient(
       if (filters.createdByIds && filters.createdByIds.length > 0) {
         url += `&createdByIds=${filters.createdByIds.join(',')}`;
       }
+      if (filters.module) url += `&module=${filters.module}`;
     }
     const response = await ApiClient.get(url);
     if (response.data?.total !== undefined && (filters?.page || filters?.limit)) {
@@ -351,6 +355,7 @@ export const getDocumentsService = asyncHandlerClient(
       updatedAtFrom?: string;
       updatedAtTo?: string;
       createdByIds?: string[];
+      module?: string;
     },
   ) => {
     let url = `/documents?workspaceId=${workspaceId}`;
@@ -368,6 +373,7 @@ export const getDocumentsService = asyncHandlerClient(
       if (filters.createdByIds && filters.createdByIds.length > 0) {
         url += `&createdByIds=${filters.createdByIds.join(',')}`;
       }
+      if (filters.module) url += `&module=${filters.module}`;
     }
     const response = await ApiClient.get(url);
     if (response.data?.total !== undefined && (filters?.page || filters?.limit)) {
@@ -413,10 +419,17 @@ export const deleteDocumentService = asyncHandlerClient(async (id: string) => {
 
 // --- Tasks ---
 export const getTasksService = asyncHandlerClient(
-  async (workspaceId: string, entityType?: string, entityId?: string, status: 'active' | 'completed' = 'active') => {
+  async (
+    workspaceId: string, 
+    entityType?: string, 
+    entityId?: string, 
+    status: 'active' | 'completed' = 'active',
+    filters?: { module?: string }
+  ) => {
     let url = `/tasks?workspaceId=${workspaceId}&status=${status}`;
     if (entityType) url += `&entityType=${entityType}`;
     if (entityId) url += `&entityId=${entityId}`;
+    if (filters?.module) url += `&module=${filters.module}`;
     const response = await ApiClient.get(url);
     return response.data?.data || [];
   },

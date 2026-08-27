@@ -113,6 +113,7 @@ export const getMeetingsController = catchAsync(async ({ request }) => {
   const limitParam = url.searchParams.get('limit');
   const page = pageParam ? parseInt(pageParam, 10) : null;
   const limit = limitParam ? parseInt(limitParam, 10) : null;
+  const moduleParam = url.searchParams.get('module');
 
   if (!workspaceId) {
     return NextResponse.json(
@@ -184,7 +185,8 @@ export const getMeetingsController = catchAsync(async ({ request }) => {
       p_is_admin: isAdmin,
       p_include_participant_meetings: includeParticipantMeetings === 'true' || includeParticipantMeetings === true,
       p_participant_user_id: participantUserId || null,
-      p_participant_email: user.email || null
+      p_participant_email: user.email || null,
+      p_module: moduleParam || null
     });
 
     if (fetchError) {

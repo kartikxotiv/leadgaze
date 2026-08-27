@@ -2239,6 +2239,7 @@ export default function MeetingsPage() {
           statuses: selectedStatuses.length > 0 ? selectedStatuses : undefined,
           timeframe: selectedTimeframe.length > 0 ? selectedTimeframe : undefined,
           searchTerm: debouncedSearchTerm || undefined,
+          module: 'sales',
         },
       );
     },

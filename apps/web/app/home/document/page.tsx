@@ -246,10 +246,10 @@ export default function DocumentPage() {
           type: typeFilter === 'all' ? undefined : typeFilter,
           searchTerm: debouncedSearchTerm || undefined,
           createdAtFrom: computedCreatedOnDates?.from,
-          createdAtTo: computedCreatedOnDates?.to,
           updatedAtFrom: computedUpdatedOnDates?.from,
           updatedAtTo: computedUpdatedOnDates?.to,
           createdByIds: selectedCreatedByIds.length > 0 ? selectedCreatedByIds : undefined,
+          module: 'sales',
         },
       );
     },

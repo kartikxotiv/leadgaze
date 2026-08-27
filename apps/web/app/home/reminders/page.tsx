@@ -271,6 +271,7 @@ export default function RemindersPage() {
         updatedAtFrom: computedUpdatedOnDates?.from,
         updatedAtTo: computedUpdatedOnDates?.to,
         createdByIds: selectedCreatedByIds.length > 0 ? selectedCreatedByIds : undefined,
+        module: 'sales',
       });
     },
     enabled: !!workspace?.id,

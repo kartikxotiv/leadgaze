@@ -56,6 +56,7 @@ export class MeetingsService {
       p_include_participant_meetings: params.includeParticipantMeetings || false,
       p_participant_user_id: params.participantUserId || null,
       p_participant_email: params.participantEmail || null,
+      p_module: params.module || null,
     });
 
     if (error) throw error;

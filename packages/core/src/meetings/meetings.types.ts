@@ -22,6 +22,7 @@ export interface GetMeetingsParams {
   includeParticipantMeetings?: boolean | string | null;
   participantUserId?: string | null;
   participantEmail?: string | null;
+  module?: string;
 }
 
 export interface MeetingItem {
