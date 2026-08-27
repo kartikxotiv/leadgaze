@@ -1221,7 +1221,7 @@ function AccountGrowthTrends({ heightClass = "h-[320px]", data = [] }: { heightC
         }} className="h-full w-full">
            <LineChart data={filteredData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
               <CartesianGrid vertical={true} horizontal={false} stroke="#E2E8F0" />
-              <XAxis dataKey="name" axisLine={{ stroke: '#E2E8F0' }} tickLine={false} tickMargin={12} fontSize={11} fill="currentColor" className="text-muted-foreground font-medium" />
+              <XAxis dataKey="name" axisLine={{ stroke: '#E2E8F0' }} tickLine={false} tickMargin={12} fontSize={11} fill="currentColor" className="text-muted-foreground font-medium" padding={{ left: 18, right: 0 }} />
               <ChartTooltip content={<ChartTooltipContent />} />
               <Line type="monotone" dataKey="value" stroke="#2563eb" strokeWidth={2.5} dot={false} />
               <Line type="monotone" dataKey="value2" stroke="#cbd5e1" strokeWidth={2.5} strokeDasharray="5 5" dot={false} />

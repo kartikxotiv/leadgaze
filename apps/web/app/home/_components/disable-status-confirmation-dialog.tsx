@@ -224,7 +224,7 @@ export function DisableStatusConfirmationDialog({
       <DialogContent className="sm:max-w-[520px] p-0 flex flex-col max-h-[90vh]">
         <DialogHeader>
           <div className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-amber-500" />
+            {/* <AlertTriangle className="h-5 w-5 text-amber-500" /> */}
             <DialogTitle>Disable &ldquo;{statusToDisable.status_name}&rdquo;?</DialogTitle>
           </div>
           <DialogDescription>
@@ -234,10 +234,10 @@ export function DisableStatusConfirmationDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto px-2 space-y-2">
+        <div className="flex-1 overflow-y-auto space-y-2 custom-spacing-x-y py-2">
           {/* Global reassign dropdown */}
           <div className="space-y-2">
-            <p className="text-sm font-medium">
+            <p className="secondary-text-small-bold text-leadgaze-dark dark:text-white mb-0">
               Move all {totalCount} {recordLabel} to:
             </p>
             <Select
@@ -283,7 +283,7 @@ export function DisableStatusConfirmationDialog({
 
           {/* Affected records list */}
           <div className="space-y-2">
-            <p className="text-sm font-medium text-muted-foreground">
+            <p className="secondary-text-small-bold text-leadgaze-dark dark:text-white mb-0">
               Affected Records ({totalCount} total)
             </p>
 
@@ -294,13 +294,13 @@ export function DisableStatusConfirmationDialog({
             ) : records.length === 0 ? (
               <p className="text-sm text-muted-foreground py-2">No records found.</p>
             ) : (
-              <div className="rounded-md border divide-y bg-background max-h-48 overflow-y-auto">
+              <div className="rounded-none border divide-y bg-background max-h-48 overflow-y-auto">
                 {records.map((record) => (
                   <div
                     key={record.id}
                     className="flex items-center justify-between px-3 py-2.5"
                   >
-                    <span className="text-sm font-medium truncate">{record.name}</span>
+                    <span className="secondary-text-small-bold truncate">{record.name}</span>
                     {record.email && (
                       <span className="text-xs text-muted-foreground ml-2 shrink-0 truncate max-w-[180px]">
                         {record.email}
