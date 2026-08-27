@@ -171,7 +171,7 @@ export function EditContactDialog({
                       <FormItem>
                         <FormLabel>First Name</FormLabel>
                         <FormControl>
-                          <Input {...field} />
+                          <Input placeholder="Jane" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -184,7 +184,7 @@ export function EditContactDialog({
                       <FormItem>
                         <FormLabel>Last Name</FormLabel>
                         <FormControl>
-                          <Input {...field} />
+                          <Input placeholder="Doe" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -200,7 +200,7 @@ export function EditContactDialog({
                       <FormItem>
                         <FormLabel>Primary Email</FormLabel>
                         <FormControl>
-                          <Input {...field} type="email" />
+                          <Input placeholder="jane.doe@example.com" {...field} type="email" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -213,7 +213,7 @@ export function EditContactDialog({
                       <FormItem>
                         <FormLabel>Alt Email</FormLabel>
                         <FormControl>
-                          <Input {...field} type="email" />
+                          <Input placeholder="jane.doe.alt@example.com" {...field} type="email" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -229,7 +229,7 @@ export function EditContactDialog({
                       <FormItem>
                         <FormLabel>Phone</FormLabel>
                         <FormControl>
-                          <Input {...field} type="tel" />
+                          <Input placeholder="+1..." {...field} type="tel" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -242,7 +242,7 @@ export function EditContactDialog({
                       <FormItem>
                         <FormLabel>Mobile</FormLabel>
                         <FormControl>
-                          <Input {...field} type="tel" />
+                          <Input placeholder="+1..." {...field} type="tel" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -255,7 +255,7 @@ export function EditContactDialog({
                       <FormItem>
                         <FormLabel>Alt Phone</FormLabel>
                         <FormControl>
-                          <Input {...field} type="tel" />
+                          <Input placeholder="+1..." {...field} type="tel" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -271,7 +271,7 @@ export function EditContactDialog({
                       <FormItem>
                         <FormLabel>Job Title</FormLabel>
                         <FormControl>
-                          <Input {...field} />
+                          <Input placeholder="Head of Sales" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -284,7 +284,7 @@ export function EditContactDialog({
                       <FormItem>
                         <FormLabel>Department</FormLabel>
                         <FormControl>
-                          <Input {...field} />
+                          <Input placeholder="Sales" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -339,7 +339,7 @@ export function EditContactDialog({
                     <FormItem>
                       <FormLabel>Private Notes</FormLabel>
                       <FormControl>
-                        <Textarea {...field} />
+                        <Textarea placeholder="Add some context about this contact..." {...field} />
                       </FormControl>
                     </FormItem>
                   )}
@@ -413,7 +413,7 @@ export function EditContactDialog({
                       <FormItem>
                         <FormLabel>LinkedIn</FormLabel>
                         <FormControl>
-                          <Input {...field} />
+                          <Input placeholder="https://linkedin.com/in/..." {...field} />
                         </FormControl>
                       </FormItem>
                     )}
@@ -425,7 +425,7 @@ export function EditContactDialog({
                       <FormItem>
                         <FormLabel>Twitter</FormLabel>
                         <FormControl>
-                          <Input {...field} />
+                          <Input placeholder="@janedoe" {...field} />
                         </FormControl>
                       </FormItem>
                     )}

@@ -233,9 +233,9 @@ export function StatusManagementDialog({
         </DialogHeader>
 
         <form id="status-form" onSubmit={handleSubmit}>
-          <div className="space-y-2 px-6 py-0">
+          <div className="space-y-2 custom-spacing-x-y py-2">
             {/* Name */}
-            <div className="space-y-2">
+            <div>
               <Label htmlFor="status_name">
                 {entityLabel} Name <span className="text-destructive">*</span>
               </Label>
@@ -250,7 +250,7 @@ export function StatusManagementDialog({
             </div>
 
             {/* Color */}
-            <div className="space-y-2">
+            <div>
               <Label htmlFor="status_color">Color</Label>
               <Select
                 value={color}
@@ -287,7 +287,7 @@ export function StatusManagementDialog({
 
             {/* Is Closed */}
             <div className="flex flex-col gap-1.5">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 <input
                   id="is_closed"
                   type="checkbox"

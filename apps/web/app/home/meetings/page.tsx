@@ -1881,10 +1881,10 @@ export function MeetingDetailsDialog({
         <div className="flex-1 overflow-y-auto relative">
           <Tabs defaultValue="overview" className="custom-spacing-x-y py-2">
             <div className="sticky top-0 z-10 bg-background py-1 mt-0">
-              <TabsList className="grid w-full grid-cols-3 h-9">
-                <TabsTrigger value="overview" className="py-1">Overview</TabsTrigger>
-                <TabsTrigger value="participants" className="py-1">Participants</TabsTrigger>
-                <TabsTrigger value="notes" className="py-1">Notes</TabsTrigger>
+              <TabsList className="mb-2 h-auto w-full justify-start gap-6 rounded-none border-b bg-transparent p-0 overflow-x-auto hide-scrollbar">
+                <TabsTrigger value="overview" className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent">Overview</TabsTrigger>
+                <TabsTrigger value="participants" className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent">Participants</TabsTrigger>
+                <TabsTrigger value="notes" className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent">Notes</TabsTrigger>
               </TabsList>
             </div>
 
@@ -1910,7 +1910,7 @@ export function MeetingDetailsDialog({
                   {meeting.meeting_type === 'logged' ? 'Logged' : 'Scheduled'}
                 </Badge>
               </div>
-              <div className="flex items-start gap-2 rounded-lg border p-2">
+              <div className="flex items-start gap-2 border p-2">
                 <CalendarIcon className="text-muted-foreground mt-0.5 h-5 w-5" />
                 <div>
                   <p className="primary-text-medium text-leadgaze-dark dark:text-white">
@@ -1939,13 +1939,13 @@ export function MeetingDetailsDialog({
                 </div>
               )}
               {meeting.location && (
-                <div className="flex items-start gap-2 rounded-lg border p-2">
+                <div className="flex items-start gap-2 border p-2">
                   <MapPin className="text-muted-foreground mt-0.5 h-5 w-5" />
                   <p className="text-sm">{meeting.location}</p>
                 </div>
               )}
               {meeting.meeting_url && (
-                <div className="flex items-start gap-2 rounded-lg border p-2">
+                <div className="flex items-center gap-2 border p-2">
                   <ExternalLink className="text-muted-foreground mt-0.5 h-5 w-5" />
                   <a
                     href={meeting.meeting_url}
@@ -1958,7 +1958,7 @@ export function MeetingDetailsDialog({
                 </div>
               )}
               {meeting.host && (
-                <div className="flex items-start gap-2 rounded-lg border p-2">
+                <div className="flex items-center gap-2 border p-2">
                   <Users className="text-muted-foreground mt-0.5 h-5 w-5" />
                   <div>
                     <p className="primary-text-medium text-leadgaze-dark dark:text-white">Host</p>
@@ -2004,7 +2004,7 @@ export function MeetingDetailsDialog({
               )}
             </TabsContent>
 
-            <TabsContent value="notes" className="space-y-2 pb-4 mt-2">
+            <TabsContent value="notes" className="space-y-2 mb-2 mt-0 ">
               <div>
                 <Label className="font-medium">Add Note</Label>
                 <Textarea
@@ -2391,7 +2391,7 @@ export default function MeetingsPage() {
         <PageHeader
           title={`Meetings`}
         >
-          <div className="p-[2px]">
+          <div>
             <ListToolBar
               align="right"
               className="border-none bg-transparent p-0"

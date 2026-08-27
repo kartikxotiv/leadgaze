@@ -774,7 +774,7 @@ export default function ContactsPage() {
         <PageHeader
           title={`Contacts`}          
         >
-          <div className="p-[2px]">
+          <div>
             <ListToolBar
               align="right"
             className="border-none bg-transparent p-0"

@@ -4,6 +4,9 @@ import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client'
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
 import { Database } from '@kit/supabase/database';
+import ASSIGNMENT_NOTIFICATION_EMAIL_TEMPLATE from '~/constants/email.templates/assignment-notification.template';
+import { NotificationService } from '~/lib/cron/notification-service';
+import { transporter } from '~/utils/send-mail';
 import { catchAsync, successDataResponse } from '~/utils/response-handler';
 
 type ContactAssignee = Database['public']['Tables']['contact_assignees']['Row'];
@@ -80,25 +83,33 @@ const assignContactToUser = catchAsync(
       );
     }
 
-    // Get the contact to verify it exists and get workspace_id
-    const { data: contact, error: contactError } = await supabase
-      .from('crm_contacts')
-      .select('id, workspace_id')
-      .eq('id', contactId)
-      .single();
+    const adminClient = getSupabaseServerAdminClient();
 
-    if (contactError || !contact) {
+    // Get the contact to verify it exists and get workspace_id & details
+    const { data: contact, error: contactError } = await (adminClient
+      .from('crm_contacts' as any)
+      .select('id, workspace_id, first_name, last_name, email, phone_number, account:crm_accounts(account_name)')
+      .eq('id', contactId)
+      .eq('is_deleted', false)
+      .maybeSingle() as any);
+
+    if (contactError) {
+      console.error('Contact lookup error:', contactError);
+      throw contactError;
+    }
+
+    if (!contact) {
       return NextResponse.json({ message: 'Contact not found' }, { status: 404 });
     }
 
     // Check if an active assignment already exists
-    const { data: existingActive } = await (supabase
+    const { data: existingActive } = await (adminClient
       .from('contact_assignees' as any)
       .select('id')
       .eq('contact_id', contactId)
       .eq('assigned_to_user_id', assigned_to_user_id)
       .eq('assignment_status', 'active')
-      .single() as any);
+      .maybeSingle() as any);
 
     if (existingActive) {
       return NextResponse.json(
@@ -117,15 +128,13 @@ const assignContactToUser = catchAsync(
     }
 
     // Check if an inactive assignment exists - reactivate it instead of inserting
-    const { data: existingInactive } = await (supabase
+    const { data: existingInactive } = await (adminClient
       .from('contact_assignees' as any)
       .select('id')
       .eq('contact_id', contactId)
       .eq('assigned_to_user_id', assigned_to_user_id)
       .eq('assignment_status', 'inactive')
-      .single() as any);
-
-    const adminClient = getSupabaseServerAdminClient();
+      .maybeSingle() as any);
 
     let assigneeId: string;
 
@@ -171,8 +180,55 @@ const assignContactToUser = catchAsync(
       assigneeId = assignee.id;
     }
 
+    // AWAT void non-blocking email dispatch (no DB persistence / subscription tables written)
+    void (async () => {
+      try {
+        const recipientEmail = await NotificationService.getUserEmail(assigned_to_user_id);
+        if (!recipientEmail) return;
+
+        const { data: assignerAccount } = await (adminClient
+          .from('accounts' as any)
+          .select('name')
+          .eq('id', user.id)
+          .maybeSingle() as any);
+
+        const assignerName = assignerAccount?.name || 'A team member';
+        const contactName =
+          [contact.first_name, contact.last_name].filter(Boolean).join(' ') ||
+          'Contact';
+        const companyName = contact.account?.account_name || null;
+        const appBaseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+        const contactUrl = `${appBaseUrl}/home/sales/contacts/${contactId}`;
+
+        const emailHtml = ASSIGNMENT_NOTIFICATION_EMAIL_TEMPLATE({
+          entityType: 'Contact',
+          entityName: contactName,
+          assignerName,
+          entityUrl: contactUrl,
+          details: [
+            { label: 'Company', value: companyName },
+            { label: 'Email', value: contact.email },
+            { label: 'Phone', value: contact.phone_number },
+          ],
+          productName: 'Leadgaze',
+          appUrl: appBaseUrl,
+        });
+
+        await transporter.sendMail({
+          from: process.env.SMTP_FROM || process.env.SMTP_USER || 'noreply@leadgaze.com',
+          to: recipientEmail,
+          subject: `Contact Assigned to You - Leadgaze`,
+          html: emailHtml,
+        });
+
+        console.log('[ContactAssigneeNotification] Non-blocking email sent successfully to:', recipientEmail);
+      } catch (notificationError) {
+        console.error('[ContactAssigneeNotification] Non-blocking email dispatch error:', notificationError);
+      }
+    })();
+
     // Return with full details
-    const { data: fullAssignee } = await (supabase
+    const { data: fullAssignee } = await (adminClient
       .from('contact_assignees_with_details' as any)
       .select('*')
       .eq('id', assigneeId)

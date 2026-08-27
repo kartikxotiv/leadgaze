@@ -613,7 +613,7 @@ export default function DocumentPage() {
         <PageHeader
           title={`Documents`}          
         >
-          <div className="p-[2px]">
+          <div>
             <ListToolBar
               align="right"
               className="border-none bg-transparent p-0"
@@ -1166,7 +1166,7 @@ export default function DocumentPage() {
             <DialogTitle>Rename Document</DialogTitle>
           </DialogHeader>
           <div className="flex-1 custom-spacing-x-y py-2">
-            <div className="space-y-2">
+            <div>
               <Label>Document Name</Label>
               <Input
                 value={newName}

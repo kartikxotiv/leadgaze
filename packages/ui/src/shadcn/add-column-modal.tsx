@@ -319,7 +319,7 @@ export function AddColumnModal({
         <DialogHeader>
           <DialogTitle>Toggle Columns</DialogTitle>          
         </DialogHeader>
-        <div className='flex flex-col flex-1 gap-2 custom-spacing-x-y'>
+        <div className={cn('flex flex-col flex-1 gap-2 custom-spacing-x-y', hasCreate && !hasExisting && 'pb-1')}>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -328,7 +328,7 @@ export function AddColumnModal({
               onChange={(e) => setColumnSearch(e.target.value)}
               className="pl-9 w-full"
             />
-          </div>
+          </div>          
 
           {hasCreate && hasExisting ? (
             <Tabs value={currentTab} onValueChange={(v) => setActiveTab(v as 'create' | 'existing')} className="w-full">
@@ -451,7 +451,7 @@ export function AddColumnModal({
 
           {/* Access Type */}
           <div className="space-y-2">
-            <Label className="text-xs font-semibold text-muted-foreground tracking-wider">Permission Schema</Label>
+            <div className="primary-text-medium text-muted-foreground">Permission Schema</div>
             <div className="flex flex-col">
               {availableAccessTypes.map((type, index) => (
                 <Button
