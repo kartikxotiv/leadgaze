@@ -248,6 +248,9 @@ export default function OpportunityDetailsPage() {
     },
     onSuccess: async () => {
       toast.success('Opportunity updated successfully');
+      queryClient.invalidateQueries({ queryKey: ['opportunity', id] });
+      queryClient.invalidateQueries({ queryKey: ['opportunities'] });
+      queryClient.invalidateQueries({ queryKey: ['opportunities-kanban'] });
       await refetch();
     },
     onError: (error: unknown) => {
@@ -360,6 +363,9 @@ export default function OpportunityDetailsPage() {
       queryClient.invalidateQueries({
         queryKey: ['opportunity-assignees', id],
       });
+      queryClient.invalidateQueries({ queryKey: ['opportunity', id] });
+      queryClient.invalidateQueries({ queryKey: ['opportunities'] });
+      queryClient.invalidateQueries({ queryKey: ['opportunities-kanban'] });
       toast.success('User assigned to opportunity');
       setIsAssignModalOpen(false);
     },

@@ -54,6 +54,9 @@ export function OpportunityAssignees({
             assignOpportunityToUser(opportunityId, { assigned_to_user_id: userId }),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['opportunity-assignees', opportunityId] });
+            queryClient.invalidateQueries({ queryKey: ['opportunity', opportunityId] });
+            queryClient.invalidateQueries({ queryKey: ['opportunities'] });
+            queryClient.invalidateQueries({ queryKey: ['opportunities-kanban'] });
             toast.success('User assigned to opportunity');
             setIsModalOpen(false);
         },
@@ -68,6 +71,9 @@ export function OpportunityAssignees({
             unassignOpportunityFromUser(opportunityId, assigneeId),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['opportunity-assignees', opportunityId] });
+            queryClient.invalidateQueries({ queryKey: ['opportunity', opportunityId] });
+            queryClient.invalidateQueries({ queryKey: ['opportunities'] });
+            queryClient.invalidateQueries({ queryKey: ['opportunities-kanban'] });
             toast.success('User unassigned from opportunity');
         },
         onError: (error: any) => {

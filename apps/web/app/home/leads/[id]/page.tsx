@@ -246,6 +246,9 @@ export default function LeadDetailsPage() {
       assignLeadToUser(leadId, { assigned_to_user_id: userId }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['lead-assignees', leadId] });
+      queryClient.invalidateQueries({ queryKey: ['lead', leadId] });
+      queryClient.invalidateQueries({ queryKey: ['leads'] });
+      queryClient.invalidateQueries({ queryKey: ['leads-kanban'] });
       toast.success('User assigned to lead');
       setIsAssignModalOpen(false);
     },
@@ -375,6 +378,9 @@ export default function LeadDetailsPage() {
     },
     onSuccess: async () => {
       toast.success('Lead updated successfully');
+      queryClient.invalidateQueries({ queryKey: ['lead', leadId] });
+      queryClient.invalidateQueries({ queryKey: ['leads'] });
+      queryClient.invalidateQueries({ queryKey: ['leads-kanban'] });
       await refetch();
     },
     onError: (error: unknown) => {

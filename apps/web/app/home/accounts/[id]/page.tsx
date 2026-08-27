@@ -252,6 +252,8 @@ export default function AccountDetailsPage() {
     },
     onSuccess: async () => {
       toast.success('Account updated successfully');
+      queryClient.invalidateQueries({ queryKey: ['account', id] });
+      queryClient.invalidateQueries({ queryKey: ['accounts'] });
       await refetch();
     },
     onError: (error: unknown) => {
@@ -320,6 +322,8 @@ export default function AccountDetailsPage() {
       assignAccountToUser(id, { assigned_to_user_id: userId }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['account-assignees', id] });
+      queryClient.invalidateQueries({ queryKey: ['account', id] });
+      queryClient.invalidateQueries({ queryKey: ['accounts'] });
       toast.success('User assigned to account');
       setIsAssignModalOpen(false);
     },

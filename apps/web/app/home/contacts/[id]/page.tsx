@@ -250,6 +250,8 @@ export default function ContactDetailsPage() {
       assignContactToUser(id, { assigned_to_user_id: userId }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['contact-assignees', id] });
+      queryClient.invalidateQueries({ queryKey: ['contact', id] });
+      queryClient.invalidateQueries({ queryKey: ['contacts'] });
       toast.success('User assigned to contact');
       setIsAssignModalOpen(false);
     },
@@ -305,6 +307,7 @@ export default function ContactDetailsPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['contact', id] });
+      queryClient.invalidateQueries({ queryKey: ['contacts'] });
       toast.success('Contact updated');
     },
     onError: (error: unknown) => {
