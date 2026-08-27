@@ -64,11 +64,10 @@ const ASSIGNMENT_NOTIFICATION_EMAIL_TEMPLATE = ({
       <div style="padding: 32px 24px;">
         <!-- Assigner Info -->
         <p style="margin: 0 0 24px 0; font-size: 15px; line-height: 1.6; color: #424242;">
-          ${
-            assignerName
-              ? `<strong>${assignerName}</strong> has assigned you to manage the ${entityType.toLowerCase()} <strong>${entityName}</strong> on <strong>${productName}</strong>.`
-              : `You have been assigned to manage the ${entityType.toLowerCase()} <strong>${entityName}</strong> on <strong>${productName}</strong>.`
-          }
+          ${assignerName
+      ? `<strong>${assignerName}</strong> has assigned you to manage the ${entityType.toLowerCase()} <strong>${entityName}</strong> on <strong>${productName}</strong>.`
+      : `You have been assigned to manage the ${entityType.toLowerCase()} <strong>${entityName}</strong> on <strong>${productName}</strong>.`
+    }
         </p>
 
         <!-- Entity Details Card -->
@@ -76,13 +75,12 @@ const ASSIGNMENT_NOTIFICATION_EMAIL_TEMPLATE = ({
           <p style="margin: 0 0 12px 0; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #3953E7;">${entityType} Details</p>
           <p style="margin: 0 0 8px 0; font-size: 15px; color: #1a1a1a;"><strong>Name:</strong> ${entityName}</p>
           ${validDetails
-            .map(
-              (item, index) =>
-                `<p style="margin: 0 ${
-                  index < validDetails.length - 1 ? '0 8px 0' : '0'
-                }; font-size: 15px; color: #1a1a1a;"><strong>${item.label}:</strong> ${item.value}</p>`,
-            )
-            .join('')}
+      .map(
+        (item, index) =>
+          `<p style="margin: 0 ${index < validDetails.length - 1 ? '0 8px 0' : '0'
+          }; font-size: 15px; color: #1a1a1a;"><strong>${item.label}:</strong> ${item.value}</p>`,
+      )
+      .join('')}
         </div>
 
         <!-- CTA Button -->

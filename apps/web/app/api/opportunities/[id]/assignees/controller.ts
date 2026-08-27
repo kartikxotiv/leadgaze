@@ -4,6 +4,9 @@ import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client'
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
 import { Database } from '@kit/supabase/database';
+import ASSIGNMENT_NOTIFICATION_EMAIL_TEMPLATE from '~/constants/email.templates/assignment-notification.template';
+import { NotificationService } from '~/lib/cron/notification-service';
+import { transporter } from '~/utils/send-mail';
 import { catchAsync, successDataResponse } from '~/utils/response-handler';
 
 type OpportunityAssignee = Database['public']['Tables']['opportunity_assignees']['Row'];
@@ -80,25 +83,33 @@ const assignOpportunityToUser = catchAsync(
       );
     }
 
-    // Get the opportunity to verify it exists and get workspace_id
-    const { data: opportunity, error: opportunityError } = await supabase
-      .from('crm_opportunities')
-      .select('id, workspace_id')
-      .eq('id', opportunityId)
-      .single();
+    const adminClient = getSupabaseServerAdminClient();
 
-    if (opportunityError || !opportunity) {
+    // Get the opportunity to verify it exists and get workspace_id & details
+    const { data: opportunity, error: opportunityError } = await (adminClient
+      .from('crm_opportunities' as any)
+      .select('id, workspace_id, opportunity_name, amount, currency, account:crm_accounts(account_name)')
+      .eq('id', opportunityId)
+      .eq('is_deleted', false)
+      .maybeSingle() as any);
+
+    if (opportunityError) {
+      console.error('Opportunity lookup error:', opportunityError);
+      throw opportunityError;
+    }
+
+    if (!opportunity) {
       return NextResponse.json({ message: 'Opportunity not found' }, { status: 404 });
     }
 
     // Check if an active assignment already exists
-    const { data: existingActive } = await (supabase
+    const { data: existingActive } = await (adminClient
       .from('opportunity_assignees' as any)
       .select('id')
       .eq('opportunity_id', opportunityId)
       .eq('assigned_to_user_id', assigned_to_user_id)
       .eq('assignment_status', 'active')
-      .single() as any);
+      .maybeSingle() as any);
 
     if (existingActive) {
       return NextResponse.json(
@@ -117,15 +128,13 @@ const assignOpportunityToUser = catchAsync(
     }
 
     // Check if an inactive assignment exists - reactivate it instead of inserting
-    const { data: existingInactive } = await (supabase
+    const { data: existingInactive } = await (adminClient
       .from('opportunity_assignees' as any)
       .select('id')
       .eq('opportunity_id', opportunityId)
       .eq('assigned_to_user_id', assigned_to_user_id)
       .eq('assignment_status', 'inactive')
-      .single() as any);
-
-    const adminClient = getSupabaseServerAdminClient();
+      .maybeSingle() as any);
 
     let assigneeId: string;
 
@@ -171,8 +180,60 @@ const assignOpportunityToUser = catchAsync(
       assigneeId = assignee.id;
     }
 
+    // AWAT void non-blocking email dispatch (no DB persistence / subscription tables written)
+    void (async () => {
+      try {
+        const recipientEmail = await NotificationService.getUserEmail(assigned_to_user_id);
+        if (!recipientEmail) return;
+
+        const { data: assignerAccount } = await (adminClient
+          .from('accounts' as any)
+          .select('name')
+          .eq('id', user.id)
+          .maybeSingle() as any);
+
+        const assignerName = assignerAccount?.name || 'A team member';
+        const opportunityName = opportunity.opportunity_name || 'Opportunity';
+        const accountName = opportunity.account?.account_name || null;
+        const appBaseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+        const opportunityUrl = `${appBaseUrl}/home/sales/opportunities/${opportunityId}`;
+
+        const formattedAmount =
+          opportunity.amount !== undefined && opportunity.amount !== null
+            ? new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: opportunity.currency || 'USD',
+              }).format(Number(opportunity.amount))
+            : null;
+
+        const emailHtml = ASSIGNMENT_NOTIFICATION_EMAIL_TEMPLATE({
+          entityType: 'Opportunity',
+          entityName: opportunityName,
+          assignerName,
+          entityUrl: opportunityUrl,
+          details: [
+            { label: 'Account', value: accountName },
+            { label: 'Value', value: formattedAmount },
+          ],
+          productName: 'Leadgaze',
+          appUrl: appBaseUrl,
+        });
+
+        await transporter.sendMail({
+          from: process.env.SMTP_FROM || process.env.SMTP_USER || 'noreply@leadgaze.com',
+          to: recipientEmail,
+          subject: `You have been assigned an Opportunity - Leadgaze`,
+          html: emailHtml,
+        });
+
+        console.log('[OpportunityAssigneeNotification] Non-blocking email sent successfully to:', recipientEmail);
+      } catch (notificationError) {
+        console.error('[OpportunityAssigneeNotification] Non-blocking email dispatch error:', notificationError);
+      }
+    })();
+
     // Return with full details
-    const { data: fullAssignee } = await (supabase
+    const { data: fullAssignee } = await (adminClient
       .from('opportunity_assignees_with_details' as any)
       .select('*')
       .eq('id', assigneeId)

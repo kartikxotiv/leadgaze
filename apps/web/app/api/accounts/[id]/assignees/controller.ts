@@ -4,6 +4,9 @@ import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client'
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
 import { Database } from '@kit/supabase/database';
+import ASSIGNMENT_NOTIFICATION_EMAIL_TEMPLATE from '~/constants/email.templates/assignment-notification.template';
+import { NotificationService } from '~/lib/cron/notification-service';
+import { transporter } from '~/utils/send-mail';
 import { catchAsync, successDataResponse } from '~/utils/response-handler';
 
 type AccountAssignee = Database['public']['Tables']['account_assignees']['Row'];
@@ -80,25 +83,33 @@ const assignAccountToUser = catchAsync(
       );
     }
 
-    // Get the account to verify it exists and get workspace_id
-    const { data: account, error: accountError } = await supabase
-      .from('crm_accounts')
-      .select('id, workspace_id')
-      .eq('id', accountId)
-      .single();
+    const adminClient = getSupabaseServerAdminClient();
 
-    if (accountError || !account) {
+    // Get the account to verify it exists and get workspace_id & details
+    const { data: account, error: accountError } = await (adminClient
+      .from('crm_accounts' as any)
+      .select('id, workspace_id, account_name, website')
+      .eq('id', accountId)
+      .eq('is_deleted', false)
+      .maybeSingle() as any);
+
+    if (accountError) {
+      console.error('Account lookup error:', accountError);
+      throw accountError;
+    }
+
+    if (!account) {
       return NextResponse.json({ message: 'Account not found' }, { status: 404 });
     }
 
     // Check if an active assignment already exists
-    const { data: existingActive } = await (supabase
+    const { data: existingActive } = await (adminClient
       .from('account_assignees' as any)
       .select('id')
       .eq('account_id', accountId)
       .eq('assigned_to_user_id', assigned_to_user_id)
       .eq('assignment_status', 'active')
-      .single() as any);
+      .maybeSingle() as any);
 
     if (existingActive) {
       return NextResponse.json(
@@ -117,15 +128,14 @@ const assignAccountToUser = catchAsync(
     }
 
     // Check if an inactive assignment exists - reactivate it instead of inserting
-    const { data: existingInactive } = await (supabase
+    const { data: existingInactive } = await (adminClient
       .from('account_assignees' as any)
       .select('id')
       .eq('account_id', accountId)
       .eq('assigned_to_user_id', assigned_to_user_id)
       .eq('assignment_status', 'inactive')
-      .single() as any);
+      .maybeSingle() as any);
 
-    const adminClient = getSupabaseServerAdminClient();
     let assigneeId: string;
 
     if (existingInactive) {
@@ -172,8 +182,50 @@ const assignAccountToUser = catchAsync(
       assigneeId = assignee.id;
     }
 
+    // AWAT void non-blocking email dispatch (no DB persistence / subscription tables written)
+    void (async () => {
+      try {
+        const recipientEmail = await NotificationService.getUserEmail(assigned_to_user_id);
+        if (!recipientEmail) return;
+
+        const { data: assignerAccount } = await (adminClient
+          .from('accounts' as any)
+          .select('name')
+          .eq('id', user.id)
+          .maybeSingle() as any);
+
+        const assignerName = assignerAccount?.name || 'A team member';
+        const accountName = account.account_name || 'Account';
+        const appBaseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+        const accountUrl = `${appBaseUrl}/home/sales/accounts/${accountId}`;
+
+        const emailHtml = ASSIGNMENT_NOTIFICATION_EMAIL_TEMPLATE({
+          entityType: 'Account',
+          entityName: accountName,
+          assignerName,
+          entityUrl: accountUrl,
+          details: [
+            { label: 'Website', value: account.website },
+          ],
+          productName: 'Leadgaze',
+          appUrl: appBaseUrl,
+        });
+
+        await transporter.sendMail({
+          from: process.env.SMTP_FROM || process.env.SMTP_USER || 'noreply@leadgaze.com',
+          to: recipientEmail,
+          subject: `You have been assigned an Account - Leadgaze`,
+          html: emailHtml,
+        });
+
+        console.log('[AccountAssigneeNotification] Non-blocking email sent successfully to:', recipientEmail);
+      } catch (notificationError) {
+        console.error('[AccountAssigneeNotification] Non-blocking email dispatch error:', notificationError);
+      }
+    })();
+
     // Return with full details
-    const { data: fullAssignee } = await (supabase
+    const { data: fullAssignee } = await (adminClient
       .from('account_assignees_with_details' as any)
       .select('*')
       .eq('id', assigneeId)
