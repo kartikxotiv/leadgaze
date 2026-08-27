@@ -601,10 +601,10 @@ function PipelineOverview({ metrics }: { metrics: DashboardMetrics }) {
       {stages.map((stage, index) => (
         <div key={stage.label} className="flex flex-col gap-1">
           <div className="flex justify-between items-center">
-            <span className="secondary-text-small-semibold text-leadgaze-dark dark:text-white">
+            <span className="primary-text-medium text-leadgaze-dark dark:text-white">
               {stage.label}
             </span>
-            <span className="secondary-text-small-semibold font-bold text-leadgaze-dark dark:text-white">
+            <span className="primary-text-medium font-bold text-leadgaze-dark dark:text-white">
               {stage.value}
             </span>
           </div>

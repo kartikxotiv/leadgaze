@@ -231,7 +231,7 @@ export default function AuditLogsPage() {
           // (${count})
           // description="Track all activities and changes within your workspace"
         >
-          <div className="p-[2px]">
+          <div>
             <ListToolBar
               align="right"
               className="border-none bg-transparent p-0"

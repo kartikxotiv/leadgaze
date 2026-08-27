@@ -151,7 +151,7 @@ export function ServiceCloudReportsPage({
         })}
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-2 w-full">
+      <div className="flex flex-col lg:flex-row gap-2 w-full mb-1">
         <div className="space-y-2 w-full lg:w-[65%]">
           <CardWidgetContainer
             title="Ticket Status Distribution"
@@ -209,7 +209,7 @@ export function ServiceCloudReportsPage({
                 <div key="customer">
                   <Link
                     href="/home/services/customers"
-                    className="secondary-text-small-semibold hover:underline "
+                    className="primary-text-medium hover:underline "
                   >
                     {customer.name}
                   </Link>
@@ -329,11 +329,11 @@ export function ServiceCloudReportsPage({
                     return (
                       <div key={priority.id} className={itemClass}>
                         <div>
-                          <div className="secondary-text-small-semibold" style={{ color: textColor || 'inherit' }}>{priority.name}</div>
+                          <div className="primary-text-medium text-leadgaze-dark dark:text-white" style={{ color: textColor || 'inherit' }}>{priority.name}</div>
                           <div className="secondary-text-small mt-1" style={{ color: subTextColor || 'var(--color-leadgaze-muted)' }}>{`${priority.openCount} open`}</div>
                         </div>
                         <Badge 
-                          className="px-2 py-1 !secondary-text-small-semibold rounded-sm hover:opacity-100"
+                          className="px-2 py-1 !primary-text-medium rounded-sm hover:opacity-100"
                           style={{ backgroundColor: badgeBg, color: badgeColor, border: 'none' }}
                         >
                           {priority.count}
@@ -449,11 +449,11 @@ function MetricBar({
     <div>
       <div className="mb-2 flex items-center justify-between gap-4">
         <div className="flex items-center gap-1.5 text-sm">
-          <span className="secondary-text-small-semibold text-leadgaze-dark dark:text-white">{label}</span>
+          <span className="primary-text-medium text-leadgaze-dark dark:text-white">{label}</span>
           <span className="text-muted-foreground text-xs">•</span>
           <span className="text-muted-foreground text-xs">{description}</span>
         </div>
-        <div className="secondary-text-small-semibold font-bold text-leadgaze-dark dark:text-white">{value}</div>
+        <div className="primary-text-medium font-bold text-leadgaze-dark dark:text-white">{value}</div>
       </div>
       <div className="bar-bg h-2 w-full overflow-hidden rounded-full bg-[#EDEEF0]">
         <div

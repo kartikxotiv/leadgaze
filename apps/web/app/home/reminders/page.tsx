@@ -1409,6 +1409,7 @@ export default function RemindersPage() {
                 !formData.due_date ||
                 updateMutation.isPending
               }
+              className="bg-leadgaze-primary hover:bg-leadgaze-primary text-primary-foreground dark:text-white secondary-text-small-bold gap-1.5 px-2"
             >
               {updateMutation.isPending && (
                 <Loader2 className="h-4 w-4 animate-spin" />

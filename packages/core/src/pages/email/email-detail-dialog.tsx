@@ -47,8 +47,8 @@ function RecipientLine({ label, recipients }: { label: string; recipients: strin
   if (recipients.length === 0) return null;
 
   return (
-    <div className="text-muted-foreground flex gap-2 text-xs">
-      <span className="w-10 shrink-0 font-medium text-foreground">{label}</span>
+    <div className="text-muted-foreground flex gap-2 primary-text-medium text-leadgaze-dark dark:text-white">
+      <span className="w-10 shrink-0 primary-text-medium text-leadgaze-dark dark:text-white">{label}</span>
       <span className="min-w-0 break-words">{recipients.join(', ')}</span>
     </div>
   );
@@ -303,7 +303,7 @@ export function CoreEmailDetailDialog({
           )}
 
           {/* Active Email View */}
-          <div className="shrink-0 space-y-2 border-b bg-white px-5 py-3 dark:bg-zinc-950">
+          <div className="shrink-0 space-y-2 border-b bg-white custom-spacing-x-y py-2 dark:bg-zinc-950">
             <div className="flex items-start justify-between gap-3">
               <div className="flex min-w-0 items-start gap-2.5">
                 <div className="bg-primary/10 text-primary flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold mt-0.5">
@@ -311,10 +311,10 @@ export function CoreEmailDetailDialog({
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="truncate text-xs font-semibold text-zinc-900 dark:text-zinc-100">
+                    <span className="truncate primary-text-medium text-leadgaze-dark dark:text-white">
                       {email.direction === 'inbound' ? sender : recipient}
                     </span>
-                    <Badge variant="outline" className="text-[9px] uppercase px-1.5 py-0 h-4">
+                    <Badge variant="outline" className="text-[9px] uppercase text-leadgaze-dark px-1.5 py-0 h-4">
                       {email.direction}
                     </Badge>
                   </div>
@@ -333,8 +333,13 @@ export function CoreEmailDetailDialog({
             </div>
           </div>
 
+<<<<<<< HEAD
           <div className="p-5 text-sm">
             <div className="prose prose-sm dark:prose-invert max-w-none text-zinc-800 dark:text-zinc-200 [&_ol]:list-decimal [&_ol]:ml-4 [&_ul]:list-disc [&_ul]:ml-4">
+=======
+          <div className="custom-spacing-x-y py-2 text-sm">
+            <div className="prose prose-sm dark:prose-invert max-w-none text-zinc-800 dark:text-zinc-200">
+>>>>>>> 62f1afb8a4a6ca2f36c1d80aa8e98e3800e996ec
               {email.html_body || email.body ? (
                 <div
                   className="email-content leading-relaxed"

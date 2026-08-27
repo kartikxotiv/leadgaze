@@ -200,6 +200,13 @@ export function EntityNotes({ entityType, entityId }: EntityNotesProps) {
                 value={newNoteContent}
                 onChange={(e) => setNewNoteContent(e.target.value)}
                 rows={4}
+                autoFocus
+                onFocus={(e) => {
+                  e.currentTarget.setSelectionRange(
+                    e.currentTarget.value.length,
+                    e.currentTarget.value.length
+                  );
+                }}
               />
             </div>
             <DialogFooter>
