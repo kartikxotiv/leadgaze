@@ -302,16 +302,24 @@ function getActivityUIDetails(activity: any) {
     case 'priority_changed':
       return { icon: <Flag className="h-3.5 w-3.5 text-orange-500" />, module: 'Priority', action: 'UPDATED', color: 'blue' };
     case 'assigned':
+    case 'ticket_assigned':
+    case 'ticket_reassigned':
       return { icon: <UserPlus className="h-3.5 w-3.5 text-indigo-500" />, module: 'Assignment', action: 'UPDATED', color: 'blue' };
     case 'email_sent':
+    case 'agent_replied':
       return { icon: <Mail className="h-3.5 w-3.5 text-blue-500" />, module: 'Conversation', action: 'SENT', color: 'blue' };
     case 'email_received':
+    case 'customer_replied':
       return { icon: <Mail className="h-3.5 w-3.5 text-purple-500" />, module: 'Conversation', action: 'RECEIVED', color: 'blue' };
+    case 'email_linked':
+      return { icon: <Mail className="h-3.5 w-3.5 text-blue-500" />, module: 'Conversation', action: 'LINKED', color: 'blue' };
     case 'time_logged':
       return { icon: <Clock3 className="h-3.5 w-3.5 text-sky-500" />, module: 'Time Log', action: 'CREATED', color: 'emerald' };
     case 'note_added':
+    case 'internal_note_added':
       return { icon: <FileText className="h-3.5 w-3.5 text-purple-500" />, module: 'Note', action: 'CREATED', color: 'emerald' };
     case 'document_uploaded':
+    case 'document_linked':
       return { icon: <FileText className="h-3.5 w-3.5 text-gray-500" />, module: 'Document', action: 'UPLOADED', color: 'emerald' };
     case 'deleted':
       return { icon: <Trash2 className="h-3.5 w-3.5 text-red-500" />, module: 'Ticket', action: 'DELETED', color: 'rose' };
@@ -691,6 +699,54 @@ export function ServiceCloudTicketDetailPage({
     uploadDocumentMutation.mutate(payload);
   };
 
+  const allActivities = useMemo(() => {
+    const combined = [...(data?.activities ?? [])];
+
+    // Merge notes
+    notes.forEach((note: any) => {
+      combined.push({
+        id: `note-${note.id}`,
+        event_type: 'note_added',
+        created_at: note.created_at,
+        actor: { name: note.created_by_user?.name || (data?.lookups?.members ?? []).find((m: any) => m.id === note.created_by)?.name },
+        summary: `Note added: ${(note.note || note.content || '').substring(0, 50)}${(note.note || note.content || '').length > 50 ? '...' : ''}`,
+        from_value: null,
+        to_value: null,
+      });
+    });
+
+    // Merge documents
+    documents.forEach((doc: any) => {
+      combined.push({
+        id: `doc-${doc.id}`,
+        event_type: 'document_uploaded',
+        created_at: doc.created_at,
+        actor: { name: (data?.lookups?.members ?? []).find((m: any) => m.id === doc.created_by)?.name },
+        summary: `Document uploaded: ${doc.name}`,
+        from_value: null,
+        to_value: null,
+      });
+    });
+    
+    // Merge core.email_relations if they don't have triggers (some emails might be missing)
+    (data?.emails ?? []).forEach((item: any) => {
+      const emailObj = item.email;
+      if (emailObj && !combined.some(a => a.to_value?.email_id === emailObj.id || a.metadata?.email_id === emailObj.id)) {
+        combined.push({
+          id: `email-${emailObj.id}`,
+          event_type: emailObj.direction === 'inbound' ? 'customer_replied' : (emailObj.direction === 'outbound' ? 'agent_replied' : 'email_linked'),
+          created_at: emailObj.received_at || emailObj.sent_at || emailObj.created_at,
+          actor: null,
+          summary: `${emailObj.direction === 'inbound' ? 'Customer replied' : (emailObj.direction === 'outbound' ? 'Agent replied' : 'Email linked')}: ${emailObj.subject || '(No Subject)'}`,
+          from_value: null,
+          to_value: null,
+        });
+      }
+    });
+
+    return combined.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  }, [data?.activities, notes, documents, data?.lookups?.members, data?.emails]);
+
   if (isLoading || permissionsLoading) {
     return <ServiceCloudTicketDetailSkeleton />;
   }
@@ -754,6 +810,7 @@ export function ServiceCloudTicketDetailPage({
     (sum: number, entry: any) => sum + Number(entry.duration_seconds ?? 0),
     0,
   );
+
 
   const isUpdating = updateMutation.isPending;
   const dueValue =
@@ -1484,7 +1541,7 @@ export function ServiceCloudTicketDetailPage({
                 }
               >
                 <div className="px-0 mb-2">
-                  {(data.activities ?? []).length === 0 ? (
+                  {allActivities.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-8 text-center">
                       <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#F0F3FF] dark:bg-slate-900">
                         <Clock className="h-6 w-6 text-gray-500" />
@@ -1493,7 +1550,7 @@ export function ServiceCloudTicketDetailPage({
                     </div>
                   ) : (
                     <div className="max-h-[350px] overflow-y-auto divide-y divide-gray-100 border border-gray-200 bg-white dark:divide-gray-800/60 dark:border-gray-800 dark:bg-slate-950">
-                      {data.activities.map((activity: any) => {
+                      {allActivities.map((activity: any) => {
                         const details = getActivityUIDetails(activity);
                         const name = activity.summary || eventLabel(activity.event_type);
 
