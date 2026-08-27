@@ -2243,6 +2243,8 @@ export default function MeetingsPage() {
       );
     },
     enabled: !!workspace?.id,
+    placeholderData: (prev: any) => prev,
+    staleTime: 30 * 1000,
   });
 
   const meetings = useMemo(() => {
@@ -2287,6 +2289,7 @@ export default function MeetingsPage() {
       return res?.data ?? [];
     },
     enabled: !!workspace?.id,
+    staleTime: 5 * 60 * 1000,
   });
   const { data: contacts = [] } = useQuery({
     queryKey: ['contacts', workspace?.id],
@@ -2296,6 +2299,7 @@ export default function MeetingsPage() {
       return res?.data ?? [];
     },
     enabled: !!workspace?.id,
+    staleTime: 5 * 60 * 1000,
   });
   const { data: crmAccounts = [] } = useQuery({
     queryKey: ['crm-accounts', workspace?.id],
@@ -2305,6 +2309,7 @@ export default function MeetingsPage() {
       return res?.data ?? [];
     },
     enabled: !!workspace?.id,
+    staleTime: 5 * 60 * 1000,
   });
   const { data: opportunities = [] } = useQuery({
     queryKey: ['opportunities', workspace?.id],
@@ -2314,6 +2319,7 @@ export default function MeetingsPage() {
       return res?.data ?? [];
     },
     enabled: !!workspace?.id,
+    staleTime: 5 * 60 * 1000,
   });
 
   const deleteMutation = useMutation({

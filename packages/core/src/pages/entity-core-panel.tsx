@@ -43,6 +43,7 @@ type CoreEntityPanelProps = {
   entityType: string;
   entityId: string;
   capabilities?: Array<'notes' | 'meetings' | 'emails' | 'documents' | 'activities' | 'reminders'>;
+  defaultTab?: string;
 };
 
 const defaultCapabilities: NonNullable<CoreEntityPanelProps['capabilities']> = [
@@ -66,12 +67,31 @@ function entityPayload({ workspaceId, entityType, entityId }: Omit<CoreEntityPan
   };
 }
 
+// =============================================================================
+// LAZY TAB WRAPPER
+// Panels only mount (and therefore only fetch) the first time their tab
+// is activated. Subsequent tab visits are served from the React Query cache
+// (staleTime = 2 min) — no extra network calls.
+// =============================================================================
+
+function useLazyTabs(first: string) {
+  const [visited, setVisited] = useState<Set<string>>(new Set([first]));
+  const onTabChange = (value: string) => setVisited((prev) => {
+    if (prev.has(value)) return prev;
+    const next = new Set(prev);
+    next.add(value);
+    return next;
+  });
+  return { visited, onTabChange };
+}
+
 export function CoreEntityPanel(props: CoreEntityPanelProps) {
   const capabilities = props.capabilities ?? defaultCapabilities;
-  const first = capabilities[0] ?? 'notes';
+  const first = props.defaultTab ?? capabilities[0] ?? 'notes';
+  const { visited, onTabChange } = useLazyTabs(first);
 
   return (
-    <Tabs defaultValue={first} className="grid gap-4">
+    <Tabs defaultValue={first} className="grid gap-4" onValueChange={onTabChange}>
       {capabilities.length > 1 && (
         <TabsList className="flex h-auto flex-wrap justify-start">
           {capabilities.includes('notes') && <TabsTrigger value="notes">Notes</TabsTrigger>}
@@ -83,12 +103,36 @@ export function CoreEntityPanel(props: CoreEntityPanelProps) {
         </TabsList>
       )}
 
-      {capabilities.includes('notes') && <TabsContent value="notes"><NotesPanel {...props} /></TabsContent>}
-      {capabilities.includes('meetings') && <TabsContent value="meetings"><MeetingsPanel {...props} /></TabsContent>}
-      {capabilities.includes('emails') && <TabsContent value="emails"><EmailsPanel {...props} /></TabsContent>}
-      {capabilities.includes('documents') && <TabsContent value="documents"><DocumentsPanel {...props} /></TabsContent>}
-      {capabilities.includes('activities') && <TabsContent value="activities"><ActivitiesPanel {...props} /></TabsContent>}
-      {capabilities.includes('reminders') && <TabsContent value="reminders"><RemindersPanel {...props} /></TabsContent>}
+      {capabilities.includes('notes') && (
+        <TabsContent value="notes">
+          {visited.has('notes') && <NotesPanel {...props} />}
+        </TabsContent>
+      )}
+      {capabilities.includes('meetings') && (
+        <TabsContent value="meetings">
+          {visited.has('meetings') && <MeetingsPanel {...props} />}
+        </TabsContent>
+      )}
+      {capabilities.includes('emails') && (
+        <TabsContent value="emails">
+          {visited.has('emails') && <EmailsPanel {...props} />}
+        </TabsContent>
+      )}
+      {capabilities.includes('documents') && (
+        <TabsContent value="documents">
+          {visited.has('documents') && <DocumentsPanel {...props} />}
+        </TabsContent>
+      )}
+      {capabilities.includes('activities') && (
+        <TabsContent value="activities">
+          {visited.has('activities') && <ActivitiesPanel {...props} />}
+        </TabsContent>
+      )}
+      {capabilities.includes('reminders') && (
+        <TabsContent value="reminders">
+          {visited.has('reminders') && <RemindersPanel {...props} />}
+        </TabsContent>
+      )}
     </Tabs>
   );
 }
@@ -108,14 +152,17 @@ function NotesPanel(props: CoreEntityPanelProps) {
     queryKey,
     queryFn: () => getNotesService(props.workspaceId, props.entityType, props.entityId, statusFilter),
     enabled: !!props.workspaceId && !!props.entityId,
+    // Cache for 2 minutes — switching tabs won't re-fetch recently loaded notes.
+    staleTime: 2 * 60 * 1000,
   });
 
   const createMutation = useMutation({
     mutationFn: createNoteService,
-    onSuccess: () => {
+    onSuccess: (newNote) => {
       setNote('');
       toast.success('Note added');
-      queryClient.invalidateQueries({ queryKey });
+      // Optimistic update: prepend new note to avoid a full refetch.
+      queryClient.setQueryData<any[]>(queryKey, (prev = []) => [newNote, ...prev]);
     },
     onError: () => {
       toast.error('Failed to add note');
@@ -124,7 +171,7 @@ function NotesPanel(props: CoreEntityPanelProps) {
 
   const updateMutation = useMutation({
     mutationFn: updateNoteService,
-    onSuccess: (data, variables) => {
+    onSuccess: (updated, variables) => {
       if (variables.is_closed !== undefined) {
         toast.success(variables.is_closed ? 'Note closed' : 'Note reopened');
       } else {
@@ -132,7 +179,21 @@ function NotesPanel(props: CoreEntityPanelProps) {
       }
       setIsEditOpen(false);
       setEditingNote(null);
-      queryClient.invalidateQueries({ queryKey });
+      // Optimistic update: replace the updated note in-place.
+      queryClient.setQueryData<any[]>(queryKey, (prev = []) =>
+        prev.map((n) => (n.id === (updated?.id ?? variables.id) ? { ...n, ...updated } : n))
+      );
+      // A note closed/reopened changes filter visibility — invalidate the other filter bucket.
+      if (variables.is_closed !== undefined) {
+        const otherFilter = statusFilter === 'active' ? 'closed' : 'active';
+        queryClient.invalidateQueries({
+          queryKey: ['core', 'notes', props.workspaceId, props.entityType, props.entityId, otherFilter],
+        });
+        // Remove the note from the current filter list (it moved to the other bucket).
+        queryClient.setQueryData<any[]>(queryKey, (prev = []) =>
+          prev.filter((n) => n.id !== (updated?.id ?? variables.id))
+        );
+      }
     },
     onError: () => {
       toast.error('Failed to update note');
@@ -141,9 +202,12 @@ function NotesPanel(props: CoreEntityPanelProps) {
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => deleteNoteService(props.workspaceId, id),
-    onSuccess: () => {
+    onSuccess: (_, deletedId) => {
       toast.success('Note deleted');
-      queryClient.invalidateQueries({ queryKey });
+      // Optimistic update: remove deleted note immediately.
+      queryClient.setQueryData<any[]>(queryKey, (prev = []) =>
+        prev.filter((n) => n.id !== deletedId)
+      );
     },
     onError: () => {
       toast.error('Failed to delete note');
@@ -287,9 +351,24 @@ function MeetingsPanel(props: CoreEntityPanelProps) {
   const [form, setForm] = useState({ title: '', description: '', start_time: '', end_time: '', location: '' });
   const [activeTab, setActiveTab] = useState<'upcoming' | 'past'>('upcoming');
   const queryKey = ['core', 'meetings', props.workspaceId, props.entityType, props.entityId];
-  const { data: meetings = [] } = useQuery<any[]>({ queryKey, queryFn: () => getMeetingsService(props.workspaceId, props.entityType, props.entityId), enabled: !!props.workspaceId && !!props.entityId });
-  const createMutation = useMutation({ mutationFn: createMeetingService, onSuccess: () => { setForm({ title: '', description: '', start_time: '', end_time: '', location: '' }); queryClient.invalidateQueries({ queryKey }); } });
-  const deleteMutation = useMutation({ mutationFn: (id: string) => deleteMeetingService(props.workspaceId, id), onSuccess: () => queryClient.invalidateQueries({ queryKey }) });
+  const { data: meetings = [] } = useQuery<any[]>({
+    queryKey,
+    queryFn: () => getMeetingsService(props.workspaceId, props.entityType, props.entityId),
+    enabled: !!props.workspaceId && !!props.entityId,
+    // Cache for 2 minutes — switching away and back won't re-fetch.
+    staleTime: 2 * 60 * 1000,
+  });
+  const createMutation = useMutation({
+    mutationFn: createMeetingService,
+    onSuccess: () => {
+      setForm({ title: '', description: '', start_time: '', end_time: '', location: '' });
+      queryClient.invalidateQueries({ queryKey });
+    }
+  });
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => deleteMeetingService(props.workspaceId, id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey })
+  });
 
   const filteredMeetings = React.useMemo(() => {
     const now = new Date();
@@ -340,8 +419,19 @@ function EmailsPanel(props: CoreEntityPanelProps) {
   const { formatDateTime } = useLocalization();
   const [form, setForm] = useState({ to_email: '', subject: '', body: '' });
   const queryKey = ['core', 'emails', props.workspaceId, props.entityType, props.entityId];
-  const { data: emails = [] } = useQuery<any[]>({ queryKey, queryFn: () => getEmailsService(props.workspaceId, props.entityType, props.entityId), enabled: !!props.workspaceId && !!props.entityId });
-  const sendMutation = useMutation({ mutationFn: sendEmailService, onSuccess: () => { setForm({ to_email: '', subject: '', body: '' }); queryClient.invalidateQueries({ queryKey }); } });
+  const { data: emails = [] } = useQuery<any[]>({
+    queryKey,
+    queryFn: () => getEmailsService(props.workspaceId, props.entityType, props.entityId),
+    enabled: !!props.workspaceId && !!props.entityId,
+    staleTime: 2 * 60 * 1000,
+  });
+  const sendMutation = useMutation({
+    mutationFn: sendEmailService,
+    onSuccess: () => {
+      setForm({ to_email: '', subject: '', body: '' });
+      queryClient.invalidateQueries({ queryKey });
+    }
+  });
 
   return (
     <section className="grid gap-4">
@@ -362,7 +452,12 @@ function DocumentsPanel(props: CoreEntityPanelProps) {
   const queryClient = useQueryClient();
   const [form, setForm] = useState({ name: '', file: null as File | null, file_url: '', category: '', description: '' });
   const queryKey = ['core', 'documents', props.workspaceId, props.entityType, props.entityId];
-  const { data: documents = [] } = useQuery<any[]>({ queryKey, queryFn: () => getDocumentsService(props.workspaceId, props.entityType, props.entityId), enabled: !!props.workspaceId && !!props.entityId });
+  const { data: documents = [] } = useQuery<any[]>({
+    queryKey,
+    queryFn: () => getDocumentsService(props.workspaceId, props.entityType, props.entityId),
+    enabled: !!props.workspaceId && !!props.entityId,
+    staleTime: 2 * 60 * 1000,
+  });
   const uploadMutation = useMutation({ mutationFn: uploadDocumentService, onSuccess: () => { setForm({ name: '', file: null, file_url: '', category: '', description: '' }); queryClient.invalidateQueries({ queryKey }); } });
   const deleteMutation = useMutation({ mutationFn: (id: string) => deleteDocumentService(props.workspaceId, id), onSuccess: () => queryClient.invalidateQueries({ queryKey }) });
   const canUpload = form.name.trim() && (form.file || form.file_url.trim());
@@ -395,7 +490,12 @@ function DocumentsPanel(props: CoreEntityPanelProps) {
 
 function ActivitiesPanel(props: CoreEntityPanelProps) {
   const { formatDateTime } = useLocalization();
-  const { data: activities = [] } = useQuery<any[]>({ queryKey: ['core', 'activities', props.workspaceId, props.entityType, props.entityId], queryFn: () => getActivitiesService(props.workspaceId, props.entityType, props.entityId), enabled: !!props.workspaceId && !!props.entityId });
+  const { data: activities = [] } = useQuery<any[]>({
+    queryKey: ['core', 'activities', props.workspaceId, props.entityType, props.entityId],
+    queryFn: () => getActivitiesService(props.workspaceId, props.entityType, props.entityId),
+    enabled: !!props.workspaceId && !!props.entityId,
+    staleTime: 2 * 60 * 1000,
+  });
   return <List empty="No activities logged.">{activities.map((item) => <Row key={item.id} title={item.title} meta={`${item.activity_type} · ${formatDateTime(item.created_at)}`} description={item.description} />)}</List>;
 }
 
@@ -404,7 +504,12 @@ function RemindersPanel(props: CoreEntityPanelProps) {
   const { formatDateTime } = useLocalization();
   const [form, setForm] = useState({ title: '', description: '', due_at: '', priority: 'medium' });
   const queryKey = ['core', 'reminders', props.workspaceId, props.entityType, props.entityId];
-  const { data: reminders = [] } = useQuery<any[]>({ queryKey, queryFn: () => getRemindersService(props.workspaceId, props.entityType, props.entityId), enabled: !!props.workspaceId && !!props.entityId });
+  const { data: reminders = [] } = useQuery<any[]>({
+    queryKey,
+    queryFn: () => getRemindersService(props.workspaceId, props.entityType, props.entityId),
+    enabled: !!props.workspaceId && !!props.entityId,
+    staleTime: 2 * 60 * 1000,
+  });
   const createMutation = useMutation({ mutationFn: createReminderService, onSuccess: () => { setForm({ title: '', description: '', due_at: '', priority: 'medium' }); queryClient.invalidateQueries({ queryKey }); } });
   const completeMutation = useMutation({ mutationFn: (id: string) => completeReminderService(props.workspaceId, id), onSuccess: () => queryClient.invalidateQueries({ queryKey }) });
   const deleteMutation = useMutation({ mutationFn: (id: string) => deleteReminderService(props.workspaceId, id), onSuccess: () => queryClient.invalidateQueries({ queryKey }) });

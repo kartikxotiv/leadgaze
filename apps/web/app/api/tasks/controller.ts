@@ -63,40 +63,17 @@ export const getTasks = catchAsync(
     let uniqueTasks: any[] = [];
 
     if (entityType && entityId) {
-      const entityIds = await getRelatedEntityIds(supabase, entityType, entityId);
+      const { data, error } = await supabase
+        .rpc('get_core_tasks', {
+          p_workspace_id: workspaceId,
+          p_entity_type: entityType,
+          p_entity_id: entityId,
+          p_status: status,
+        });
 
-      const relationPromises = entityIds.map(async ({ entity_type, entity_id }) => {
-        const dbType = toDbEntityType(entity_type);
-        const { data } = await supabase
-          .schema('core')
-          .from('task_relations')
-          .select('task_id')
-          .eq('workspace_id', workspaceId)
-          .eq('entity_type', dbType)
-          .eq('entity_id', entity_id);
-        return data || [];
-      });
-
-      const relationResults = await Promise.all(relationPromises);
-      const taskIds = Array.from(
-        new Set(relationResults.flat().map((r: any) => r.task_id))
-      );
-
-      if (taskIds.length === 0) {
-        uniqueTasks = [];
-      } else {
-        const { data, error } = await supabase
-          .schema('core')
-          .from('tasks')
-          .select('*, task_relations(*)')
-          .eq('workspace_id', workspaceId)
-          .in('id', taskIds)
-          .eq('is_deleted', false)
-          .eq('is_completed', isCompletedFilter);
-
-        if (error) throw error;
-        uniqueTasks = data || [];
-      }
+      if (error) throw error;
+      // Handle both paginated object { data: [...] } and raw array responses
+      uniqueTasks = (data as any)?.data || data || [];
     } else {
       const { data, error } = await supabase
         .schema('core')

@@ -104,6 +104,7 @@ export function EntityEmails({
     queryFn: () =>
       getCoreEntityEmailActivityService(workspace!.id, entityType, entityId),
     enabled: canManageEmail && !!entityId && !!workspace?.id,
+    staleTime: 60 * 1000,
   });
 
   const { data: coreEmailAccounts = [] } = useQuery({

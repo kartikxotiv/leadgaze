@@ -154,6 +154,8 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
       return getRemindersService(workspace.id, entityType, entityId, apiStatus);
     },
     enabled: !!workspace?.id,
+    // Avoid re-fetching on every focus — reminders are stable for 60 seconds.
+    staleTime: 60 * 1000,
   });
 
   // Split into active / sent views; limit sent to last 5 sorted by completion date
@@ -184,11 +186,9 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
       toast.success('Reminder set');
       setIsOpen(false);
       setFormData({ title: '', description: '', due_date: '', priority: 'medium' });
+      // Only invalidate the targeted entity's reminder cache, not the entire app.
       queryClient.invalidateQueries({
         queryKey: ['reminders', entityType, entityId, workspace?.id],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ['reminders'],
       });
     },
     onError: () => toast.error('Failed to set reminder'),
@@ -202,11 +202,9 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
       setIsOpen(false);
       setEditingReminder(null);
       setFormData({ title: '', description: '', due_date: '', priority: 'medium' });
+      // Only invalidate the targeted entity's reminder cache, not the entire app.
       queryClient.invalidateQueries({
         queryKey: ['reminders', entityType, entityId, workspace?.id],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ['reminders'],
       });
     },
     onError: () => toast.error('Failed to update reminder'),
@@ -218,11 +216,9 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
       toast.success('Reminder deleted');
       setIsDeleteDialogOpen(false);
       setReminderToDelete(null);
+      // Only invalidate the targeted entity's reminder cache, not the entire app.
       queryClient.invalidateQueries({
         queryKey: ['reminders', entityType, entityId, workspace?.id],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ['reminders'],
       });
     },
     onError: () => {
@@ -267,11 +263,9 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
     updateReminderService(reminder.id, {
       is_completed: !reminder.is_completed,
     }).then(() => {
+      // Only invalidate the targeted entity's reminder cache, not the entire app.
       queryClient.invalidateQueries({
         queryKey: ['reminders', entityType, entityId],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ['reminders'],
       });
       toast.success(
         reminder.is_completed
@@ -575,6 +569,8 @@ export function EntityMeetings({ entityType, entityId }: EntityActivityProps) {
       return getCoreMeetingsService(workspace.id, entityType, entityId, undefined, true);
     },
     enabled: !!workspace?.id,
+    // Cache for 60 seconds to avoid re-fetching on every tab switch.
+    staleTime: 60 * 1000,
   });
 
   const filteredMeetings = useMemo(() => {

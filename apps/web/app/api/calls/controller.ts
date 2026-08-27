@@ -45,27 +45,16 @@ export const getCalls = catchAsync(
         let uniqueCalls: any[] = [];
 
         if (entityType && entityId) {
-            // Get all related entity IDs
-            const entityIds = await getRelatedEntityIds(supabase, entityType, entityId);
+            const { data, error } = await supabase
+                .rpc('get_core_calls', {
+                    p_workspace_id: workspaceId,
+                    p_entity_type: entityType,
+                    p_entity_id: entityId,
+                });
 
-            // Build query - fetch calls for all related entities
-            const callPromises = entityIds.map(({ entity_type, entity_id }) => {
-                return supabase
-                    .from('crm_call_logs')
-                    .select('*, created_by_user:accounts(name, email)')
-                    .eq('workspace_id', workspaceId)
-                    .eq('entity_type', entity_type)
-                    .eq('entity_id', entity_id)
-                    .eq('is_deleted', false);
-            });
-
-            const results = await Promise.all(callPromises);
-            const allCalls = results.flatMap((result) => result.data || []);
-            uniqueCalls = Array.from(
-                new Map(allCalls.map((call) => [call.id, call])).values(),
-            );
+            if (error) throw error;
+            uniqueCalls = data || [];
         } else {
-            // Fetch all calls for the workspace
             const { data, error } = await supabase
                 .from('crm_call_logs')
                 .select('*, created_by_user:accounts(name, email)')

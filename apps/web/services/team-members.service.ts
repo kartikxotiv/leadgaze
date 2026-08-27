@@ -8,6 +8,7 @@ interface WorkspaceMember {
   role_id: string;
   status: 'pending' | 'accepted' | 'inactive' | 'removed';
   is_primary_contact: boolean;
+  user?: any;
   invited_by?: string;
   invited_at?: string;
   accepted_at?: string;

@@ -48,6 +48,14 @@ export class MeetingsService {
       p_user_id: userId || null,
       p_page: page,
       p_limit: limit,
+      p_meeting_type: params.meetingType || null,
+      p_provider: params.provider || null,
+      p_host_user_id: params.hostUserId || null,
+      p_view: params.view || 'my',
+      p_is_admin: params.isAdmin || false,
+      p_include_participant_meetings: params.includeParticipantMeetings || false,
+      p_participant_user_id: params.participantUserId || null,
+      p_participant_email: params.participantEmail || null,
     });
 
     if (error) throw error;

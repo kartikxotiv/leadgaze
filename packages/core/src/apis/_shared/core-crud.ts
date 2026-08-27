@@ -11,6 +11,7 @@ type CoreResourceConfig = {
   updatePayload: (body: Record<string, any>, userId: string) => Record<string, any>;
   defaultOrder?: { column: string; ascending: boolean };
   softDelete?: boolean;
+  rpcName?: string;
   relation?: {
     table: string;
     foreignKey: string;
