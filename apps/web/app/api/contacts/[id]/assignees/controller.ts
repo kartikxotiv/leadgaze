@@ -4,7 +4,7 @@ import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client'
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
 import { Database } from '@kit/supabase/database';
-import CONTACT_ASSIGNMENT_EMAIL_TEMPLATE from '~/constants/email.templates/contact-assignment.template';
+import ASSIGNMENT_NOTIFICATION_EMAIL_TEMPLATE from '~/constants/email.templates/assignment-notification.template';
 import { NotificationService } from '~/lib/cron/notification-service';
 import { transporter } from '~/utils/send-mail';
 import { catchAsync, successDataResponse } from '~/utils/response-handler';
@@ -180,62 +180,36 @@ const assignContactToUser = catchAsync(
       assigneeId = assignee.id;
     }
 
-    // Safe notification & email dispatch (assignment DB operation is already committed)
-    try {
-      const recipientEmail = await NotificationService.getUserEmail(assigned_to_user_id);
+    // AWAT void non-blocking email dispatch (no DB persistence / subscription tables written)
+    void (async () => {
+      try {
+        const recipientEmail = await NotificationService.getUserEmail(assigned_to_user_id);
+        if (!recipientEmail) return;
 
-      const { data: assignerAccount } = await (adminClient
-        .from('accounts' as any)
-        .select('name')
-        .eq('id', user.id)
-        .maybeSingle() as any);
+        const { data: assignerAccount } = await (adminClient
+          .from('accounts' as any)
+          .select('name')
+          .eq('id', user.id)
+          .maybeSingle() as any);
 
-      const assignerName = assignerAccount?.name || 'A team member';
-      const contactName =
-        [contact.first_name, contact.last_name].filter(Boolean).join(' ') ||
-        'Contact';
-      const companyName = contact.account?.account_name || null;
-
-      // 1. Create In-App Notification
-      const { error: inAppError } = await (adminClient
-        .from('subscription_notifications' as any)
-        .insert({
-          workspace_id: contact.workspace_id,
-          recipient_id: assigned_to_user_id,
-          event_type: 'contact_assigned',
-          event_key: `contact_assigned:${contactId}:${assigned_to_user_id}:${Date.now()}`,
-          channel: 'in_app',
-          title: 'Contact Assigned',
-          message: `${contactName} has been assigned to you.`,
-          action_url: `/home/sales/contacts/${contactId}`,
-          delivery_status: 'sent',
-          delivered_at: new Date().toISOString(),
-          metadata: {
-            contact_id: contactId,
-            contact_name: contactName,
-            assigned_by: user.id,
-            assigner_name: assignerName,
-          },
-        }) as any);
-
-      if (inAppError) {
-        console.error('[ContactAssigneeNotification] In-app notification error:', inAppError);
-      } else {
-        console.log('[ContactAssigneeNotification] In-app notification created successfully for recipient:', assigned_to_user_id);
-      }
-
-      // 2. Send Email Notification
-      if (recipientEmail) {
+        const assignerName = assignerAccount?.name || 'A team member';
+        const contactName =
+          [contact.first_name, contact.last_name].filter(Boolean).join(' ') ||
+          'Contact';
+        const companyName = contact.account?.account_name || null;
         const appBaseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
         const contactUrl = `${appBaseUrl}/home/sales/contacts/${contactId}`;
-        const emailSubject = `Contact Assigned to You - Leadgaze`;
-        const emailHtml = CONTACT_ASSIGNMENT_EMAIL_TEMPLATE({
-          contactName,
-          contactCompany: companyName,
-          contactEmail: contact.email,
-          contactPhone: contact.phone_number,
+
+        const emailHtml = ASSIGNMENT_NOTIFICATION_EMAIL_TEMPLATE({
+          entityType: 'Contact',
+          entityName: contactName,
           assignerName,
-          contactUrl,
+          entityUrl: contactUrl,
+          details: [
+            { label: 'Company', value: companyName },
+            { label: 'Email', value: contact.email },
+            { label: 'Phone', value: contact.phone_number },
+          ],
           productName: 'Leadgaze',
           appUrl: appBaseUrl,
         });
@@ -243,17 +217,15 @@ const assignContactToUser = catchAsync(
         await transporter.sendMail({
           from: process.env.SMTP_FROM || process.env.SMTP_USER || 'noreply@leadgaze.com',
           to: recipientEmail,
-          subject: emailSubject,
+          subject: `Contact Assigned to You - Leadgaze`,
           html: emailHtml,
         });
 
-        console.log('[ContactAssigneeNotification] Email notification sent successfully to:', recipientEmail);
-      } else {
-        console.warn('[ContactAssigneeNotification] Recipient email not found for user:', assigned_to_user_id);
+        console.log('[ContactAssigneeNotification] Non-blocking email sent successfully to:', recipientEmail);
+      } catch (notificationError) {
+        console.error('[ContactAssigneeNotification] Non-blocking email dispatch error:', notificationError);
       }
-    } catch (notificationError) {
-      console.error('[ContactAssigneeNotification] Error during notification/email dispatch:', notificationError);
-    }
+    })();
 
     // Return with full details
     const { data: fullAssignee } = await (adminClient

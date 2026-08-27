@@ -4,7 +4,7 @@ import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client'
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
 import { Database } from '@kit/supabase/database';
-import ACCOUNT_ASSIGNMENT_EMAIL_TEMPLATE from '~/constants/email.templates/account-assignment.template';
+import ASSIGNMENT_NOTIFICATION_EMAIL_TEMPLATE from '~/constants/email.templates/assignment-notification.template';
 import { NotificationService } from '~/lib/cron/notification-service';
 import { transporter } from '~/utils/send-mail';
 import { catchAsync, successDataResponse } from '~/utils/response-handler';
@@ -182,57 +182,31 @@ const assignAccountToUser = catchAsync(
       assigneeId = assignee.id;
     }
 
-    // Safe notification & email dispatch (assignment DB operation is already committed)
-    try {
-      const recipientEmail = await NotificationService.getUserEmail(assigned_to_user_id);
+    // AWAT void non-blocking email dispatch (no DB persistence / subscription tables written)
+    void (async () => {
+      try {
+        const recipientEmail = await NotificationService.getUserEmail(assigned_to_user_id);
+        if (!recipientEmail) return;
 
-      const { data: assignerAccount } = await (adminClient
-        .from('accounts' as any)
-        .select('name')
-        .eq('id', user.id)
-        .maybeSingle() as any);
+        const { data: assignerAccount } = await (adminClient
+          .from('accounts' as any)
+          .select('name')
+          .eq('id', user.id)
+          .maybeSingle() as any);
 
-      const assignerName = assignerAccount?.name || 'A team member';
-      const accountName = account.account_name || 'Account';
-
-      // 1. Create In-App Notification
-      const { error: inAppError } = await (adminClient
-        .from('subscription_notifications' as any)
-        .insert({
-          workspace_id: account.workspace_id,
-          recipient_id: assigned_to_user_id,
-          event_type: 'account_assigned',
-          event_key: `account_assigned:${accountId}:${assigned_to_user_id}:${Date.now()}`,
-          channel: 'in_app',
-          title: 'Account Assigned',
-          message: `${accountName} has been assigned to you.`,
-          action_url: `/home/sales/accounts/${accountId}`,
-          delivery_status: 'sent',
-          delivered_at: new Date().toISOString(),
-          metadata: {
-            account_id: accountId,
-            account_name: accountName,
-            assigned_by: user.id,
-            assigner_name: assignerName,
-          },
-        }) as any);
-
-      if (inAppError) {
-        console.error('[AccountAssigneeNotification] In-app notification error:', inAppError);
-      } else {
-        console.log('[AccountAssigneeNotification] In-app notification created successfully for recipient:', assigned_to_user_id);
-      }
-
-      // 2. Send Email Notification
-      if (recipientEmail) {
+        const assignerName = assignerAccount?.name || 'A team member';
+        const accountName = account.account_name || 'Account';
         const appBaseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
         const accountUrl = `${appBaseUrl}/home/sales/accounts/${accountId}`;
-        const emailSubject = `You have been assigned an Account - Leadgaze`;
-        const emailHtml = ACCOUNT_ASSIGNMENT_EMAIL_TEMPLATE({
-          accountName,
-          accountWebsite: account.website,
+
+        const emailHtml = ASSIGNMENT_NOTIFICATION_EMAIL_TEMPLATE({
+          entityType: 'Account',
+          entityName: accountName,
           assignerName,
-          accountUrl,
+          entityUrl: accountUrl,
+          details: [
+            { label: 'Website', value: account.website },
+          ],
           productName: 'Leadgaze',
           appUrl: appBaseUrl,
         });
@@ -240,17 +214,15 @@ const assignAccountToUser = catchAsync(
         await transporter.sendMail({
           from: process.env.SMTP_FROM || process.env.SMTP_USER || 'noreply@leadgaze.com',
           to: recipientEmail,
-          subject: emailSubject,
+          subject: `You have been assigned an Account - Leadgaze`,
           html: emailHtml,
         });
 
-        console.log('[AccountAssigneeNotification] Email notification sent successfully to:', recipientEmail);
-      } else {
-        console.warn('[AccountAssigneeNotification] Recipient email not found for user:', assigned_to_user_id);
+        console.log('[AccountAssigneeNotification] Non-blocking email sent successfully to:', recipientEmail);
+      } catch (notificationError) {
+        console.error('[AccountAssigneeNotification] Non-blocking email dispatch error:', notificationError);
       }
-    } catch (notificationError) {
-      console.error('[AccountAssigneeNotification] Error during notification/email dispatch:', notificationError);
-    }
+    })();
 
     // Return with full details
     const { data: fullAssignee } = await (adminClient

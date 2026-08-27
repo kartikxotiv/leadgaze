@@ -4,7 +4,7 @@ import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client'
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
 import { Database } from '@kit/supabase/database';
-import OPPORTUNITY_ASSIGNMENT_EMAIL_TEMPLATE from '~/constants/email.templates/opportunity-assignment.template';
+import ASSIGNMENT_NOTIFICATION_EMAIL_TEMPLATE from '~/constants/email.templates/assignment-notification.template';
 import { NotificationService } from '~/lib/cron/notification-service';
 import { transporter } from '~/utils/send-mail';
 import { catchAsync, successDataResponse } from '~/utils/response-handler';
@@ -180,60 +180,41 @@ const assignOpportunityToUser = catchAsync(
       assigneeId = assignee.id;
     }
 
-    // Safe notification & email dispatch (assignment DB operation is already committed)
-    try {
-      const recipientEmail = await NotificationService.getUserEmail(assigned_to_user_id);
+    // AWAT void non-blocking email dispatch (no DB persistence / subscription tables written)
+    void (async () => {
+      try {
+        const recipientEmail = await NotificationService.getUserEmail(assigned_to_user_id);
+        if (!recipientEmail) return;
 
-      const { data: assignerAccount } = await (adminClient
-        .from('accounts' as any)
-        .select('name')
-        .eq('id', user.id)
-        .maybeSingle() as any);
+        const { data: assignerAccount } = await (adminClient
+          .from('accounts' as any)
+          .select('name')
+          .eq('id', user.id)
+          .maybeSingle() as any);
 
-      const assignerName = assignerAccount?.name || 'A team member';
-      const opportunityName = opportunity.opportunity_name || 'Opportunity';
-      const accountName = opportunity.account?.account_name || null;
-
-      // 1. Create In-App Notification
-      const { error: inAppError } = await (adminClient
-        .from('subscription_notifications' as any)
-        .insert({
-          workspace_id: opportunity.workspace_id,
-          recipient_id: assigned_to_user_id,
-          event_type: 'opportunity_assigned',
-          event_key: `opportunity_assigned:${opportunityId}:${assigned_to_user_id}:${Date.now()}`,
-          channel: 'in_app',
-          title: 'Opportunity Assigned',
-          message: `${opportunityName} has been assigned to you.`,
-          action_url: `/home/sales/opportunities/${opportunityId}`,
-          delivery_status: 'sent',
-          delivered_at: new Date().toISOString(),
-          metadata: {
-            opportunity_id: opportunityId,
-            opportunity_name: opportunityName,
-            assigned_by: user.id,
-            assigner_name: assignerName,
-          },
-        }) as any);
-
-      if (inAppError) {
-        console.error('[OpportunityAssigneeNotification] In-app notification error:', inAppError);
-      } else {
-        console.log('[OpportunityAssigneeNotification] In-app notification created successfully for recipient:', assigned_to_user_id);
-      }
-
-      // 2. Send Email Notification
-      if (recipientEmail) {
+        const assignerName = assignerAccount?.name || 'A team member';
+        const opportunityName = opportunity.opportunity_name || 'Opportunity';
+        const accountName = opportunity.account?.account_name || null;
         const appBaseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
         const opportunityUrl = `${appBaseUrl}/home/sales/opportunities/${opportunityId}`;
-        const emailSubject = `You have been assigned an Opportunity - Leadgaze`;
-        const emailHtml = OPPORTUNITY_ASSIGNMENT_EMAIL_TEMPLATE({
-          opportunityName,
-          accountName,
-          amount: opportunity.amount,
-          currency: opportunity.currency,
+
+        const formattedAmount =
+          opportunity.amount !== undefined && opportunity.amount !== null
+            ? new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: opportunity.currency || 'USD',
+              }).format(Number(opportunity.amount))
+            : null;
+
+        const emailHtml = ASSIGNMENT_NOTIFICATION_EMAIL_TEMPLATE({
+          entityType: 'Opportunity',
+          entityName: opportunityName,
           assignerName,
-          opportunityUrl,
+          entityUrl: opportunityUrl,
+          details: [
+            { label: 'Account', value: accountName },
+            { label: 'Value', value: formattedAmount },
+          ],
           productName: 'Leadgaze',
           appUrl: appBaseUrl,
         });
@@ -241,17 +222,15 @@ const assignOpportunityToUser = catchAsync(
         await transporter.sendMail({
           from: process.env.SMTP_FROM || process.env.SMTP_USER || 'noreply@leadgaze.com',
           to: recipientEmail,
-          subject: emailSubject,
+          subject: `You have been assigned an Opportunity - Leadgaze`,
           html: emailHtml,
         });
 
-        console.log('[OpportunityAssigneeNotification] Email notification sent successfully to:', recipientEmail);
-      } else {
-        console.warn('[OpportunityAssigneeNotification] Recipient email not found for user:', assigned_to_user_id);
+        console.log('[OpportunityAssigneeNotification] Non-blocking email sent successfully to:', recipientEmail);
+      } catch (notificationError) {
+        console.error('[OpportunityAssigneeNotification] Non-blocking email dispatch error:', notificationError);
       }
-    } catch (notificationError) {
-      console.error('[OpportunityAssigneeNotification] Error during notification/email dispatch:', notificationError);
-    }
+    })();
 
     // Return with full details
     const { data: fullAssignee } = await (adminClient

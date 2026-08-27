@@ -4,7 +4,7 @@ import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client'
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
 import { Database } from '@kit/supabase/database';
-import LEAD_ASSIGNMENT_EMAIL_TEMPLATE from '~/constants/email.templates/lead-assignment.template';
+import ASSIGNMENT_NOTIFICATION_EMAIL_TEMPLATE from '~/constants/email.templates/assignment-notification.template';
 import { NotificationService } from '~/lib/cron/notification-service';
 import { transporter } from '~/utils/send-mail';
 import { catchAsync, successDataResponse } from '~/utils/response-handler';
@@ -23,7 +23,7 @@ const getLeadAssignees = catchAsync(
     request: NextRequest;
     params?: Record<string, string>;
   }) => {
-    const supabase = getSupabaseServerClient();
+    const adminClient = getSupabaseServerAdminClient();
     const leadId = params?.id;
 
     if (!leadId) {
@@ -33,7 +33,7 @@ const getLeadAssignees = catchAsync(
       );
     }
 
-    const { data: assignees, error } = await supabase
+    const { data: assignees, error } = await adminClient
       .from('lead_assignees_with_details')
       .select('*')
       .eq('lead_id', leadId)
@@ -182,60 +182,34 @@ const assignLeadToUser = catchAsync(
       assigneeId = assignee.id;
     }
 
-    // Safe notification & email dispatch (assignment DB operation is already committed)
-    try {
-      const recipientEmail = await NotificationService.getUserEmail(assigned_to_user_id);
+    // AWAT void non-blocking email dispatch (no DB persistence / subscription tables written)
+    void (async () => {
+      try {
+        const recipientEmail = await NotificationService.getUserEmail(assigned_to_user_id);
+        if (!recipientEmail) return;
 
-      const { data: assignerAccount } = await adminClient
-        .from('accounts')
-        .select('name')
-        .eq('id', user.id)
-        .maybeSingle();
+        const { data: assignerAccount } = await adminClient
+          .from('accounts')
+          .select('name')
+          .eq('id', user.id)
+          .maybeSingle();
 
-      const assignerName = assignerAccount?.name || 'A team member';
-      const leadName =
-        [lead.first_name, lead.last_name].filter(Boolean).join(' ') ||
-        'Lead';
-
-      // 1. Create In-App Notification
-      const { error: inAppError } = await adminClient
-        .from('subscription_notifications')
-        .insert({
-          workspace_id: lead.workspace_id,
-          recipient_id: assigned_to_user_id,
-          event_type: 'lead_assigned',
-          event_key: `lead_assigned:${leadId}:${assigned_to_user_id}:${Date.now()}`,
-          channel: 'in_app',
-          title: 'Lead Assigned',
-          message: `${leadName} has been assigned to you.`,
-          action_url: `/home/sales/leads/${leadId}`,
-          delivery_status: 'sent',
-          delivered_at: new Date().toISOString(),
-          metadata: {
-            lead_id: leadId,
-            lead_name: leadName,
-            assigned_by: user.id,
-            assigner_name: assignerName,
-          },
-        });
-
-      if (inAppError) {
-        console.error('[LeadAssigneeNotification] In-app notification error:', inAppError);
-      } else {
-        console.log('[LeadAssigneeNotification] In-app notification created successfully for recipient:', assigned_to_user_id);
-      }
-
-      // 2. Send Email Notification
-      if (recipientEmail) {
+        const assignerName = assignerAccount?.name || 'A team member';
+        const leadName =
+          [lead.first_name, lead.last_name].filter(Boolean).join(' ') ||
+          'Lead';
         const appBaseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
         const leadUrl = `${appBaseUrl}/home/sales/leads/${leadId}`;
-        const emailSubject = `You have been assigned a Lead - Leadgaze`;
-        const emailHtml = LEAD_ASSIGNMENT_EMAIL_TEMPLATE({
-          leadName,
-          leadCompany: lead.company_name,
-          leadEmail: lead.email,
+
+        const emailHtml = ASSIGNMENT_NOTIFICATION_EMAIL_TEMPLATE({
+          entityType: 'Lead',
+          entityName: leadName,
           assignerName,
-          leadUrl,
+          entityUrl: leadUrl,
+          details: [
+            { label: 'Company', value: lead.company_name },
+            { label: 'Email', value: lead.email },
+          ],
           productName: 'Leadgaze',
           appUrl: appBaseUrl,
         });
@@ -243,17 +217,15 @@ const assignLeadToUser = catchAsync(
         await transporter.sendMail({
           from: process.env.SMTP_FROM || process.env.SMTP_USER || 'noreply@leadgaze.com',
           to: recipientEmail,
-          subject: emailSubject,
+          subject: `You have been assigned a Lead - Leadgaze`,
           html: emailHtml,
         });
 
-        console.log('[LeadAssigneeNotification] Email notification sent successfully to:', recipientEmail);
-      } else {
-        console.warn('[LeadAssigneeNotification] Recipient email not found for user:', assigned_to_user_id);
+        console.log('[LeadAssigneeNotification] Non-blocking email sent successfully to:', recipientEmail);
+      } catch (notificationError) {
+        console.error('[LeadAssigneeNotification] Non-blocking email dispatch error:', notificationError);
       }
-    } catch (notificationError) {
-      console.error('[LeadAssigneeNotification] Error during notification/email dispatch:', notificationError);
-    }
+    })();
 
     // Return with full details
     const { data: fullAssignee } = await adminClient
