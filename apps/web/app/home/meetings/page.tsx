@@ -2987,37 +2987,18 @@ export default function MeetingsPage() {
           onToggleColumn={toggleVisibility}
           onResetColumns={reset}
         />
-        <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Delete Meeting</DialogTitle>
-              <DialogDescription>
-                Are you sure you want to delete this meeting? This action cannot
-                be undone.
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setIsDeleteDialogOpen(false);
-                  setMeetingToDelete(null);
-                }}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={() =>
-                  meetingToDelete && deleteMutation.mutate(meetingToDelete.id)
-                }
-                disabled={deleteMutation.isPending}
-              >
-                {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <CustomDeleteDialog
+          isOpen={isDeleteDialogOpen}
+          onOpenChange={setIsDeleteDialogOpen}
+          title="Delete Meeting"
+          description="Are you sure you want to delete this meeting? This action cannot be undone."
+          onConfirm={() => {
+            if (meetingToDelete) {
+              deleteMutation.mutate(meetingToDelete.id);
+            }
+          }}
+          isDeleting={deleteMutation.isPending}
+        />
 
         <Dialog open={isCancelDialogOpen} onOpenChange={(open) => {
           setIsCancelDialogOpen(open);
