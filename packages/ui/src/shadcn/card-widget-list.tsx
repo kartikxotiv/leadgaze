@@ -138,7 +138,7 @@ export function CardWidgetListItem({
             "flex flex-shrink-0 gap-1 transition-all duration-300",
             actionStyle === 'fixed' && "absolute right-2 top-px ml-3 opacity-0 group-hover:opacity-100",
             actionStyle === 'floating' && "absolute right-2 top-2 opacity-0 group-hover:opacity-100 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-sm p-1 rounded-md",
-            actionStyle === 'slide' && "items-center justify-center max-w-0 ml-0 overflow-hidden opacity-0 group-hover:max-w-[100px] group-hover:ml-3 group-hover:opacity-100"
+            actionStyle === 'slide' && "items-center justify-center max-w-0 ml-0 overflow-hidden opacity-0 group-hover:max-w-[140px] group-hover:ml-3 group-hover:opacity-100"
           )}
         >
           {actions}
