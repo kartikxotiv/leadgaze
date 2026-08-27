@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
 import {
@@ -9,6 +10,9 @@ import {
 
 // =====================================================
 // GET /api/workspaces/preferences?workspaceId=xxx
+// NOTE: Kept for backwards-compatibility. New code should
+// use GET /api/workspaces/settings which returns all
+// workspace settings in one consolidated RPC call.
 // =====================================================
 
 export const getWorkspacePreferences = catchAsync(
@@ -93,6 +97,7 @@ export const getWorkspacePreferences = catchAsync(
 export const updateWorkspacePreferences = catchAsync(
   async ({ request }: { request: NextRequest }) => {
     const supabase = getSupabaseServerClient() as any;
+    const adminClient = getSupabaseServerAdminClient() as any;
     const body = await request.json();
 
     const { workspace_id, timezone, date_format, time_format, default_currency } = body;
@@ -129,9 +134,38 @@ export const updateWorkspacePreferences = catchAsync(
     if (timezone !== undefined) payload.timezone = timezone;
     if (date_format !== undefined) payload.date_format = date_format;
     if (time_format !== undefined) payload.time_format = time_format;
-    if (default_currency !== undefined) payload.default_currency = default_currency;
 
-    // Upsert: insert if not exists, update if exists
+    if (default_currency !== undefined) {
+      // Use atomic RPC: swaps is_default flag + syncs workspace_preferences in one transaction.
+      // Replaces 3 sequential DB writes (unset defaults, set new default, sync prefs).
+      const { data: rpcData, error: rpcError } = await adminClient.rpc(
+        'update_workspace_default_currency',
+        {
+          p_workspace_id: workspace_id,
+          p_currency_code: default_currency,
+        },
+      );
+
+      if (rpcError) {
+        console.error('Currency default update error:', rpcError);
+        return NextResponse.json(
+          { message: 'Failed to update default currency' },
+          { status: 500 },
+        );
+      }
+
+      // If there are also non-currency preference fields in this request, upsert them too
+      if (Object.keys(payload).length > 1) {
+        await supabase
+          .schema('core')
+          .from('workspace_preferences')
+          .upsert(payload, { onConflict: 'workspace_id' });
+      }
+
+      return successDataResponse(rpcData, null);
+    }
+
+    // Non-currency update: upsert directly
     const { data, error } = await supabase
       .schema('core')
       .from('workspace_preferences')
@@ -145,23 +179,6 @@ export const updateWorkspacePreferences = catchAsync(
         { message: 'Failed to update preferences' },
         { status: 500 },
       );
-    }
-
-    if (default_currency !== undefined) {
-      // Unset other defaults in workspace_currencies
-      await supabase
-        .schema('core')
-        .from('workspace_currencies')
-        .update({ is_default: false })
-        .eq('workspace_id', workspace_id);
-
-      // Set the new default
-      await supabase
-        .schema('core')
-        .from('workspace_currencies')
-        .update({ is_default: true })
-        .eq('workspace_id', workspace_id)
-        .eq('currency_code', default_currency.toUpperCase());
     }
 
     return successDataResponse(data, null);

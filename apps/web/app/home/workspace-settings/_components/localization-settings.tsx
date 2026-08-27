@@ -28,17 +28,17 @@ import { toast } from 'sonner';
 import { X } from 'lucide-react';
 
 import {
-  getWorkspacePreferencesService,
   updateWorkspacePreferencesService,
   type UpdatePreferencesPayload,
 } from '~/services/workspace-preferences.service';
 
 import {
-  getWorkspaceCurrenciesService,
   addWorkspaceCurrencyService,
-  updateWorkspaceCurrencyService,
   deleteWorkspaceCurrencyService,
+  type WorkspaceCurrency,
 } from '~/services/workspace-currencies.service';
+
+import { getWorkspaceSettingsService } from '~/services/workspace-settings.service';
 import { Label } from '@kit/ui/label';
 
 // =====================================================
@@ -111,19 +111,22 @@ export function WorkspaceLocalizationSettings({
     enabledCurrencies: ['USD'],
   });
 
-  // Fetch current preferences
-  const { data: preferences, isLoading } = useQuery({
-    queryKey: ['workspace-preferences-settings', workspaceId],
-    queryFn: () => getWorkspacePreferencesService(workspaceId),
+  /**
+   * Single consolidated fetch — shared with general-settings.tsx via the same
+   * ['workspace-settings', workspaceId] query key.
+   * When the General tab has already loaded, this is a pure TanStack Query
+   * cache hit: zero new network requests fire.
+   */
+  const { data: settingsData, isLoading } = useQuery({
+    queryKey: ['workspace-settings', workspaceId],
+    queryFn: () => getWorkspaceSettingsService(workspaceId),
     enabled: !!workspaceId,
   });
 
-  // Fetch enabled currencies
-  const { data: currenciesData, isLoading: isCurrenciesLoading } = useQuery({
-    queryKey: ['workspace-currencies', workspaceId],
-    queryFn: () => getWorkspaceCurrenciesService(workspaceId),
-    enabled: !!workspaceId,
-  });
+  const preferences = settingsData?.preferences ?? null;
+  const currenciesData: WorkspaceCurrency[] = settingsData?.currencies ?? [];
+  const isCurrenciesLoading = isLoading;
+
 
   const resetForm = () => {
     if (preferences) {
@@ -167,14 +170,9 @@ export function WorkspaceLocalizationSettings({
     mutationFn: (payload: UpdatePreferencesPayload) =>
       updateWorkspacePreferencesService(payload),
     onSuccess: () => {
+      // Invalidate the shared workspace-settings cache so both tabs refresh
       queryClient.invalidateQueries({
-        queryKey: ['workspace-preferences', workspaceId],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ['workspace-preferences-settings', workspaceId],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ['workspace-currencies', workspaceId],
+        queryKey: ['workspace-settings', workspaceId],
       });
       toast.success('Preferences saved', {
         description: 'Localization settings have been updated.',
@@ -197,10 +195,7 @@ export function WorkspaceLocalizationSettings({
     }) => addWorkspaceCurrencyService(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ['workspace-currencies', workspaceId],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ['workspace-preferences', workspaceId],
+        queryKey: ['workspace-settings', workspaceId],
       });
       toast.success('Currency added', {
         description: 'The currency has been added to your workspace.',
@@ -219,10 +214,7 @@ export function WorkspaceLocalizationSettings({
       deleteWorkspaceCurrencyService(currencyId),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ['workspace-currencies', workspaceId],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ['workspace-preferences', workspaceId],
+        queryKey: ['workspace-settings', workspaceId],
       });
       toast.success('Currency removed', {
         description: 'The currency has been removed from your workspace.',

@@ -6,7 +6,6 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Building2, Loader2, Save } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { getSupabaseBrowserClient } from '@kit/supabase/browser-client';
 import { useUser } from '@kit/supabase/hooks/use-user';
 import { Button } from '@kit/ui/button';
 import {
@@ -23,6 +22,11 @@ import { LogoUploader } from '~/workspace-setup/_components/LogoUploader';
 import { WorkspaceSwitcher } from '../../_components/workspace-switcher';
 import { useRBAC } from '~/lib/rbac/rbac-provider';
 import { Label } from '@kit/ui/label';
+import { getSupabaseBrowserClient } from '@kit/supabase/browser-client';
+import {
+  getWorkspaceSettingsService,
+  saveGeneralSettingsService,
+} from '~/services/workspace-settings.service';
 
 interface WorkspaceGeneralSettingsProps {
   workspaceId: string;
@@ -62,53 +66,26 @@ export function WorkspaceGeneralSettings({ workspaceId }: WorkspaceGeneralSettin
   // Track if form is modified
   const [isDirty, setIsDirty] = useState(false);
 
-  // Fetch current workspace and company details
-  const { data: workspaceData, isLoading, refetch } = useQuery({
-    queryKey: ['workspace-general-settings', workspaceId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('workspaces')
-        .select(`
-          id,
-          name,
-          slug,
-          company_id,
-          companies (
-            id,
-            name,
-            billing_country,
-            logo_url,
-            tax_id,
-            email,
-            phone,
-            address,
-            postal_code,
-            country,
-            city,
-            state,
-            
-            invoice_address,
-            invoice_city,
-            invoice_postal_code,
-            
-            invoice_state
-          )
-        `)
-        .eq('id', workspaceId)
-        .single();
-
-      if (error) throw error;
-      return data;
-    },
+  /**
+   * Consolidated fetch — replaces the direct Supabase browser call.
+   * Uses GET /api/workspaces/settings which calls get_workspace_settings()
+   * RPC. Returns workspace + company + preferences + currencies in one round-trip.
+   * Query key is shared with localization-settings so both tabs use the same cache.
+   */
+  const { data: settingsData, isLoading, refetch } = useQuery({
+    queryKey: ['workspace-settings', workspaceId],
+    queryFn: () => getWorkspaceSettingsService(workspaceId),
     enabled: !!workspaceId,
   });
+
+  const workspaceData = settingsData?.workspace ?? null;
 
   const resetForm = () => {
     if (workspaceData) {
       setWorkspaceName(workspaceData.name || '');
       setSlug(workspaceData.slug || '');
 
-      const company = (workspaceData as any).companies;
+      const company = workspaceData.company;
       if (company) {
         setCompanyName(company.name || '');
         setCompanyEmail(company.email || '');
@@ -172,7 +149,7 @@ export function WorkspaceGeneralSettings({ workspaceId }: WorkspaceGeneralSettin
       return;
     }
 
-    const originalBillingCountry = (workspaceData as any)?.companies?.billing_country || '';
+    const originalBillingCountry = workspaceData?.company?.billing_country || '';
     const isOriginalIndia = originalBillingCountry === 'IN' || originalBillingCountry?.toLowerCase() === 'india';
     const isNewIndia = invoiceCountry === 'IN' || invoiceCountry?.toLowerCase() === 'india';
 
@@ -212,7 +189,7 @@ export function WorkspaceGeneralSettings({ workspaceId }: WorkspaceGeneralSettin
         logoUrl = null;
       }
 
-      const originalTaxId = (workspaceData as any)?.companies?.tax_id || '';
+      const originalTaxId = workspaceData?.company?.tax_id || '';
       if (taxId.trim() && (taxId.trim() !== originalTaxId || invoiceCountry !== originalBillingCountry)) {
         const valResponse = await fetch('/api/companies/validate-tax', {
           method: 'POST',
@@ -236,80 +213,39 @@ export function WorkspaceGeneralSettings({ workspaceId }: WorkspaceGeneralSettin
         }
       }
 
-      let currentCompanyId = workspaceData?.company_id;
-      
-      const companyPayload = {
-        name: companyName,
-        country: companyCountry,
-        billing_country: invoiceCountry,
-        logo_url: logoUrl,
-        tax_id: taxId.trim() || null,
-        email: companyEmail,
-        phone: companyPhone,
-        address: companyAddress,
-        postal_code: companyPostalCode,
-        invoice_address: invoiceAddress,
-        invoice_city: invoiceCity,
-        invoice_postal_code: invoicePostalCode,
-        invoice_state: invoiceState
-      };
-
-      // 2. Create or Update company details
-      if (currentCompanyId) {
-        const companyResponse = await fetch(`/api/companies/${currentCompanyId}`, {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(companyPayload),
-        });
-
-        if (!companyResponse.ok) {
-          const errorData = await companyResponse.json();
-          throw new Error(errorData.message || 'Failed to update company details');
-        }
-      } else {
-        const companyResponse = await fetch('/api/companies', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ ...companyPayload, created_by: user?.id }),
-        });
-
-        if (!companyResponse.ok) {
-          const errorData = await companyResponse.json();
-          throw new Error(errorData.message || 'Failed to create company details');
-        }
-
-        const { data: companyData } = await companyResponse.json();
-        currentCompanyId = companyData.id;
-      }
-
-      // 3. Update workspace details
-      const workspaceResponse = await fetch(`/api/workspaces/${workspaceId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
+      /**
+       * 2. Save company + workspace via single consolidated API call.
+       *    For existing companies the server runs both updates in parallel.
+       *    Replaces two sequential fetch calls:
+       *      PATCH /api/companies/:id  →  wait  →  PATCH /api/workspaces/:id
+       */
+      await saveGeneralSettingsService({
+        workspaceId,
+        workspaceName,
+        companyId: workspaceData?.company_id ?? null,
+        company: {
+          name: companyName,
+          country: companyCountry,
+          billing_country: invoiceCountry,
+          logo_url: logoUrl,
+          tax_id: taxId.trim() || null,
+          email: companyEmail,
+          phone: companyPhone,
+          address: companyAddress,
+          postal_code: companyPostalCode,
+          invoice_address: invoiceAddress,
+          invoice_city: invoiceCity,
+          invoice_postal_code: invoicePostalCode,
+          invoice_state: invoiceState,
         },
-        body: JSON.stringify({
-          name: workspaceName,
-          company_id: currentCompanyId,
-        }),
       });
-
-      if (!workspaceResponse.ok) {
-        const errorData = await workspaceResponse.json();
-        throw new Error(errorData.message || 'Failed to update workspace details');
-      }
 
       toast.success('Settings saved', {
         description: 'Company and workspace details have been updated.',
       });
 
-      // Refresh queries
-      refetch();
-      queryClient.invalidateQueries({ queryKey: ['workspace-general-settings', workspaceId] });
+      // Refresh the shared cache entry (also used by localization tab)
+      queryClient.invalidateQueries({ queryKey: ['workspace-settings', workspaceId] });
       queryClient.invalidateQueries({ queryKey: ['workspaces'] });
       queryClient.invalidateQueries({ queryKey: ['workspace-init'] });
       setIsDirty(false);
