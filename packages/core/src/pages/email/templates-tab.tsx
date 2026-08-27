@@ -16,6 +16,17 @@ import {
 import { toast } from 'sonner';
 
 import { Button } from '@kit/ui/button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@kit/ui/alert-dialog';
 import { Card, CardContent } from '@kit/ui/card';
 import {
   Dialog,
@@ -65,6 +76,7 @@ export function CoreEmailTemplatesTab({
   const [searchTerm, setSearchTerm] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const { getHeaderProps, getResizeHandleProps } = useColumnResize('core-email-templates-table');
   const { formatDate } = useLocalization();
@@ -86,17 +98,18 @@ export function CoreEmailTemplatesTab({
     filteredTemplates
   );
 
-  const handleDelete = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this template?')) return;
-
+  const handleDelete = async (template: any) => {
+    setIsDeleting(true);
     try {
-      await deleteCoreEmailTemplateService(id, workspaceId);
+      await deleteCoreEmailTemplateService(template.id, workspaceId);
       toast.success('Template deleted');
       await queryClient.invalidateQueries({
         queryKey: ['core-email-templates', workspaceId],
       });
     } catch (error: any) {
       toast.error(error.message || 'Failed to delete template');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -195,14 +208,38 @@ export function CoreEmailTemplatesTab({
                       >
                         <Edit2 className="h-4 w-4" />
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-destructive"
-                        onClick={() => handleDelete(template.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-destructive"
+                            disabled={isDeleting}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>
+                              Delete Template
+                            </AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Delete{' '}
+                              <strong>{template.name}</strong>? This
+                              action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => handleDelete(template)}
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </TableCell>
                   </TableRow>
                 ))
@@ -303,7 +340,7 @@ function CoreTemplateDialog({
               {template ? 'Edit Template' : 'Create Template'}
             </DialogTitle>
           </DialogHeader>
-          <div className="flex-1 space-y-2 overflow-y-auto p-2">
+          <div className="flex-1 space-y-2 overflow-y-auto custom-spacing-x-y">
             <div>
               <Label>Template Name</Label>
               <Input

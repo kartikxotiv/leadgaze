@@ -112,9 +112,9 @@ export function AssignUserModal({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto space-y-2 px-2">
+        <div className="flex-1 overflow-y-auto space-y-2 custom-spacing-x-y py-2">
           {/* Search Input */}
-          <div className="relative mb-1 mt-[1px]">
+          <div className="relative">
             <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
             <Input
               placeholder="Search by name or email..."
@@ -126,7 +126,7 @@ export function AssignUserModal({
           </div>
 
           {/* Members List */}
-          <ScrollArea className="h-[300px] rounded-lg border p-2">
+          <div className="h-[300px] rounded-lg border p-2 overflow-auto">
             {isLoaderActive ? (
               <div className="flex h-full items-center justify-center">
                 <div className="flex flex-col items-center gap-2">
@@ -173,7 +173,7 @@ export function AssignUserModal({
                 ))}
               </div>
             )}
-          </ScrollArea>
+          </div>
 
           {/* Currently Assigned Badge */}
           {currentAssignees.length > 0 && (

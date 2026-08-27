@@ -204,11 +204,11 @@ export function EditContactDialog({
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form id="dialog-form" onSubmit={form.handleSubmit(onSubmit)} className="flex-1 overflow-y-auto px-2 space-y-2">
+          <form id="dialog-form" onSubmit={form.handleSubmit(onSubmit)} className="flex-1 overflow-y-auto custom-spacing-x-y py-1 space-y-2">
             <Tabs defaultValue="basic" className="w-full h-full flex flex-col">
-              <TabsList className="grid w-full grid-cols-2 h-9">
-                <TabsTrigger value="basic" className="py-1">Basic Info</TabsTrigger>
-                <TabsTrigger value="additional" className='py-1'>Additional Details</TabsTrigger>
+              <TabsList className="mb-2 h-auto w-full justify-start gap-6 rounded-none border-b bg-transparent p-0 overflow-x-auto hide-scrollbar">
+                <TabsTrigger value="basic" className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent">Basic Info</TabsTrigger>
+                <TabsTrigger value="additional" className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent">Additional Details</TabsTrigger>
               </TabsList>
               
               <TabsContent value="basic" className="space-y-2 flex-1 overflow-y-auto">
@@ -219,9 +219,9 @@ export function EditContactDialog({
                       name="first_name"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>First Name *</FormLabel>
+                          <FormLabel>First Name <span className="text-red-500">*</span></FormLabel>
                           <FormControl>
-                            <Input {...field} />
+                            <Input placeholder="Jane" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -236,7 +236,7 @@ export function EditContactDialog({
                         <FormItem>
                           <FormLabel>Last Name</FormLabel>
                           <FormControl>
-                            <Input {...field} />
+                            <Input placeholder="Doe" {...field} />
                           </FormControl>
                         </FormItem>
                       )}
@@ -253,7 +253,7 @@ export function EditContactDialog({
                         <FormItem>
                           <FormLabel>Email</FormLabel>
                           <FormControl>
-                            <Input type="email" {...field} />
+                            <Input type="email" placeholder="jane.doe@example.com" {...field} />
                           </FormControl>
                         </FormItem>
                       )}
@@ -267,7 +267,7 @@ export function EditContactDialog({
                         <FormItem>
                           <FormLabel>Alternate Email</FormLabel>
                           <FormControl>
-                            <Input type="email" {...field} />
+                            <Input type="email" placeholder="jane.doe.alt@example.com" {...field} />
                           </FormControl>
                         </FormItem>
                       )}
@@ -284,7 +284,7 @@ export function EditContactDialog({
                         <FormItem>
                           <FormLabel>Phone</FormLabel>
                           <FormControl>
-                            <Input {...field} />
+                            <Input placeholder="+1..." {...field} />
                           </FormControl>
                         </FormItem>
                       )}
@@ -298,7 +298,7 @@ export function EditContactDialog({
                         <FormItem>
                           <FormLabel>Mobile</FormLabel>
                           <FormControl>
-                            <Input {...field} />
+                            <Input placeholder="+1..." {...field} />
                           </FormControl>
                         </FormItem>
                       )}
@@ -312,7 +312,7 @@ export function EditContactDialog({
                         <FormItem>
                           <FormLabel>Alt Phone</FormLabel>
                           <FormControl>
-                            <Input {...field} />
+                            <Input placeholder="+1..." {...field} />
                           </FormControl>
                         </FormItem>
                       )}
@@ -329,7 +329,7 @@ export function EditContactDialog({
                         <FormItem>
                           <FormLabel>Job Title</FormLabel>
                           <FormControl>
-                            <Input {...field} />
+                            <Input placeholder="Head of Sales" {...field} />
                           </FormControl>
                         </FormItem>
                       )}
@@ -343,7 +343,7 @@ export function EditContactDialog({
                         <FormItem>
                           <FormLabel>Department</FormLabel>
                           <FormControl>
-                            <Input {...field} />
+                            <Input placeholder="Sales" {...field} />
                           </FormControl>
                         </FormItem>
                       )}
@@ -359,7 +359,7 @@ export function EditContactDialog({
                       <FormItem>
                         <FormLabel>Notes</FormLabel>
                         <FormControl>
-                          <Textarea className="h-24" {...field} />
+                          <Textarea className="h-24" placeholder="Add some context about this contact..." {...field} />
                         </FormControl>
                       </FormItem>
                     )}
@@ -367,7 +367,7 @@ export function EditContactDialog({
                 </FieldGuard>
               </TabsContent>
 
-              <TabsContent value="additional" className="space-y-2 py-4 flex-1 overflow-y-auto pr-2">
+              <TabsContent value="additional" className="space-y-2 flex-1 overflow-y-auto">
                 <div className="grid grid-cols-2 gap-2">
                   <FieldGuard fieldKey="location" canEdit={canEdit}>
                     <FormField
@@ -377,7 +377,7 @@ export function EditContactDialog({
                         <FormItem>
                           <FormLabel>Location</FormLabel>
                           <FormControl>
-                            <Input {...field} />
+                            <Input placeholder="New York, USA" {...field} />
                           </FormControl>
                         </FormItem>
                       )}
@@ -391,7 +391,7 @@ export function EditContactDialog({
                         <FormItem>
                           <FormLabel>Timezone</FormLabel>
                           <FormControl>
-                            <Input {...field} />
+                            <Input placeholder="EST" {...field} />
                           </FormControl>
                         </FormItem>
                       )}
@@ -408,7 +408,7 @@ export function EditContactDialog({
                         <FormItem>
                           <FormLabel>Language</FormLabel>
                           <FormControl>
-                            <Input {...field} />
+                            <Input placeholder="English" {...field} />
                           </FormControl>
                         </FormItem>
                       )}
@@ -446,7 +446,7 @@ export function EditContactDialog({
                       control={form.control}
                       name="do_not_call"
                       render={({ field }) => (
-                        <FormItem className="flex items-center space-y-0 space-x-2">
+                        <FormItem className="flex items-center flex-row space-y-0 space-x-2">
                           <FormControl>
                             <Checkbox
                               checked={field.value}
@@ -463,7 +463,7 @@ export function EditContactDialog({
                       control={form.control}
                       name="do_not_email"
                       render={({ field }) => (
-                        <FormItem className="flex items-center space-y-0 space-x-2">
+                        <FormItem className="flex items-center flex-row space-y-0 space-x-2">
                           <FormControl>
                             <Checkbox
                               checked={field.value}
@@ -486,7 +486,7 @@ export function EditContactDialog({
                         <FormItem>
                           <FormLabel>LinkedIn</FormLabel>
                           <FormControl>
-                            <Input {...field} />
+                            <Input placeholder="https://linkedin.com/in/..." {...field} />
                           </FormControl>
                         </FormItem>
                       )}
@@ -500,7 +500,7 @@ export function EditContactDialog({
                         <FormItem>
                           <FormLabel>Twitter</FormLabel>
                           <FormControl>
-                            <Input {...field} />
+                            <Input placeholder="@janedoe" {...field} />
                           </FormControl>
                         </FormItem>
                       )}

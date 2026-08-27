@@ -112,7 +112,7 @@ function MFAChallengeForm({
         </p>
       </div>
 
-      <form onSubmit={handleVerify} className="flex flex-col space-y-4">
+      <form onSubmit={handleVerify} className="flex flex-col space-y-4 custom-spacing-x-y py-2">
         <div className="flex flex-col space-y-2">
           <InputOTP value={code} onChange={setCode} maxLength={6}>
             <InputOTPGroup>

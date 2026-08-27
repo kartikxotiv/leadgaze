@@ -135,7 +135,7 @@ export function CreateAccountDialog({
           className="flex-1 space-y-6 overflow-y-auto px-2"
         >
           <div className="space-y-2">
-            <h3 className="primary-heading text-leadgaze-dark uppercase dark:text-white custom-sub-heading-dialog-form">
+            <h3 className="primary-heading text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">
               Basic Information
             </h3>
             <Separator />
@@ -228,7 +228,7 @@ export function CreateAccountDialog({
           </div>
 
           <div className="space-y-2 pt-4">
-            <h3 className="primary-heading text-leadgaze-dark uppercase dark:text-white custom-sub-heading-dialog-form">
+            <h3 className="primary-heading text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">
               Address Information
             </h3>
             <Separator />

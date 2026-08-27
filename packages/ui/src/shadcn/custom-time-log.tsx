@@ -662,7 +662,7 @@ export function CustomTimeLog({
           {headerExtra}
         </DialogHeader>
 
-        <div className="space-y-4 px-2 py-3 pt-0">
+        <div className="space-y-4 custom-spacing-x-y py-2">
           {/* Smart Time Input */}
           <SmartTimeInput
             value={durationInput}

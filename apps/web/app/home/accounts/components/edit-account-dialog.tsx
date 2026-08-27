@@ -238,14 +238,14 @@ export function EditAccountDialog({
           <form
             id="dialog-form"
             onSubmit={form.handleSubmit(onSubmit)}
-            className="flex-1 space-y-2 overflow-y-auto px-2"
+            className="flex-1 space-y-2 overflow-y-auto custom-spacing-x-y py-2"
           >
             <Tabs defaultValue="general" className="w-full">
-              <TabsList className="grid w-full grid-cols-4  h-9">
-                <TabsTrigger value="general" className="py-1">General</TabsTrigger>
-                <TabsTrigger value="details" className="py-1">Details</TabsTrigger>
-                <TabsTrigger value="address" className="py-1">Address</TabsTrigger>
-                <TabsTrigger value="social" className="py-1">Social</TabsTrigger>
+              <TabsList className="mb-2 h-auto w-full justify-start gap-6 rounded-none border-b bg-transparent p-0 overflow-x-auto hide-scrollbar">
+                <TabsTrigger value="general" className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent">General</TabsTrigger>
+                <TabsTrigger value="details" className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent">Details</TabsTrigger>
+                <TabsTrigger value="address" className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent">Address</TabsTrigger>
+                <TabsTrigger value="social" className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent">Social</TabsTrigger>
               </TabsList>
 
               <TabsContent value="general" className="space-y-2">

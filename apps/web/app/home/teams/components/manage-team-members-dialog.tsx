@@ -171,7 +171,7 @@ export function ManageTeamMembersDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2 custom-spacing-x-y py-2">
           {/* Add Member Section */}
           <div className="flex items-end gap-2 rounded-lg border bg-muted/30 p-2">
             <div>

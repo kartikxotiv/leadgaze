@@ -628,7 +628,7 @@ export function WhatsAppSettingsPage({
           <DialogHeader>
             <DialogTitle>Disconnect WhatsApp Number</DialogTitle>            
           </DialogHeader>
-          <div className="space-y-2 px-2">
+          <div className="space-y-2 custom-spacing-x-y py-2">
             <p className="primary-text-regular text-leadgaze-dark dark:text-white">Are you sure you want to disconnect <strong>{accountToDisconnect?.display_name}</strong>?
               Existing conversations will be preserved but new messages will not be received.</p>
           </div>

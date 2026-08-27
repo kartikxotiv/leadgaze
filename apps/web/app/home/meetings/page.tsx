@@ -870,10 +870,12 @@ export function CreateMeetingDialog({
         </DialogHeader>
       )}
 
-      <div className="flex-1 overflow-y-auto space-y-2 px-2">
+      <div className={`flex-1 overflow-y-auto space-y-2 custom-spacing-x-y ${
+        asFormOnly ? 'pt-4' : 'pt-2'
+      }`}>
           {/* Meeting Type */}
           <div>
-            <Label className="text-xs font-semibold text-leadgaze-dark tracking-wider uppercase">
+            <Label>
               Meeting Type
             </Label>
             <MeetingTypeToggle value={meetingType} onChange={setMeetingType} />
@@ -881,7 +883,7 @@ export function CreateMeetingDialog({
 
           {/* Provider Selection */}
           <div>
-            <Label className="text-xs font-semibold tracking-wider text-leadgaze-dark uppercase">
+            <Label>
               Meeting Provider
             </Label>
             <ProviderSelector
@@ -896,7 +898,7 @@ export function CreateMeetingDialog({
           {/* Account Selection */}
           {meetingType === 'scheduled' && provider === 'GOOGLE' && (
             <div>
-              <Label className="text-xs font-semibold tracking-wider text-gray-500 uppercase">
+              <Label>
                 Connect As
               </Label>
               {googleAccounts.length === 0 ? (
@@ -932,7 +934,7 @@ export function CreateMeetingDialog({
           )}
           {meetingType === 'scheduled' && provider === 'ZOOM' && (
             <div>
-              <Label className="text-xs font-semibold tracking-wider text-gray-500 uppercase">
+              <Label>
                 Connect As
               </Label>
               {zoomAccounts.length === 0 ? (
@@ -969,7 +971,7 @@ export function CreateMeetingDialog({
 
           {/* Title */}
           <div>
-            <Label className="font-medium">
+            <Label>
               Title <span className="text-red-500">*</span>
             </Label>
             <Input
@@ -981,7 +983,7 @@ export function CreateMeetingDialog({
 
           {/* Description */}
           <div>
-            <Label className="font-medium">Description</Label>
+            <Label>Description</Label>
             <Textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -994,7 +996,7 @@ export function CreateMeetingDialog({
           {meetingType === 'scheduled' ? (
             <div className="grid gap-2 md:grid-cols-2">
               <div>
-                <Label className="font-medium">
+                <Label>
                   Meeting Date & Time <span className="text-red-500">*</span>
                 </Label>
                 <DateTimePicker
@@ -1011,7 +1013,7 @@ export function CreateMeetingDialog({
                 />
               </div>
               <div>
-                <Label className="font-medium">Duration</Label>
+                <Label>Duration</Label>
                 <Select
                   value={String(duration)}
                   onValueChange={(val) => setDuration(Number(val))}
@@ -1032,7 +1034,7 @@ export function CreateMeetingDialog({
           ) : (
             <div className="grid gap-2 md:grid-cols-2">
               <div>
-                <Label className="font-medium">
+                <Label>
                   Actual Start <span className="text-red-500">*</span>
                 </Label>
                 <DateTimePicker
@@ -1048,7 +1050,7 @@ export function CreateMeetingDialog({
                 />
               </div>
               <div>
-                <Label className="font-medium">
+                <Label>
                   Actual End <span className="text-red-500">*</span>
                 </Label>
                 <DateTimePicker
@@ -1069,7 +1071,7 @@ export function CreateMeetingDialog({
           {/* Timezone + Location/URL */}
           <div className="grid gap-2 md:grid-cols-2">
             <div>
-              <Label className="font-medium">Timezone</Label>
+              <Label>Timezone</Label>
               <Select value={timezone} onValueChange={setTimezone}>
                 <SelectTrigger>
                   <SelectValue />
@@ -1085,7 +1087,7 @@ export function CreateMeetingDialog({
             </div>
             {provider === 'MANUAL' ? (
               <div>
-                <Label className="font-medium">Meeting URL</Label>
+                <Label>Meeting URL</Label>
                 <Input
                   value={meetingUrl}
                   onChange={(e) => setMeetingUrl(e.target.value)}
@@ -1094,7 +1096,7 @@ export function CreateMeetingDialog({
               </div>
             ) : (
               <div>
-                <Label className="font-medium">Location</Label>
+                <Label>Location</Label>
                 <div className="relative">
                   <MapPin className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
                   <Input
@@ -1111,7 +1113,7 @@ export function CreateMeetingDialog({
           {/* Meeting URL for logged meetings (optional) */}
           {meetingType === 'logged' && provider !== 'MANUAL' && (
             <div>
-              <Label className="font-medium">Meeting URL (Optional)</Label>
+              <Label>Meeting URL (Optional)</Label>
               <Input
                 value={meetingUrl}
                 onChange={(e) => setMeetingUrl(e.target.value)}
@@ -1123,7 +1125,7 @@ export function CreateMeetingDialog({
           {/* External Invitees */}
           {meetingType === 'scheduled' && (
             <div>
-              <Label className="font-medium">External Invitees</Label>
+              <Label>External Invitees</Label>
               <div className="flex gap-2">
                 <Input
                   value={newEmail}
@@ -1170,7 +1172,7 @@ export function CreateMeetingDialog({
           {/* Reminders */}
           {meetingType === 'scheduled' && (
             <div>
-              <Label className="font-medium">Reminders</Label>
+              <Label>Reminders</Label>
               <div className="flex flex-wrap gap-2">
                 {REMINDER_OPTIONS.map((opt) => (
                   <Badge
@@ -1198,7 +1200,7 @@ export function CreateMeetingDialog({
           {!initialEntityId && (
             <div className="grid gap-2 md:grid-cols-2 mb-2">
               <div>
-                <Label className="font-medium">Related To</Label>
+                <Label>Related To</Label>
                 <Select value={entityType} onValueChange={setEntityType}>
                   <SelectTrigger>
                     <SelectValue />
@@ -1212,7 +1214,7 @@ export function CreateMeetingDialog({
                 </Select>
               </div>
               <div>
-                <Label className="font-medium">Entity</Label>
+                <Label>Entity</Label>
                 <Select
                   value={entityId || undefined}
                   onValueChange={setEntityId}
@@ -1517,7 +1519,7 @@ export function EditMeetingDialog({
             Edit Meeting
           </DialogTitle>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto space-y-2 px-2">
+        <div className="flex-1 overflow-y-auto space-y-2 custom-spacing-x-y pt-2">
           <div>
             <Label className="font-medium">
               Title <span className="text-red-500">*</span>
@@ -1877,17 +1879,17 @@ export function MeetingDetailsDialog({
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto relative">
-          <Tabs defaultValue="overview" className="px-2">
+          <Tabs defaultValue="overview" className="custom-spacing-x-y py-2">
             <div className="sticky top-0 z-10 bg-background py-1 mt-0">
-              <TabsList className="grid w-full grid-cols-3 h-9">
-                <TabsTrigger value="overview" className="py-1">Overview</TabsTrigger>
-                <TabsTrigger value="participants" className="py-1">Participants</TabsTrigger>
-                <TabsTrigger value="notes" className="py-1">Notes</TabsTrigger>
+              <TabsList className="mb-2 h-auto w-full justify-start gap-6 rounded-none border-b bg-transparent p-0 overflow-x-auto hide-scrollbar">
+                <TabsTrigger value="overview" className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent">Overview</TabsTrigger>
+                <TabsTrigger value="participants" className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent">Participants</TabsTrigger>
+                <TabsTrigger value="notes" className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent">Notes</TabsTrigger>
               </TabsList>
             </div>
 
             <TabsContent value="overview" className="space-y-2 pb-4 mt-0">
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2 py-2">
                 <Badge
                   variant="outline"
                   className="gap-1"
@@ -1908,7 +1910,7 @@ export function MeetingDetailsDialog({
                   {meeting.meeting_type === 'logged' ? 'Logged' : 'Scheduled'}
                 </Badge>
               </div>
-              <div className="flex items-start gap-2 rounded-lg border p-2">
+              <div className="flex items-start gap-2 border p-2">
                 <CalendarIcon className="text-muted-foreground mt-0.5 h-5 w-5" />
                 <div>
                   <p className="primary-text-medium text-leadgaze-dark dark:text-white">
@@ -1930,20 +1932,28 @@ export function MeetingDetailsDialog({
               </div>
               {meeting.description && (
                 <div className="space-y-1">
-                  <Label className="primary-text-medium text-leadgaze-dark dark:text-white uppercase">
+                  <Label className="primary-text-medium text-leadgaze-dark dark:text-white">
                     Description
                   </Label>
                   <p className="text-sm text- leadgaze-dark dark:text-white">{meeting.description}</p>
                 </div>
               )}
+              {meeting.status === 'cancelled' && meeting.cancel_reason && (
+                <div className="space-y-1">
+                  <Label className="primary-text-medium text-leadgaze-dark dark:text-white">
+                    Reason
+                  </Label>
+                  <p className="text-sm text-destructive">{meeting.cancel_reason}</p>
+                </div>
+              )}
               {meeting.location && (
-                <div className="flex items-start gap-2 rounded-lg border p-2">
+                <div className="flex items-start gap-2 border p-2">
                   <MapPin className="text-muted-foreground mt-0.5 h-5 w-5" />
                   <p className="text-sm">{meeting.location}</p>
                 </div>
               )}
               {meeting.meeting_url && (
-                <div className="flex items-start gap-2 rounded-lg border p-2">
+                <div className="flex items-center gap-2 border p-2">
                   <ExternalLink className="text-muted-foreground mt-0.5 h-5 w-5" />
                   <a
                     href={meeting.meeting_url}
@@ -1956,7 +1966,7 @@ export function MeetingDetailsDialog({
                 </div>
               )}
               {meeting.host && (
-                <div className="flex items-start gap-2 rounded-lg border p-2">
+                <div className="flex items-center gap-2 border p-2">
                   <Users className="text-muted-foreground mt-0.5 h-5 w-5" />
                   <div>
                     <p className="primary-text-medium text-leadgaze-dark dark:text-white">Host</p>
@@ -2002,8 +2012,8 @@ export function MeetingDetailsDialog({
               )}
             </TabsContent>
 
-            <TabsContent value="notes" className="space-y-2 pb-4 mt-0">
-              <div className="space-y-2">
+            <TabsContent value="notes" className="space-y-2 mb-2 mt-0 ">
+              <div>
                 <Label className="font-medium">Add Note</Label>
                 <Textarea
                   value={newNote}
@@ -2015,6 +2025,7 @@ export function MeetingDetailsDialog({
                   size="sm"
                   onClick={() => addNoteMutation.mutate()}
                   disabled={!newNote.trim() || addNoteMutation.isPending}
+                  className="mt-2"
                 >
                   {addNoteMutation.isPending && (
                     <Loader2 className="mr-2 h-3 w-3 animate-spin" />
@@ -2196,7 +2207,11 @@ export default function MeetingsPage() {
   const [isEditOpen, setIsEditOpen] = useState(false);
 
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [meetingToDelete, setMeetingToDelete] = useState<string | null>(null);
+  const [meetingToDelete, setMeetingToDelete] = useState<CoreMeeting | null>(null);
+
+  const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
+  const [meetingToCancel, setMeetingToCancel] = useState<CoreMeeting | null>(null);
+  const [cancelReason, setCancelReason] = useState('');
 
   // Fetch team members (for Created By filter dropdown)
   const { members } = usePackageMembers();
@@ -2335,10 +2350,14 @@ export default function MeetingsPage() {
   });
 
   const cancelMutation = useMutation({
-    mutationFn: (id: string) => cancelMeetingService(workspace!.id, id),
+    mutationFn: ({ id, reason }: { id: string; reason: string }) => 
+      cancelMeetingService(workspace!.id, id, reason),
     onSuccess: () => {
       toast.success('Meeting cancelled');
       queryClient.invalidateQueries({ queryKey: ['meetings'] });
+      setIsCancelDialogOpen(false);
+      setMeetingToCancel(null);
+      setCancelReason('');
     },
     onError: () => toast.error('Failed to cancel meeting'),
   });
@@ -2378,11 +2397,11 @@ export default function MeetingsPage() {
 
   return (
     <>
-      <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden border-top-bottom-gray">
+      <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden">
         <PageHeader
           title={`Meetings`}
         >
-          <div className="p-[2px]">
+          <div>
             <ListToolBar
               align="right"
               className="border-none bg-transparent p-0"
@@ -2751,7 +2770,7 @@ export default function MeetingsPage() {
                             <TableCell className="px-4 py-0">
                               <Badge
                                 variant="outline"
-                                className="h-5 py-0 text-xs"
+                                className="h-5 py-0 text-xs text-leadgaze-dark dark:text-white"
                               >
                                 {meeting.meeting_type === 'logged'
                                   ? 'Logged'
@@ -2872,9 +2891,10 @@ export default function MeetingsPage() {
                                   )}
                                 {meeting.status === 'scheduled' && (
                                   <DropdownMenuItem
-                                    onClick={() =>
-                                      cancelMutation.mutate(meeting.id)
-                                    }
+                                    onClick={() => {
+                                      setMeetingToCancel(meeting);
+                                      setIsCancelDialogOpen(true);
+                                    }}
                                   >
                                     <Ban className="mr-2 h-4 w-4" />
                                     Cancel Meeting
@@ -2883,7 +2903,7 @@ export default function MeetingsPage() {
                                 <DropdownMenuItem
                                   className="text-destructive"
                                   onClick={() => {
-                                    setMeetingToDelete(meeting.id);
+                                    setMeetingToDelete(meeting);
                                     setIsDeleteDialogOpen(true);
                                   }}
                                 >
@@ -2933,8 +2953,11 @@ export default function MeetingsPage() {
             setIsEditOpen(true);
           }}
           onDelete={(id) => {
-            setMeetingToDelete(id);
-            setIsDeleteDialogOpen(true);
+            const meeting = meetings.find((m) => m.id === id);
+            if (meeting) {
+                setMeetingToDelete(meeting);
+                setIsDeleteDialogOpen(true);
+            }
           }}
         />
 
@@ -2971,11 +2994,61 @@ export default function MeetingsPage() {
           description="Are you sure you want to delete this meeting? This action cannot be undone."
           onConfirm={() => {
             if (meetingToDelete) {
-              deleteMutation.mutate(meetingToDelete);
+              deleteMutation.mutate(meetingToDelete.id);
             }
           }}
           isDeleting={deleteMutation.isPending}
         />
+
+        <Dialog open={isCancelDialogOpen} onOpenChange={(open) => {
+          setIsCancelDialogOpen(open);
+          if (!open) {
+            setMeetingToCancel(null);
+            setCancelReason('');
+          }
+        }}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Cancel Meeting</DialogTitle>
+              <DialogDescription>
+                Please provide a reason for cancelling this meeting. This is required and limited to 1000 characters.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="custom-spacing-x-y py-2">
+              <Textarea
+                placeholder="Reason for cancellation..."
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                maxLength={1000}
+                rows={4}
+              />
+              <div className="text-xs text-muted-foreground mt-2 text-right">
+                {cancelReason.length} / 1000
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setIsCancelDialogOpen(false);
+                  setMeetingToCancel(null);
+                  setCancelReason('');
+                }}
+              >
+                Close
+              </Button>
+              <Button
+                onClick={() =>
+                  meetingToCancel && cancelMutation.mutate({ id: meetingToCancel.id, reason: cancelReason })
+                }
+                disabled={cancelMutation.isPending || !cancelReason.trim()}
+              >
+                {cancelMutation.isPending ? 'Saving...' : 'Save'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
       </PageBody>
     </>
   );

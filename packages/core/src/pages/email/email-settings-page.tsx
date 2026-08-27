@@ -301,9 +301,13 @@ export function CoreEmailSettingsPage({
           </Alert>
         ) : (
           <Tabs defaultValue={settingsTabs[0]!.value} className="flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col space-y-6">
-            <TabsList className="mb-0 shrink-0 w-fit self-start">
+            <TabsList className="mb-1 h-auto w-full justify-start gap-6 rounded-none border-b bg-transparent p-0">
               {settingsTabs.map((tab) => (
-                <TabsTrigger key={tab.value} value={tab.value}>
+                <TabsTrigger 
+                  key={tab.value} 
+                  value={tab.value}
+                  className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
+                >
                   {tab.label}
                 </TabsTrigger>
               ))}
@@ -336,7 +340,7 @@ export function CoreEmailSettingsPage({
                           <DialogTitle>Connect Email Account</DialogTitle>
                         </DialogHeader>
                         <Tabs value={connectTab} onValueChange={(v) => setConnectTab(v as 'google' | 'smtp')} className="flex flex-1 flex-col overflow-hidden">
-                          <div className="shrink-0 p-2">
+                          <div className="shrink-0 custom-spacing-x-y pb-2">
                           <TabsList className="grid w-full grid-cols-2">
                             <TabsTrigger value="google">
                               Google / Gmail
@@ -344,7 +348,7 @@ export function CoreEmailSettingsPage({
                             <TabsTrigger value="smtp">SMTP / IMAP</TabsTrigger>
                           </TabsList>
                           </div>
-                          <div className="flex-1 overflow-y-auto p-2 pt-0">
+                          <div className="flex-1 overflow-y-auto custom-spacing-x-y pt-0">
                           <TabsContent
                             value="google"
                             className="space-y-2 pt-0 mt-0"
@@ -576,7 +580,7 @@ export function CoreEmailSettingsPage({
                           >
                             <span className="col-resize-handle" {...getResizeHandleProps('sync')} />
                           </SortableTableHead>
-                          <TableHead>Actions</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>

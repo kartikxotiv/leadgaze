@@ -94,7 +94,7 @@ export function GlobalCreateModal({ open, onOpenChange }: GlobalCreateModalProps
             <DialogTitle className="sr-only">Create New Item</DialogTitle>
             {/* Tabs Header */}
             <div className="pr-10">
-              <div className="flex overflow-x-auto pl-4 pt-2.5 hide-scrollbar">
+              <div className="flex overflow-x-auto pl-4 py-3 pb-2 hide-scrollbar">
                 <div className="flex space-x-6 border-b border-transparent">
                   {tabs.map((tab) => (
                   <button
@@ -120,7 +120,7 @@ export function GlobalCreateModal({ open, onOpenChange }: GlobalCreateModalProps
              {activeTab === 'lead' && (
                 <CreateLeadDialog 
                   open={true} 
-                  onOpenChange={() => {}} 
+                  onOpenChange={(v) => { if (!v) onOpenChange(false); }} 
                   onSuccess={handleSuccess} 
                   asFormOnly 
                 />
@@ -128,7 +128,7 @@ export function GlobalCreateModal({ open, onOpenChange }: GlobalCreateModalProps
              {activeTab === 'contact' && (
                 <CreateContactDialog 
                   open={true} 
-                  onOpenChange={() => {}} 
+                  onOpenChange={(v) => { if (!v) onOpenChange(false); }} 
                   onSuccess={handleSuccess} 
                   asFormOnly 
                 />
@@ -136,7 +136,7 @@ export function GlobalCreateModal({ open, onOpenChange }: GlobalCreateModalProps
              {activeTab === 'account' && (
                 <CreateAccountDialog 
                   open={true} 
-                  onOpenChange={() => {}} 
+                  onOpenChange={(v) => { if (!v) onOpenChange(false); }} 
                   onSuccess={handleSuccess} 
                   asFormOnly 
                 />
@@ -144,7 +144,7 @@ export function GlobalCreateModal({ open, onOpenChange }: GlobalCreateModalProps
              {activeTab === 'opportunity' && (
                 <OpportunityDialog 
                   isOpen={true} 
-                  onOpenChange={() => {}} 
+                  onOpenChange={(v) => { if (!v) onOpenChange(false); }} 
                   onSuccess={handleSuccess} 
                   asFormOnly 
                 />
@@ -166,7 +166,7 @@ export function GlobalCreateModal({ open, onOpenChange }: GlobalCreateModalProps
              {activeTab === 'meeting' && (
                 <CreateMeetingDialog
                   open={true}
-                  onOpenChange={() => {}}
+                  onOpenChange={(v) => { if (!v) onOpenChange(false); }}
                   workspaceId={currentWorkspace?.id || ''}
                   onSuccess={handleSuccess}
                   asFormOnly

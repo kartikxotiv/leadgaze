@@ -137,9 +137,9 @@ export function CreateContactDialog({
         </DialogHeader>
       )}
 
-      <form id="dialog-form" onSubmit={handleSubmit} className={`flex flex-col flex-1 overflow-y-auto px-2 space-y-2 ${asFormOnly && 'mb-2'}`}>
-            <div className={`space-y-2 ${asFormOnly && 'pt-2'}`}>
-              <h3 className="primary-heading text-leadgaze-dark dark:text-white uppercase custom-sub-heading-dialog-form">
+      <form id="dialog-form" onSubmit={handleSubmit} className={`flex flex-col flex-1 overflow-y-auto custom-spacing-x-y space-y-2`}>
+            <div className={`space-y-2`}>
+              <h3 className="primary-heading text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">
                 Personal Details
               </h3>              
               <div className="grid grid-cols-2 gap-2">
@@ -196,7 +196,7 @@ export function CreateContactDialog({
             </div>
 
             <div className="space-y-2">
-              <h3 className="primary-heading text-leadgaze-dark dark:text-white uppercase custom-sub-heading-dialog-form">
+              <h3 className="primary-heading text-leadgaze-dark dark:text-white custom-sub-heading-dialog-form">
                 Professional & Status
               </h3>              
               <div className="grid grid-cols-2 gap-2">

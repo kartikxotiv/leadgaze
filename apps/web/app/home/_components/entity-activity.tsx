@@ -286,132 +286,122 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
       headerClassName="p-2 xl:p-2 2xl:p-2 mb-1"
       icon={<AlertCircle className="text-leadgaze-dark h-5 w-5 dark:text-white" />}
       icon2={
-        <Dialog
-          open={isOpen}
-          onOpenChange={(open) => {
-            setIsOpen(open);
-            if (!open) {
-              setEditingReminder(null);
-              setFormData({ title: '', description: '', due_date: '', priority: 'medium' });
-            }
-          }}
-        >
-          <DialogTrigger asChild>
-            <Button size="sm" variant="ghost" className="gap-1 text-sm text-blue-500 hover:text-blue-600">
-              <Plus className="h-4 w-4" />
-              Add Reminder
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-[400px]">
-            <DialogHeader>
-              <DialogTitle>
-                {editingReminder ? 'Edit Reminder' : 'Set Reminder'}
-              </DialogTitle>
-            </DialogHeader>
-            <div className="flex-1 space-y-2 px-2">
-              <div>
-                <Label>Title</Label>
-                <Input
-                  value={formData.title}
-                  onChange={(e) =>
-                    setFormData({ ...formData, title: e.target.value })
-                  }
-                  placeholder="Call client..."
-                />
+        <div className="flex items-center gap-2">
+          <Tabs
+            value={reminderTab}
+            onValueChange={(val) => setReminderTab(val as 'active' | 'sent')}
+            className="w-fit"
+          >
+            <TabsList className="h-8 p-1">
+              <TabsTrigger value="active" className="h-6 text-xs px-3">Pending</TabsTrigger>
+              <TabsTrigger value="sent" className="h-6 text-xs px-3">Completed</TabsTrigger>
+            </TabsList>
+          </Tabs>
+          <Dialog
+            open={isOpen}
+            onOpenChange={(open) => {
+              setIsOpen(open);
+              if (!open) {
+                setEditingReminder(null);
+                setFormData({ title: '', description: '', due_date: '', priority: 'medium' });
+              }
+            }}
+          >
+            <DialogTrigger asChild>
+              <Button size="sm" variant="ghost" className="gap-1 text-sm text-blue-500 hover:text-blue-600">
+                <Plus className="h-4 w-4" />
+                Add Reminder
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-[400px]">
+              <DialogHeader>
+                <DialogTitle>
+                  {editingReminder ? 'Edit Reminder' : 'Set Reminder'}
+                </DialogTitle>
+              </DialogHeader>
+              <div className="flex-1 space-y-2 custom-spacing-x-y py-2">
+                <div>
+                  <Label>Title</Label>
+                  <Input
+                    value={formData.title}
+                    onChange={(e) =>
+                      setFormData({ ...formData, title: e.target.value })
+                    }
+                    placeholder="Call client..."
+                  />
+                </div>
+                <div>
+                  <Label>Description</Label>
+                  <Input
+                    value={formData.description}
+                    onChange={(e) =>
+                      setFormData({ ...formData, description: e.target.value })
+                    }
+                    placeholder="Add more details..."
+                  />
+                </div>
+                <div>
+                  <Label>Priority</Label>
+                  <Select
+                    value={formData.priority}
+                    onValueChange={(val) =>
+                      setFormData({ ...formData, priority: val })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select priority" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="low">Low</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="high">High</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Due Date</Label>
+                  <DateTimePicker
+                    showTime
+                    value={formData.due_date ? new Date(formData.due_date) : undefined}
+                    onChange={(date) =>
+                      setFormData({ ...formData, due_date: date ? format(date, "yyyy-MM-dd'T'HH:mm") : '' })
+                    }
+                  />
+                </div>
               </div>
-              <div>
-                <Label>Description</Label>
-                <Input
-                  value={formData.description}
-                  onChange={(e) =>
-                    setFormData({ ...formData, description: e.target.value })
-                  }
-                  placeholder="Add more details..."
-                />
-              </div>
-              <div>
-                <Label>Priority</Label>
-                <Select
-                  value={formData.priority}
-                  onValueChange={(val) =>
-                    setFormData({ ...formData, priority: val })
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => setIsOpen(false)}
+                  disabled={
+                    createMutation.isPending || updateMutation.isPending
                   }
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select priority" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="low">Low</SelectItem>
-                    <SelectItem value="medium">Medium</SelectItem>
-                    <SelectItem value="high">High</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>Due Date</Label>
-                <DateTimePicker
-                  showTime
-                  value={formData.due_date ? new Date(formData.due_date) : undefined}
-                  onChange={(date) =>
-                    setFormData({ ...formData, due_date: date ? format(date, "yyyy-MM-dd'T'HH:mm") : '' })
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleSave}
+                  disabled={
+                    !formData.title ||
+                    !formData.due_date ||
+                    createMutation.isPending ||
+                    updateMutation.isPending
                   }
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => setIsOpen(false)}
-                disabled={
-                  createMutation.isPending || updateMutation.isPending
-                }
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleSave}
-                disabled={
-                  !formData.title ||
-                  !formData.due_date ||
-                  createMutation.isPending ||
-                  updateMutation.isPending
-                }
-              >
-                {createMutation.isPending || updateMutation.isPending
-                  ? 'Saving...'
-                  : editingReminder
-                    ? 'Update Reminder'
-                    : 'Set Reminder'}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+                >
+                  {createMutation.isPending || updateMutation.isPending
+                    ? 'Saving...'
+                    : editingReminder
+                      ? 'Update Reminder'
+                      : 'Set Reminder'}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
       }
     >
-      <div className="px-2 mb-2">
-        {/* Active / Sent toggle (mirrors Notes pattern) */}
-        <div className="flex bg-gray-100/60 dark:bg-gray-800/60 p-0.5 rounded-lg mb-2 w-fit border border-gray-200/20">
-          <button
-            onClick={() => setReminderTab('active')}
-            className={`rounded px-2.5 py-1 text-[11px] font-medium transition-all ${
-              reminderTab === 'active'
-                ? 'bg-white dark:bg-gray-900 text-blue-600 dark:text-blue-400 shadow-sm'
-                : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
-            }`}
-          >
-            Pending
-          </button>
-          <button
-            onClick={() => setReminderTab('sent')}
-            className={`rounded px-2.5 py-1 text-[11px] font-medium transition-all ${
-              reminderTab === 'sent'
-                ? 'bg-white dark:bg-gray-900 text-blue-600 dark:text-blue-400 shadow-sm'
-                : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
-            }`}
-          >
-            Completed
-          </button>
-        </div>
+      <div className="px-2 py-2 mb-2">
+
 
         {isLoading ? (
           <div className="flex justify-center py-4">
@@ -855,9 +845,9 @@ export function EntityMeetings({ entityType, entityId }: EntityActivityProps) {
           </div>
         ) : (
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="upcoming" className="h-8" >Upcoming</TabsTrigger>
-              <TabsTrigger value="past" className="h-8" >Previous</TabsTrigger>
+            <TabsList className="mb-2 h-auto w-full justify-start gap-6 rounded-none border-b bg-transparent p-0 overflow-x-auto hide-scrollbar">
+              <TabsTrigger value="upcoming" className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent">Upcoming</TabsTrigger>
+              <TabsTrigger value="past" className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent">Previous</TabsTrigger>
             </TabsList>
             <TabsContent value="upcoming">
               {renderMeetingsList(filteredMeetings)}
@@ -1047,9 +1037,9 @@ export function EntityDocuments({ entityType, entityId }: EntityActivityProps) {
                 {editingDoc ? 'Rename Document' : 'Upload Document'}
               </DialogTitle>
             </DialogHeader>
-            <div className="flex-1 space-y-2 px-2">
+            <div className="flex-1 space-y-2 custom-spacing-x-y py-2">
               {editingDoc ? (
-                <div className="space-y-2">
+                <div>
                   <Label>Document Name</Label>
                   <Input
                     value={newName}
@@ -1057,7 +1047,7 @@ export function EntityDocuments({ entityType, entityId }: EntityActivityProps) {
                   />
                 </div>
               ) : (
-                <div className="space-y-2">
+                <div>
                   <Label>Select File</Label>
                   <Input
                     type="file"
