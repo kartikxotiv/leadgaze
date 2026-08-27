@@ -1028,7 +1028,24 @@ export const updateMeetingController = catchAsync(async ({ request }) => {
     if (body.title !== undefined) updatePayload.title = body.title;
     if (body.description !== undefined)
       updatePayload.description = body.description;
-    if (body.status !== undefined) updatePayload.status = body.status;
+    if (body.status !== undefined) {
+      updatePayload.status = body.status;
+      if (body.status === 'cancelled') {
+        if (!body.cancel_reason || typeof body.cancel_reason !== 'string' || body.cancel_reason.trim() === '') {
+          return NextResponse.json(
+            { success: false, message: 'Cancellation reason is required when cancelling a meeting' },
+            { status: 400 }
+          );
+        }
+        if (body.cancel_reason.length > 1000) {
+          return NextResponse.json(
+            { success: false, message: 'Cancellation reason cannot exceed 1000 characters' },
+            { status: 400 }
+          );
+        }
+        updatePayload.cancel_reason = body.cancel_reason;
+      }
+    }
     if (
       body.scheduled_start !== undefined ||
       body.scheduledStart !== undefined

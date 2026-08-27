@@ -846,9 +846,9 @@ export function EntityMeetings({ entityType, entityId }: EntityActivityProps) {
           </div>
         ) : (
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="upcoming" className="h-8" >Upcoming</TabsTrigger>
-              <TabsTrigger value="past" className="h-8" >Previous</TabsTrigger>
+            <TabsList className="mb-2 h-auto w-full justify-start gap-6 rounded-none border-b bg-transparent p-0 overflow-x-auto hide-scrollbar">
+              <TabsTrigger value="upcoming" className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent">Upcoming</TabsTrigger>
+              <TabsTrigger value="past" className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent">Previous</TabsTrigger>
             </TabsList>
             <TabsContent value="upcoming">
               {renderMeetingsList(filteredMeetings)}

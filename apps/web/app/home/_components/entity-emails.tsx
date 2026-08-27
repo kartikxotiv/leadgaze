@@ -50,7 +50,7 @@ export function EntityEmails({
   const queryClient = useQueryClient();
   const supabase = useSupabase();
   const { currentWorkspace: workspace, canAccess } = useRBAC();
-  const { formatDate } = useLocalization();
+  const { formatDate, formatDateTime } = useLocalization();
   const canManageEmail = canAccess('emails', 'manage_email');
   const [mounted, setMounted] = useState(false);
   const [isComposeOpen, setIsComposeOpen] = useState(false);
@@ -254,6 +254,7 @@ export function EntityEmails({
                         setIsDetailOpen(true);
                       }}
                       className="cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/60 transition-colors"
+                      emailLayoutTo={true}
                       icon={
                         <div
                           className={cn(
@@ -280,35 +281,82 @@ export function EntityEmails({
                       }
                       iconAlignTop={true}
                       title={
-                        <div className="flex items-center gap-1.5 min-w-0">
-                          <span className="truncate">{item.subject || '(No Subject)'}</span>
-                          {item.threadCount > 1 && (
-                            <Badge variant="secondary" className="h-4 px-1.5 text-[9px] font-normal gap-1 shrink-0">
-                              <MessageSquare className="h-2.5 w-2.5" />
-                              <span>{item.threadCount}</span>
-                            </Badge>
-                          )}
+                        <div className="flex flex-col min-w-0">
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <span className="truncate">{item.subject || '(No Subject)'}</span>
+                            {item.threadCount > 1 && (
+                              <Badge variant="secondary" className="h-4 px-1.5 text-[9px] font-normal gap-1 shrink-0">
+                                <MessageSquare className="h-2.5 w-2.5" />
+                                <span>{item.threadCount}</span>
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-4 text-xs font-normal text-muted-foreground mt-0.5">
+                            {item.direction === 'inbound' ? (
+                              <span>From: {item.from_email}</span>
+                            ) : (
+                              <span>To: {item.to_emails}</span>
+                            )}
+                            {(() => {
+                              const ccVal = item.cc_emails ?? item.cc;
+                              let ccStr = '';
+                              if (Array.isArray(ccVal)) {
+                                ccStr = ccVal.filter(Boolean).join(', ');
+                              } else if (typeof ccVal === 'string') {
+                                ccStr = ccVal.trim().replace(/^\[\s*\]$/, '');
+                              }
+                              if (!ccStr) return null;
+                              return (
+                                <span>CC: {ccStr}</span>
+                              );
+                            })()}
+                          </div>
                         </div>
                       }
                       badge={
-                        <Badge
-                          variant="outline"
-                          className={cn(
-                            'h-4 px-3 py-2.5 text-[10px]',
-                            item.direction === 'inbound'
-                              ? 'border-purple-200 bg-purple-50 text-purple-600'
-                              : item.status === 'sent'
-                                ? 'border-green-200 bg-green-50 text-green-600'
-                                : item.status === 'scheduled'
-                                  ? 'border-blue-200 bg-blue-50 text-blue-600'
-                                  : 'border-amber-200 bg-amber-50 text-amber-600',
-                          )}
-                        >
-                          {item.direction === 'inbound'
-                            ? 'Inbound'
-                            : item.status.charAt(0).toUpperCase() +
-                            item.status.slice(1)}
-                        </Badge>
+                        <div className="flex flex-col items-end gap-1 mt-1">
+                          <div className="flex items-center gap-2">
+                            <Badge
+                              variant="outline"
+                              className={cn(
+                                'h-5 px-2 py-0 text-[11px]',
+                                item.direction === 'inbound'
+                                  ? 'border-purple-200 bg-purple-50 text-purple-600'
+                                  : item.status === 'sent'
+                                    ? 'border-green-200 bg-green-50 text-green-600'
+                                    : item.status === 'scheduled'
+                                      ? 'border-blue-200 bg-blue-50 text-blue-600'
+                                      : 'border-amber-200 bg-amber-50 text-amber-600',
+                              )}
+                            >
+                              {item.direction === 'inbound'
+                                ? 'Inbound'
+                                : item.status.charAt(0).toUpperCase() +
+                                item.status.slice(1)}
+                            </Badge>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-7 px-3 text-xs hover:bg-leadgaze-primary hover:text-white"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedEmail(item);
+                                setIsReplyOpen(true);
+                              }}
+                            >
+                              Reply
+                            </Button>
+                          </div>
+                          <span className="text-muted-foreground text-xs font-medium text-right mt-0.5">
+                            {formatDateTime(
+                              item.received_at ||
+                              item.sent_at ||
+                              item.updated_at ||
+                              item.created_at ||
+                              new Date().toISOString(),
+                            )}
+                          </span>
+                        </div>
                       }
                       content={
                         <p className="line-clamp-2 text-xs text-zinc-600 dark:text-zinc-400 break-words">
@@ -324,42 +372,6 @@ export function EntityEmails({
                       }
                       metadata={
                         <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[10px] text-leadgaze-dark dark:text-white">
-                          <div className="flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            <span>
-                              {formatDate(
-                                item.received_at ||
-                                item.sent_at ||
-                                item.updated_at ||
-                                item.created_at ||
-                                new Date().toISOString(),
-                              )}
-                            </span>
-                          </div>
-                          {item.direction === 'inbound' ? (
-                            <span className="max-w-[150px] truncate">
-                              From: {item.from_email}
-                            </span>
-                          ) : (
-                            <span className="max-w-[150px] truncate">
-                              To: {item.to_emails}
-                            </span>
-                          )}
-                          {(() => {
-                            const ccVal = item.cc_emails ?? item.cc;
-                            let ccStr = '';
-                            if (Array.isArray(ccVal)) {
-                              ccStr = ccVal.filter(Boolean).join(', ');
-                            } else if (typeof ccVal === 'string') {
-                              ccStr = ccVal.trim().replace(/^\[\s*\]$/, '');
-                            }
-                            if (!ccStr) return null;
-                            return (
-                              <span className="max-w-[150px] truncate">
-                                CC: {ccStr}
-                              </span>
-                            );
-                          })()}
                           {item.status === 'scheduled' && item.scheduled_at && (
                             <span className="font-semibold text-blue-600">
                               Due: {formatDate(item.scheduled_at)}
