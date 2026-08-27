@@ -798,7 +798,7 @@ export default function AccountsPage() {
         <PageHeader
           title={`Accounts`}          
         >
-          <div className="p-[2px]">
+          <div>
             <ListToolBar
               align="right"
               className="border-none bg-transparent p-0"

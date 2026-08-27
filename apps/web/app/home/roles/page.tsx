@@ -335,7 +335,7 @@ export default function RolesPage() {
         //  (${roles.length})
         // description="Create and manage workspace roles with custom permissions"
         >
-          <div className="p-[2px]">
+          <div>
             <ListToolBar
               align="right"
               className="border-none bg-transparent p-0"
