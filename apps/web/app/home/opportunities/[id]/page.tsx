@@ -1243,7 +1243,7 @@ export default function OpportunityDetailsPage() {
                                 }}
                                 disabled={!canEdit}
                               >
-                                <SelectTrigger className="text-right justify-end">
+                                <SelectTrigger>
                                   <SelectValue placeholder="Select priority" />
                                 </SelectTrigger>
                                 <SelectContent align="end">
@@ -1301,7 +1301,7 @@ export default function OpportunityDetailsPage() {
                                 }}
                                 disabled={!canEdit}
                               >
-                                <SelectTrigger className="text-right justify-end">
+                                <SelectTrigger>
                                   <SelectValue placeholder="Select type" />
                                 </SelectTrigger>
                                 <SelectContent align="end">

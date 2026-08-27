@@ -535,11 +535,11 @@ export default function NotesPage() {
 
   return (
     <>
-      <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden border-top-bottom-gray">
+      <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden">
         <PageHeader
           title={`Notes`}          
         >
-          <div className="p-[2px]">
+          <div>
             <ListToolBar
               align="right"
               className="border-none bg-transparent p-0"
@@ -958,7 +958,7 @@ export default function NotesPage() {
           <DialogHeader>
             <DialogTitle>Add New Note</DialogTitle>
           </DialogHeader>
-          <div className="flex-1 space-y-2 overflow-y-auto px-2">
+          <div className="flex-1 space-y-2 overflow-y-auto custom-spacing-x-y py-2">
             <div className="space-y-2">
               <Label>Associate with</Label>
               <RadioGroup
@@ -1079,12 +1079,19 @@ export default function NotesPage() {
           <DialogHeader>
             <DialogTitle>Edit Note</DialogTitle>
           </DialogHeader>
-          <div className="flex-1 space-y-2 overflow-y-auto px-2">
+          <div className="flex-1 space-y-2 overflow-y-auto custom-spacing-x-y py-2">
             <Textarea
               placeholder="Enter note content..."
               value={editContent}
               onChange={(e) => setEditContent(e.target.value)}
               rows={6}
+              autoFocus
+              onFocus={(e) => {
+                e.currentTarget.setSelectionRange(
+                  e.currentTarget.value.length,
+                  e.currentTarget.value.length
+                );
+              }}
             />
           </div>
           <DialogFooter>

@@ -1095,7 +1095,7 @@ export default function OrgSubscriptionPage({
             </DialogTitle>
             </DialogHeader>
             
-              <div className="flex flex-col flex-1 overflow-y-auto p-2 space-y-2 pt-0">
+              <div className="flex flex-col flex-1 overflow-y-auto space-y-2 custom-spacing-x-y py-2">
                 <p className="primary-text-regular text-leadgaze-dark dark:text-white">
                   Are you sure you want to cancel your subscription? All{' '}
                   <strong>
@@ -1168,13 +1168,14 @@ export default function OrgSubscriptionPage({
         }}
       >
         <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-md">
-          <DialogHeader>
+          <DialogHeader className="bg-red-500">
             <DialogTitle className="flex items-center gap-2">
-              <Trash2 className="text-destructive h-5 w-5" />
+              
               Remove Module
             </DialogTitle>
-            <DialogDescription asChild>
-              <div className="space-y-3 pt-1">
+            </DialogHeader>
+            
+              <div className="space-y-3 custom-spacing-x-y py-2">
                 <p>
                   Are you sure you want to remove{' '}
                   <strong>{removeModuleDialog.displayName}</strong> from your
@@ -1203,9 +1204,8 @@ export default function OrgSubscriptionPage({
                     your entire subscription.
                   </p>
                 )}
-              </div>
-            </DialogDescription>
-          </DialogHeader>
+              </div>           
+          
           <DialogFooter>
             <Button
               variant="outline"
@@ -1376,7 +1376,7 @@ function ActiveModuleRow({
   return (
     <TableRow className="hover:bg-muted/50">
       {/* Module name + icon */}
-      <TableCell className="p-3">
+      <TableCell className="p-3 py-1">
         <div className="flex items-center gap-3">
           <div
             className={cn(

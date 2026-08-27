@@ -368,7 +368,7 @@ function FactorNameForm(
       <div className={'flex flex-col space-y-4'}>
         <form
           id="factor-name-form"
-          className={'w-full px-2'}
+          className={'w-full custom-spacing-x-y py-2'}
           onSubmit={form.handleSubmit((data) => {
             props.onSetFactorName(data.name);
           })}

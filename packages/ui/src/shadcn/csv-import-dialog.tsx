@@ -319,7 +319,7 @@ export function CsvImportDialog({
 
           {!selectedFile ? (
             /* ── Drop Zone ── */
-            <div className="p-6">
+            <div className="p-4 pt-2">
               <div
                 className={cn(
                   'flex min-h-[320px] flex-col items-center justify-center rounded-1 border-2 border-dashed px-6 text-center transition-colors',
@@ -361,7 +361,7 @@ export function CsvImportDialog({
           ) : (
             <div className="flex flex-col">
               {/* ── File info bar ── */}
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b bg-slate-50 px-6 py-3 dark:bg-slate-900/40">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b bg-slate-50 px-4 py-2 dark:bg-slate-900/40">
                 <div className="flex items-center gap-3">
                   <FileSpreadsheet className="h-4 w-4 shrink-0 text-sky-600" />
                   <div>
@@ -407,7 +407,7 @@ export function CsvImportDialog({
 
               {/* ── Required fields status ── */}
               {requiredColumns.length > 0 && (
-                <div className="flex flex-wrap items-center gap-3 border-b px-6 py-2.5">
+                <div className="flex flex-wrap items-center gap-3 border-b p-4">
                   <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">
                     Required fields
                   </span>
@@ -598,20 +598,20 @@ export function CsvImportDialog({
 
         {/* ── Fixed Footer ── */}
         {selectedFile && (
-          <div className="flex flex-wrap items-center justify-between gap-3 border-t bg-white px-6 py-4 dark:bg-slate-950">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t bg-white p-4 dark:bg-slate-950">
             <div className="flex items-center gap-2 text-sm text-slate-500">
               <span className="font-medium">{requiredColumns.length} required</span>
               <span className="text-slate-300 dark:text-slate-600">·</span>
               <span>Map all required fields before uploading.</span>
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="outline" onClick={handleBrowse}>
+              <Button variant="outline" onClick={handleBrowse} className="secondary-text-small-bold gap-1.5 px-2">
                 Upload another file
               </Button>
               <Button
                 onClick={handleUpload}
                 disabled={!isReadyToUpload || isUploading}
-                className="gap-2"
+                className="bg-leadgaze-primary hover:bg-leadgaze-primary text-white secondary-text-small-bold gap-1.5 px-2"
               >
                 <Upload className="h-4 w-4" />
                 {isUploading ? 'Uploading...' : uploadButtonLabel}

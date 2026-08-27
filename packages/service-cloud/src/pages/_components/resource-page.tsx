@@ -861,7 +861,7 @@ export function ServiceCloudResourcePage({
                   {editing ? `Edit ${title}` : `New ${title}`}
                 </DialogTitle>
               </DialogHeader>
-              <div className="flex-1 space-y-2 overflow-y-auto p-2">
+              <div className="flex-1 space-y-2 overflow-y-auto custom-spacing-x-y">
                 <div className="grid gap-2 sm:grid-cols-2">
                   {fields
                     // Hide field if canViewField is provided AND returns false

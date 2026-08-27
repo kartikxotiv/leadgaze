@@ -209,7 +209,7 @@ export function GlobalCreateTicketForm({ onSuccess, onCancel, asFormOnly = false
 
   return (
     <div className="flex h-full flex-col overflow-auto">
-      <form id="create-ticket-form" onSubmit={handleSubmit} className="flex-1 space-y-2 overflow-y-auto px-2">
+      <form id="create-ticket-form" onSubmit={handleSubmit} className="flex-1 space-y-2 overflow-y-auto custom-spacing-x-y py-2">
         <div className="grid gap-2 pt-2">
           
           {(!canEditField || canEditField('subject')) && (
@@ -228,7 +228,7 @@ export function GlobalCreateTicketForm({ onSuccess, onCancel, asFormOnly = false
 
           <div className="grid gap-2 sm:grid-cols-3">
             {(!canEditField || canEditField('status')) && (
-              <div className="grid">
+              <div className="grid mt-[2px]">
                 <Label>Status <span className="text-destructive">*</span></Label>
                 <Select value={ticketStatusId || String(openStatus?.id ?? '')} onValueChange={setTicketStatusId}>
                   <SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger>
@@ -252,7 +252,7 @@ export function GlobalCreateTicketForm({ onSuccess, onCancel, asFormOnly = false
             )}
 
             {(!canEditField || canEditField('priority')) && (
-              <div className="grid">
+              <div className="grid mt-[2px]">
                 <Label>Priority</Label>
                 <Select value={ticketPriorityId} onValueChange={setTicketPriorityId}>
                   <SelectTrigger><SelectValue placeholder="Select priority" /></SelectTrigger>
@@ -276,7 +276,7 @@ export function GlobalCreateTicketForm({ onSuccess, onCancel, asFormOnly = false
             )}
 
             {(!canEditField || canEditField('category')) && (
-              <div className="grid">
+              <div className="grid mt-[2px]">
                 <Label>Category</Label>
                 <Select value={ticketCategoryId} onValueChange={setTicketCategoryId}>
                   <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
@@ -299,7 +299,7 @@ export function GlobalCreateTicketForm({ onSuccess, onCancel, asFormOnly = false
                 onValueChange={(value) =>
                   setCustomerMode(value as 'existing' | 'new')
                 }
-                className="grid gap-2 sm:grid-cols-2"
+                className="grid gap-2 sm:grid-cols-2 mt-[2px]"
               >
                 <Label className="flex cursor-pointer items-center gap-2 rounded-md border p-2">
                   <div className="flex gap-2 items-center">
@@ -374,7 +374,7 @@ export function GlobalCreateTicketForm({ onSuccess, onCancel, asFormOnly = false
                     value as 'none' | 'existing' | 'new',
                   )
                 }
-                className="grid gap-2 sm:grid-cols-3"
+                className="grid gap-2 sm:grid-cols-3 mt-[2px]"
               >
                 <Label className="flex cursor-pointer items-center gap-2 rounded-md border p-2">
                   <div className="flex gap-2 items-center">
@@ -432,7 +432,7 @@ export function GlobalCreateTicketForm({ onSuccess, onCancel, asFormOnly = false
         </div>
       </form>
       
-      <DialogFooter className="p-2 bg-white dark:bg-slate-950 border-t border-gray-200 dark:border-slate-800 mt-1">
+      <DialogFooter className="bg-white dark:bg-slate-950 border-t border-gray-200 dark:border-slate-800 mt-1">
         <Button type="button" variant="outline" onClick={onCancel} disabled={createMutation.isPending}>Cancel</Button>
         <Button type="submit" form="create-ticket-form" disabled={createMutation.isPending}>
           {createMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : (!asFormOnly && <Plus className="h-4 w-4" />)}

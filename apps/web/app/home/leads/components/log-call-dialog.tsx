@@ -126,7 +126,7 @@ export function LogCallDialog({
         <DialogHeader>
           <DialogTitle>Call Log</DialogTitle>
         </DialogHeader>
-        <div className="grid gap-2 px-2 flex-1 overflow-y-auto">
+        <div className="grid gap-2 custom-spacing-x-y py-2 flex-1 overflow-y-auto">
           {/* Subject */}
           <div className="grid">
             <Label htmlFor="subject">

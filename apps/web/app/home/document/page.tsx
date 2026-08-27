@@ -609,11 +609,11 @@ export default function DocumentPage() {
 
   return (
     <>
-      <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden border-top-bottom-gray">
+      <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden">
         <PageHeader
           title={`Documents`}          
         >
-          <div className="p-[2px]">
+          <div>
             <ListToolBar
               align="right"
               className="border-none bg-transparent p-0"
@@ -1048,7 +1048,7 @@ export default function DocumentPage() {
           <DialogHeader>
             <DialogTitle>Upload Document</DialogTitle>
           </DialogHeader>
-          <div className="flex-1 space-y-2 overflow-y-auto px-2">
+          <div className="flex-1 space-y-2 overflow-y-auto custom-spacing-x-y py-2">
             <div className="space-y-2">
               <Label>Associate with</Label>
               <RadioGroup
@@ -1063,7 +1063,7 @@ export default function DocumentPage() {
                   <RadioGroupItem value="lead" id="lead" />
                   <Label
                     htmlFor="lead"
-                    className="flex cursor-pointer items-center gap-1"
+                    className="!flex cursor-pointer items-center gap-1"
                   >
                     <User className="h-3 w-3" /> Lead
                   </Label>
@@ -1072,7 +1072,7 @@ export default function DocumentPage() {
                   <RadioGroupItem value="contact" id="contact" />
                   <Label
                     htmlFor="contact"
-                    className="flex cursor-pointer items-center gap-1"
+                    className="!flex cursor-pointer items-center gap-1"
                   >
                     <Users className="h-3 w-3" /> Contact
                   </Label>
@@ -1081,7 +1081,7 @@ export default function DocumentPage() {
                   <RadioGroupItem value="account" id="account" />
                   <Label
                     htmlFor="account"
-                    className="flex cursor-pointer items-center gap-1"
+                    className="!flex cursor-pointer items-center gap-1"
                   >
                     <Building2 className="h-3 w-3" /> Account
                   </Label>
@@ -1090,7 +1090,7 @@ export default function DocumentPage() {
                   <RadioGroupItem value="opportunity" id="opportunity" />
                   <Label
                     htmlFor="opportunity"
-                    className="flex cursor-pointer items-center gap-1"
+                    className="!flex cursor-pointer items-center gap-1"
                   >
                     <Briefcase className="h-3 w-3" /> Opportunity
                   </Label>
@@ -1129,12 +1129,12 @@ export default function DocumentPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
+            <div>
               <Label>Select File</Label>
               <Input
                 type="file"
                 onChange={(e) => setFile(e.target.files?.[0] || null)}
-                className="selectFileDetails"
+                className="selectFileDetails file:text-leadgaze-primary file:cursor-pointer"
               />
             </div>
           </div>
@@ -1165,8 +1165,8 @@ export default function DocumentPage() {
           <DialogHeader>
             <DialogTitle>Rename Document</DialogTitle>
           </DialogHeader>
-          <div className="flex-1 space-y-2 px-2">
-            <div className="space-y-2">
+          <div className="flex-1 custom-spacing-x-y py-2">
+            <div>
               <Label>Document Name</Label>
               <Input
                 value={newName}

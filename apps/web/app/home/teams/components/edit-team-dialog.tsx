@@ -96,7 +96,7 @@ export function EditTeamDialog({ team, open, onOpenChange, onSuccess }: EditTeam
         </DialogHeader>
 
         <Form {...form}>
-          <form id="dialog-form" onSubmit={form.handleSubmit(onSubmit)} className="flex-1 overflow-y-auto px-2 space-y-2">
+          <form id="dialog-form" onSubmit={form.handleSubmit(onSubmit)} className="flex-1 overflow-y-auto space-y-2 custom-spacing-x-y py-2">
             <FormField
               control={form.control}
               name="name"

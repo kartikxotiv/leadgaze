@@ -43,6 +43,7 @@ import {
 } from '@kit/ui/select';
 import { ListToolBar } from '@kit/ui/list-toolbar';
 import { Skeleton } from '@kit/ui/skeleton';
+import { Tabs, TabsList, TabsTrigger } from '@kit/ui/tabs';
 import { cn } from '@kit/ui/utils';
 
 import type { CoreEmailAccount } from '../../services/email-accounts.service';
@@ -196,20 +197,24 @@ export function CoreInboxTab({
           </PageHeader>
         </div>
       )}
-      <div className={cn("flex w-full min-w-0 max-w-full shrink-0 items-center justify-between border-bottom-gray", !pageTitle && "border-bottom-gray")}>
+      <div className={cn("flex w-full min-w-0 max-w-full shrink-0 items-center justify-between", !pageTitle && "")}>
         <div className="shrink-0 flex items-center pr-4 gap-3">
-          <div className="flex items-center gap-2">
-            {(['all', 'inbound', 'outbound'] as const).map((value) => (
-              <Button
-                key={value}
-                variant={filter === value ? 'default' : 'outline'}
-                className="secondary-text-small-bold"
-                onClick={() => setFilter(value)}
-              >
-                {value[0]!.toUpperCase() + value.slice(1)}
-              </Button>
-            ))}
-          </div>
+          <Tabs
+            value={filter}
+            onValueChange={(v) => setFilter(v as any)}
+          >
+            <TabsList className="mb-0 h-auto justify-start gap-6 rounded-none border-b bg-transparent">
+              {(['all', 'inbound', 'outbound'] as const).map((value) => (
+                <TabsTrigger
+                  key={value}
+                  value={value}
+                  className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent"
+                >
+                  {value[0]!.toUpperCase() + value.slice(1)}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
 
           <Select
             value={selectedInboxEmail}
@@ -229,7 +234,7 @@ export function CoreInboxTab({
           </Select>
         </div>
 
-        <div className="p-[2px] flex flex-1 justify-end min-w-0">
+        <div className="flex flex-1 justify-end min-w-0">
           <ListToolBar
             className="border-none bg-transparent p-0"
             showSearch

@@ -430,7 +430,7 @@ export default function TeamMembersPage() {
 
   return (
     <ModuleGuard module="team_members">
-      <div className="flex shrink-0 flex-col gap-2 overflow-hidden border-top-bottom-gray">
+      <div className="flex shrink-0 flex-col gap-2 overflow-hidden">
         <PageHeader
           title={`Members`}
           // description={
@@ -442,7 +442,7 @@ export default function TeamMembersPage() {
           // }
         >
           
-          <div className="p-[2px] flex gap-2">
+          <div className="flex gap-2">
             <div className="flex">
             {currentModule && (
               <Card

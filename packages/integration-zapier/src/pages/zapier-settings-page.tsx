@@ -316,9 +316,9 @@ export function ZapierSettingsPage({
 
           {/* Tabs Container */}
           <Tabs defaultValue="tutorial" className="lg:col-span-3 h-full min-h-0 flex flex-col overflow-hidden">
-            <TabsList className="w-max bg-muted/40 p-1 rounded-lg shrink-0 mb-0">
-              <TabsTrigger value="tutorial">Setup Guide</TabsTrigger>
-              <TabsTrigger value="logs">Activity Logs</TabsTrigger>
+            <TabsList className="mb-1 h-auto w-full justify-start gap-6 rounded-none border-b bg-transparent p-0 shrink-0 overflow-x-auto hide-scrollbar">
+              <TabsTrigger value="tutorial" className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent">Setup Guide</TabsTrigger>
+              <TabsTrigger value="logs" className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent">Activity Logs</TabsTrigger>
             </TabsList>
 
             {/* ---- TUTORIAL SETUP GUIDE ---- */}
@@ -488,7 +488,7 @@ X-Zapier-Api-Key: ${activeKey?.masked_key || 'YOUR_ZAPIER_API_KEY'}`}
               
             
           </DialogHeader>
-          <div className="space-y-2 px-2 pb-2">
+          <div className="space-y-2 custom-spacing-x-y py-2">
             <p className="primary-text-regular text-leadgaze-dark dark:text-white">Copy this key and save it in a secure password manager. For security reasons, <strong>this key will not be shown again</strong>.</p>
             <div className="flex items-center gap-2 rounded border bg-muted/20 p-2.5 font-mono text-sm">
               <span className="flex-1 truncate">{generatedKey}</span>

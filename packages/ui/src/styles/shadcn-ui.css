@@ -158,7 +158,7 @@
     font-weight: 500 !important;
     line-height: 20px !important;
   }
-  .main-dialog div label+input, .main-dialog div label+button, .main-dialog div label+textarea, .main-dialog div label+select{
+  .main-dialog div label+input, .main-dialog div label+button, .main-dialog div label+textarea, .main-dialog div label+select, .main-dialog div label+div>svg+input{
     margin-top: 2px !important;
   }
   .custom-sub-heading-dialog-form{

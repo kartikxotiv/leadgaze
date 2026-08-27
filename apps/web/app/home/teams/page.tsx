@@ -185,12 +185,12 @@ export default function TeamsPage() {
 
   return (
     <ModuleGuard module="team_members">
-      <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden border-top-bottom-gray">
+      <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden">
         <PageHeader
           title={`Teams`}
           // description="Manage your workspace teams and their members"
         >
-          <div className="p-[2px]">
+          <div>
             <ListToolBar
               align="right"
               className="border-none bg-transparent p-0"
@@ -347,7 +347,19 @@ export default function TeamsPage() {
                     <TableRow key={team.id}>
                       {isVisible('name') && (
                         <TableCell>
-                          <span className="primary-text-medium text-leadgaze-primary dark:text-leadgaze-primary">{team.name}</span>
+                          <span 
+                            className={cn(
+                              "primary-text-medium text-leadgaze-primary dark:text-leadgaze-primary",
+                              canAccess('team_members', 'edit') && "cursor-pointer hover:underline"
+                            )}
+                            onClick={() => {
+                              if (canAccess('team_members', 'edit')) {
+                                handleManageMembers(team);
+                              }
+                            }}
+                          >
+                            {team.name}
+                          </span>
                         </TableCell>
                       )}
                       {isVisible('description') && (

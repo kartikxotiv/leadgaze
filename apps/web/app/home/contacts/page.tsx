@@ -768,11 +768,11 @@ export default function ContactsPage() {
 
   return (
     <ModuleGuard module="contacts">
-      <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden border-top-bottom-gray">
+      <div className="flex w-full max-w-full min-w-0 shrink-0 flex-col gap-2 overflow-hidden">
         <PageHeader
           title={`Contacts`}          
         >
-          <div className="p-[2px]">
+          <div>
             <ListToolBar
               align="right"
             className="border-none bg-transparent p-0"
