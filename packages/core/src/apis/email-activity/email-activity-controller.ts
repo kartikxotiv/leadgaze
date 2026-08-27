@@ -106,167 +106,29 @@ export const getCoreEmailActivityController = catchAsync(
         );
       }
 
-      const { data: relations, error: relationError } = await (supabase as any)
-        .schema('core')
-        .from('email_relations')
-        .select('email_id')
-        .eq('workspace_id', resolvedWorkspaceId)
-        .eq('entity_id', entityId)
-        .eq('entity_type', entityType);
-
-      if (relationError) throw relationError;
-
-      const directEmailIds = Array.from(
-        new Set((relations ?? []).map((relation: any) => relation.email_id)),
-      );
-
-      // Find entity's direct emails to extract thread identifiers
-      let threadKeys: string[] = [];
-      let threadIds: string[] = [];
-      let messageIds: string[] = [];
-
-      if (directEmailIds.length > 0) {
-        const { data: directEmails } = await (supabase as any)
-          .schema('core')
-          .from('emails')
-          .select('id,thread_key,thread_id,internet_message_id,provider_message_id,in_reply_to')
-          .eq('workspace_id', resolvedWorkspaceId)
-          .eq('is_deleted', false)
-          .in('id', directEmailIds);
-
-        (directEmails ?? []).forEach((item: any) => {
-          if (item.thread_key) threadKeys.push(item.thread_key);
-          if (item.thread_id) threadIds.push(item.thread_id);
-          if (item.internet_message_id) messageIds.push(item.internet_message_id);
-          if (item.provider_message_id) messageIds.push(item.provider_message_id);
-          if (item.in_reply_to) messageIds.push(item.in_reply_to);
-        });
-
-        threadKeys = Array.from(new Set(threadKeys.filter(Boolean)));
-        threadIds = Array.from(new Set(threadIds.filter(Boolean)));
-        messageIds = Array.from(new Set(messageIds.filter(Boolean)));
-      }
-
-      // Also get entity's email address if lead or contact
-      let entityEmailAddress: string | null = null;
-      if (entityType === 'lead') {
-        const { data: lead } = await (supabase as any)
-          .from('crm_leads')
-          .select('email')
-          .eq('id', entityId)
-          .maybeSingle();
-        if (lead?.email) entityEmailAddress = lead.email.trim().toLowerCase();
-      } else if (entityType === 'contact') {
-        const { data: contact } = await (supabase as any)
-          .from('crm_contacts')
-          .select('email')
-          .eq('id', entityId)
-          .maybeSingle();
-        if (contact?.email) entityEmailAddress = contact.email.trim().toLowerCase();
-      }
-
-      // Build combined filters for emails belonging directly to this lead/contact or linked outbound threads
-      const matchFilters: string[] = [];
-      if (directEmailIds.length > 0) {
-        matchFilters.push(`id.in.(${directEmailIds.join(',')})`);
-      }
-      if (entityEmailAddress) {
-        matchFilters.push(`from_email.ilike.${entityEmailAddress}`);
-        matchFilters.push(`to_email.ilike.${entityEmailAddress}`);
-      }
-
-      if (matchFilters.length === 0) {
-        return successDataResponse('Email activity retrieved successfully', {
-          data: [],
-          count: 0,
-          limit,
-          offset,
-        });
-      }
-
-      // 1. Enforce connected email account privacy (private vs public/workspace):
-      const accessibleAccounts = await getAccessibleInboxAccounts(
-        supabase,
-        resolvedWorkspaceId!,
-      );
-
-      if (accessibleAccounts.length === 0) {
-        return successDataResponse('Email activity retrieved successfully', {
-          data: [],
-          count: 0,
-          limit,
-          offset,
-        });
-      }
-
-      const accessibleAccountIds = new Set(accessibleAccounts.map((a: any) => a.id));
-      const accessibleAccountEmails = new Set(
-        accessibleAccounts.map((a: any) => a.email.toLowerCase()),
-      );
-
-      // 2. Fetch candidate emails matching the entity's relations or email address
-      const { data: candidateEmails, error } = await (supabase as any)
-        .schema('core')
-        .from('emails')
-        .select('*,email_relations(*)')
-        .eq('workspace_id', resolvedWorkspaceId)
-        .eq('is_deleted', false)
-        .or(matchFilters.join(','))
-        .order('received_at', { ascending: false, nullsFirst: false })
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      // 3. Filter candidates strictly:
-      // (a) Must belong to an accessible email account (privacy check)
-      // (b) Must be directly linked to this entity OR participate with the lead/contact's email
-      const filtered = (candidateEmails ?? []).filter((email: any) => {
-        // Privacy check
-        const isAccountAccessible =
-          (email.email_account_id && accessibleAccountIds.has(email.email_account_id)) ||
-          accessibleAccountEmails.has(email.from_email?.toLowerCase()) ||
-          accessibleAccountEmails.has(email.to_email?.toLowerCase());
-
-        if (!isAccountAccessible) return false;
-
-        // Specific lead/contact check:
-        // Must either be directly linked or involve the lead/contact's email address
-        const isDirectlyLinked = directEmailIds.includes(email.id);
-        
-        let matchesEntityEmail = false;
-        if (entityEmailAddress) {
-          const fromEmail = email.from_email?.toLowerCase();
-          const toEmails = [
-            email.to_email?.toLowerCase(), 
-            ...(Array.isArray(email.to_emails) ? email.to_emails.map((e:string) => e.toLowerCase()) : [])
-          ].filter(Boolean);
-          
-          const hasLeadAsParticipant = fromEmail === entityEmailAddress || toEmails.includes(entityEmailAddress);
-          
-          // A valid lead email must be a communication between the Lead and the Workspace.
-          // We exclude the Lead's email from Workspace emails to prevent dumping the entire inbox
-          // in the edge case where the user uses their own connected email as a test Lead.
-          const workspaceEmailsExcludingLead = new Set(
-            Array.from(accessibleAccountEmails).filter(e => e !== entityEmailAddress)
-          );
-          
-          const hasWorkspaceAsParticipant = 
-            workspaceEmailsExcludingLead.has(fromEmail) || 
-            toEmails.some(e => workspaceEmailsExcludingLead.has(e));
-            
-          if (hasLeadAsParticipant && hasWorkspaceAsParticipant) {
-             matchesEntityEmail = true;
-          }
+      const { data: rpcData, error: rpcError } = await (supabase as any).rpc(
+        'get_core_email_activity',
+        {
+          p_workspace_id: resolvedWorkspaceId,
+          p_entity_type: entityType,
+          p_entity_id: entityId,
+          p_limit: limit,
+          p_offset: offset,
+          p_user_id: currentUserId,
+          p_search: search || null,
+          p_direction: direction || null,
+          p_account_email: accountEmail || null,
         }
+      );
 
-        return isDirectlyLinked || matchesEntityEmail;
-      });
+      if (rpcError) throw rpcError;
 
-      const paginatedData = filtered.slice(offset, offset + limit);
+      const paginatedData = rpcData?.data ?? [];
+      const totalCount = rpcData?.count ?? 0;
 
       return successDataResponse('Email activity retrieved successfully', {
         data: paginatedData,
-        count: filtered.length,
+        count: totalCount,
         limit,
         offset,
       });

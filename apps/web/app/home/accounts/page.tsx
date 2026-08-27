@@ -545,6 +545,8 @@ export default function AccountsPage() {
         createdByIds: selectedCreatedByIds.length > 0 ? selectedCreatedByIds : undefined,
       }),
     enabled: !!workspace?.id,
+    placeholderData: (prev) => prev,
+    staleTime: 30 * 1000,
   });
 
   const accounts = accountsData.data;

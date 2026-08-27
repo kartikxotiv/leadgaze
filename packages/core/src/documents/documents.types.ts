@@ -13,6 +13,7 @@ export interface GetDocumentsParams {
   userId?: string;
   page?: number | null;
   limit?: number | null;
+  module?: string;
 }
 
 export interface DocumentItem {

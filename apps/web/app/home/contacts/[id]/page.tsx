@@ -198,6 +198,8 @@ export default function ContactDetailsPage() {
     queryKey: ['contact', id],
     queryFn: () => getContactByIdService(id),
     enabled: !!id,
+    placeholderData: (prev) => prev,
+    staleTime: 30 * 1000,
   });
 
   const { canView } = useFieldPermissions({

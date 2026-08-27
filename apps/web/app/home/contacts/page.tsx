@@ -526,6 +526,8 @@ export default function ContactsPage() {
         createdByIds: selectedCreatedByIds.length > 0 ? selectedCreatedByIds : undefined,
       }),
     enabled: !!workspace?.id,
+    placeholderData: (prev) => prev,
+    staleTime: 30 * 1000,
   });
 
   const contacts = contactsData.data;

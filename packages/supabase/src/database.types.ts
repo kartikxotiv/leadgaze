@@ -11151,6 +11151,23 @@ export type Database = {
         };
         Returns: Json;
       };
+      get_core_tasks: {
+        Args: {
+          p_workspace_id: string;
+          p_entity_type?: string;
+          p_entity_id?: string;
+          p_status?: string;
+        };
+        Returns: Json;
+      };
+      get_core_calls: {
+        Args: {
+          p_workspace_id: string;
+          p_entity_type?: string;
+          p_entity_id?: string;
+        };
+        Returns: Json;
+      };
       get_effective_plan_entitlement: {
         Args: { p_feature_id: string; p_plan_id: string };
         Returns: {

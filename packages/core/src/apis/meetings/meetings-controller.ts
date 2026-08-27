@@ -113,6 +113,7 @@ export const getMeetingsController = catchAsync(async ({ request }) => {
   const limitParam = url.searchParams.get('limit');
   const page = pageParam ? parseInt(pageParam, 10) : null;
   const limit = limitParam ? parseInt(limitParam, 10) : null;
+  const moduleParam = url.searchParams.get('module');
 
   if (!workspaceId) {
     return NextResponse.json(
@@ -161,165 +162,33 @@ export const getMeetingsController = catchAsync(async ({ request }) => {
     const userLevel = roleData?.hierarchy_level ?? 0;
     const isAdmin = roleData?.role_key === 'admin' || userLevel >= 100;
 
-    const shouldShowAll = (isWorkspaceOwner || isAdmin) && view === 'team';
+    const { data, error: fetchError } = await (supabase as any).rpc('get_core_meetings', {
+      p_workspace_id: workspaceId,
+      p_entity_type: entityType ? toDbEntityType(entityType) : null,
+      p_entity_id: entityId || null,
+      p_statuses: statuses ? statuses.split(',').map((s) => s.trim()).filter(Boolean) : null,
+      p_timeframe: timeframe || null,
+      p_search_term: searchTerm || null,
+      p_created_by_ids: createdByIds && createdByIds !== 'all' ? createdByIds.split(',').map((id) => id.trim()).filter(Boolean) : null,
+      p_created_at_from: createdAtFrom ? (createdAtFrom.includes('T') ? createdAtFrom : `${createdAtFrom}T00:00:00.000Z`) : null,
+      p_created_at_to: createdAtTo ? (createdAtTo.includes('T') ? createdAtTo : `${createdAtTo}T23:59:59.999Z`) : null,
+      p_updated_at_from: updatedAtFrom ? (updatedAtFrom.includes('T') ? updatedAtFrom : `${updatedAtFrom}T00:00:00.000Z`) : null,
+      p_updated_at_to: updatedAtTo ? (updatedAtTo.includes('T') ? updatedAtTo : `${updatedAtTo}T23:59:59.999Z`) : null,
+      p_is_workspace_owner: isWorkspaceOwner,
+      p_user_id: user.id,
+      p_page: page,
+      p_limit: limit,
+      p_meeting_type: meetingType || null,
+      p_provider: provider || null,
+      p_host_user_id: hostUserId || null,
+      p_view: view,
+      p_is_admin: isAdmin,
+      p_include_participant_meetings: includeParticipantMeetings === 'true' || includeParticipantMeetings === true,
+      p_participant_user_id: participantUserId || null,
+      p_participant_email: user.email || null,
+      p_module: moduleParam || null
+    });
 
-    // Get all meeting IDs the user is associated with (as creator, host, or participant)
-    let meetingIds: string[] | null = null;
-
-    if (!shouldShowAll) {
-      const userAssociatedMeetingIds = new Set<string>();
-
-      // 1. Participant meetings (matches user ID or user email)
-      let participantQuery = (supabase as any)
-        .schema('core')
-        .from('meeting_participants')
-        .select('meeting_id')
-        .eq('workspace_id', workspaceId);
-
-      if (user.email) {
-        participantQuery = participantQuery.or(`internal_user_id.eq.${userIdForParticipant},external_email.eq.${user.email}`);
-      } else {
-        participantQuery = participantQuery.eq('internal_user_id', userIdForParticipant);
-      }
-
-      const { data: participantData } = await participantQuery;
-
-      if (participantData) {
-        participantData.forEach((p: { meeting_id: string }) =>
-          userAssociatedMeetingIds.add(p.meeting_id),
-        );
-      }
-
-      // 2. Host meetings
-      const { data: hostMeetingData } = await (supabase as any)
-        .schema('core')
-        .from('meetings')
-        .select('id')
-        .eq('workspace_id', workspaceId)
-        .eq('host_user_id', userIdForParticipant)
-        .eq('is_deleted', false);
-
-      if (hostMeetingData) {
-        hostMeetingData.forEach((m: { id: string }) =>
-          userAssociatedMeetingIds.add(m.id),
-        );
-      }
-
-      // 3. Creator meetings
-      const { data: createdMeetingData } = await (supabase as any)
-        .schema('core')
-        .from('meetings')
-        .select('id')
-        .eq('workspace_id', workspaceId)
-        .eq('created_by', userIdForParticipant)
-        .eq('is_deleted', false);
-
-      if (createdMeetingData) {
-        createdMeetingData.forEach((m: { id: string }) =>
-          userAssociatedMeetingIds.add(m.id),
-        );
-      }
-
-      const associatedIds = Array.from(userAssociatedMeetingIds);
-
-      // If filtering by entity, we intersect entity meetings with user associated meetings
-      if (entityType || entityId) {
-        let relQuery = (supabase as any)
-          .schema('core')
-          .from('meeting_relations')
-          .select('meeting_id')
-          .eq('workspace_id', workspaceId);
-
-        if (entityType) relQuery = relQuery.eq('entity_type', toDbEntityType(entityType));
-        if (entityId) relQuery = relQuery.eq('entity_id', entityId);
-
-        const { data: relData, error: relError } = await relQuery;
-        if (relError) throw relError;
-
-        const matchedIds = (relData ?? []).map(
-          (r: { meeting_id: string }) => r.meeting_id,
-        ) as string[];
-
-        meetingIds = matchedIds.filter((mid) => userAssociatedMeetingIds.has(mid));
-      } else {
-        meetingIds = associatedIds;
-      }
-
-      // If associated meeting list is empty, return empty results immediately
-      if (!meetingIds || meetingIds.length === 0) {
-        return successDataResponse('Meetings retrieved', id ? null : []);
-      }
-    } else {
-      // For workspace owner / admin viewing all meetings, only filter by entity if requested
-      if (entityType || entityId) {
-        let relQuery = (supabase as any)
-          .schema('core')
-          .from('meeting_relations')
-          .select('meeting_id')
-          .eq('workspace_id', workspaceId);
-
-        if (entityType) relQuery = relQuery.eq('entity_type', toDbEntityType(entityType));
-        if (entityId) relQuery = relQuery.eq('entity_id', entityId);
-
-        const { data: relData, error: relError } = await relQuery;
-        if (relError) throw relError;
-
-        meetingIds = Array.from(new Set((relData ?? []).map((r: { meeting_id: string }) => r.meeting_id))) as string[];
-        if (meetingIds.length === 0) {
-          return successDataResponse('Meetings retrieved', id ? null : []);
-        }
-      }
-    }
-
-    // Build main query
-    let query = (supabase as any)
-      .schema('core')
-      .from('meetings')
-      .select('*')
-      .eq('workspace_id', workspaceId)
-      .eq('is_deleted', false);
-
-    if (id) query = query.eq('id', id).maybeSingle();
-    if (meetingIds) query = query.in('id', meetingIds);
-    if (meetingType) query = query.eq('meeting_type', meetingType);
-    if (provider) query = query.eq('provider', provider);
-    if (status) query = query.eq('status', status);
-    if (hostUserId) query = query.eq('host_user_id', hostUserId);
-
-    if (createdAtFrom) query = query.gte('created_at', (createdAtFrom.includes('T') ? createdAtFrom : `${createdAtFrom}T00:00:00.000Z`));
-    if (createdAtTo) query = query.lte('created_at', (createdAtTo.includes('T') ? createdAtTo : `${createdAtTo}T23:59:59.999Z`));
-    if (updatedAtFrom) query = query.gte('updated_at', (updatedAtFrom.includes('T') ? updatedAtFrom : `${updatedAtFrom}T00:00:00.000Z`));
-    if (updatedAtTo) query = query.lte('updated_at', (updatedAtTo.includes('T') ? updatedAtTo : `${updatedAtTo}T23:59:59.999Z`));
-
-    if (createdByIds && createdByIds !== 'all') {
-      const ids = createdByIds.split(',').map((id) => id.trim()).filter(Boolean);
-      if (ids.length === 1) {
-        query = query.eq('created_by', ids[0]);
-      } else if (ids.length > 1) {
-        query = query.in('created_by', ids);
-      }
-    }
-
-    if (statuses) {
-      const statusList = statuses.split(',').map((s) => s.trim()).filter(Boolean);
-      if (statusList.length === 1) {
-        query = query.eq('status', statusList[0]);
-      } else if (statusList.length > 1) {
-        query = query.in('status', statusList);
-      }
-    }
-    if (searchTerm) {
-      query = query.or(`title.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`);
-    }
-
-    if (!id) {
-      query = query.order('scheduled_start', {
-        ascending: false,
-        nullsFirst: false,
-      });
-    }
-
-    const { data, error: fetchError } = await query;
     if (fetchError) {
       console.error('Fetch meetings error:', fetchError);
       return NextResponse.json(
@@ -328,150 +197,31 @@ export const getMeetingsController = catchAsync(async ({ request }) => {
       );
     }
 
-    if (!data) {
+    if (!data || !data.data) {
       return successDataResponse('Meetings retrieved', id ? null : []);
     }
 
-    // Get relations and participants for each meeting
-    let meetings = Array.isArray(data) ? data : [data];
+    let resultData = data.data;
 
-    // Apply timeframe filtering if provided
-    if (timeframe) {
-      const timeframeList = timeframe.split(',').map((t) => t.trim()).filter(Boolean);
-      if (timeframeList.length > 0) {
-        const checkTime = new Date();
-        meetings = meetings.filter((meeting) => {
-          const rawStart = meeting.scheduled_start || meeting.actual_start || meeting.start_time || meeting.start_date || meeting.created_at;
-          if (!rawStart) return true;
-          const meetingDate = new Date(rawStart);
-          const isUpcoming = meetingDate >= checkTime || ['scheduled', 'upcoming'].includes(meeting.status);
-          if (timeframeList.includes('upcoming')) return isUpcoming;
-          if (timeframeList.includes('past')) return !isUpcoming;
-          return true;
-        });
-      }
-    }
-
-    const totalMeetingsCount = meetings.length;
-    if (page && limit && limit > 0) {
-      const offset = (page - 1) * limit;
-      meetings = meetings.slice(offset, offset + limit);
-    }
-
-    const meetingIdsToFetch = meetings.map((m: { id: string }) => m.id);
-
-    if (meetingIdsToFetch.length > 0) {
-      // Fetch relations
-      const { data: relations } = await (supabase as any)
-        .schema('core')
-        .from('meeting_relations')
-        .select('*')
-        .in('meeting_id', meetingIdsToFetch);
-
-      // Fetch participants
-      const { data: participants } = await (supabase as any)
-        .schema('core')
-        .from('meeting_participants')
-        .select('*')
-        .in('meeting_id', meetingIdsToFetch);
-
-      // Collect all user IDs that need account lookups (cross-schema)
-      const userIds = new Set<string>();
-      meetings.forEach((m: { host_user_id?: string | null }) => {
-        if (m.host_user_id) userIds.add(m.host_user_id);
-      });
-      (participants ?? []).forEach(
-        (p: { internal_user_id?: string | null }) => {
-          if (p.internal_user_id) userIds.add(p.internal_user_id);
-        },
-      );
-
-      // Fetch accounts from public schema (cross-schema join not supported by PostgREST)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let accountsMap: Record<string, any> = {};
-      if (userIds.size > 0) {
-        const { data: accountsData } = await supabase
-          .from('accounts')
-          .select('id, name, email')
-          .in('id', Array.from(userIds));
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (accountsData ?? []).forEach((a: any) => {
-          accountsMap[a.id] = a;
-        });
-      }
-
-      // Enrich participants with internal_user data
-      const enrichedParticipants = (participants ?? []).map((p: any) => ({
-        ...p,
-        internal_user: p.internal_user_id
-          ? (accountsMap[p.internal_user_id] ?? null)
-          : null,
-      }));
-
-      // Attach to meetings with entity name fetching
-      const enrichedMeetings = await Promise.all(
-        meetings.map(async (meeting: any) => {
-          const rel = (relations ?? []).find(
-            (r: { meeting_id: string }) => r.meeting_id === meeting.id,
-          );
-          const rawType = rel?.entity_type ?? null;
-          const uiType = toUiEntityType(rawType);
-          const entityIdVal = rel?.entity_id ?? null;
-          const entityName = (uiType && entityIdVal)
-            ? await getEntityName(supabase, uiType, entityIdVal)
-            : null;
-
-          return {
-            ...meeting,
-            host: meeting.host_user_id
-              ? (accountsMap[meeting.host_user_id] ?? null)
-              : null,
-            relations: (relations ?? []).filter(
-              (r: { meeting_id: string }) => r.meeting_id === meeting.id,
-            ),
-            participants: enrichedParticipants.filter(
-              (p: { meeting_id: string }) => p.meeting_id === meeting.id,
-            ),
-            entity_type: uiType,
-            entity_id: entityIdVal,
-            entity_name: entityName,
-          };
-        })
-      );
-
-      const resultData = Array.isArray(data) ? enrichedMeetings : (enrichedMeetings[0] ?? null);
-
-      if (pageParam || limitParam) {
-        return NextResponse.json({
-          success: true,
-          data: resultData,
-          count: totalMeetingsCount,
-          total: totalMeetingsCount,
-          page: page ?? 1,
-          limit: limit ?? totalMeetingsCount,
-          has_more: page && limit ? (page * limit) < totalMeetingsCount : false,
-        });
-      }
-
-      return successDataResponse(
-        'Meetings retrieved',
-        resultData,
-      );
+    // Filter by ID if specifically requested
+    if (id) {
+      const singleMeeting = resultData.find((m: any) => m.id === id);
+      return successDataResponse('Meetings retrieved', singleMeeting || null);
     }
 
     if (pageParam || limitParam) {
       return NextResponse.json({
         success: true,
-        data: [],
-        count: totalMeetingsCount,
-        total: totalMeetingsCount,
-        page: page ?? 1,
-        limit: limit ?? totalMeetingsCount,
-        has_more: false,
+        data: resultData,
+        count: data.total,
+        total: data.total,
+        page: data.page,
+        limit: data.limit,
+        has_more: data.has_more,
       });
     }
 
-    return successDataResponse('Meetings retrieved', data);
+    return successDataResponse('Meetings retrieved', resultData);
   } catch (fetchError) {
     console.error('Fetch meetings error:', fetchError);
     return NextResponse.json(
@@ -1028,7 +778,24 @@ export const updateMeetingController = catchAsync(async ({ request }) => {
     if (body.title !== undefined) updatePayload.title = body.title;
     if (body.description !== undefined)
       updatePayload.description = body.description;
-    if (body.status !== undefined) updatePayload.status = body.status;
+    if (body.status !== undefined) {
+      updatePayload.status = body.status;
+      if (body.status === 'cancelled') {
+        if (!body.cancel_reason || typeof body.cancel_reason !== 'string' || body.cancel_reason.trim() === '') {
+          return NextResponse.json(
+            { success: false, message: 'Cancellation reason is required when cancelling a meeting' },
+            { status: 400 }
+          );
+        }
+        if (body.cancel_reason.length > 1000) {
+          return NextResponse.json(
+            { success: false, message: 'Cancellation reason cannot exceed 1000 characters' },
+            { status: 400 }
+          );
+        }
+        updatePayload.cancel_reason = body.cancel_reason;
+      }
+    }
     if (
       body.scheduled_start !== undefined ||
       body.scheduledStart !== undefined

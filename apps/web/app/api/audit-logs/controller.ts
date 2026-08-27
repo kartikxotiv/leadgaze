@@ -79,6 +79,9 @@ export const getAuditLogs = catchAsync(
         { data: taskRel },
         { data: emailRel },
         { data: calls },
+        { data: timeEntries },
+        { data: ticketAssignees },
+        { data: ticketEmails },
       ] = await Promise.all([
         supabase.schema('core').from('note_relations').select('note_id').in('entity_id', primaryIds),
         supabase.schema('core').from('meeting_relations').select('meeting_id').in('entity_id', primaryIds),
@@ -87,6 +90,9 @@ export const getAuditLogs = catchAsync(
         supabase.schema('core').from('task_relations').select('task_id').in('entity_id', primaryIds),
         supabase.schema('core').from('email_relations').select('email_id').in('entity_id', primaryIds),
         supabase.from('crm_call_logs').select('id').in('entity_id', primaryIds),
+        supabase.schema('service_cloud').from('time_entries').select('id').in('ticket_id', primaryIds),
+        supabase.schema('service_cloud').from('ticket_assignees').select('id').in('ticket_id', primaryIds),
+        supabase.schema('service_cloud').from('ticket_emails').select('email_id').in('ticket_id', primaryIds),
       ]);
 
       const allEntityIdsSet = new Set<string>(primaryIds);
@@ -97,6 +103,9 @@ export const getAuditLogs = catchAsync(
       taskRel?.forEach((r: any) => r.task_id && allEntityIdsSet.add(r.task_id));
       emailRel?.forEach((r: any) => r.email_id && allEntityIdsSet.add(r.email_id));
       calls?.forEach((c: any) => c.id && allEntityIdsSet.add(c.id));
+      timeEntries?.forEach((t: any) => t.id && allEntityIdsSet.add(t.id));
+      ticketAssignees?.forEach((ta: any) => ta.id && allEntityIdsSet.add(ta.id));
+      ticketEmails?.forEach((te: any) => te.email_id && allEntityIdsSet.add(te.email_id));
 
       const taskIds = taskRel?.map((t: any) => t.task_id).filter(Boolean) || [];
       if (taskIds.length > 0) {
@@ -177,6 +186,8 @@ export const getAuditLogs = catchAsync(
         contacts: new Set(),
         accounts: new Set(),
         opportunities: new Set(),
+        time_entries: new Set(),
+        ticket_assignees: new Set(),
       };
 
       logs.forEach((log: any) => {
@@ -210,6 +221,8 @@ export const getAuditLogs = catchAsync(
           else if (mod === 'contacts') moduleMap.contacts.add(eId);
           else if (mod === 'accounts') moduleMap.accounts.add(eId);
           else if (mod === 'opportunities') moduleMap.opportunities.add(eId);
+          else if (mod === 'service_cloud_time_entries') moduleMap.time_entries.add(eId);
+          else if (mod === 'service_cloud_ticket_assignees') moduleMap.ticket_assignees.add(eId);
         }
       });
 
@@ -299,6 +312,34 @@ export const getAuditLogs = catchAsync(
               .select('id, opportunity_name')
               .in('id', Array.from(moduleMap.opportunities))
               .then(({ data }) => data?.forEach((o: any) => titleMap.set(o.id, o.opportunity_name)))
+          : Promise.resolve(),
+        moduleMap.time_entries.size > 0
+          ? supabase
+              .schema('service_cloud')
+              .from('time_entries')
+              .select('id, description')
+              .in('id', Array.from(moduleMap.time_entries))
+              .then(({ data }) => data?.forEach((t: any) => titleMap.set(t.id, t.description ? `Time Log: ${t.description.slice(0, 50)}` : 'Time Log')))
+          : Promise.resolve(),
+        moduleMap.ticket_assignees.size > 0
+          ? (async () => {
+              const { data: assignees } = await supabase
+                .schema('service_cloud')
+                .from('ticket_assignees')
+                .select('id, account_id')
+                .in('id', Array.from(moduleMap.ticket_assignees));
+              if (!assignees?.length) return;
+              const accountIds = assignees.map((a: any) => a.account_id);
+              const { data: accounts } = await supabase
+                .from('accounts')
+                .select('id, name, email')
+                .in('id', accountIds);
+              const accountMap = new Map(accounts?.map((a: any) => [a.id, a]) || []);
+              assignees.forEach((a: any) => {
+                const acct = accountMap.get(a.account_id);
+                titleMap.set(a.id, `Assignee: ${acct?.name || acct?.email || 'Unknown'}`);
+              });
+            })()
           : Promise.resolve(),
       ]);
 

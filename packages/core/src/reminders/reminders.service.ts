@@ -21,6 +21,7 @@ export class RemindersService {
       userId,
       page = null,
       limit = null,
+      module,
     } = params;
 
     const createdByArray = createdByIds && createdByIds !== 'all'
@@ -43,6 +44,7 @@ export class RemindersService {
       p_user_id: userId || null,
       p_page: page,
       p_limit: limit,
+      p_module: module || null,
     });
 
     if (error) throw error;

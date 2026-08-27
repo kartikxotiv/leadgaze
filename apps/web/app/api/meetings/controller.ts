@@ -60,6 +60,7 @@ export const getMeetings = catchAsync(
     const limitParam = url.searchParams.get('limit');
     const page = pageParam ? parseInt(pageParam, 10) : null;
     const limit = limitParam ? parseInt(limitParam, 10) : null;
+    const moduleParam = url.searchParams.get('module');
 
     if (!workspaceId) {
       return NextResponse.json(
@@ -99,10 +100,14 @@ export const getMeetings = catchAsync(
       createdAtTo,
       updatedAtFrom,
       updatedAtTo,
+      includeParticipantMeetings,
+      participantUserId: participantUserId || null,
+      participantEmail: participantEmail || null,
       isWorkspaceOwner,
       userId: user.id,
       page,
       limit,
+      module: moduleParam || undefined,
     });
 
     const rawList = Array.isArray(result) ? result : (result.data || []);

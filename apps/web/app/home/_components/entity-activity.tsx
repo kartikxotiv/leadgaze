@@ -151,9 +151,11 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
       if (!workspace?.id) return [];
       // 'active' tab → fetch only non-completed; 'sent' tab → fetch only completed
       const apiStatus = reminderTab === 'sent' ? 'completed' : 'active';
-      return getRemindersService(workspace.id, entityType, entityId, apiStatus);
+      return getRemindersService(workspace.id, entityType, entityId, { status: apiStatus, module: 'sales' });
     },
     enabled: !!workspace?.id,
+    // Avoid re-fetching on every focus — reminders are stable for 60 seconds.
+    staleTime: 60 * 1000,
   });
 
   // Split into active / sent views; limit sent to last 5 sorted by completion date
@@ -184,11 +186,9 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
       toast.success('Reminder set');
       setIsOpen(false);
       setFormData({ title: '', description: '', due_date: '', priority: 'medium' });
+      // Only invalidate the targeted entity's reminder cache, not the entire app.
       queryClient.invalidateQueries({
         queryKey: ['reminders', entityType, entityId, workspace?.id],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ['reminders'],
       });
     },
     onError: () => toast.error('Failed to set reminder'),
@@ -202,11 +202,9 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
       setIsOpen(false);
       setEditingReminder(null);
       setFormData({ title: '', description: '', due_date: '', priority: 'medium' });
+      // Only invalidate the targeted entity's reminder cache, not the entire app.
       queryClient.invalidateQueries({
         queryKey: ['reminders', entityType, entityId, workspace?.id],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ['reminders'],
       });
     },
     onError: () => toast.error('Failed to update reminder'),
@@ -218,11 +216,9 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
       toast.success('Reminder deleted');
       setIsDeleteDialogOpen(false);
       setReminderToDelete(null);
+      // Only invalidate the targeted entity's reminder cache, not the entire app.
       queryClient.invalidateQueries({
         queryKey: ['reminders', entityType, entityId, workspace?.id],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ['reminders'],
       });
     },
     onError: () => {
@@ -267,11 +263,9 @@ export function EntityReminders({ entityType, entityId }: EntityActivityProps) {
     updateReminderService(reminder.id, {
       is_completed: !reminder.is_completed,
     }).then(() => {
+      // Only invalidate the targeted entity's reminder cache, not the entire app.
       queryClient.invalidateQueries({
         queryKey: ['reminders', entityType, entityId],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ['reminders'],
       });
       toast.success(
         reminder.is_completed
@@ -572,9 +566,11 @@ export function EntityMeetings({ entityType, entityId }: EntityActivityProps) {
     queryFn: async () => {
       if (!workspace?.id) return [];
       // Always include meetings where current user is a participant/host
-      return getCoreMeetingsService(workspace.id, entityType, entityId, undefined, true);
+      return getCoreMeetingsService(workspace.id, entityType, entityId, { module: 'sales' });
     },
     enabled: !!workspace?.id,
+    // Cache for 60 seconds to avoid re-fetching on every tab switch.
+    staleTime: 60 * 1000,
   });
 
   const filteredMeetings = useMemo(() => {
@@ -846,9 +842,9 @@ export function EntityMeetings({ entityType, entityId }: EntityActivityProps) {
           </div>
         ) : (
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="upcoming" className="h-8" >Upcoming</TabsTrigger>
-              <TabsTrigger value="past" className="h-8" >Previous</TabsTrigger>
+            <TabsList className="mb-2 h-auto w-full justify-start gap-6 rounded-none border-b bg-transparent p-0 overflow-x-auto hide-scrollbar">
+              <TabsTrigger value="upcoming" className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent">Upcoming</TabsTrigger>
+              <TabsTrigger value="past" className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:bg-transparent">Previous</TabsTrigger>
             </TabsList>
             <TabsContent value="upcoming">
               {renderMeetingsList(filteredMeetings)}
@@ -930,7 +926,7 @@ export function EntityDocuments({ entityType, entityId }: EntityActivityProps) {
     queryKey: ['documents', entityType, entityId, workspace?.id],
     queryFn: () => {
       if (!workspace?.id) return [];
-      return getDocumentsService(workspace.id, entityType, entityId);
+      return getDocumentsService(workspace.id, entityType, entityId, { module: 'sales' });
     },
     enabled: !!workspace?.id,
   });

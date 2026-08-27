@@ -1938,6 +1938,14 @@ export function MeetingDetailsDialog({
                   <p className="text-sm text- leadgaze-dark dark:text-white">{meeting.description}</p>
                 </div>
               )}
+              {meeting.status === 'cancelled' && meeting.cancel_reason && (
+                <div className="space-y-1">
+                  <Label className="primary-text-medium text-leadgaze-dark dark:text-white">
+                    Reason
+                  </Label>
+                  <p className="text-sm text-destructive">{meeting.cancel_reason}</p>
+                </div>
+              )}
               {meeting.location && (
                 <div className="flex items-start gap-2 border p-2">
                   <MapPin className="text-muted-foreground mt-0.5 h-5 w-5" />
@@ -2199,7 +2207,11 @@ export default function MeetingsPage() {
   const [isEditOpen, setIsEditOpen] = useState(false);
 
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [meetingToDelete, setMeetingToDelete] = useState<string | null>(null);
+  const [meetingToDelete, setMeetingToDelete] = useState<CoreMeeting | null>(null);
+
+  const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
+  const [meetingToCancel, setMeetingToCancel] = useState<CoreMeeting | null>(null);
+  const [cancelReason, setCancelReason] = useState('');
 
   // Fetch team members (for Created By filter dropdown)
   const { members } = usePackageMembers();
@@ -2239,10 +2251,13 @@ export default function MeetingsPage() {
           statuses: selectedStatuses.length > 0 ? selectedStatuses : undefined,
           timeframe: selectedTimeframe.length > 0 ? selectedTimeframe : undefined,
           searchTerm: debouncedSearchTerm || undefined,
+          module: 'sales',
         },
       );
     },
     enabled: !!workspace?.id,
+    placeholderData: (prev: any) => prev,
+    staleTime: 30 * 1000,
   });
 
   const meetings = useMemo(() => {
@@ -2287,6 +2302,7 @@ export default function MeetingsPage() {
       return res?.data ?? [];
     },
     enabled: !!workspace?.id,
+    staleTime: 5 * 60 * 1000,
   });
   const { data: contacts = [] } = useQuery({
     queryKey: ['contacts', workspace?.id],
@@ -2296,6 +2312,7 @@ export default function MeetingsPage() {
       return res?.data ?? [];
     },
     enabled: !!workspace?.id,
+    staleTime: 5 * 60 * 1000,
   });
   const { data: crmAccounts = [] } = useQuery({
     queryKey: ['crm-accounts', workspace?.id],
@@ -2305,6 +2322,7 @@ export default function MeetingsPage() {
       return res?.data ?? [];
     },
     enabled: !!workspace?.id,
+    staleTime: 5 * 60 * 1000,
   });
   const { data: opportunities = [] } = useQuery({
     queryKey: ['opportunities', workspace?.id],
@@ -2314,6 +2332,7 @@ export default function MeetingsPage() {
       return res?.data ?? [];
     },
     enabled: !!workspace?.id,
+    staleTime: 5 * 60 * 1000,
   });
 
   const deleteMutation = useMutation({
@@ -2338,10 +2357,14 @@ export default function MeetingsPage() {
   });
 
   const cancelMutation = useMutation({
-    mutationFn: (id: string) => cancelMeetingService(workspace!.id, id),
+    mutationFn: ({ id, reason }: { id: string; reason: string }) => 
+      cancelMeetingService(workspace!.id, id, reason),
     onSuccess: () => {
       toast.success('Meeting cancelled');
       queryClient.invalidateQueries({ queryKey: ['meetings'] });
+      setIsCancelDialogOpen(false);
+      setMeetingToCancel(null);
+      setCancelReason('');
     },
     onError: () => toast.error('Failed to cancel meeting'),
   });
@@ -2875,9 +2898,10 @@ export default function MeetingsPage() {
                                   )}
                                 {meeting.status === 'scheduled' && (
                                   <DropdownMenuItem
-                                    onClick={() =>
-                                      cancelMutation.mutate(meeting.id)
-                                    }
+                                    onClick={() => {
+                                      setMeetingToCancel(meeting);
+                                      setIsCancelDialogOpen(true);
+                                    }}
                                   >
                                     <Ban className="mr-2 h-4 w-4" />
                                     Cancel Meeting
@@ -2886,7 +2910,7 @@ export default function MeetingsPage() {
                                 <DropdownMenuItem
                                   className="text-destructive"
                                   onClick={() => {
-                                    setMeetingToDelete(meeting.id);
+                                    setMeetingToDelete(meeting);
                                     setIsDeleteDialogOpen(true);
                                   }}
                                 >
@@ -2936,8 +2960,11 @@ export default function MeetingsPage() {
             setIsEditOpen(true);
           }}
           onDelete={(id) => {
-            setMeetingToDelete(id);
-            setIsDeleteDialogOpen(true);
+            const meeting = meetings.find((m) => m.id === id);
+            if (meeting) {
+                setMeetingToDelete(meeting);
+                setIsDeleteDialogOpen(true);
+            }
           }}
         />
 
@@ -2974,11 +3001,61 @@ export default function MeetingsPage() {
           description="Are you sure you want to delete this meeting? This action cannot be undone."
           onConfirm={() => {
             if (meetingToDelete) {
-              deleteMutation.mutate(meetingToDelete);
+              deleteMutation.mutate(meetingToDelete.id);
             }
           }}
           isDeleting={deleteMutation.isPending}
         />
+
+        <Dialog open={isCancelDialogOpen} onOpenChange={(open) => {
+          setIsCancelDialogOpen(open);
+          if (!open) {
+            setMeetingToCancel(null);
+            setCancelReason('');
+          }
+        }}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Cancel Meeting</DialogTitle>
+              <DialogDescription>
+                Please provide a reason for cancelling this meeting. This is required and limited to 1000 characters.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="custom-spacing-x-y py-2">
+              <Textarea
+                placeholder="Reason for cancellation..."
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                maxLength={1000}
+                rows={4}
+              />
+              <div className="text-xs text-muted-foreground mt-2 text-right">
+                {cancelReason.length} / 1000
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setIsCancelDialogOpen(false);
+                  setMeetingToCancel(null);
+                  setCancelReason('');
+                }}
+              >
+                Close
+              </Button>
+              <Button
+                onClick={() =>
+                  meetingToCancel && cancelMutation.mutate({ id: meetingToCancel.id, reason: cancelReason })
+                }
+                disabled={cancelMutation.isPending || !cancelReason.trim()}
+              >
+                {cancelMutation.isPending ? 'Saving...' : 'Save'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
       </PageBody>
     </>
   );

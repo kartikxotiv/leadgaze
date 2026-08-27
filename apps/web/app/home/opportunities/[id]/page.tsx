@@ -210,6 +210,8 @@ export default function OpportunityDetailsPage() {
     queryKey: ['opportunity', id],
     queryFn: () => getOpportunityByIdService(id),
     enabled: !!id,
+    placeholderData: (prev) => prev,
+    staleTime: 30 * 1000,
   });
 
   const opportunityUpdateMutation = useMutation({

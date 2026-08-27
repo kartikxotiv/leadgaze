@@ -14,6 +14,15 @@ export interface GetMeetingsParams {
   userId?: string;
   page?: number | null;
   limit?: number | null;
+  meetingType?: string | null;
+  provider?: string | null;
+  hostUserId?: string | null;
+  view?: string | null;
+  isAdmin?: boolean;
+  includeParticipantMeetings?: boolean | string | null;
+  participantUserId?: string | null;
+  participantEmail?: string | null;
+  module?: string;
 }
 
 export interface MeetingItem {

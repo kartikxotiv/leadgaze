@@ -623,6 +623,8 @@ export default function OpportunitiesPage() {
         updatedAtTo: computedUpdatedOnDates?.to ?? undefined,
       }),
     enabled: !!workspace?.id,
+    placeholderData: (prev) => prev,
+    staleTime: 30 * 1000,
   });
 
   const importMutation = useMutation({

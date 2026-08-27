@@ -94,7 +94,7 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
     queryKey: ['tasks', entityType, entityId, workspace?.id, taskTab],
     queryFn: () => {
       if (!workspace?.id) return [];
-      return getTasksService(workspace.id, entityType, entityId, taskTab);
+      return getTasksService(workspace.id, entityType, entityId, taskTab, { module: 'sales' });
     },
     enabled: !!workspace?.id,
   });
@@ -503,7 +503,7 @@ export function EntityTasks({ entityType, entityId }: EntityTasksProps) {
         }
         headerExtra={
           (timeLogTask?.total_logged_minutes ?? 0) > 0 ? (
-            <p className="text-sm text-blue-500 mt-1 font-medium">
+            <p className="text-sm text-white mt-1 font-medium">
               Total Logged Time: {Math.floor((timeLogTask?.total_logged_minutes ?? 0) / 60)}h {(timeLogTask?.total_logged_minutes ?? 0) % 60}m
             </p>
           ) : undefined

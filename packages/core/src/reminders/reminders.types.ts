@@ -14,6 +14,7 @@ export interface GetRemindersParams {
   userId?: string;
   page?: number | null;
   limit?: number | null;
+  module?: string;
 }
 
 export interface ReminderItem {
