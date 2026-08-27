@@ -64,6 +64,8 @@ export function AccountAssignees({
       assignAccountToUser(accountId, { assigned_to_user_id: userId }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['account-assignees', accountId] });
+      queryClient.invalidateQueries({ queryKey: ['account', accountId] });
+      queryClient.invalidateQueries({ queryKey: ['accounts'] });
       toast.success('User assigned to account');
       setIsModalOpen(false);
     },
@@ -78,6 +80,8 @@ export function AccountAssignees({
       unassignAccountFromUser(accountId, assigneeId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['account-assignees', accountId] });
+      queryClient.invalidateQueries({ queryKey: ['account', accountId] });
+      queryClient.invalidateQueries({ queryKey: ['accounts'] });
       toast.success('User unassigned from account');
     },
     onError: (error: any) => {

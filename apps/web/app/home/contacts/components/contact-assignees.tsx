@@ -78,6 +78,8 @@ export function ContactAssignees({
       queryClient.invalidateQueries({
         queryKey: ['contact-assignees', contactId],
       });
+      queryClient.invalidateQueries({ queryKey: ['contact', contactId] });
+      queryClient.invalidateQueries({ queryKey: ['contacts'] });
       toast.success('User assigned to contact');
       setIsModalOpen(false);
     },
@@ -93,6 +95,8 @@ export function ContactAssignees({
       queryClient.invalidateQueries({
         queryKey: ['contact-assignees', contactId],
       });
+      queryClient.invalidateQueries({ queryKey: ['contact', contactId] });
+      queryClient.invalidateQueries({ queryKey: ['contacts'] });
       toast.success('User unassigned from contact');
     },
     onError: (error) => {
