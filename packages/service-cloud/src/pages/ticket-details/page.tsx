@@ -949,9 +949,9 @@ export function ServiceCloudTicketDetailPage({
                                   </div>
                                   <div className="flex flex-col gap-1">
                                     <div className="flex gap-2 flex-row items-center">
-                                    <Badge variant="outline" className='primary-text-medium ps-0'>
+                                    {item.email_role && (<Badge variant="outline" className='primary-text-medium ps-0'>
                                       {item.email_role}
-                                    </Badge>                                    
+                                    </Badge>)}                                    
                                     <Button
                                       variant="outline"
                                       size="sm"

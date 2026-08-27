@@ -66,6 +66,8 @@ export interface CardWidgetListItemProps
   titleClassFormat?: React.ReactNode;
 
   isBadgeVerticalCenter?: boolean;
+  
+  emailLayoutTo?: boolean;
 }
 
 export function CardWidgetListItem({
@@ -81,6 +83,7 @@ export function CardWidgetListItem({
   className,
   titleClassFormat,
   isBadgeVerticalCenter = false,
+  emailLayoutTo = false,
   ...props
 }: CardWidgetListItemProps) {
   return (
@@ -104,9 +107,9 @@ export function CardWidgetListItem({
         <div className={`flex min-w-0 flex-1 ${isBadgeVerticalCenter ? 'flex-row items-center' : 'flex-col'}`}>
           <div className="flex min-w-0 flex-1 flex-col">
             {(title || badge) && (
-              <div className="flex items-center justify-between gap-2">
+              <div className={cn("flex justify-between gap-2", emailLayoutTo ? "items-start" : "items-center")}>
                 {title && (
-                  <div className={cn("h-5 truncate primary-text-medium leading-5 text-leadgaze-dark dark:text-white", titleClassFormat)}>
+                  <div className={cn("primary-text-medium text-leadgaze-dark dark:text-white", !emailLayoutTo && "h-5 truncate leading-5", titleClassFormat)}>
                     {title}
                   </div>
                 )}
