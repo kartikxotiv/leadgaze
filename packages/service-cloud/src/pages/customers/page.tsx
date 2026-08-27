@@ -794,7 +794,7 @@ export function ServiceCloudCustomersPage({
               </DialogTitle>
             </DialogHeader>
 
-            <div className="w-full min-w-0 max-w-full flex-1 overflow-x-auto overflow-y-auto p-2">
+            <div className="w-full min-w-0 max-w-full flex-1 overflow-x-auto overflow-y-auto custom-spacing-x-y">
               {isLoadingTickets ? (
                 <div className="text-muted-foreground flex items-center justify-center py-8 text-sm">
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

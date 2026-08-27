@@ -45,6 +45,7 @@ export interface CoreMeeting {
   created_at: string;
   updated_at: string;
   is_deleted: boolean;
+  cancel_reason?: string | null;
   host?: { id: string; name: string | null; email: string | null } | null;
   relations?: Array<{
     id: string;
@@ -254,11 +255,12 @@ export const updateMeetingService = asyncHandlerClient(
 );
 
 export const cancelMeetingService = asyncHandlerClient(
-  async (workspaceId: string, id: string) => {
+  async (workspaceId: string, id: string, cancelReason: string) => {
     const res = await CoreApiClient.patch('/meetings', {
       id,
       workspace_id: workspaceId,
       status: 'cancelled',
+      cancel_reason: cancelReason,
     });
     return res?.data?.data as CoreMeeting;
   },

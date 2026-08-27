@@ -933,31 +933,34 @@ export function ServiceCloudTicketDetailPage({
                                 <div className="flex flex-wrap items-start justify-between gap-3">
                                   <div className="min-w-0">
                                     <div className="truncate text-base font-semibold">
-                                      {email?.subject || '(No Subject)'}
+                                      <span className="text-leadgaze-dark">Subject:</span> <span className="text-leadgaze-dark">{email?.subject || '(No Subject)'}</span>
                                     </div>
                                     <div className="text-muted-foreground mt-1 text-xs">
                                       {email?.direction === 'inbound'
-                                        ? `From ${email?.from_email}`
-                                        : `To ${emailRecipientText(email)}`}
+                                        ? `From: ${email?.from_email}`
+                                        : `To: ${emailRecipientText(email)}`}
                                     </div>
                                     {Array.isArray(email?.cc_emails) &&
                                       email.cc_emails.length > 0 ? (
                                       <div className="text-muted-foreground mt-1 text-xs">
-                                        Cc {email.cc_emails.join(', ')}
+                                        Cc: {email.cc_emails.join(', ')}
                                       </div>
                                     ) : null}
                                   </div>
-                                  <div className="flex flex-col items-end gap-2">
-                                    <Badge variant="outline">
+                                  <div className="flex flex-col gap-1">
+                                    <div className="flex gap-2 flex-row items-center">
+                                    {item.email_role && (<Badge variant="outline" className='primary-text-medium ps-0'>
                                       {item.email_role}
-                                    </Badge>
+                                    </Badge>)}                                    
                                     <Button
-                                      variant="ghost"
+                                      variant="outline"
                                       size="sm"
                                       onClick={() => setReplyEmail(email)}
+                                      className="hover:bg-leadgaze-primary hover:text-white"
                                     >
                                       Reply
                                     </Button>
+                                    </div>
                                     <span className="text-muted-foreground text-xs">
                                       {formatDateTime(
                                         email?.received_at ||

@@ -46,6 +46,7 @@ export interface CoreMeeting {
   host_user_id?: string | null;
   meeting_host_email_account_id?: string | null;
   location?: string | null;
+  cancel_reason?: string | null;
   created_by?: string | null;
   updated_by?: string | null;
   created_at: string;
