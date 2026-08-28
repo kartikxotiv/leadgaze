@@ -74,7 +74,7 @@ export function PersonalAccountDropdown({
   const appName =
     appVersion?.name ?? 'Leadgaze';
   const appVersionNumber =
-    appVersion?.version ?? '2.1.2';
+    appVersion?.version ?? '2.1.4';
   const signedInAsLabel = useMemo(() => {
     const email = user?.email ?? undefined;
     const phone = user?.phone ?? undefined;
