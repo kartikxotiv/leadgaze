@@ -17,9 +17,9 @@ on:
         default: 'master'
         type: string
       create_tag_and_release:
-        description: 'Create Git Tag and GitHub Release now? (true/false)'
+        description: 'Create Git Tag and GitHub Release on merge? (creates after PR merge or now)'
         required: true
-        default: true
+        default: false
         type: boolean
       release_notes:
         description: 'Custom Release Notes (optional)'
@@ -39,6 +39,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.inputs.target_branch }}
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -72,14 +73,6 @@ jobs:
           if [ -n "$CLEAN_ADMIN_VERSION" ]; then
             echo "Admin Version: $CLEAN_ADMIN_VERSION"
           fi
-
-      - name: Create Release Branch
-        id: branch_info
-        run: |
-          WEB_VERSION="${{ steps.version_info.outputs.clean_web_version }}"
-          BRANCH_NAME="release/v${WEB_VERSION}-${{ github.run_id }}"
-          git checkout -b "$BRANCH_NAME"
-          echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
 
       - name: Update Versions in Codebase
         run: |
@@ -129,40 +122,50 @@ jobs:
             "
           fi
 
-      - name: Commit and Push Release Branch
+      - name: Build PR Description
+        id: pr_body
         run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          cat << 'EOF' > /tmp/pr_body.md
+          ## 🚀 Release Summary
 
-          git add package.json apps/web/package.json packages/features/accounts/src/components/personal-account-dropdown.tsx apps/admin/package.json || true
-          
-          WEB_TAG="${{ steps.version_info.outputs.web_tag }}"
-          git commit -m "chore(release): bump version to $WEB_TAG"
-          git push origin "${{ steps.branch_info.outputs.branch_name }}"
+          - **Web Application Version**: `${{ steps.version_info.outputs.clean_web_version }}`
+          EOF
+
+          if [ -n "${{ steps.version_info.outputs.clean_admin_version }}" ]; then
+            echo "- **Admin Panel Version**: \`${{ steps.version_info.outputs.clean_admin_version }}\`" >> /tmp/pr_body.md
+          fi
+
+          if [ -n "${{ github.event.inputs.release_notes }}" ]; then
+            echo "" >> /tmp/pr_body.md
+            echo "### Release Notes" >> /tmp/pr_body.md
+            echo "${{ github.event.inputs.release_notes }}" >> /tmp/pr_body.md
+          fi
+
+          echo "" >> /tmp/pr_body.md
+          echo "---" >> /tmp/pr_body.md
+          echo "*Automated Release Pull Request created via GitHub Actions.*" >> /tmp/pr_body.md
 
       - name: Create Pull Request
         id: create_pr
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          branch: ${{ steps.branch_info.outputs.branch_name }}
+          commit-message: "chore(release): bump version to ${{ steps.version_info.outputs.web_tag }}"
+          branch: "release/${{ steps.version_info.outputs.web_tag }}"
+          delete-branch: true
           base: ${{ github.event.inputs.target_branch }}
           title: "Release: ${{ steps.version_info.outputs.web_tag }}"
-          body: |
-            ## 🚀 Release Summary
-
-            - **Web Application Version**: `${{ steps.version_info.outputs.clean_web_version }}`
-            ${{ steps.version_info.outputs.clean_admin_version != '' && format('- **Admin Panel Version**: `{0}`', steps.version_info.outputs.clean_admin_version) || '' }}
-
-            ${{ github.event.inputs.release_notes != '' && format('### Release Notes' && '\n' && github.event.inputs.release_notes) || '' }}
-
-            ---
-            *Automated Release Pull Request created via GitHub Actions workflow.*
+          body-path: /tmp/pr_body.md
           labels: |
             release
             automated-pr
 
-      - name: Create Tag and GitHub Release (Optional on dispatch)
+      - name: Display PR URL
+        run: |
+          echo "Pull Request URL: ${{ steps.create_pr.outputs.pull-request-url }}"
+          echo "Pull Request Number: ${{ steps.create_pr.outputs.pull-request-number }}"
+
+      - name: Create Tag and GitHub Release (Optional)
         if: ${{ github.event.inputs.create_tag_and_release == 'true' || github.event.inputs.create_tag_and_release == true }}
         uses: softprops/action-gh-release@v2
         with:
@@ -170,7 +173,6 @@ jobs:
           name: Release ${{ steps.version_info.outputs.web_tag }}
           body: ${{ github.event.inputs.release_notes }}
           generate_release_notes: true
-          target_commitish: ${{ steps.branch_info.outputs.branch_name }}
           draft: false
           prerelease: false
         env:
