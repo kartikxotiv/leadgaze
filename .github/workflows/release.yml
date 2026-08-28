@@ -1,0 +1,128 @@
+name: Release & Tag
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release Version (e.g., 2.1.2 or v2.1.2)'
+        required: true
+        type: string
+      release_notes:
+        description: 'Custom Release Notes (optional)'
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: 🚀 Create Release & Update Version
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
+      - name: Normalize Version String
+        id: version_info
+        run: |
+          RAW_VERSION="${{ github.event.inputs.version }}"
+          # Remove leading 'v' or 'V' if present
+          CLEAN_VERSION=$(echo "$RAW_VERSION" | sed -E 's/^[vV]//')
+          TAG_VERSION="v${CLEAN_VERSION}"
+
+          if [ -z "$CLEAN_VERSION" ]; then
+            echo "Error: Version number cannot be empty."
+            exit 1
+          fi
+
+          echo "clean_version=$CLEAN_VERSION" >> $GITHUB_OUTPUT
+          echo "tag_version=$TAG_VERSION" >> $GITHUB_OUTPUT
+          echo "Bumping version to $CLEAN_VERSION (Tag: $TAG_VERSION)"
+
+      - name: Update Version in Codebase
+        run: |
+          CLEAN_VERSION="${{ steps.version_info.outputs.clean_version }}"
+          
+          # 1. Update root package.json
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            pkg.version = '$CLEAN_VERSION';
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+          "
+
+          # 2. Update apps/web package.json
+          node -e "
+            const fs = require('fs');
+            const file = 'apps/web/package.json';
+            if (fs.existsSync(file)) {
+              const pkg = JSON.parse(fs.readFileSync(file, 'utf8'));
+              pkg.version = '$CLEAN_VERSION';
+              fs.writeFileSync(file, JSON.stringify(pkg, null, 2) + '\n');
+            }
+          "
+
+          # 3. Update apps/admin package.json if it exists
+          node -e "
+            const fs = require('fs');
+            const file = 'apps/admin/package.json';
+            if (fs.existsSync(file)) {
+              const pkg = JSON.parse(fs.readFileSync(file, 'utf8'));
+              pkg.version = '$CLEAN_VERSION';
+              fs.writeFileSync(file, JSON.stringify(pkg, null, 2) + '\n');
+            }
+          "
+
+          # 4. Update personal-account-dropdown default version fallback
+          node -e "
+            const fs = require('fs');
+            const file = 'packages/features/accounts/src/components/personal-account-dropdown.tsx';
+            if (fs.existsSync(file)) {
+              let content = fs.readFileSync(file, 'utf8');
+              content = content.replace(/appVersion\?\.version\s*\?\?\s*['\"][^'\"]+['\"]/, \"appVersion?.version ?? '$CLEAN_VERSION'\");
+              fs.writeFileSync(file, content);
+            }
+          "
+
+      - name: Commit and Push Version Bump
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add package.json apps/web/package.json apps/admin/package.json packages/features/accounts/src/components/personal-account-dropdown.tsx || true
+          
+          # Only commit if changes exist
+          if ! git diff-index --quiet HEAD; then
+            git commit -m "chore(release): bump version to ${{ steps.version_info.outputs.tag_version }} [skip ci]"
+            git push origin HEAD:${{ github.ref }}
+          else
+            echo "No file changes detected."
+          fi
+
+      - name: Create and Push Git Tag
+        run: |
+          TAG="${{ steps.version_info.outputs.tag_version }}"
+          git tag -a "$TAG" -m "Release $TAG"
+          git push origin "$TAG"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version_info.outputs.tag_version }}
+          name: Release ${{ steps.version_info.outputs.tag_version }}
+          body: ${{ github.event.inputs.release_notes }}
+          generate_release_notes: true
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
