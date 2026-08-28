@@ -1,12 +1,26 @@
-name: Release & Tag
+name: Release & Create PR
 
 on:
   workflow_dispatch:
     inputs:
-      version:
-        description: 'Release Version (e.g., 2.1.2 or v2.1.2)'
+      web_version:
+        description: 'Web/Main App Version (e.g., 2.1.2 or v2.1.2)'
         required: true
         type: string
+      admin_version:
+        description: 'Admin Panel Version (e.g., 1.0.0 or v1.0.0, optional)'
+        required: false
+        type: string
+      target_branch:
+        description: 'Target Base Branch for PR (default: master)'
+        required: true
+        default: 'master'
+        type: string
+      create_tag_and_release:
+        description: 'Create Git Tag and GitHub Release now? (true/false)'
+        required: true
+        default: true
+        type: boolean
       release_notes:
         description: 'Custom Release Notes (optional)'
         required: false
@@ -14,10 +28,11 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write
 
 jobs:
-  release:
-    name: 🚀 Create Release & Update Version
+  release-pr:
+    name: 🚀 Bump Versions & Create Release PR
     runs-on: ubuntu-latest
 
     steps:
@@ -32,32 +47,50 @@ jobs:
         with:
           node-version: lts/*
 
-      - name: Normalize Version String
+      - name: Parse and Normalize Versions
         id: version_info
         run: |
-          RAW_VERSION="${{ github.event.inputs.version }}"
-          # Remove leading 'v' or 'V' if present
-          CLEAN_VERSION=$(echo "$RAW_VERSION" | sed -E 's/^[vV]//')
-          TAG_VERSION="v${CLEAN_VERSION}"
+          # Web / Main Version
+          RAW_WEB_VERSION="${{ github.event.inputs.web_version }}"
+          CLEAN_WEB_VERSION=$(echo "$RAW_WEB_VERSION" | sed -E 's/^[vV]//')
+          WEB_TAG="v${CLEAN_WEB_VERSION}"
 
-          if [ -z "$CLEAN_VERSION" ]; then
-            echo "Error: Version number cannot be empty."
+          if [ -z "$CLEAN_WEB_VERSION" ]; then
+            echo "Error: Web version cannot be empty."
             exit 1
           fi
 
-          echo "clean_version=$CLEAN_VERSION" >> $GITHUB_OUTPUT
-          echo "tag_version=$TAG_VERSION" >> $GITHUB_OUTPUT
-          echo "Bumping version to $CLEAN_VERSION (Tag: $TAG_VERSION)"
+          # Admin Version (optional)
+          RAW_ADMIN_VERSION="${{ github.event.inputs.admin_version }}"
+          CLEAN_ADMIN_VERSION=$(echo "$RAW_ADMIN_VERSION" | sed -E 's/^[vV]//')
 
-      - name: Update Version in Codebase
+          echo "clean_web_version=$CLEAN_WEB_VERSION" >> $GITHUB_OUTPUT
+          echo "web_tag=$WEB_TAG" >> $GITHUB_OUTPUT
+          echo "clean_admin_version=$CLEAN_ADMIN_VERSION" >> $GITHUB_OUTPUT
+
+          echo "Web Version: $CLEAN_WEB_VERSION (Tag: $WEB_TAG)"
+          if [ -n "$CLEAN_ADMIN_VERSION" ]; then
+            echo "Admin Version: $CLEAN_ADMIN_VERSION"
+          fi
+
+      - name: Create Release Branch
+        id: branch_info
         run: |
-          CLEAN_VERSION="${{ steps.version_info.outputs.clean_version }}"
-          
+          WEB_VERSION="${{ steps.version_info.outputs.clean_web_version }}"
+          BRANCH_NAME="release/v${WEB_VERSION}-${{ github.run_id }}"
+          git checkout -b "$BRANCH_NAME"
+          echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
+
+      - name: Update Versions in Codebase
+        run: |
+          CLEAN_WEB_VERSION="${{ steps.version_info.outputs.clean_web_version }}"
+          CLEAN_ADMIN_VERSION="${{ steps.version_info.outputs.clean_admin_version }}"
+
           # 1. Update root package.json
           node -e "
             const fs = require('fs');
             const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-            pkg.version = '$CLEAN_VERSION';
+            pkg.version = '$CLEAN_WEB_VERSION';
             fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
           "
 
@@ -67,61 +100,77 @@ jobs:
             const file = 'apps/web/package.json';
             if (fs.existsSync(file)) {
               const pkg = JSON.parse(fs.readFileSync(file, 'utf8'));
-              pkg.version = '$CLEAN_VERSION';
+              pkg.version = '$CLEAN_WEB_VERSION';
               fs.writeFileSync(file, JSON.stringify(pkg, null, 2) + '\n');
             }
           "
 
-          # 3. Update apps/admin package.json if it exists
-          node -e "
-            const fs = require('fs');
-            const file = 'apps/admin/package.json';
-            if (fs.existsSync(file)) {
-              const pkg = JSON.parse(fs.readFileSync(file, 'utf8'));
-              pkg.version = '$CLEAN_VERSION';
-              fs.writeFileSync(file, JSON.stringify(pkg, null, 2) + '\n');
-            }
-          "
-
-          # 4. Update personal-account-dropdown default version fallback
+          # 3. Update personal-account-dropdown default version fallback
           node -e "
             const fs = require('fs');
             const file = 'packages/features/accounts/src/components/personal-account-dropdown.tsx';
             if (fs.existsSync(file)) {
               let content = fs.readFileSync(file, 'utf8');
-              content = content.replace(/appVersion\?\.version\s*\?\?\s*['\"][^'\"]+['\"]/, \"appVersion?.version ?? '$CLEAN_VERSION'\");
+              content = content.replace(/appVersion\?\.version\s*\?\?\s*['\"][^'\"]+['\"]/, \"appVersion?.version ?? '$CLEAN_WEB_VERSION'\");
               fs.writeFileSync(file, content);
             }
           "
 
-      - name: Commit and Push Version Bump
+          # 4. Update apps/admin package.json if admin_version is provided
+          if [ -n "$CLEAN_ADMIN_VERSION" ]; then
+            node -e "
+              const fs = require('fs');
+              const file = 'apps/admin/package.json';
+              if (fs.existsSync(file)) {
+                const pkg = JSON.parse(fs.readFileSync(file, 'utf8'));
+                pkg.version = '$CLEAN_ADMIN_VERSION';
+                fs.writeFileSync(file, JSON.stringify(pkg, null, 2) + '\n');
+              }
+            "
+          fi
+
+      - name: Commit and Push Release Branch
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-          git add package.json apps/web/package.json apps/admin/package.json packages/features/accounts/src/components/personal-account-dropdown.tsx || true
+          git add package.json apps/web/package.json packages/features/accounts/src/components/personal-account-dropdown.tsx apps/admin/package.json || true
           
-          # Only commit if changes exist
-          if ! git diff-index --quiet HEAD; then
-            git commit -m "chore(release): bump version to ${{ steps.version_info.outputs.tag_version }} [skip ci]"
-            git push origin HEAD:${{ github.ref }}
-          else
-            echo "No file changes detected."
-          fi
+          WEB_TAG="${{ steps.version_info.outputs.web_tag }}"
+          git commit -m "chore(release): bump version to $WEB_TAG"
+          git push origin "${{ steps.branch_info.outputs.branch_name }}"
 
-      - name: Create and Push Git Tag
-        run: |
-          TAG="${{ steps.version_info.outputs.tag_version }}"
-          git tag -a "$TAG" -m "Release $TAG"
-          git push origin "$TAG"
+      - name: Create Pull Request
+        id: create_pr
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ steps.branch_info.outputs.branch_name }}
+          base: ${{ github.event.inputs.target_branch }}
+          title: "Release: ${{ steps.version_info.outputs.web_tag }}"
+          body: |
+            ## 🚀 Release Summary
 
-      - name: Create GitHub Release
+            - **Web Application Version**: `${{ steps.version_info.outputs.clean_web_version }}`
+            ${{ steps.version_info.outputs.clean_admin_version != '' && format('- **Admin Panel Version**: `{0}`', steps.version_info.outputs.clean_admin_version) || '' }}
+
+            ${{ github.event.inputs.release_notes != '' && format('### Release Notes' && '\n' && github.event.inputs.release_notes) || '' }}
+
+            ---
+            *Automated Release Pull Request created via GitHub Actions workflow.*
+          labels: |
+            release
+            automated-pr
+
+      - name: Create Tag and GitHub Release (Optional on dispatch)
+        if: ${{ github.event.inputs.create_tag_and_release == 'true' || github.event.inputs.create_tag_and_release == true }}
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.version_info.outputs.tag_version }}
-          name: Release ${{ steps.version_info.outputs.tag_version }}
+          tag_name: ${{ steps.version_info.outputs.web_tag }}
+          name: Release ${{ steps.version_info.outputs.web_tag }}
           body: ${{ github.event.inputs.release_notes }}
           generate_release_notes: true
+          target_commitish: ${{ steps.branch_info.outputs.branch_name }}
           draft: false
           prerelease: false
         env:
